@@ -2,4 +2,4 @@ package commons
 
 import "github.com/google/uuid"
 
-type CUID uuid.UUID
+type datatypeID uuid.UUID

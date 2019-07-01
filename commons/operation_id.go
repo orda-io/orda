@@ -1,31 +1,30 @@
 package commons
 
-import (
-	"github.com/google/uuid"
-)
+type era uint32
+type timeSeq uint64
 
 type operationID struct {
-	era     uint32
-	lamport uint64
-	cuid    *CUID
-	seq     uint64
+	era     era
+	lamport timeSeq
+	cuid    *Cuid
+	seq     timeSeq
 }
 
 func NewOperationId() *operationID {
-	cuid := CUID(uuid.Nil)
+	cuid := NewNilCuid()
 	return NewOperationIdWithCuid(cuid)
 }
 
-func NewOperationIdWithCuid(cuid CUID) *operationID {
+func NewOperationIdWithCuid(cuid *Cuid) *operationID {
 	return &operationID{
 		era:     0,
 		lamport: 0,
-		cuid:    &cuid,
+		cuid:    cuid,
 		seq:     0,
 	}
 }
 
-func (c *operationID) SetClient(cuid *CUID) {
+func (c *operationID) SetClient(cuid *Cuid) {
 	c.cuid = cuid
 }
 
@@ -33,6 +32,14 @@ func (c *operationID) Next() operationID {
 	c.lamport++
 	c.seq++
 	return operationID{c.era, c.lamport, c.cuid, c.seq}
+}
+
+func (c *operationID) GetTimestamp() *timestamp {
+	return &timestamp{
+		era:     c.era,
+		lamport: c.lamport,
+		cuid:    c.cuid,
+	}
 }
 
 func Compare(a, b *operationID) int {
