@@ -7,6 +7,7 @@ require (
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/mitchellh/cli v1.0.0
 	github.com/pkg/errors v0.8.1 // indirect
+	go.mongodb.org/mongo-driver v1.0.3 // indirect
 	google.golang.org/grpc v1.21.1
 	gotest.tools v2.2.0+incompatible
 )
