@@ -3,6 +3,8 @@ services:
   mongodb:
     container_name: ortoo_mongodb_testing
     image: mongo:4.1.13-bionic
+    ports:
+      - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: ortoo-test

@@ -1,4 +1,10 @@
-.PHONY: dependency unit-test integration-test docker-up docker-down
+.PHONY: dependency unit-test integration-test docker-up docker-down protobuf
+
+#protobuf:
+#    @protoc -I commons/protocols/ commons/protocols/*.proto --go_out # = plugins=grpc:commons/protocols
+
+protoc-gen:
+	protoc -I commons/protocols/ commons/protocols/*.proto --go_out=plugins=grpc:commons/protocols
 
 dependency:
 	@go get -v ./...
@@ -17,5 +23,3 @@ docker-down:
 
 clear: docker-down
 
-protobuf:
-    protoc -I commons/protocols/ commons/protocols/*.proto --go_out=plugins=grpc:commons/protocols
