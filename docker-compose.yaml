@@ -14,7 +14,7 @@ services:
     image: mongo-express
     restart: always
     ports:
-      - 18081:8081
+      - 18082:8081
     environment:
       ME_CONFIG_MONGODB_SERVER: mongodb
       ME_CONFIG_MONGODB_PORT: 27017
