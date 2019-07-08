@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/commons/protocols"
+	pb "github.com/knowhunger/ortoo/commons/protocols"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -14,9 +14,9 @@ const (
 
 type server struct{}
 
-func (s *server) SayHello(ctx context.Context, in *protocols.HelloRequest) (*protocols.HelloReply, error) {
+func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	log.Printf("Received: %v", in.Name)
-	return &protocols.HelloReply{Message: "Hello" + in.Name}, nil
+	return &pb.HelloReply{Message: "Hello" + in.Name}, nil
 }
 
 func main() {
@@ -25,9 +25,8 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	protocols.RegisterGreeterServer(s, &server{})
+	pb.RegisterGreeterServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-
 }

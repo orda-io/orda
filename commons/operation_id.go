@@ -10,8 +10,8 @@ type operationID struct {
 	seq     timeSeq
 }
 
-func NewOperationId() *operationID {
-	cuid := NewNilCuid()
+func newOperationID() *operationID {
+	cuid := newNilCuid()
 	return NewOperationIdWithCuid(cuid)
 }
 

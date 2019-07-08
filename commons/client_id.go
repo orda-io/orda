@@ -6,14 +6,14 @@ type Cuid struct {
 	uuid *uuid.UUID
 }
 
-func NewCuid() *Cuid {
+func newCuid() *Cuid {
 	uuid := uuid.New()
 	return &Cuid{
 		&uuid,
 	}
 }
 
-func NewNilCuid() *Cuid {
+func newNilCuid() *Cuid {
 	uuid := uuid.Nil
 	return &Cuid{
 		&uuid,

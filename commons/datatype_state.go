@@ -3,8 +3,8 @@ package commons
 type DatatypeState uint8
 
 const (
-	LocallyExisted DatatypeState = 0 + iota
-	Registering
-	Registered
-	Unregistered
+	StateLocallyExisted DatatypeState = 0 + iota
+	StateRegistering
+	StateRegistered
+	StateUnregistered
 )
