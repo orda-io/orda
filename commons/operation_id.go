@@ -24,22 +24,31 @@ func NewOperationIdWithCuid(cuid *Cuid) *operationID {
 	}
 }
 
-func (c *operationID) SetClient(cuid *Cuid) {
-	c.cuid = cuid
+func (o *operationID) SetClient(cuid *Cuid) {
+	o.cuid = cuid
 }
 
-func (c *operationID) Next() operationID {
-	c.lamport++
-	c.seq++
-	return operationID{c.era, c.lamport, c.cuid, c.seq}
+func (o *operationID) Next() *operationID {
+	o.lamport++
+	o.seq++
+	return &operationID{o.era, o.lamport, o.cuid, o.seq}
 }
 
-func (c *operationID) GetTimestamp() *timestamp {
+func (o *operationID) GetTimestamp() *timestamp {
 	return &timestamp{
-		era:     c.era,
-		lamport: c.lamport,
-		cuid:    c.cuid,
+		era:     o.era,
+		lamport: o.lamport,
+		cuid:    o.cuid,
 	}
+}
+
+func (o *operationID) syncLamport(other timeSeq) timeSeq {
+	if o.lamport < other {
+		o.lamport = other
+	} else {
+		o.lamport++
+	}
+	return o.lamport
 }
 
 func Compare(a, b *operationID) int {
@@ -55,7 +64,5 @@ func Compare(a, b *operationID) int {
 	} else if retLamport < 0 {
 		return -1
 	}
-
 	return 0
-
 }

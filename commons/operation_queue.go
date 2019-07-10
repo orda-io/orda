@@ -1,3 +1,3 @@
 package commons
 
-type operationQueue []operation
+type operationQueue []operationT

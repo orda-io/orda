@@ -1,21 +1,35 @@
 package commons
 
-type BaseDataType struct {
+import (
+	"fmt"
+	"github.com/sirupsen/logrus"
+)
+
+type BaseDatatypeT struct {
 	id     *datatypeID
 	opID   *operationID
 	typeOf DatatypeType
 	state  DatatypeState
+	logger *logrus.Logger
 }
 
-type BaseDataTyper interface {
-	execute(op *operation)
+func newBaseDatatypeT(t DatatypeType) *BaseDatatypeT {
+	loge := logrus.New()
+	loge.SetFormatter(&logrus.TextFormatter{})
+	return &BaseDatatypeT{
+		id:     newDatatypeID(),
+		opID:   newOperationID(),
+		typeOf: t,
+		state:  StateLocallyExisted,
+		logger: logrus.New(),
+	}
 }
 
-func (c *BaseDataType) execute(op operationer) {
-	op.executeLocal()
+func executeLocalBase(base *BaseDatatypeT, datatype interface{}, op Operation) (interface{}, error) {
+	op.SetOperationID(base.opID.Next())
+	return op.executeLocal(datatype)
 }
 
-type TransferableDataType struct {
-	BaseDataType
-	Checkpoint CheckPoint
+func (c *BaseDatatypeT) String() string {
+	return fmt.Sprintf("%s", c.id.String())
 }

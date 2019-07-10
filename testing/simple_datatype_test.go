@@ -1,8 +1,8 @@
 package testing
 
 import (
-	"fmt"
 	"github.com/knowhunger/ortoo/commons"
+	. "github.com/knowhunger/ortoo/commons/utils"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
@@ -16,9 +16,15 @@ func (suite *SimpleDatatypeSuite) SetupTest() {
 }
 
 func (suite *SimpleDatatypeSuite) TestExample() {
-	intCounter1 := commons.NewIntCounter()
+	tw := commons.NewTestWire()
+	intCounter1 := commons.NewIntCounter(tw)
+	intCounter2 := commons.NewIntCounter(tw)
+
+	tw.SetDatatypes(intCounter1, intCounter2)
+
 	intCounter1.Increase()
-	fmt.Printf("%#v\n", intCounter1)
+
+	Log.Printf("%#v", intCounter1)
 	suite.T().Log("TestExample")
 }
 

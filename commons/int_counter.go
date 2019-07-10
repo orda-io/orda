@@ -1,40 +1,68 @@
 package commons
 
-import "fmt"
+import (
+	. "github.com/knowhunger/ortoo/commons/utils"
+)
 
 type IntCounter struct {
-	BaseDataType
+	*WiredDatatypeT
 	value int32
 }
 
-func NewIntCounter() *IntCounter {
-	return &IntCounter{
-		BaseDataType: BaseDataType{
-			id:     newDatatypeID(),
-			opID:   newOperationID(),
-			typeOf: TypeIntCounter,
-			state:  StateLocallyExisted,
-		},
-		value: 0,
+func NewIntCounter(w wire) *IntCounter {
+	d := &IntCounter{
+		WiredDatatypeT: newWiredDataType(TypeIntCounter, w),
+		value:          0,
 	}
+	d.super = d
+	return d
 }
 
-func (c *IntCounter) Increase() {
-	op := newIncreaseOperation()
-	c.execute(op)
+func (c *IntCounter) Increase() (int32, error) {
+	return c.IncreaseBy(1)
+}
+
+func (c *IntCounter) IncreaseBy(delta int32) (int32, error) {
+	op := newIncreaseOperation(delta)
+	_, err := execute(c, op)
+	return c.value, err
+}
+
+func (c *IntCounter) Get() int32 {
+	return c.value
+}
+
+func (c *IntCounter) increaseLocal(delta int32) int32 {
+	Log.Info("increaseLocal")
+	c.value = c.value + delta
+	return c.value
 }
 
 type increaseOperation struct {
 	delta int32
-	*operation
+	*operationT
 }
 
-func newIncreaseOperation() *increaseOperation {
+func newIncreaseOperation(delta int32) *increaseOperation {
 	return &increaseOperation{
-		delta: 1,
+		delta: delta,
+		operationT: &operationT{
+			typ: OperationTypes.IntCounterIncreaseType,
+		},
 	}
 }
 
-func (c *increaseOperation) executeLocal() {
-	fmt.Println("increaseOperation executeLocal")
+func (i *increaseOperation) executeLocal(datatype interface{}) (interface{}, error) {
+	if counter, ok := datatype.(*IntCounter); ok {
+		Log.Println("increaseOperation executeLocal")
+		return counter.increaseLocal(i.delta), nil
+	}
+	return nil, OrtooError("operation is called with invalid datatype")
+}
+
+func (i *increaseOperation) executeRemote(datatype interface{}) {
+	if counter, ok := datatype.(*IntCounter); ok {
+		Log.Println("increaseOperation executeRemote")
+		counter.increaseLocal(i.delta)
+	}
 }

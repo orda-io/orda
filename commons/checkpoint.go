@@ -6,7 +6,7 @@ type CheckPoint struct {
 	PbCheckPoint
 }
 
-func NewCheckPoint() *CheckPoint {
+func newCheckPoint() *CheckPoint {
 	return &CheckPoint{
 		PbCheckPoint: PbCheckPoint{Sseq: 0, Cseq: 0}}
 }
