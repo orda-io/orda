@@ -1,8 +1,6 @@
 package commons
 
-import (
-	. "github.com/knowhunger/ortoo/commons/utils"
-)
+import "github.com/knowhunger/ortoo/commons/log"
 
 type IntCounter struct {
 	*WiredDatatypeT
@@ -24,7 +22,7 @@ func (c *IntCounter) Increase() (int32, error) {
 
 func (c *IntCounter) IncreaseBy(delta int32) (int32, error) {
 	op := newIncreaseOperation(delta)
-	_, err := execute(c, op)
+	_, err := c.executeWired(c, op)
 	return c.value, err
 }
 
@@ -33,7 +31,7 @@ func (c *IntCounter) Get() int32 {
 }
 
 func (c *IntCounter) increaseLocal(delta int32) int32 {
-	Log.Info("increaseLocal")
+	c.Info("increaseLocal")
 	c.value = c.value + delta
 	return c.value
 }
@@ -45,24 +43,22 @@ type increaseOperation struct {
 
 func newIncreaseOperation(delta int32) *increaseOperation {
 	return &increaseOperation{
-		delta: delta,
-		operationT: &operationT{
-			typ: OperationTypes.IntCounterIncreaseType,
-		},
+		delta:      delta,
+		operationT: NewOperation(OperationTypes.IntCounterIncreaseType),
 	}
 }
 
 func (i *increaseOperation) executeLocal(datatype interface{}) (interface{}, error) {
 	if counter, ok := datatype.(*IntCounter); ok {
-		Log.Println("increaseOperation executeLocal")
+		log.Logger.Infoln("increaseOperation executeLocal")
 		return counter.increaseLocal(i.delta), nil
 	}
-	return nil, OrtooError("operation is called with invalid datatype")
+	return nil, log.OrtooError(nil, "operation is called with invalid datatype")
 }
 
 func (i *increaseOperation) executeRemote(datatype interface{}) {
 	if counter, ok := datatype.(*IntCounter); ok {
-		Log.Println("increaseOperation executeRemote")
+		log.Logger.Info("increaseOperation executeRemote")
 		counter.increaseLocal(i.delta)
 	}
 }

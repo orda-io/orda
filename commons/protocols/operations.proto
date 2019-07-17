@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package protocols;
+
+import "uuid.proto";
+
+message PbOperationId {
+    uint32 era = 1;
+    uint64 lamport = 2;
+    PbUuid cuid = 3;
+    uint64 seq = 4;
+}
+
+message PbOperation {
+    PbOperationId id = 1;
+    int32 opType = 2;
+
+}
+
+message PbIncreaseOperation {
+    PbOperation base = 1;
+    int32 delta = 2;
+}

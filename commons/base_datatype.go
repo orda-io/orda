@@ -2,34 +2,35 @@ package commons
 
 import (
 	"fmt"
+	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/sirupsen/logrus"
 )
 
 type BaseDatatypeT struct {
-	id     *datatypeID
+	id     *datatypeUID
 	opID   *operationID
 	typeOf DatatypeType
 	state  DatatypeState
-	logger *logrus.Logger
+	*log.OrtooLog
 }
 
 func newBaseDatatypeT(t DatatypeType) *BaseDatatypeT {
 	loge := logrus.New()
 	loge.SetFormatter(&logrus.TextFormatter{})
 	return &BaseDatatypeT{
-		id:     newDatatypeID(),
-		opID:   newOperationID(),
-		typeOf: t,
-		state:  StateLocallyExisted,
-		logger: logrus.New(),
+		id:       newDatatypeUID(),
+		opID:     newOperationID(),
+		typeOf:   t,
+		state:    StateLocallyExisted,
+		OrtooLog: log.NewOrtooLog(),
 	}
 }
 
-func executeLocalBase(base *BaseDatatypeT, datatype interface{}, op Operation) (interface{}, error) {
-	op.SetOperationID(base.opID.Next())
-	return op.executeLocal(datatype)
+func (b *BaseDatatypeT) String() string {
+	return fmt.Sprintf("%s", b.id.String())
 }
 
-func (c *BaseDatatypeT) String() string {
-	return fmt.Sprintf("%s", c.id.String())
+func (b *BaseDatatypeT) executeBase(datatype interface{}, op Operation) (interface{}, error) {
+	op.SetOperationID(b.opID.Next())
+	return op.executeLocal(datatype)
 }

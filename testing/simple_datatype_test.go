@@ -2,7 +2,7 @@ package testing
 
 import (
 	"github.com/knowhunger/ortoo/commons"
-	. "github.com/knowhunger/ortoo/commons/utils"
+	. "github.com/knowhunger/ortoo/commons/log"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
@@ -24,7 +24,8 @@ func (suite *SimpleDatatypeSuite) TestExample() {
 
 	intCounter1.Increase()
 
-	Log.Printf("%#v", intCounter1)
+	Logger.Printf("%#v", intCounter1)
+	Logger.Printf("%#v", intCounter2)
 	suite.T().Log("TestExample")
 }
 

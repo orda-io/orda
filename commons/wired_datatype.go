@@ -4,6 +4,7 @@ type WiredDatatypeT struct {
 	wire
 	*BaseDatatypeT
 	checkPoint *CheckPoint
+	buffer     []Operation
 	super      interface{}
 }
 
@@ -16,29 +17,49 @@ func newWiredDataType(t DatatypeType, w wire) *WiredDatatypeT {
 	return &WiredDatatypeT{
 		BaseDatatypeT: newBaseDatatypeT(t),
 		checkPoint:    newCheckPoint(),
+		buffer:        make([]Operation, operationBufferSize),
 		wire:          w,
 	}
 }
 
-func execute(datatype interface{}, op Operation) (interface{}, error) {
+func (w *WiredDatatypeT) executeWired(datatype interface{}, op Operation) (interface{}, error) {
 	wired := getWiredDatatypeT(datatype)
-	ret, err := executeLocalBase(wired.BaseDatatypeT, datatype, op)
+	ret, err := wired.executeBase(datatype, op)
 	if err != nil {
 		return ret, err
 	}
+	w.buffer = append(w.buffer, op)
 	wired.deliverOperation(wired, op)
 	return ret, nil
 }
 
-func (c *WiredDatatypeT) getBase() *BaseDatatypeT {
-	return c.BaseDatatypeT
+func (w *WiredDatatypeT) getBase() *BaseDatatypeT {
+	return w.BaseDatatypeT
 }
 
-func (c *WiredDatatypeT) String() string {
-	return c.BaseDatatypeT.String()
+func (w *WiredDatatypeT) String() string {
+	return w.BaseDatatypeT.String()
 }
 
-func (c *WiredDatatypeT) executeRemote(op Operation) {
-	c.opID.syncLamport(op.GetOperationID().lamport)
-	op.executeRemote(c.super)
+func (w *WiredDatatypeT) executeRemote(op Operation) {
+	w.opID.syncLamport(op.GetOperationID().lamport)
+	op.executeRemote(w.super)
+}
+
+func (w *WiredDatatypeT) createPushPullPack() {
+	seq := w.checkPoint.Cseq
+	operations := w.getOperations(seq + 1)
+	cp := &CheckPoint{}
+	cp.Set(w.checkPoint.GetSseq(), w.checkPoint.GetCseq()+uint64(len(operations)))
+
+}
+
+func (w *WiredDatatypeT) getOperations(cseq uint64) []Operation {
+	startCseq := w.buffer[0].GetOperationID().seq
+	var start = int(cseq - uint64(startCseq))
+	if len(w.buffer) > start {
+		return w.buffer[start:]
+	}
+	return []Operation{}
+
 }

@@ -1,5 +1,7 @@
 package commons
 
+import "github.com/knowhunger/ortoo/commons/protocols"
+
 type era uint32
 type timeSeq uint64
 
@@ -49,6 +51,15 @@ func (o *operationID) syncLamport(other timeSeq) timeSeq {
 		o.lamport++
 	}
 	return o.lamport
+}
+
+func (o *operationID) getPB() *protocols.PbOperationId {
+	return &protocols.PbOperationId{
+		Era:     uint32(o.era),
+		Lamport: uint64(o.lamport),
+		Cuid:    nil,
+		Seq:     uint64(o.seq),
+	}
 }
 
 func Compare(a, b *operationID) int {
