@@ -11,4 +11,5 @@ func TestClientId(t *testing.T) {
 	assert.Assert(t, Compare(opID1, opID2) == 0)
 	opID1.Next()
 	assert.Assert(t, Compare(opID1, opID2) > 0)
+
 }

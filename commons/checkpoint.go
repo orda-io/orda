@@ -14,3 +14,8 @@ func newCheckPoint() *CheckPoint {
 func (c *CheckPoint) GetSseq() uint64 {
 	return c.GetSseq()
 }
+
+func (c *CheckPoint) Set(sseq, cseq uint64) {
+	c.Sseq = sseq
+	c.Cseq = cseq
+}

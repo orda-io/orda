@@ -1,13 +1,14 @@
-.PHONY: dependency unit-test integration-test docker-up docker-down protobuf
-
-#protocols:
-#    @protoc -I commons/protocols/ commons/protocols/*.proto --go_out # = plugins=grpc:commons/protocols
+.PHONY: dependency unit-test integration-test docker-up docker-down protobuf lint
 
 protoc-gen:
 	protoc commons/protocols/*.proto -I ./commons/protocols/ --go_out=plugins=grpc:commons/protocols
 
 dependency:
-	@go get -v ./...
+	go get -v ./...
+	go get github.com/tebeka/go2xunit
+	go get golang.org/x/lint/golint
+	go get github.com/axw/gocov/gocov
+	go get github.com/AlekSi/gocov-xml
 
 integration-test: docker-up dependency
 	@go test -v ./...
@@ -23,3 +24,5 @@ docker-down:
 
 clear: docker-down
 
+lint: dependency
+	golint ./...

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package protocols;
+
+message OperationID {
+    uint32 era = 1;
+    uint64 lamport = 2;
+    bytes cuid = 3;
+    uint64 seq = 4;
+}
+
+message PbOperation {
+    OperationID id = 1;
+    uint32 opType = 2;
+
+}
+
+message PbIncreaseOperation {
+    PbOperation base = 1;
+    int32 delta = 2;
+}

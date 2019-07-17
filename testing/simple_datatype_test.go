@@ -2,8 +2,9 @@ package testing
 
 import (
 	"github.com/knowhunger/ortoo/commons"
-	. "github.com/knowhunger/ortoo/commons/utils"
+	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/stretchr/testify/suite"
+
 	"testing"
 )
 
@@ -17,14 +18,21 @@ func (suite *SimpleDatatypeSuite) SetupTest() {
 
 func (suite *SimpleDatatypeSuite) TestExample() {
 	tw := commons.NewTestWire()
-	intCounter1 := commons.NewIntCounter(tw)
-	intCounter2 := commons.NewIntCounter(tw)
+	intCounter1, err := commons.NewIntCounter(tw)
+	if err != nil {
+		_ = log.OrtooError(err, "fail to create intCounter1")
+	}
+	intCounter2, err := commons.NewIntCounter(tw)
+	if err != nil {
+		_ = log.OrtooError(err, "fail to create intCounter2")
+	}
 
 	tw.SetDatatypes(intCounter1, intCounter2)
 
 	intCounter1.Increase()
 
-	Log.Printf("%#v", intCounter1)
+	Logger.Printf("%#v", intCounter1)
+	Logger.Printf("%#v", intCounter2)
 	suite.T().Log("TestExample")
 }
 

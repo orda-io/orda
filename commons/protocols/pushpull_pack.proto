@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package protocols;
+
+import "checkpoint.proto";
+import "uuid.proto";
+
+message PbPushPullPack {
+    PbCheckPoint checkPoint = 1;
+    PbUuid duid = 2;
+
+}
