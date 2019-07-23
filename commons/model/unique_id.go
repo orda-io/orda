@@ -1,4 +1,4 @@
-package commons
+package model
 
 import (
 	"github.com/google/uuid"
@@ -19,10 +19,18 @@ func newUniqueID() (uniqueID, error) {
 	return uniqueID(b), nil
 }
 
+func (u uniqueID) String() string {
+	uid, err := uuid.FromBytes([]byte(u))
+	if err != nil {
+		return "fail to make string to uuid"
+	}
+	return uid.String()
+}
+
 //
 //
 //
-//func (d *uniqueID) toProtoBuf() (*protocols.PbUuid, error) {
+//func (d *uniqueID) toProtoBuf() (*model.PbUuid, error) {
 //	// []byte to int64
 //	bin, err := d.MarshalBinary()
 //	if err != nil {
@@ -36,13 +44,13 @@ func newUniqueID() (uniqueID, error) {
 //		return nil, log.OrtooError(err, "fail to encode protobuf of datatype ID")
 //	}
 //
-//	return &protocols.PbUuid{
+//	return &model.PbUuid{
 //		Head: head,
 //		Tail: tail,
 //	}, nil
 //}
 //
-//func pbToUniqueID(pb *protocols.PbUuid) (*uniqueID, error) {
+//func pbToUniqueID(pb *model.PbUuid) (*uniqueID, error) {
 //
 //	// int64 to []byte
 //	var bin []byte

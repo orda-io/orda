@@ -1,11 +1,13 @@
 package client
 
-import "github.com/knowhunger/ortoo/commons"
+import (
+	"github.com/knowhunger/ortoo/commons/model"
+)
 
 type ClientT struct {
 	db             string
 	collectionName string
-	clientId       *commons.Cuid
+	clientId       *model.Cuid
 }
 
 func (c *ClientT) connect() {

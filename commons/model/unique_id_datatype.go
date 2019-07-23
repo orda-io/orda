@@ -1,4 +1,4 @@
-package commons
+package model
 
 import (
 	"github.com/knowhunger/ortoo/commons/log"
@@ -6,10 +6,14 @@ import (
 
 type Duid uniqueID
 
-func newDuid() (Duid, error) {
+func NewDuid() (Duid, error) {
 	u, err := newUniqueID()
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to generate datatype UID")
 	}
 	return Duid(u), nil
+}
+
+func (d Duid) String() string {
+	return uniqueID(d).String()
 }

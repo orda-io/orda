@@ -1,7 +1,9 @@
 package commons
 
+import "github.com/knowhunger/ortoo/commons/model"
+
 type pushPullPack struct {
-	duid       Duid
-	checkPoint CheckPoint
-	operations []Operation
+	duid       model.Duid
+	checkPoint model.CheckPoint
+	operations []model.Operationer
 }

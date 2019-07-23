@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package protocols;
-
-message PbCheckPoint {
-    uint64 sseq = 1;
-    uint64 cseq = 2;
-}

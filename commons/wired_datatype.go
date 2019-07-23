@@ -1,18 +1,21 @@
 package commons
 
-import "github.com/knowhunger/ortoo/commons/log"
+import (
+	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
+)
 
 type WiredDatatypeT struct {
 	wire
-	*BaseDatatypeT
-	checkPoint *CheckPoint
-	buffer     []Operation
-	super      interface{}
+	*baseDatatypeT
+	checkPoint *model.CheckPoint
+	buffer     []model.Operationer
+	super      model.OperationExecuter
 }
 
 type WiredDatatype interface {
-	getBase() *BaseDatatypeT
-	executeRemote(op Operation)
+	getBase() *baseDatatypeT
+	executeRemote(op model.Operationer)
 }
 
 func newWiredDataType(t DatatypeType, w wire) (*WiredDatatypeT, error) {
@@ -21,14 +24,14 @@ func newWiredDataType(t DatatypeType, w wire) (*WiredDatatypeT, error) {
 		return nil, log.OrtooError(err, "fail to create wiredDatatype due to baseDatatype")
 	}
 	return &WiredDatatypeT{
-		BaseDatatypeT: baseDatatype,
-		checkPoint:    newCheckPoint(),
-		buffer:        make([]Operation, operationBufferSize),
+		baseDatatypeT: baseDatatype,
+		checkPoint:    model.NewCheckPoint(),
+		buffer:        make([]model.Operationer, operationBufferSize),
 		wire:          w,
 	}, nil
 }
 
-func (w *WiredDatatypeT) executeWired(datatype interface{}, op Operation) (interface{}, error) {
+func (w *WiredDatatypeT) executeWired(datatype model.OperationExecuter, op model.Operationer) (interface{}, error) {
 	wired := getWiredDatatypeT(datatype)
 	ret, err := wired.executeBase(datatype, op)
 	if err != nil {
@@ -39,33 +42,33 @@ func (w *WiredDatatypeT) executeWired(datatype interface{}, op Operation) (inter
 	return ret, nil
 }
 
-func (w *WiredDatatypeT) getBase() *BaseDatatypeT {
-	return w.BaseDatatypeT
+func (w *WiredDatatypeT) getBase() *baseDatatypeT {
+	return w.baseDatatypeT
 }
 
 func (w *WiredDatatypeT) String() string {
-	return w.BaseDatatypeT.String()
+	return w.baseDatatypeT.String()
 }
 
-func (w *WiredDatatypeT) executeRemote(op Operation) {
-	w.opID.syncLamport(op.GetOperationID().lamport)
-	op.executeRemote(w.super)
+func (w *WiredDatatypeT) executeRemote(op model.Operationer) {
+	w.opID.SyncLamport(op.GetBase().GetOperationID().Lamport)
+	op.ExecuteRemote(w.super)
 }
 
 func (w *WiredDatatypeT) createPushPullPack() {
 	seq := w.checkPoint.Cseq
 	operations := w.getOperations(seq + 1)
-	cp := &CheckPoint{}
+	cp := &model.CheckPoint{}
 	cp.Set(w.checkPoint.GetSseq(), w.checkPoint.GetCseq()+uint64(len(operations)))
 
 }
 
-func (w *WiredDatatypeT) getOperations(cseq uint64) []Operation {
-	startCseq := w.buffer[0].GetOperationID().seq
+func (w *WiredDatatypeT) getOperations(cseq uint64) []model.Operationer {
+	startCseq := w.buffer[0].GetBase().GetOperationID().Seq
 	var start = int(cseq - uint64(startCseq))
 	if len(w.buffer) > start {
 		return w.buffer[start:]
 	}
-	return []Operation{}
+	return []model.Operationer{}
 
 }

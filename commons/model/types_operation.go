@@ -1,4 +1,4 @@
-package commons
+package model
 
 type OpType uint8
 

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package model;
+
+message OperationID {
+    uint32 era = 1;
+    uint64 lamport = 2;
+    bytes cuid = 3;
+    uint64 seq = 4;
+}
+
+message Operation {
+    OperationID id = 1;
+    uint32 opType = 2;
+}
+
+message IncreaseOperation {
+    Operation base = 1;
+    int32 delta = 2;
+}
+
+enum TypeOperation {
+    CREATE = 0;
+    INCREASE = 11;
+}
+
+message OperationInTransit {
+    oneof body {
+        IncreaseOperation increaseOperation = 1;
+    }
+}
+
+message PushPullPack {
+    CheckPoint checkPoint = 1;
+    bytes duid = 2;
+    uint32 era = 3;
+    uint32 type = 4;
+    repeated OperationInTransit operations = 5;
+}
+
+message CheckPoint {
+    uint64 sseq = 1;
+    uint64 cseq = 2;
+}

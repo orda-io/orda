@@ -1,6 +1,9 @@
 package commons
 
-import "github.com/knowhunger/ortoo/commons/log"
+import (
+	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
+)
 
 type TestWire struct {
 	wiredList []WiredDatatype
@@ -12,10 +15,10 @@ func NewTestWire() *TestWire {
 	}
 }
 
-func (c *TestWire) deliverOperation(wired WiredDatatype, op Operation) {
+func (c *TestWire) deliverOperation(wired WiredDatatype, op model.Operationer) {
 	for _, w := range c.wiredList {
 		if w.getBase() != wired.getBase() {
-			log.Logger.Info(wired, "=>", w)
+			log.Logger.Info(wired, " => ", w)
 			w.executeRemote(op)
 		}
 	}

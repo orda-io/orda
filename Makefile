@@ -1,7 +1,7 @@
 .PHONY: dependency unit-test integration-test docker-up docker-down protobuf lint
 
 protoc-gen:
-	protoc commons/protocols/*.proto -I ./commons/protocols/ --go_out=plugins=grpc:commons/protocols
+	protoc commons/model/*.proto -I ./commons/model/ --go_out=plugins=grpc:commons/model
 
 dependency:
 	go get -v ./...

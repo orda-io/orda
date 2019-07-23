@@ -9,7 +9,7 @@ const (
 
 func getWiredDatatypeT(d interface{}) *WiredDatatypeT {
 	switch v := d.(type) {
-	case *IntCounter:
+	case *IntCounterImpl:
 		return v.WiredDatatypeT
 	}
 	return nil

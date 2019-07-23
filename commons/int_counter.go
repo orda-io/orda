@@ -1,18 +1,27 @@
 package commons
 
-import "github.com/knowhunger/ortoo/commons/log"
+import (
+	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
+)
 
-type IntCounter struct {
+type IntCounter interface {
+	Get() int32
+	Increase() (int32, error)
+	IncreaseBy(delta int32) (int32, error)
+}
+
+type IntCounterImpl struct {
 	*WiredDatatypeT
 	value int32
 }
 
-func NewIntCounter(w wire) (*IntCounter, error) {
+func NewIntCounter(w wire) (*IntCounterImpl, error) {
 	wiredDatatype, err := newWiredDataType(TypeIntCounter, w)
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create int counter due to wiredDatatype")
 	}
-	d := &IntCounter{
+	d := &IntCounterImpl{
 		WiredDatatypeT: wiredDatatype,
 		value:          0,
 	}
@@ -20,49 +29,34 @@ func NewIntCounter(w wire) (*IntCounter, error) {
 	return d, nil
 }
 
-func (c *IntCounter) Increase() (int32, error) {
+func (c *IntCounterImpl) Get() int32 {
+	return c.value
+}
+
+func (c *IntCounterImpl) Increase() (int32, error) {
 	return c.IncreaseBy(1)
 }
 
-func (c *IntCounter) IncreaseBy(delta int32) (int32, error) {
-	op := newIncreaseOperation(delta)
+func (c *IntCounterImpl) IncreaseBy(delta int32) (int32, error) {
+	op := model.NewIncreaseOperation(delta)
 	_, err := c.executeWired(c, op)
 	return c.value, err
 }
 
-func (c *IntCounter) Get() int32 {
-	return c.value
-}
-
-func (c *IntCounter) increaseLocal(delta int32) int32 {
-	c.Info("increaseLocal")
+func (c *IntCounterImpl) increaseCommon(delta int32) int32 {
+	c.Info("increaseCommon")
 	c.value = c.value + delta
 	return c.value
 }
 
-type increaseOperation struct {
-	delta int32
-	*operationT
+func (c *IntCounterImpl) ExecuteLocal(op interface{}) (interface{}, error) {
+	iop := op.(*model.IncreaseOperation)
+	log.Logger.Info("delta:", iop)
+	return c.increaseCommon(iop.Delta), nil
+	//return nil, nil
 }
 
-func newIncreaseOperation(delta int32) *increaseOperation {
-	return &increaseOperation{
-		delta:      delta,
-		operationT: NewOperation(OperationTypes.IntCounterIncreaseType),
-	}
-}
-
-func (i *increaseOperation) executeLocal(datatype interface{}) (interface{}, error) {
-	if counter, ok := datatype.(*IntCounter); ok {
-		log.Logger.Infoln("increaseOperation executeLocal")
-		return counter.increaseLocal(i.delta), nil
-	}
-	return nil, log.OrtooError(nil, "operation is called with invalid datatype")
-}
-
-func (i *increaseOperation) executeRemote(datatype interface{}) {
-	if counter, ok := datatype.(*IntCounter); ok {
-		log.Logger.Info("increaseOperation executeRemote")
-		counter.increaseLocal(i.delta)
-	}
+func (c *IntCounterImpl) ExecuteRemote(op interface{}) (interface{}, error) {
+	iop := op.(*model.IncreaseOperation)
+	return c.increaseCommon(iop.Delta), nil
 }

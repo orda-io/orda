@@ -31,8 +31,8 @@ func (suite *SimpleDatatypeSuite) TestExample() {
 
 	intCounter1.Increase()
 
-	Logger.Printf("%#v", intCounter1)
-	Logger.Printf("%#v", intCounter2)
+	log.Logger.Printf("%#v", intCounter1)
+	log.Logger.Printf("%#v", intCounter2)
 	suite.T().Log("TestExample")
 }
 

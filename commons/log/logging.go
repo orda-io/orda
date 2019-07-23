@@ -96,5 +96,5 @@ func (o *OrtooLog) OrtooError(err error, format string, args ...interface{}) err
 }
 
 func OrtooError(err error, format string, args ...interface{}) error {
-	return Logger.OrtooError(err, format, args)
+	return Logger.OrtooError(err, format, args...)
 }

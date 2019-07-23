@@ -1,6 +1,28 @@
-package protocols
+package model
 
 func NewOperationID() *OperationID {
+	return &OperationID{
+		Era:     0,
+		Lamport: 0,
+		Cuid:    make([]byte, 16),
+		Seq:     0,
+	}
+}
+
+func NewOperationIDWithCuid(cuid *Cuid) *OperationID {
+	return &OperationID{
+		Era:     0,
+		Lamport: 0,
+		Cuid:    []byte(*cuid),
+		Seq:     0,
+	}
+}
+
+func (o *OperationID) SetOperationID(other *OperationID) {
+	o.Era = other.Era
+	o.Lamport = other.Lamport
+	o.Cuid = other.Cuid
+	o.Seq = other.Seq
 
 }
 

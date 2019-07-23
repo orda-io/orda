@@ -1,4 +1,4 @@
-package commons
+package model
 
 import (
 	"github.com/knowhunger/ortoo/commons/log"
@@ -17,4 +17,8 @@ func newCuid() (Cuid, error) {
 func newNilCuid() Cuid {
 	bin := make([]byte, 16)
 	return Cuid(bin)
+}
+
+func (c *Cuid) Compare(o *Cuid) {
+
 }
