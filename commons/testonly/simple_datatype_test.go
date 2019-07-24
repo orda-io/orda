@@ -1,4 +1,4 @@
-package testing
+package testonly
 
 import (
 	"github.com/knowhunger/ortoo/commons"
@@ -17,7 +17,7 @@ func (suite *SimpleDatatypeSuite) SetupTest() {
 }
 
 func (suite *SimpleDatatypeSuite) TestExample() {
-	tw := commons.NewTestWire()
+	tw := NewTestWire()
 	intCounter1, err := commons.NewIntCounter(tw)
 	if err != nil {
 		_ = log.OrtooError(err, "fail to create intCounter1")

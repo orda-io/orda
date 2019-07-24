@@ -11,7 +11,7 @@ message OperationID {
 
 message Operation {
     OperationID id = 1;
-    uint32 opType = 2;
+    TypeOperation opType = 2;
 }
 
 message IncreaseOperation {
@@ -21,7 +21,22 @@ message IncreaseOperation {
 
 enum TypeOperation {
     CREATE = 0;
-    INCREASE = 11;
+    DELETE = 1;
+    ERROR = 2;
+    SNAPSHOT = 4;
+    INT_COUNTER_INCREASE = 11;
+}
+
+enum TypeDatatype {
+    INT_COUNTER = 0;
+    JSON = 1;
+}
+
+enum StateDatatype {
+    LOCALLY_EXISTED = 0;
+    REGISTERING = 1;
+    REGISTERED = 2;
+    UNREGISTERED = 3;
 }
 
 message OperationInTransit {

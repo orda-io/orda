@@ -15,5 +15,5 @@ func NewDuid() (Duid, error) {
 }
 
 func (d Duid) String() string {
-	return uniqueID(d).String()
+	return d.String()
 }

@@ -1,4 +1,4 @@
-package commons
+package datatypes
 
 import (
 	"fmt"
@@ -6,33 +6,33 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-type baseDatatypeT struct {
+type baseDatatype struct {
 	id     model.Duid
 	opID   *model.OperationID
-	typeOf DatatypeType
-	state  DatatypeState
+	typeOf model.TypeDatatype
+	state  model.StateDatatype
 	*log.OrtooLog
 }
 
-func newBaseDatatypeT(t DatatypeType) (*baseDatatypeT, error) {
+func newBaseDatatype(t model.TypeDatatype) (*baseDatatype, error) {
 	duid, err := model.NewDuid()
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create base datatype due to duid")
 	}
-	return &baseDatatypeT{
+	return &baseDatatype{
 		id:       duid,
 		opID:     model.NewOperationID(),
 		typeOf:   t,
-		state:    StateLocallyExisted,
+		state:    model.StateDatatype_LOCALLY_EXISTED,
 		OrtooLog: log.NewOrtooLog(),
 	}, nil
 }
 
-func (b *baseDatatypeT) String() string {
+func (b *baseDatatype) String() string {
 	return fmt.Sprintf("%s", b.id)
 }
 
-func (b *baseDatatypeT) executeBase(datatype model.OperationExecuter, op model.Operationer) (interface{}, error) {
+func (b *baseDatatype) executeBase(datatype model.OperationExecuter, op model.Operationer) (interface{}, error) {
 	op.GetBase().SetOperationID(b.opID.Next())
 	return op.ExecuteLocal(datatype)
 }

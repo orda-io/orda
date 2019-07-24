@@ -11,10 +11,10 @@ type OperationExecuter interface {
 	ExecuteRemote(op interface{}) (interface{}, error)
 }
 
-func NewOperation(opType OpType) *Operation {
+func NewOperation(opType TypeOperation) *Operation {
 	return &Operation{
 		Id:     NewOperationID(),
-		OpType: uint32(opType),
+		OpType: opType,
 	}
 }
 
@@ -22,15 +22,11 @@ func (o *Operation) SetOperationID(opID *OperationID) {
 	o.Id = opID
 }
 
-func (o *Operation) GetOperationID() *OperationID {
-	return o.GetId()
-}
-
 //////////////////// IncreaseOperation ////////////////////
 
 func NewIncreaseOperation(delta int32) *IncreaseOperation {
 	return &IncreaseOperation{
-		Base:  NewOperation(OperationTypes.IntCounterIncreaseType),
+		Base:  NewOperation(TypeOperation_INT_COUNTER_INCREASE),
 		Delta: delta,
 	}
 }
