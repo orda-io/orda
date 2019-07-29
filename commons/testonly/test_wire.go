@@ -18,23 +18,18 @@ func NewTestWire() *TestWire {
 
 func (c *TestWire) DeliverOperation(wired datatypes.WiredDatatype, op model.Operationer) {
 	for _, w := range c.wiredList {
-		if wired.GetBase() != wired.GetBase() {
+		if wired.GetBase() != w.GetBase() {
 			log.Logger.Info(wired, " => ", w)
-			wired.ExecuteRemote(op)
+			w.ExecuteRemote(op)
 		}
 	}
 
 }
 
-func (c *TestWire) SetDatatypes(operationExecuters ...interface{}) {
-	var wiredDatatypes []datatypes.WiredDatatype
-
-	for _, v := range operationExecuters {
-		wiredDatatype, ok := v.(datatypes.WiredDatatype)
-		if !ok {
-			continue
+func (c *TestWire) SetDatatypes(datatypeList ...interface{}) {
+	for _, v := range datatypeList {
+		if opExecutor, ok := v.(datatypes.WiredDatatyper); ok {
+			c.wiredList = append(c.wiredList, opExecutor.GetWired())
 		}
-		wiredDatatypes = append(wiredDatatypes, wiredDatatype)
 	}
-	c.wiredList = append(c.wiredList, wiredDatatypes...)
 }

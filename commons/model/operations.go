@@ -3,7 +3,7 @@ package model
 type Operationer interface {
 	ExecuteLocal(datatype OperationExecuter) (interface{}, error)
 	ExecuteRemote(datatype OperationExecuter) (interface{}, error)
-	GetBase() *Operation
+	GetBase() *BaseOperation
 }
 
 type OperationExecuter interface {
@@ -11,14 +11,14 @@ type OperationExecuter interface {
 	ExecuteRemote(op interface{}) (interface{}, error)
 }
 
-func NewOperation(opType TypeOperation) *Operation {
-	return &Operation{
+func NewOperation(opType TypeOperation) *BaseOperation {
+	return &BaseOperation{
 		Id:     NewOperationID(),
 		OpType: opType,
 	}
 }
 
-func (o *Operation) SetOperationID(opID *OperationID) {
+func (o *BaseOperation) SetOperationID(opID *OperationID) {
 	o.Id = opID
 }
 
@@ -37,4 +37,20 @@ func (i *IncreaseOperation) ExecuteLocal(datatype OperationExecuter) (interface{
 
 func (i *IncreaseOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
 	return datatype.ExecuteRemote(i)
+}
+
+func ToOperation(op Operationer) *Operation {
+	switch o := op.(type) {
+	case *IncreaseOperation:
+		return &Operation{Body: &Operation_IncreaseOperation{o}}
+	}
+	return nil
+}
+
+func ToOperationer(op *Operation) Operationer {
+	switch o := op.Body.(type) {
+	case *Operation_IncreaseOperation:
+		return o.IncreaseOperation
+	}
+	return nil
 }

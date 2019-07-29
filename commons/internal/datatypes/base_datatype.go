@@ -32,7 +32,11 @@ func (b *baseDatatype) String() string {
 	return fmt.Sprintf("%s", b.id)
 }
 
-func (b *baseDatatype) executeBase(datatype model.OperationExecuter, op model.Operationer) (interface{}, error) {
+func (b *baseDatatype) executeLocalBase(datatype model.OperationExecuter, op model.Operationer) (interface{}, error) {
 	op.GetBase().SetOperationID(b.opID.Next())
 	return op.ExecuteLocal(datatype)
+}
+
+func (b *baseDatatype) executeRemoteBase(datatype model.OperationExecuter, op model.Operationer) {
+	op.ExecuteRemote(datatype)
 }

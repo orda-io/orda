@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package model;
+
+import "model.proto";
+
+message RequestHeader {
+
+    TypeRequests type = 1;
+}
+
+message ReplyHeader {
+    TypeReplies type = 1;
+}
+
+enum TypeRequests {
+    PUSHPULL_REQUEST = 0;
+}
+
+enum TypeReplies {
+    PUSHPULL_REPLY = 0;
+}
+
+message PushPullRequest {
+    RequestHeader header = 1;
+    int32 id = 2;
+    repeated PushPullPack pushPullPacks = 3;
+}
+
+message PushPullReply {
+    ReplyHeader header = 1;
+    int32 id = 2;
+    repeated PushPullPack pushPullPacks = 3;
+}
+
+service OrtooService {
+    rpc ProcessPushPull (PushPullRequest) returns (PushPullReply);
+}

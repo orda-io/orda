@@ -9,13 +9,13 @@ message OperationID {
     uint64 seq = 4;
 }
 
-message Operation {
+message BaseOperation {
     OperationID id = 1;
     TypeOperation opType = 2;
 }
 
 message IncreaseOperation {
-    Operation base = 1;
+    BaseOperation base = 1;
     int32 delta = 2;
 }
 
@@ -39,7 +39,7 @@ enum StateDatatype {
     UNREGISTERED = 3;
 }
 
-message OperationInTransit {
+message Operation {
     oneof body {
         IncreaseOperation increaseOperation = 1;
     }
@@ -50,7 +50,7 @@ message PushPullPack {
     bytes duid = 2;
     uint32 era = 3;
     uint32 type = 4;
-    repeated OperationInTransit operations = 5;
+    repeated Operation operations = 5;
 }
 
 message CheckPoint {
