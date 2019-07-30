@@ -4,10 +4,12 @@
 
 ## Getting started
 
-### Pre-requisite
- - go 1.12
- - docker (for running MongoDB)
+### Working envirnment (Maybe work on less versions of them)
+ - go 1.12.6
+ - docker 18.09.2 (for running MongoDB)
+ - mongoDB 4.1.13
  
+### Install
  ```bash
  # git clone https://github.com/knowhunger/ortoo.git
  # cd ortoo
