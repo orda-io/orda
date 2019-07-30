@@ -1,9 +1,11 @@
 package client
 
 import (
+	"context"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"google.golang.org/grpc"
+	"time"
 )
 
 type clientImpl struct {
@@ -15,7 +17,7 @@ type clientImpl struct {
 	serviceClient  model.OrtooServiceClient
 }
 
-func (c *clientImpl) connect() error {
+func (c *clientImpl) Connect() error {
 	conn, err := grpc.Dial(c.address, grpc.WithInsecure())
 	if err != nil {
 		return log.OrtooError(err, "fail to connect to Ortoo Server")
@@ -36,12 +38,24 @@ func (c *clientImpl) Close() error {
 	return nil
 }
 
-type Client interface {
-	connect() error
-	createDatatype()
+func (c *clientImpl) Send() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	c.serviceClient.ProcessPushPull(ctx, &model.PushPullRequest{
+		Header:        nil,
+		Id:            0,
+		PushPullPacks: nil,
+	})
 }
 
-func NewClient(address string) Client {
+type Client interface {
+	Connect() error
+	createDatatype()
+	Close() error
+	Send()
+}
+
+func NewOrtooClient(address string) Client {
 	return &clientImpl{
 		address: address,
 	}

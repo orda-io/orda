@@ -5,8 +5,8 @@ package model;
 import "model.proto";
 
 message RequestHeader {
-
-    TypeRequests type = 1;
+    string version = 1;
+    TypeRequests type = 2;
 }
 
 message ReplyHeader {
