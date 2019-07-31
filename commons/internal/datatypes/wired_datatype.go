@@ -8,7 +8,7 @@ import (
 
 type WiredDatatypeImpl struct {
 	Wire
-	*baseDatatype
+	*baseDatatypeImpl
 	checkPoint *model.CheckPoint
 	buffer     []*model.Operation
 	opExecuter model.OperationExecuter
@@ -18,26 +18,27 @@ type WiredDatatyper interface {
 	GetWired() WiredDatatype
 }
 
-type CommonWireInterface interface {
+type PublicWireInterface interface {
+	PublicTransactionalInterface
 	CreatePushPullPack() *model.PushPullPack
 	ApplyPushPullPack(*model.PushPullPack)
 }
 
 type WiredDatatype interface {
-	GetBase() *baseDatatype
+	GetBase() *baseDatatypeImpl
 	ExecuteRemote(op model.Operationer)
 }
 
 func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) {
 	baseDatatype, err := newBaseDatatype(t)
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to create wiredDatatype due to baseDatatype")
+		return nil, log.OrtooError(err, "fail to create wiredDatatype due to baseDatatypeImpl")
 	}
 	return &WiredDatatypeImpl{
-		baseDatatype: baseDatatype,
-		checkPoint:   model.NewCheckPoint(),
-		buffer:       make([]*model.Operation, 0, constants.OperationBufferSize),
-		Wire:         w,
+		baseDatatypeImpl: baseDatatype,
+		checkPoint:       model.NewCheckPoint(),
+		buffer:           make([]*model.Operation, 0, constants.OperationBufferSize),
+		Wire:             w,
 	}, nil
 }
 
@@ -52,12 +53,12 @@ func (w *WiredDatatypeImpl) ExecuteWired(op model.Operationer) (interface{}, err
 	return ret, nil
 }
 
-func (w *WiredDatatypeImpl) GetBase() *baseDatatype {
-	return w.baseDatatype
+func (w *WiredDatatypeImpl) GetBase() *baseDatatypeImpl {
+	return w.baseDatatypeImpl
 }
 
 func (w *WiredDatatypeImpl) String() string {
-	return w.baseDatatype.String()
+	return w.baseDatatypeImpl.String()
 }
 
 func (w *WiredDatatypeImpl) SetOperationExecuter(opExecuter model.OperationExecuter) {

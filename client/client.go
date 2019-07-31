@@ -41,11 +41,7 @@ func (c *clientImpl) Close() error {
 func (c *clientImpl) Send() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	c.serviceClient.ProcessPushPull(ctx, &model.PushPullRequest{
-		Header:        nil,
-		Id:            0,
-		PushPullPacks: nil,
-	})
+	c.serviceClient.ProcessPushPull(ctx, model.NewPushPullRequest(1))
 }
 
 type Client interface {

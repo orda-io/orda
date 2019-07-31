@@ -36,7 +36,10 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 		suite.Fail("fail to increase")
 	}
 	suite.Equal(i, int32(1))
+	intCounter1.DoTransaction(func(datatype interface{}) bool {
 
+		return true
+	})
 	log.Logger.Printf("%#v", intCounter1)
 	log.Logger.Printf("%#v", intCounter2)
 	suite.Equal(intCounter1.Get(), intCounter2.Get())

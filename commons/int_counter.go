@@ -9,7 +9,7 @@ import (
 )
 
 type IntCounter interface {
-	datatypes.CommonWireInterface
+	datatypes.PublicWireInterface
 	Get() int32
 	Increase() (int32, error)
 	IncreaseBy(delta int32) (int32, error)
@@ -68,4 +68,8 @@ func (c *intCounterImpl) ExecuteRemote(op interface{}) (interface{}, error) {
 
 func (c *intCounterImpl) GetWired() datatypes.WiredDatatype {
 	return &c.WiredDatatypeImpl
+}
+
+func (c *intCounterImpl) DoTransaction(transFunc func(intCounter IntCounter) error) {
+	return
 }

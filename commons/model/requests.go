@@ -1,12 +1,12 @@
 package model
 
-func NewPushPullRequest(id int) *PushPullRequest {
+func NewPushPullRequest(id int32) *PushPullRequest {
 	return &PushPullRequest{
 		Header: &RequestHeader{
 			Version: Version,
 			Type:    TypeRequests_PUSHPULL_REQUEST,
 		},
-		Id:            0,
+		Id:            id,
 		PushPullPacks: nil,
 	}
 }

@@ -32,7 +32,7 @@ const (
 
 var (
 	_, b, _, _ = runtime.Caller(0)
-	basepath   = strings.Replace(b, "/commons/internal/log/logging.go", "/", 1)
+	basepath   = strings.Replace(b, "/commons/log/logging.go", "/", 1)
 )
 
 const (

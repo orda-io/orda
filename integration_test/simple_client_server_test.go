@@ -22,10 +22,11 @@ func (s *ClientServerTestSuite) SetupTest() {
 func (s *ClientServerTestSuite) TestClientServer() {
 	client := client.NewOrtooClient("127.0.0.1:19061")
 	if err := client.Connect(); err != nil {
-		_ = log.OrtooError(err, "fail to connect server")
+		s.Suite.Fail("fail to connect server")
 	}
 	defer client.Close()
 	log.Logger.Infof("%+v", client)
+	client.Send()
 }
 
 func (s *ClientServerTestSuite) TearDownTest() {
