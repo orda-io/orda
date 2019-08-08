@@ -19,11 +19,29 @@ message IncreaseOperation {
     int32 delta = 2;
 }
 
+message TransactionOperation {
+    BaseOperation base = 1;
+    repeated Operation operations = 2;
+}
+
+message TransactionBeginOperation {
+    BaseOperation base = 1;
+    bytes uuid = 2;
+}
+
+message TransactionEndOperation {
+    BaseOperation base = 1;
+    bytes uuid = 2;
+    uint32 numOfOps = 3;
+}
+
 enum TypeOperation {
     CREATE = 0;
     DELETE = 1;
     ERROR = 2;
     SNAPSHOT = 4;
+    TRANSACTION_BEGIN = 5;
+    TRANSACTION_END = 6;
     INT_COUNTER_INCREASE = 11;
 }
 
@@ -41,7 +59,9 @@ enum StateDatatype {
 
 message Operation {
     oneof body {
-        IncreaseOperation increaseOperation = 1;
+        TransactionBeginOperation transactionBeginOperation = 5;
+        TransactionEndOperation transactionEndOperation = 6;
+        IncreaseOperation increaseOperation = 11;
     }
 }
 

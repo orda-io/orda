@@ -8,7 +8,7 @@ import (
 
 type WiredDatatypeImpl struct {
 	Wire
-	*baseDatatypeImpl
+	*transactionalDatatypeImpl
 	checkPoint *model.CheckPoint
 	buffer     []*model.Operation
 	opExecuter model.OperationExecuter
@@ -20,32 +20,33 @@ type WiredDatatyper interface {
 
 type PublicWireInterface interface {
 	PublicTransactionalInterface
-	CreatePushPullPack() *model.PushPullPack
-	ApplyPushPullPack(*model.PushPullPack)
 }
 
 type WiredDatatype interface {
 	GetBase() *baseDatatypeImpl
+	GetTransactional() *transactionalDatatypeImpl
 	ExecuteRemote(op model.Operationer)
+	CreatePushPullPack() *model.PushPullPack
+	ApplyPushPullPack(*model.PushPullPack)
 }
 
 func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) {
-	baseDatatype, err := newBaseDatatype(t)
+	transactionalDatatype, err := newTransactionalDatatype(t)
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create wiredDatatype due to baseDatatypeImpl")
 	}
 	return &WiredDatatypeImpl{
-		baseDatatypeImpl: baseDatatype,
-		checkPoint:       model.NewCheckPoint(),
-		buffer:           make([]*model.Operation, 0, constants.OperationBufferSize),
-		Wire:             w,
+		transactionalDatatypeImpl: transactionalDatatype,
+		checkPoint:                model.NewCheckPoint(),
+		buffer:                    make([]*model.Operation, 0, constants.OperationBufferSize),
+		Wire:                      w,
 	}, nil
 }
 
 func (w *WiredDatatypeImpl) ExecuteWired(op model.Operationer) (interface{}, error) {
-	ret, err := w.executeLocalBase(w.opExecuter, op)
+	ret, err := w.executeLocalTransactional(w.opExecuter, op)
 	if err != nil {
-		return ret, err
+		return ret, log.OrtooError(err, "fail to executeLocalTransactional")
 	}
 
 	w.buffer = append(w.buffer, model.ToOperation(op))
@@ -55,6 +56,10 @@ func (w *WiredDatatypeImpl) ExecuteWired(op model.Operationer) (interface{}, err
 
 func (w *WiredDatatypeImpl) GetBase() *baseDatatypeImpl {
 	return w.baseDatatypeImpl
+}
+
+func (w *WiredDatatypeImpl) GetTransactional() *transactionalDatatypeImpl {
+	return w.transactionalDatatypeImpl
 }
 
 func (w *WiredDatatypeImpl) String() string {
@@ -105,4 +110,18 @@ func (w *WiredDatatypeImpl) getOperations(cseq uint64) []*model.Operation {
 	}
 	return []*model.Operation{}
 
+}
+
+func (w *WiredDatatypeImpl) BeginTransactionOnWired() error {
+	op, err := w.BeginTransaction()
+	if err != nil {
+		return log.OrtooError(err, "fail to begin transaction on wired")
+	}
+	w.buffer = append(w.buffer, model.ToOperation(op))
+	return nil
+}
+
+func (w *WiredDatatypeImpl) EndTransactionOnWired() {
+	op := w.EndTransaction()
+	w.buffer = append(w.buffer, model.ToOperation(op))
 }

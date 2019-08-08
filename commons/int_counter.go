@@ -13,6 +13,7 @@ type IntCounter interface {
 	Get() int32
 	Increase() (int32, error)
 	IncreaseBy(delta int32) (int32, error)
+	DoTransaction(tag string, transFunc func(intCounter IntCounter) error) error
 }
 
 type intCounterImpl struct {
@@ -70,6 +71,14 @@ func (c *intCounterImpl) GetWired() datatypes.WiredDatatype {
 	return &c.WiredDatatypeImpl
 }
 
-func (c *intCounterImpl) DoTransaction(transFunc func(intCounter IntCounter) error) {
-	return
+func (c *intCounterImpl) DoTransaction(tag string, transFunc func(intCounter IntCounter) error) error {
+	if err := c.BeginTransactionOnWired(); err != nil {
+		return log.OrtooError(err, "fail to begin transaction")
+	}
+	defer c.EndTransactionOnWired()
+	err := transFunc(c)
+	if err != nil {
+		return log.OrtooError(err, "fail to do the transaction")
+	}
+	return nil
 }

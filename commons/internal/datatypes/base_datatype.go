@@ -14,6 +14,10 @@ type baseDatatypeImpl struct {
 	*log.OrtooLog
 }
 
+type PublicBaseInterface interface {
+	GetType() model.TypeDatatype
+}
+
 func newBaseDatatype(t model.TypeDatatype) (*baseDatatypeImpl, error) {
 	duid, err := model.NewDuid()
 	if err != nil {
@@ -39,4 +43,8 @@ func (b *baseDatatypeImpl) executeLocalBase(datatype model.OperationExecuter, op
 
 func (b *baseDatatypeImpl) executeRemoteBase(datatype model.OperationExecuter, op model.Operationer) {
 	op.ExecuteRemote(datatype)
+}
+
+func (b *baseDatatypeImpl) GetType() model.TypeDatatype {
+	return b.typeOf
 }

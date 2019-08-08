@@ -1,7 +1,6 @@
 package testonly
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
@@ -36,10 +35,14 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 		suite.Fail("fail to increase")
 	}
 	suite.Equal(i, int32(1))
-	intCounter1.DoTransaction(func(datatype interface{}) bool {
 
-		return true
+	intCounter1.DoTransaction("tag", func(intCounter commons.IntCounter) error {
+		intCounter.IncreaseBy(1)
+		intCounter.IncreaseBy(2)
+		intCounter.IncreaseBy(3)
+		return nil
 	})
+
 	log.Logger.Printf("%#v", intCounter1)
 	log.Logger.Printf("%#v", intCounter2)
 	suite.Equal(intCounter1.Get(), intCounter2.Get())
@@ -52,8 +55,8 @@ func (suite *SimpleDatatypeSuite) TestPushPullPackSync() {
 	}
 	intCounter1.Increase()
 	intCounter1.Increase()
-	ppp := intCounter1.CreatePushPullPack()
-	log.Logger.Info(proto.MarshalTextString(ppp))
+	//ppp := intCounter1.CreatePushPullPack()
+	//log.Logger.Info(proto.MarshalTextString(ppp))
 
 }
 
