@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/stretchr/testify/suite"
+	"sync"
 
 	"testing"
 )
@@ -35,14 +36,26 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 		suite.Fail("fail to increase")
 	}
 	suite.Equal(i, int32(1))
-
-	intCounter1.DoTransaction("tag", func(intCounter commons.IntCounter) error {
-		intCounter.IncreaseBy(1)
-		intCounter.IncreaseBy(2)
-		intCounter.IncreaseBy(3)
+	var wg = new(sync.WaitGroup)
+	wg.Add(2)
+	go intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounter) error {
+		defer wg.Done()
+		intCounter.IncreaseBy(-1)
+		intCounter.IncreaseBy(-2)
+		intCounter.IncreaseBy(-3)
 		return nil
 	})
 
+	go intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounter) error {
+		defer wg.Done()
+		intCounter.IncreaseBy(1)
+		intCounter.IncreaseBy(2)
+		intCounter.IncreaseBy(3)
+		intCounter.IncreaseBy(4)
+		return log.OrtooError(nil, "fail to transaction")
+	})
+
+	wg.Wait()
 	log.Logger.Printf("%#v", intCounter1)
 	log.Logger.Printf("%#v", intCounter2)
 	suite.Equal(intCounter1.Get(), intCounter2.Get())

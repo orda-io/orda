@@ -8,6 +8,7 @@ import (
 
 type TestWire struct {
 	wiredList []datatypes.WiredDatatype
+	list      []model.Operation
 }
 
 func NewTestWire() *TestWire {
@@ -16,14 +17,24 @@ func NewTestWire() *TestWire {
 	}
 }
 
-func (c *TestWire) DeliverOperation(wired datatypes.WiredDatatype, op model.Operationer) {
+func (c *TestWire) DeliverOperation(wired datatypes.WiredDatatype, op model.Operation) {
 	for _, w := range c.wiredList {
 		if wired.GetBase() != w.GetBase() {
 			log.Logger.Info(wired, " => ", w)
 			w.ExecuteRemote(op)
 		}
 	}
+	c.list = append(c.list, op)
+}
 
+func (c *TestWire) DeliverTransaction(wired datatypes.WiredDatatype, transaction []model.Operation) {
+	for _, w := range c.wiredList {
+		if wired.GetBase() != w.GetBase() {
+			log.Logger.Info(wired, " => ", w)
+			w.ExecuteTransactionRemote(transaction)
+		}
+	}
+	c.list = append(c.list, transaction...)
 }
 
 func (c *TestWire) SetDatatypes(datatypeList ...interface{}) {

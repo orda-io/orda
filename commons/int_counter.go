@@ -9,7 +9,7 @@ import (
 )
 
 type IntCounter interface {
-	datatypes.PublicWireInterface
+	datatypes.PublicWiredDatatypeInterface
 	Get() int32
 	Increase() (int32, error)
 	IncreaseBy(delta int32) (int32, error)
@@ -17,7 +17,7 @@ type IntCounter interface {
 }
 
 type intCounterImpl struct {
-	datatypes.WiredDatatypeImpl
+	*datatypes.WiredDatatypeImpl
 	value int32
 }
 
@@ -27,7 +27,7 @@ func NewIntCounter(c client.Client, w datatypes.Wire) (IntCounter, error) {
 		return nil, log.OrtooError(err, "fail to create int counter due to wiredDatatype")
 	}
 	d := &intCounterImpl{
-		WiredDatatypeImpl: *wiredDatatype,
+		WiredDatatypeImpl: wiredDatatype,
 		value:             0,
 	}
 	d.SetOperationExecuter(d)
@@ -68,16 +68,20 @@ func (c *intCounterImpl) ExecuteRemote(op interface{}) (interface{}, error) {
 }
 
 func (c *intCounterImpl) GetWired() datatypes.WiredDatatype {
-	return &c.WiredDatatypeImpl
+	return c.WiredDatatypeImpl
 }
 
-func (c *intCounterImpl) DoTransaction(tag string, transFunc func(intCounter IntCounter) error) error {
-	if err := c.BeginTransactionOnWired(); err != nil {
+func (c *intCounterImpl) DoTransaction(tag string, transFunc func(transactionalIntCounter IntCounter) error) error {
+	if err := c.BeginTransactionOnWired(tag); err != nil {
 		return log.OrtooError(err, "fail to begin transaction")
 	}
 	defer c.EndTransactionOnWired()
-	err := transFunc(c)
+	cc := &intCounterImpl{
+		WiredDatatypeImpl: c.GetTransactionalWiredDatatypeImpl(),
+	}
+	err := transFunc(cc)
 	if err != nil {
+		c.SetTransactionFail()
 		return log.OrtooError(err, "fail to do the transaction")
 	}
 	return nil

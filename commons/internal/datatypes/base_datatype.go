@@ -6,7 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-type baseDatatypeImpl struct {
+type baseDatatype struct {
 	id     model.Duid
 	opID   *model.OperationID
 	typeOf model.TypeDatatype
@@ -14,16 +14,16 @@ type baseDatatypeImpl struct {
 	*log.OrtooLog
 }
 
-type PublicBaseInterface interface {
+type PublicBaseDatatypeInterface interface {
 	GetType() model.TypeDatatype
 }
 
-func newBaseDatatype(t model.TypeDatatype) (*baseDatatypeImpl, error) {
+func newBaseDatatype(t model.TypeDatatype) (*baseDatatype, error) {
 	duid, err := model.NewDuid()
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create base datatype due to duid")
 	}
-	return &baseDatatypeImpl{
+	return &baseDatatype{
 		id:       duid,
 		opID:     model.NewOperationID(),
 		typeOf:   t,
@@ -32,19 +32,23 @@ func newBaseDatatype(t model.TypeDatatype) (*baseDatatypeImpl, error) {
 	}, nil
 }
 
-func (b *baseDatatypeImpl) String() string {
+func (b *baseDatatype) String() string {
 	return fmt.Sprintf("%s", b.id)
 }
 
-func (b *baseDatatypeImpl) executeLocalBase(datatype model.OperationExecuter, op model.Operationer) (interface{}, error) {
-	op.GetBase().SetOperationID(b.opID.Next())
+func (b *baseDatatype) executeLocalBase(datatype model.OperationExecuter, op model.Operation) (interface{}, error) {
+	b.SetNextOpID(op)
 	return op.ExecuteLocal(datatype)
 }
 
-func (b *baseDatatypeImpl) executeRemoteBase(datatype model.OperationExecuter, op model.Operationer) {
+func (b *baseDatatype) SetNextOpID(op model.Operation) {
+	op.GetBase().SetOperationID(b.opID.Next())
+}
+
+func (b *baseDatatype) executeRemoteBase(datatype model.OperationExecuter, op model.Operation) {
 	op.ExecuteRemote(datatype)
 }
 
-func (b *baseDatatypeImpl) GetType() model.TypeDatatype {
+func (b *baseDatatype) GetType() model.TypeDatatype {
 	return b.typeOf
 }

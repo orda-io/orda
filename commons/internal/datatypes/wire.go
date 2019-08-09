@@ -5,5 +5,6 @@ import (
 )
 
 type Wire interface {
-	DeliverOperation(wired WiredDatatype, op model.Operationer)
+	DeliverOperation(wired WiredDatatype, op model.Operation)
+	DeliverTransaction(wired WiredDatatype, transaction []model.Operation)
 }

@@ -2,7 +2,7 @@ package model
 
 import "github.com/knowhunger/ortoo/commons/log"
 
-type Operationer interface {
+type Operation interface {
 	ExecuteLocal(datatype OperationExecuter) (interface{}, error)
 	ExecuteRemote(datatype OperationExecuter) (interface{}, error)
 	GetBase() *BaseOperation
@@ -11,6 +11,8 @@ type Operationer interface {
 type OperationExecuter interface {
 	ExecuteLocal(op interface{}) (interface{}, error)
 	ExecuteRemote(op interface{}) (interface{}, error)
+	BeginTransaction(tag string)
+	EndTransaction()
 }
 
 func NewOperation(opType TypeOperation) *BaseOperation {
@@ -26,7 +28,7 @@ func (o *BaseOperation) SetOperationID(opID *OperationID) {
 
 //////////////////// TransactionOperation ////////////////////
 
-func NewTransactionBeginOperation() (*TransactionBeginOperation, error) {
+func NewTransactionBeginOperation(tag string) (*TransactionBeginOperation, error) {
 	uuid, err := newUniqueID()
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create uuid")
@@ -34,6 +36,7 @@ func NewTransactionBeginOperation() (*TransactionBeginOperation, error) {
 	return &TransactionBeginOperation{
 		Base: NewOperation(TypeOperation_TRANSACTION_BEGIN),
 		Uuid: uuid,
+		Tag:  tag,
 	}, nil
 }
 
@@ -42,6 +45,7 @@ func (t *TransactionBeginOperation) ExecuteLocal(datatype OperationExecuter) (in
 }
 
 func (t *TransactionBeginOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
+	datatype.BeginTransaction(t.Tag)
 	return nil, nil
 }
 
@@ -58,6 +62,7 @@ func (t *TransactionEndOperation) ExecuteLocal(datatype OperationExecuter) (inte
 }
 
 func (t *TransactionEndOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
+	datatype.EndTransaction()
 	return nil, nil
 }
 
@@ -78,21 +83,21 @@ func (i *IncreaseOperation) ExecuteRemote(datatype OperationExecuter) (interface
 	return datatype.ExecuteRemote(i)
 }
 
-func ToOperation(op Operationer) *Operation {
+func ToOperationOnWire(op Operation) *OperationOnWire {
 	switch o := op.(type) {
 	case *IncreaseOperation:
-		return &Operation{Body: &Operation_IncreaseOperation{o}}
+		return &OperationOnWire{Body: &OperationOnWire_IncreaseOperation{o}}
 	case *TransactionBeginOperation:
-		return &Operation{Body: &Operation_TransactionBeginOperation{o}}
+		return &OperationOnWire{Body: &OperationOnWire_TransactionBeginOperation{o}}
 	case *TransactionEndOperation:
-		return &Operation{Body: &Operation_TransactionEndOperation{o}}
+		return &OperationOnWire{Body: &OperationOnWire_TransactionEndOperation{o}}
 	}
 	return nil
 }
 
-func ToOperationer(op *Operation) Operationer {
+func ToOperation(op *OperationOnWire) Operation {
 	switch o := op.Body.(type) {
-	case *Operation_IncreaseOperation:
+	case *OperationOnWire_IncreaseOperation:
 		return o.IncreaseOperation
 	}
 	return nil

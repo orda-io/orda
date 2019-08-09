@@ -21,12 +21,13 @@ message IncreaseOperation {
 
 message TransactionOperation {
     BaseOperation base = 1;
-    repeated Operation operations = 2;
+    repeated OperationOnWire operations = 2;
 }
 
 message TransactionBeginOperation {
     BaseOperation base = 1;
     bytes uuid = 2;
+    string tag = 3;
 }
 
 message TransactionEndOperation {
@@ -57,7 +58,7 @@ enum StateDatatype {
     UNREGISTERED = 3;
 }
 
-message Operation {
+message OperationOnWire {
     oneof body {
         TransactionBeginOperation transactionBeginOperation = 5;
         TransactionEndOperation transactionEndOperation = 6;
@@ -70,7 +71,7 @@ message PushPullPack {
     bytes duid = 2;
     uint32 era = 3;
     uint32 type = 4;
-    repeated Operation operations = 5;
+    repeated OperationOnWire operations = 5;
 }
 
 message CheckPoint {
