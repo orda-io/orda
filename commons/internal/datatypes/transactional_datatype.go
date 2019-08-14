@@ -37,7 +37,7 @@ func newTransactionalDatatype(t model.TypeDatatype) (*transactionalDatatype, err
 }
 
 func (t *transactionalDatatype) executeLocalNotTransactional(datatype model.OperationExecuter, op model.Operation) (interface{}, error) {
-	t.BeginTransaction()
+	//t.BeginTransaction()
 	defer t.EndTransaction()
 	return t.executeLocalBase(datatype, op)
 }
