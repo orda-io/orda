@@ -38,7 +38,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	suite.Equal(i, int32(1))
 	var wg = new(sync.WaitGroup)
 	wg.Add(2)
-	go intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounter) error {
+	go intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterTransaction) error {
 		defer wg.Done()
 		intCounter.IncreaseBy(-1)
 		intCounter.IncreaseBy(-2)
@@ -46,7 +46,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 		return nil
 	})
 
-	go intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounter) error {
+	go intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterTransaction) error {
 		defer wg.Done()
 		intCounter.IncreaseBy(1)
 		intCounter.IncreaseBy(2)

@@ -11,8 +11,6 @@ type Operation interface {
 type OperationExecuter interface {
 	ExecuteLocal(op interface{}) (interface{}, error)
 	ExecuteRemote(op interface{}) (interface{}, error)
-	BeginTransaction(tag string)
-	EndTransaction()
 }
 
 func NewOperation(opType TypeOperation) *BaseOperation {
@@ -45,7 +43,7 @@ func (t *TransactionBeginOperation) ExecuteLocal(datatype OperationExecuter) (in
 }
 
 func (t *TransactionBeginOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
-	datatype.BeginTransaction(t.Tag)
+	//datatype.BeginTransaction(t.Tag)
 	return nil, nil
 }
 
@@ -62,7 +60,7 @@ func (t *TransactionEndOperation) ExecuteLocal(datatype OperationExecuter) (inte
 }
 
 func (t *TransactionEndOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
-	datatype.EndTransaction()
+	//datatype.EndTransaction()
 	return nil, nil
 }
 

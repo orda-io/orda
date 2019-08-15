@@ -8,7 +8,8 @@ import (
 
 type WiredDatatypeImpl struct {
 	Wire
-	*transactionalDatatype
+	*baseDatatype
+	//*transactionalDatatype
 	trans      *WiredDatatypeImpl
 	checkPoint *model.CheckPoint
 	buffer     []*model.OperationOnWire
@@ -25,7 +26,6 @@ type PublicWiredDatatypeInterface interface {
 
 type WiredDatatype interface {
 	GetBase() *baseDatatype
-	GetTransactional() *transactionalDatatype
 	ExecuteRemote(op model.Operation)
 	ExecuteTransactionRemote(transaction []model.Operation)
 	CreatePushPullPack() *model.PushPullPack
@@ -33,43 +33,31 @@ type WiredDatatype interface {
 }
 
 func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) {
-	transactionalDatatype, err := newTransactionalDatatype(t)
+	baseDatatype, err := newBaseDatatype(t)
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create wiredDatatype due to baseDatatype")
 	}
 	return &WiredDatatypeImpl{
-		transactionalDatatype: transactionalDatatype,
-		checkPoint:            model.NewCheckPoint(),
-		buffer:                make([]*model.OperationOnWire, 0, constants.OperationBufferSize),
-		Wire:                  w,
+		baseDatatype: baseDatatype,
+		checkPoint:   model.NewCheckPoint(),
+		buffer:       make([]*model.OperationOnWire, 0, constants.OperationBufferSize),
+		Wire:         w,
 	}, nil
 }
 
 func (w *WiredDatatypeImpl) ExecuteWired(op model.Operation) (ret interface{}, err error) {
-	var wiredDatatypeImpl *WiredDatatypeImpl
-	if w.trans != nil {
-		wiredDatatypeImpl = w.trans
-		ret, err = wiredDatatypeImpl.executeLocalTransactional(w.opExecuter, op)
-	} else {
-		wiredDatatypeImpl = w
-		ret, err = wiredDatatypeImpl.executeLocalNotTransactional(wiredDatatypeImpl.opExecuter, op)
-	}
-
+	ret, err = w.executeLocalBase(w.opExecuter, op)
 	if err != nil {
 		return ret, log.OrtooError(err, "fail to executeLocalTransactional")
 	}
 
-	wiredDatatypeImpl.buffer = append(wiredDatatypeImpl.buffer, model.ToOperationOnWire(op))
-	wiredDatatypeImpl.DeliverOperation(wiredDatatypeImpl, op)
+	w.buffer = append(w.buffer, model.ToOperationOnWire(op))
+	w.DeliverOperation(w, op)
 	return ret, nil
 }
 
 func (w *WiredDatatypeImpl) GetBase() *baseDatatype {
 	return w.baseDatatype
-}
-
-func (w *WiredDatatypeImpl) GetTransactional() *transactionalDatatype {
-	return w.transactionalDatatype
 }
 
 func (w *WiredDatatypeImpl) String() string {
@@ -83,7 +71,6 @@ func (w *WiredDatatypeImpl) SetOperationExecuter(opExecuter model.OperationExecu
 func (w *WiredDatatypeImpl) ExecuteRemote(op model.Operation) {
 	w.opID.SyncLamport(op.GetBase().GetId().Lamport)
 	w.GetBase().executeRemoteBase(w.opExecuter, op)
-	//op.ExecuteRemote(w.opExecuter)
 }
 
 func (w *WiredDatatypeImpl) ExecuteTransactionRemote(transaction []model.Operation) {
@@ -132,26 +119,27 @@ func (w *WiredDatatypeImpl) getOperationOnWires(cseq uint64) []*model.OperationO
 
 }
 
-func (w *WiredDatatypeImpl) BeginTransactionOnWired(tag string) error {
-	if err := w.BeginTransactionLocal(tag); err != nil {
-		return log.OrtooError(err, "fail to begin transaction on wired")
-	}
-	return nil
-}
-
-func (w *WiredDatatypeImpl) EndTransactionOnWired() {
-	buffer := w.EndTransactionLocal()
-	if buffer == nil {
-		return
-	}
-	w.DeliverTransaction(w, buffer)
-	w.EndTransaction()
-}
-
-func (w *WiredDatatypeImpl) GetTransactionalWiredDatatypeImpl() *WiredDatatypeImpl {
-	ww := &WiredDatatypeImpl{
-		trans:      w,
-		opExecuter: w.opExecuter,
-	}
-	return ww
-}
+//
+//func (w *WiredDatatypeImpl) BeginTransactionOnWired(tag string) error {
+//	if err := w.BeginTransactionLocal(tag); err != nil {
+//		return log.OrtooError(err, "fail to begin transaction on wired")
+//	}
+//	return nil
+//}
+//
+//func (w *WiredDatatypeImpl) EndTransactionOnWired() {
+//	buffer := w.EndTransactionLocal()
+//	if buffer == nil {
+//		return
+//	}
+//	w.DeliverTransaction(w, buffer)
+//	w.EndTransaction()
+//}
+//
+//func (w *WiredDatatypeImpl) GetTransactionalWiredDatatypeImpl() *WiredDatatypeImpl {
+//	ww := &WiredDatatypeImpl{
+//		trans:      w,
+//		opExecuter: w.opExecuter,
+//	}
+//	return ww
+//}

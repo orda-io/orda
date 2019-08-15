@@ -10,14 +10,24 @@ import (
 
 type IntCounter interface {
 	datatypes.PublicWiredDatatypeInterface
+	IntCounterTransaction
+	DoTransaction(tag string, transFunc func(intCounter IntCounterTransaction) error) error
+}
+
+type IntCounterTransaction interface {
 	Get() int32
 	Increase() (int32, error)
 	IncreaseBy(delta int32) (int32, error)
-	DoTransaction(tag string, transFunc func(intCounter IntCounter) error) error
 }
 
-type intCounterImpl struct {
+type intCounter struct {
 	*datatypes.WiredDatatypeImpl
+	ctx         *intCounterContext
+	trnxContext *datatypes.TransactionContext
+	trnxManager *datatypes.TransactionManager
+}
+
+type intCounterContext struct {
 	value int32
 }
 
@@ -26,62 +36,74 @@ func NewIntCounter(c client.Client, w datatypes.Wire) (IntCounter, error) {
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create int counter due to wiredDatatype")
 	}
-	d := &intCounterImpl{
-		WiredDatatypeImpl: wiredDatatype,
-		value:             0,
+	ctx := &intCounterContext{
+		value: 0,
 	}
-	d.SetOperationExecuter(d)
-	return d, nil
+	trnxMgr := datatypes.NewTransactionManager()
+	intCounter := &intCounter{
+		WiredDatatypeImpl: wiredDatatype,
+		ctx:               ctx,
+		trnxManager:       trnxMgr,
+		trnxContext:       nil,
+	}
+	intCounter.SetOperationExecuter(intCounter)
+	return intCounter, nil
 }
 
-func (c *intCounterImpl) Get() int32 {
-	return c.value
+func (c *intCounter) Get() int32 {
+	return c.ctx.value
 }
 
-func (c *intCounterImpl) Increase() (int32, error) {
+func (c *intCounter) Increase() (int32, error) {
 	return c.IncreaseBy(1)
 }
 
-func (c *intCounterImpl) IncreaseBy(delta int32) (int32, error) {
+func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 	op := model.NewIncreaseOperation(delta)
-	_, err := c.ExecuteWired(op)
-	return c.value, err
+	trnxCtx := c.trnxManager.BeginTransaction("", c.trnxContext)
+	defer c.trnxManager.EndTransaction(trnxCtx)
+	ret, err := c.ExecuteWired(op)
+	if err != nil {
+		return 0, log.OrtooError(err, "")
+	}
+	return ret.(int32), nil
 }
 
-func (c *intCounterImpl) increaseCommon(delta int32) int32 {
-	c.Info("increaseCommon")
+func (c *intCounterContext) increaseCommon(delta int32) int32 {
+	log.Logger.Info("increaseCommon")
 	c.value = c.value + delta
 	return c.value
 }
 
 //ExecuteLocal is the
-func (c *intCounterImpl) ExecuteLocal(op interface{}) (interface{}, error) {
+func (c *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
 	iop := op.(*model.IncreaseOperation)
 	log.Logger.Info("delta:", proto.MarshalTextString(iop))
-	return c.increaseCommon(iop.Delta), nil
+	return c.ctx.increaseCommon(iop.Delta), nil
 	//return nil, nil
 }
 
-func (c *intCounterImpl) ExecuteRemote(op interface{}) (interface{}, error) {
+func (c *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
 	iop := op.(*model.IncreaseOperation)
-	return c.increaseCommon(iop.Delta), nil
+	return c.ctx.increaseCommon(iop.Delta), nil
 }
 
-func (c *intCounterImpl) GetWired() datatypes.WiredDatatype {
+func (c *intCounter) GetWired() datatypes.WiredDatatype {
 	return c.WiredDatatypeImpl
 }
 
-func (c *intCounterImpl) DoTransaction(tag string, transFunc func(transactionalIntCounter IntCounter) error) error {
-	if err := c.BeginTransactionOnWired(tag); err != nil {
-		return log.OrtooError(err, "fail to begin transaction")
-	}
-	defer c.EndTransactionOnWired()
-	cc := &intCounterImpl{
-		WiredDatatypeImpl: c.GetTransactionalWiredDatatypeImpl(),
+func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterTransaction) error) error {
+	ctx := c.trnxManager.BeginTransaction(tag, c.trnxContext)
+	defer c.trnxManager.EndTransaction(ctx)
+	cc := &intCounter{
+		WiredDatatypeImpl: c.WiredDatatypeImpl,
+		ctx:               c.ctx,
+		trnxManager:       c.trnxManager,
+		trnxContext:       ctx,
 	}
 	err := transFunc(cc)
 	if err != nil {
-		c.SetTransactionFail()
+
 		return log.OrtooError(err, "fail to do the transaction")
 	}
 	return nil
