@@ -81,7 +81,7 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func (o *OrtooLog) OrtooError(err error, format string, args ...interface{}) error {
-	_, file, line, _ := runtime.Caller(1)
+	_, file, line, _ := runtime.Caller(2)
 	relativeCallFile := strings.Replace(file, basepath, "", 1)
 	errorPlace := fmt.Sprintf("%s:%d", relativeCallFile, line)
 	var errString = "nil"

@@ -9,11 +9,9 @@ import (
 type WiredDatatypeImpl struct {
 	Wire
 	*baseDatatype
-	//*transactionalDatatype
 	trans      *WiredDatatypeImpl
 	checkPoint *model.CheckPoint
 	buffer     []*model.OperationOnWire
-	opExecuter model.OperationExecuter
 }
 
 type WiredDatatyper interface {
@@ -21,7 +19,7 @@ type WiredDatatyper interface {
 }
 
 type PublicWiredDatatypeInterface interface {
-	PublicTransactionalDatatypeInterface
+	PublicBaseDatatypeInterface
 }
 
 type WiredDatatype interface {
@@ -45,16 +43,15 @@ func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) 
 	}, nil
 }
 
-func (w *WiredDatatypeImpl) ExecuteWired(op model.Operation) (ret interface{}, err error) {
-	ret, err = w.executeLocalBase(w.opExecuter, op)
-	if err != nil {
-		return ret, log.OrtooError(err, "fail to executeLocalTransactional")
-	}
-
-	w.buffer = append(w.buffer, model.ToOperationOnWire(op))
-	w.DeliverOperation(w, op)
-	return ret, nil
-}
+//func (w *WiredDatatypeImpl) ExecuteWired(op model.Operation) (ret interface{}, err error) {
+//	ret, err = w.executeLocalBase(w.opExecuter, op)
+//	if err != nil {
+//		return ret, log.OrtooError(err, "fail to executeLocalTransactional")
+//	}
+//
+//	w.buffer = append(w.buffer, model.ToOperationOnWire(op))
+//	return ret, nil
+//}
 
 func (w *WiredDatatypeImpl) GetBase() *baseDatatype {
 	return w.baseDatatype
@@ -64,22 +61,18 @@ func (w *WiredDatatypeImpl) String() string {
 	return w.baseDatatype.String()
 }
 
-func (w *WiredDatatypeImpl) SetOperationExecuter(opExecuter model.OperationExecuter) {
-	w.opExecuter = opExecuter
-}
-
 func (w *WiredDatatypeImpl) ExecuteRemote(op model.Operation) {
 	w.opID.SyncLamport(op.GetBase().GetId().Lamport)
-	w.GetBase().executeRemoteBase(w.opExecuter, op)
+	w.GetBase().executeRemoteBase(op)
 }
 
 func (w *WiredDatatypeImpl) ExecuteTransactionRemote(transaction []model.Operation) {
-	if err := validateTransaction(transaction); err != nil {
-		return
-	}
+	//if err := validateTransaction(transaction); err != nil {
+	//	return
+	//}
 	for _, op := range transaction {
 		w.opID.SyncLamport(op.GetBase().GetId().Lamport)
-		w.GetBase().executeRemoteBase(w.opExecuter, op)
+		w.GetBase().executeRemoteBase(op)
 	}
 }
 
@@ -116,30 +109,11 @@ func (w *WiredDatatypeImpl) getOperationOnWires(cseq uint64) []*model.OperationO
 		return w.buffer[start:]
 	}
 	return []*model.OperationOnWire{}
-
 }
 
-//
-//func (w *WiredDatatypeImpl) BeginTransactionOnWired(tag string) error {
-//	if err := w.BeginTransactionLocal(tag); err != nil {
-//		return log.OrtooError(err, "fail to begin transaction on wired")
-//	}
-//	return nil
-//}
-//
-//func (w *WiredDatatypeImpl) EndTransactionOnWired() {
-//	buffer := w.EndTransactionLocal()
-//	if buffer == nil {
-//		return
-//	}
-//	w.DeliverTransaction(w, buffer)
-//	w.EndTransaction()
-//}
-//
-//func (w *WiredDatatypeImpl) GetTransactionalWiredDatatypeImpl() *WiredDatatypeImpl {
-//	ww := &WiredDatatypeImpl{
-//		trans:      w,
-//		opExecuter: w.opExecuter,
-//	}
-//	return ww
-//}
+func (w *WiredDatatypeImpl) deliverTransaction(transaction []model.Operation) {
+	for _, op := range transaction {
+		w.buffer = append(w.buffer, model.ToOperationOnWire(op))
+	}
+	w.DeliverTransaction(w, transaction)
+}

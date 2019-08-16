@@ -28,6 +28,7 @@ message TransactionBeginOperation {
     BaseOperation base = 1;
     bytes uuid = 2;
     string tag = 3;
+    uint32 numOfOps = 4;
 }
 
 message TransactionEndOperation {

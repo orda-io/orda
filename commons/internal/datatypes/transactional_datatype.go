@@ -1,8 +1,6 @@
 package datatypes
 
 import (
-	"bytes"
-	"github.com/knowhunger/ortoo/commons/errors"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"sync"
@@ -39,11 +37,11 @@ func newTransactionalDatatype(t model.TypeDatatype) (*transactionalDatatype, err
 func (t *transactionalDatatype) executeLocalNotTransactional(datatype model.OperationExecuter, op model.Operation) (interface{}, error) {
 	//t.BeginTransaction()
 	defer t.EndTransaction()
-	return t.executeLocalBase(datatype, op)
+	return t.executeLocalBase(op)
 }
 
 func (t *transactionalDatatype) executeLocalTransactional(datatype model.OperationExecuter, op model.Operation) (interface{}, error) {
-	ret, err := t.executeLocalBase(datatype, op)
+	ret, err := t.executeLocalBase(op)
 	if err != nil {
 		return ret, log.OrtooError(err, "fail to executeLocalBase")
 	}
@@ -93,22 +91,4 @@ func (t *transactionalDatatype) EndTransactionLocal() []model.Operation {
 
 func (t *transactionalDatatype) SetTransactionFail() {
 	t.success = false
-}
-
-func validateTransaction(transaction []model.Operation) error {
-	beginTransaction, ok := transaction[0].(*model.TransactionBeginOperation)
-	if !ok {
-		return log.OrtooError(errors.NewTransactionError(), "invalidate transaction: no begin transaction")
-	}
-	endTransaction, ok := transaction[len(transaction)-1].(*model.TransactionEndOperation)
-	if !ok {
-		return log.OrtooError(errors.NewTransactionError(), "invalidate transaction: no end transaction")
-	}
-	if !bytes.Equal(beginTransaction.Uuid, endTransaction.Uuid) {
-		return log.OrtooError(errors.NewTransactionError(), "invalidate transaction: not match transaction operations")
-	}
-	if int(endTransaction.NumOfOps) != len(transaction) {
-		return log.OrtooError(errors.NewTransactionError(), "invalidate transaction: incorrect number of operations")
-	}
-	return nil
 }
