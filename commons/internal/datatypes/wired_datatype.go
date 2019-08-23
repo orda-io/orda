@@ -25,7 +25,7 @@ type PublicWiredDatatypeInterface interface {
 type WiredDatatype interface {
 	GetBase() *baseDatatype
 	ExecuteRemote(op model.Operation)
-	ExecuteTransactionRemote(transaction []model.Operation)
+	ReceiveRemoteOperations(operations []model.Operation) error
 	CreatePushPullPack() *model.PushPullPack
 	ApplyPushPullPack(*model.PushPullPack)
 }
@@ -43,16 +43,6 @@ func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) 
 	}, nil
 }
 
-//func (w *WiredDatatypeImpl) ExecuteWired(op model.Operation) (ret interface{}, err error) {
-//	ret, err = w.executeLocalBase(w.opExecuter, op)
-//	if err != nil {
-//		return ret, log.OrtooError(err, "fail to executeLocalTransactional")
-//	}
-//
-//	w.buffer = append(w.buffer, model.ToOperationOnWire(op))
-//	return ret, nil
-//}
-
 func (w *WiredDatatypeImpl) GetBase() *baseDatatype {
 	return w.baseDatatype
 }
@@ -66,14 +56,27 @@ func (w *WiredDatatypeImpl) ExecuteRemote(op model.Operation) {
 	w.GetBase().executeRemoteBase(op)
 }
 
-func (w *WiredDatatypeImpl) ExecuteTransactionRemote(transaction []model.Operation) {
-	//if err := validateTransaction(transaction); err != nil {
-	//	return
-	//}
-	for _, op := range transaction {
-		w.opID.SyncLamport(op.GetBase().GetId().Lamport)
-		w.GetBase().executeRemoteBase(op)
+func (w *WiredDatatypeImpl) ReceiveRemoteOperations(operations []model.Operation) error {
+	i := 0
+	transactionDatatype := w.opExecuter.(TransactionDatatype)
+
+	for i < len(operations) {
+		op := operations[i]
+		var transaction []model.Operation
+		switch cast := op.(type) {
+		case *model.TransactionOperation:
+			transaction = operations[i : i+int(cast.NumOfOps)]
+			i += int(cast.NumOfOps)
+		default:
+			transaction = []model.Operation{op}
+			i++
+		}
+		err := transactionDatatype.ExecuteTransactionRemote(transaction)
+		if err != nil {
+			return log.OrtooError(err, "fail to execute Transaction")
+		}
 	}
+	return nil
 }
 
 func (w *WiredDatatypeImpl) CreatePushPullPack() *model.PushPullPack {

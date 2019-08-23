@@ -50,6 +50,15 @@ func (o *OperationID) SetClient(cuid []byte) {
 	o.Cuid = cuid
 }
 
+func (o *OperationID) Clone() *OperationID {
+	return &OperationID{
+		Era:     o.Era,
+		Lamport: o.Lamport,
+		Cuid:    o.Cuid,
+		Seq:     o.Seq,
+	}
+}
+
 func Compare(a, b *OperationID) int {
 	retEra := a.Era - b.Era
 	if retEra > 0 {

@@ -1,6 +1,8 @@
 package model
 
-import "github.com/knowhunger/ortoo/commons/log"
+import (
+	"github.com/knowhunger/ortoo/commons/log"
+)
 
 type Operation interface {
 	ExecuteLocal(datatype OperationExecuter) (interface{}, error)
@@ -11,6 +13,7 @@ type Operation interface {
 type OperationExecuter interface {
 	ExecuteLocal(op interface{}) (interface{}, error)
 	ExecuteRemote(op interface{}) (interface{}, error)
+	Rollback() error
 }
 
 func NewOperation(opType TypeOperation) *BaseOperation {
@@ -26,43 +29,43 @@ func (o *BaseOperation) SetOperationID(opID *OperationID) {
 
 //////////////////// TransactionOperation ////////////////////
 
-func NewTransactionBeginOperation(tag string) (*TransactionBeginOperation, error) {
+func NewTransactionBeginOperation(tag string) (*TransactionOperation, error) {
 	uuid, err := newUniqueID()
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create uuid")
 	}
-	return &TransactionBeginOperation{
+	return &TransactionOperation{
 		Base: NewOperation(TypeOperation_TRANSACTION_BEGIN),
 		Uuid: uuid,
 		Tag:  tag,
 	}, nil
 }
 
-func (t *TransactionBeginOperation) ExecuteLocal(datatype OperationExecuter) (interface{}, error) {
+func (t *TransactionOperation) ExecuteLocal(datatype OperationExecuter) (interface{}, error) {
 	return nil, nil
 }
 
-func (t *TransactionBeginOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
+func (t *TransactionOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
 	//datatype.BeginTransaction(t.Tag)
 	return nil, nil
 }
 
-func NewTransactionEndOperation(uuid uniqueID, numOfOp uint32) *TransactionEndOperation {
-	return &TransactionEndOperation{
-		Base:     NewOperation(TypeOperation_TRANSACTION_END),
-		Uuid:     uuid,
-		NumOfOps: numOfOp,
-	}
-}
-
-func (t *TransactionEndOperation) ExecuteLocal(datatype OperationExecuter) (interface{}, error) {
-	return nil, nil
-}
-
-func (t *TransactionEndOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
-	//datatype.EndTransaction()
-	return nil, nil
-}
+//func NewTransactionEndOperation(uuid uniqueID, numOfOp uint32) *TransactionEndOperation {
+//	return &TransactionEndOperation{
+//		Base:     NewOperation(TypeOperation_TRANSACTION_END),
+//		Uuid:     uuid,
+//		NumOfOps: numOfOp,
+//	}
+//}
+//
+//func (t *TransactionEndOperation) ExecuteLocal(datatype OperationExecuter) (interface{}, error) {
+//	return nil, nil
+//}
+//
+//func (t *TransactionEndOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
+//	//datatype.EndTransaction()
+//	return nil, nil
+//}
 
 //////////////////// IncreaseOperation ////////////////////
 
@@ -85,10 +88,10 @@ func ToOperationOnWire(op Operation) *OperationOnWire {
 	switch o := op.(type) {
 	case *IncreaseOperation:
 		return &OperationOnWire{Body: &OperationOnWire_IncreaseOperation{o}}
-	case *TransactionBeginOperation:
-		return &OperationOnWire{Body: &OperationOnWire_TransactionBeginOperation{o}}
-	case *TransactionEndOperation:
-		return &OperationOnWire{Body: &OperationOnWire_TransactionEndOperation{o}}
+	case *TransactionOperation:
+		return &OperationOnWire{Body: &OperationOnWire_TransactionOperation{o}}
+		//case *TransactionEndOperation:
+		//	return &OperationOnWire{Body: &OperationOnWire_TransactionEndOperation{o}}
 	}
 	return nil
 }

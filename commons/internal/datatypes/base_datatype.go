@@ -1,6 +1,7 @@
 package datatypes
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
@@ -40,6 +41,18 @@ func (b *baseDatatype) executeLocalBase(op model.Operation) (interface{}, error)
 	return op.ExecuteLocal(b.opExecuter)
 }
 
+func (b *baseDatatype) Replay(op model.Operation) error {
+	if bytes.Compare(b.opID.Cuid, op.GetBase().Id.Cuid) == 0 {
+		_, err := b.executeLocalBase(op)
+		if err != nil {
+			return log.OrtooError(err, "fail to replay local operation")
+		}
+	} else {
+		b.executeRemoteBase(op)
+	}
+	return nil
+}
+
 func (b *baseDatatype) SetNextOpID(op model.Operation) {
 	op.GetBase().SetOperationID(b.opID.Next())
 }
@@ -54,4 +67,8 @@ func (b *baseDatatype) GetType() model.TypeDatatype {
 
 func (b *baseDatatype) SetOperationExecuter(opExecuter model.OperationExecuter) {
 	b.opExecuter = opExecuter
+}
+
+func (b *baseDatatype) SetOpID(opID *model.OperationID) {
+	b.opID = opID
 }

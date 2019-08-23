@@ -31,7 +31,7 @@ func (c *TestWire) DeliverTransaction(wired datatypes.WiredDatatype, transaction
 	for _, w := range c.wiredList {
 		if wired.GetBase() != w.GetBase() {
 			log.Logger.Info(wired, " => ", w)
-			w.ExecuteTransactionRemote(transaction)
+			w.ReceiveRemoteOperations(transaction)
 		}
 	}
 	c.list = append(c.list, transaction...)

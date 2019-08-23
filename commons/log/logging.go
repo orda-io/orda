@@ -87,6 +87,8 @@ func (o *OrtooLog) OrtooError(err error, format string, args ...interface{}) err
 	var errString = "nil"
 	if err != nil {
 		errString = err.Error()
+	} else {
+		err = fmt.Errorf("nil")
 	}
 	o.WithFields(logrus.Fields{
 		fieldErrorAt: errorPlace,

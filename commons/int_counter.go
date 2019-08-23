@@ -21,30 +21,30 @@ type IntCounterInTransaction interface {
 }
 
 type intCounter struct {
-	*datatypes.TransactionManager
-	ctx            *intCounterContext
+	*datatypes.TransactionDatatypeImpl
+	snapshot       *intCounterSnapshot
 	transactionCtx *datatypes.TransactionContext
 }
 
 func NewIntCounter(c client.Client, w datatypes.Wire) (IntCounter, error) {
-	ctx := &intCounterContext{
+	snapshot := &intCounterSnapshot{
 		value: 0,
 	}
-	transactionMgr, err := datatypes.NewTransactionManager(model.TypeDatatype_INT_COUNTER, w)
+	transactionMgr, err := datatypes.NewTransactionManager(model.TypeDatatype_INT_COUNTER, w, snapshot)
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create transaction manager")
 	}
 	intCounter := &intCounter{
-		TransactionManager: transactionMgr,
-		ctx:                ctx,
-		transactionCtx:     nil,
+		TransactionDatatypeImpl: transactionMgr,
+		snapshot:                snapshot,
+		transactionCtx:          nil,
 	}
 	intCounter.SetOperationExecuter(intCounter)
 	return intCounter, nil
 }
 
 func (c *intCounter) Get() int32 {
-	return c.ctx.value
+	return c.snapshot.value
 }
 
 func (c *intCounter) Increase() (int32, error) {
@@ -53,7 +53,7 @@ func (c *intCounter) Increase() (int32, error) {
 
 func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 	op := model.NewIncreaseOperation(delta)
-	ret, err := c.Execute(c.transactionCtx, op)
+	ret, err := c.ExecuteTransaction(c.transactionCtx, op, true)
 	if err != nil {
 		return 0, log.OrtooError(err, "fail to execute operation")
 	}
@@ -64,13 +64,13 @@ func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 func (c *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
 	iop := op.(*model.IncreaseOperation)
 	log.Logger.Info("delta:", proto.MarshalTextString(iop))
-	return c.ctx.increaseCommon(iop.Delta), nil
+	return c.snapshot.increaseCommon(iop.Delta), nil
 	//return nil, nil
 }
 
 func (c *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
 	iop := op.(*model.IncreaseOperation)
-	return c.ctx.increaseCommon(iop.Delta), nil
+	return c.snapshot.increaseCommon(iop.Delta), nil
 }
 
 func (c *intCounter) GetWired() datatypes.WiredDatatype {
@@ -83,9 +83,9 @@ func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 	log.Logger.Infof("End BeginTransaction:%s", tag)
 	defer c.EndTransaction(transactionCtx, true)
 	clone := &intCounter{
-		TransactionManager: c.TransactionManager,
-		ctx:                c.ctx,
-		transactionCtx:     transactionCtx,
+		TransactionDatatypeImpl: c.TransactionDatatypeImpl,
+		snapshot:                c.snapshot,
+		transactionCtx:          transactionCtx,
 	}
 	err = transFunc(clone)
 	if err != nil {
@@ -95,11 +95,25 @@ func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 	return nil
 }
 
-type intCounterContext struct {
+func (c *intCounter) GetSnapshot() datatypes.Snapshot {
+	return c.snapshot
+}
+
+func (c *intCounter) SetSnapshot(snapshot datatypes.Snapshot) {
+	c.snapshot = snapshot.(*intCounterSnapshot)
+}
+
+type intCounterSnapshot struct {
 	value int32
 }
 
-func (c *intCounterContext) increaseCommon(delta int32) int32 {
+func (c *intCounterSnapshot) CloneSnapshot() datatypes.Snapshot {
+	return &intCounterSnapshot{
+		value: c.value,
+	}
+}
+
+func (c *intCounterSnapshot) increaseCommon(delta int32) int32 {
 	log.Logger.Info("increaseCommon")
 	c.value = c.value + delta
 	return c.value
