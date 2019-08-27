@@ -1,7 +1,6 @@
 package commons
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/knowhunger/ortoo/client"
 	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
@@ -63,7 +62,7 @@ func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 //ExecuteLocal is the
 func (c *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
 	iop := op.(*model.IncreaseOperation)
-	log.Logger.Info("delta:", proto.MarshalTextString(iop))
+	//c.Logger.Info("delta:", proto.MarshalTextString(iop))
 	return c.snapshot.increaseCommon(iop.Delta), nil
 	//return nil, nil
 }
@@ -78,9 +77,7 @@ func (c *intCounter) GetWired() datatypes.WiredDatatype {
 }
 
 func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterInTransaction) error) error {
-	log.Logger.Infof("Before BeginTransaction:%s", tag)
 	transactionCtx, err := c.BeginTransaction(tag, c.transactionCtx, true)
-	log.Logger.Infof("End BeginTransaction:%s", tag)
 	defer c.EndTransaction(transactionCtx, true)
 	clone := &intCounter{
 		TransactionDatatypeImpl: c.TransactionDatatypeImpl,
@@ -90,7 +87,7 @@ func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 	err = transFunc(clone)
 	if err != nil {
 		c.SetTransactionFail()
-		return log.OrtooError(err, "fail to do the transaction")
+		return log.OrtooError(err, "fail to do the transaction: '%s'", tag)
 	}
 	return nil
 }
@@ -114,7 +111,8 @@ func (c *intCounterSnapshot) CloneSnapshot() datatypes.Snapshot {
 }
 
 func (c *intCounterSnapshot) increaseCommon(delta int32) int32 {
-	log.Logger.Info("increaseCommon")
+	temp := c.value
 	c.value = c.value + delta
+	log.Logger.Infof("increaseCommon: %d + %d = %d", temp, delta, c.value)
 	return c.value
 }

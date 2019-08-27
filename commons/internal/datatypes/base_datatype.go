@@ -13,6 +13,7 @@ type baseDatatype struct {
 	typeOf     model.TypeDatatype
 	state      model.StateDatatype
 	opExecuter model.OperationExecuter
+	Logger     *log.OrtooLog
 }
 
 type PublicBaseDatatypeInterface interface {
@@ -29,6 +30,7 @@ func newBaseDatatype(t model.TypeDatatype) (*baseDatatype, error) {
 		opID:   model.NewOperationID(),
 		typeOf: t,
 		state:  model.StateDatatype_LOCALLY_EXISTED,
+		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
 	}, nil
 }
 

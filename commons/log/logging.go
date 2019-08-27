@@ -10,17 +10,20 @@ import (
 )
 
 type OrtooLog struct {
-	*logrus.Logger
+	*logrus.Entry
 }
 
 var Logger = NewOrtooLog()
 
 func NewOrtooLog() *OrtooLog {
-	log := logrus.New()
-	log.SetFormatter(&ortooFormatter{})
-	log.SetReportCaller(true)
-	return &OrtooLog{log}
+	logger := logrus.New()
+	logger.SetFormatter(&ortooFormatter{})
+	logger.SetReportCaller(true)
+	return &OrtooLog{logrus.NewEntry(logger)}
+}
 
+func NewOrtooLogWithTag(tag string) *OrtooLog {
+	return &OrtooLog{NewOrtooLog().WithFields(logrus.Fields{tagField: tag})}
 }
 
 const (
@@ -38,6 +41,7 @@ var (
 const (
 	fieldErrorAt = "errorAt"
 	fieldError   = "error"
+	tagField     = "tagFiled"
 )
 
 func getColorByLevel(level logrus.Level) int {
@@ -75,6 +79,11 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		fileLine := fmt.Sprintf("[ %s:%d ] ", relativeCallFile, entry.Caller.Line)
 		b.WriteString(fileLine)
 	}
+
+	if entry.Data[tagField] != nil {
+		b.WriteString("[" + entry.Data[tagField].(string) + "] ")
+	}
+
 	b.WriteString(entry.Message)
 	b.WriteByte('\n')
 	return b.Bytes(), nil

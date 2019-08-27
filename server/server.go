@@ -11,7 +11,7 @@ import (
 )
 
 type OrtooServer struct {
-	conf   *OrtooConfig
+	conf   *OrtooServerConfig
 	server *grpc.Server
 }
 
@@ -20,7 +20,7 @@ func (o *OrtooServer) ProcessPushPull(ctx context.Context, in *model.PushPullReq
 	return &model.PushPullReply{Id: in.Id}, nil
 }
 
-func NewOrtooServer(conf *OrtooConfig) *OrtooServer {
+func NewOrtooServer(conf *OrtooServerConfig) *OrtooServer {
 	return &OrtooServer{
 		conf: conf,
 	}
@@ -36,7 +36,6 @@ func (o *OrtooServer) Start() {
 	if err := o.server.Serve(lis); err != nil {
 		_ = log.OrtooError(err, "failed to serve")
 	}
-
 	log.Logger.Info("end of start()")
 }
 

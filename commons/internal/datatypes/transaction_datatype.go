@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+const NotUserTransactionTag = "NotUserTransactionTag!@#$%ORTOO"
+
 type TransactionDatatypeImpl struct {
 	*WiredDatatypeImpl
 	mutex            *sync.RWMutex
@@ -61,7 +63,7 @@ func (t *TransactionDatatypeImpl) ExecuteTransactionRemote(transaction []model.O
 	var transactionCtx *TransactionContext = nil
 	if len(transaction) > 1 {
 		if err := validateTransaction(transaction); err != nil {
-			return log.OrtooError(err, "fail to validate transaction")
+			return t.Logger.OrtooError(err, "fail to validate transaction")
 		}
 		beginOp := transaction[0].(*model.TransactionOperation)
 		transactionCtx = t.beginTransaction(beginOp.Tag)
@@ -74,15 +76,15 @@ func (t *TransactionDatatypeImpl) ExecuteTransactionRemote(transaction []model.O
 }
 
 func (t *TransactionDatatypeImpl) ExecuteTransaction(ctx *TransactionContext, op model.Operation, isLocal bool) (interface{}, error) {
-	transactionCtx, err := t.BeginTransaction("", ctx, false)
+	transactionCtx, err := t.BeginTransaction(NotUserTransactionTag, ctx, false)
 	if err != nil {
-		return 0, log.OrtooError(err, "fail to execute transaction")
+		return 0, t.Logger.OrtooError(err, "fail to execute transaction")
 	}
 	defer t.EndTransaction(transactionCtx, false)
 	if isLocal {
 		ret, err := t.executeLocalBase(op)
 		if err != nil {
-			return 0, log.OrtooError(err, "fail to execute operation")
+			return 0, t.Logger.OrtooError(err, "fail to execute operation")
 		}
 		t.transactionCtx.appendOperation(op)
 		return ret.(int32), nil
@@ -94,7 +96,9 @@ func (t *TransactionDatatypeImpl) ExecuteTransaction(ctx *TransactionContext, op
 
 func (t *TransactionDatatypeImpl) beginTransaction(tag string) *TransactionContext {
 	t.mutex.Lock()
-	log.Logger.Infof("Begin the transaction: `%s`", tag)
+	if tag != NotUserTransactionTag {
+		t.Logger.Infof("Begin the transaction: `%s`", tag)
+	}
 	t.isLocked = true
 	t.transactionCtx = &TransactionContext{
 		tag:          tag,
@@ -112,7 +116,7 @@ func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionC
 		if withOp {
 			op, err := model.NewTransactionBeginOperation(tag)
 			if err != nil {
-				return nil, log.OrtooError(err, "fail to create TransactionBeginOperation")
+				return nil, t.Logger.OrtooError(err, "fail to create TransactionBeginOperation")
 			}
 			t.transactionCtx.uuid = op.Uuid
 			t.SetNextOpID(op)
@@ -123,6 +127,7 @@ func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionC
 }
 
 func (t *TransactionDatatypeImpl) Rollback() error {
+	t.Logger.Infof("Begin the rollback: '%s'", t.transactionCtx.tag)
 	snapshotDatatype, _ := t.opExecuter.(SnapshotDatatype)
 	redoOpID := t.GetBase().opID
 	redoSnapshot := snapshotDatatype.GetSnapshot().CloneSnapshot()
@@ -133,12 +138,13 @@ func (t *TransactionDatatypeImpl) Rollback() error {
 		if err != nil {
 			t.SetOpID(redoOpID)
 			snapshotDatatype.SetSnapshot(redoSnapshot)
-			return log.OrtooError(err, "fail to replay operations")
+			return t.Logger.OrtooError(err, "fail to replay operations")
 		}
 	}
 	t.rollbackOpID = t.GetBase().opID.Clone()
 	t.rollbackSnapshot = snapshotDatatype.GetSnapshot().CloneSnapshot()
 	t.rollbackOps = nil
+	t.Logger.Infof("End the rollback: '%s'", t.transactionCtx.tag)
 	return nil
 }
 
@@ -153,12 +159,15 @@ func (t *TransactionDatatypeImpl) EndTransaction(ctx *TransactionContext, withOp
 			if withOp {
 				beginOp, ok := t.transactionCtx.opBuffer[0].(*model.TransactionOperation)
 				if !ok {
-					return log.OrtooError(errors.NewTransactionError(), "invalidate transaction: no begin operation")
+					return t.Logger.OrtooError(errors.NewTransactionError(), "invalidate transaction: no begin operation")
 				}
 				beginOp.NumOfOps = uint32(len(t.transactionCtx.opBuffer))
 			}
 			t.rollbackOps = append(t.rollbackOps, t.transactionCtx.opBuffer...)
 			t.deliverTransaction(t.transactionCtx.opBuffer)
+			if t.transactionCtx.tag != NotUserTransactionTag {
+				t.Logger.Infof("End the transaction: `%s`", t.transactionCtx.tag)
+			}
 		} else {
 			t.Rollback()
 		}

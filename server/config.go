@@ -2,17 +2,17 @@ package server
 
 import "fmt"
 
-type OrtooConfig struct {
+type OrtooServerConfig struct {
 	host string
 	port int
 }
 
-func (o *OrtooConfig) getHostAddress() string {
+func (o *OrtooServerConfig) getHostAddress() string {
 	return fmt.Sprintf("%s:%d", o.host, o.port)
 }
 
-func DefaultConfig() *OrtooConfig {
-	return &OrtooConfig{
+func DefaultConfig() *OrtooServerConfig {
+	return &OrtooServerConfig{
 		host: "0.0.0.0",
 		port: 19061,
 	}
