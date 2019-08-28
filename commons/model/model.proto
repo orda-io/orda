@@ -2,6 +2,12 @@ syntax = "proto3";
 
 package model;
 
+message Client {
+    bytes cuid = 1;
+    string alias = 2;
+    string collection = 3;
+}
+
 message OperationID {
     uint32 era = 1;
     uint64 lamport = 2;

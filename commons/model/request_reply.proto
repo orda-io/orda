@@ -6,7 +6,10 @@ import "model.proto";
 
 message RequestHeader {
     string version = 1;
-    TypeRequests type = 2;
+    oneof type {
+        TypeRequests typeRequest = 2;
+        TypeReplies typeReply = 3;
+    }
 }
 
 message ReplyHeader {
@@ -15,10 +18,26 @@ message ReplyHeader {
 
 enum TypeRequests {
     PUSHPULL_REQUEST = 0;
+    CLIENTCREATE_REQUEST = 1;
 }
 
 enum TypeReplies {
     PUSHPULL_REPLY = 0;
+    CLIENTCREATE_REPLY = 1;
+}
+
+message ReplyState {
+
+}
+
+message ClientRequest {
+    RequestHeader header = 1;
+    Client client = 2;
+}
+
+message ClientReply {
+    RequestHeader header = 1;
+
 }
 
 message PushPullRequest {
@@ -35,4 +54,5 @@ message PushPullReply {
 
 service OrtooService {
     rpc ProcessPushPull (PushPullRequest) returns (PushPullReply);
+    rpc ClientCreate (ClientRequest) returns (ClientReply);
 }

@@ -6,7 +6,7 @@ import (
 
 type Cuid uniqueID
 
-func newCuid() (Cuid, error) {
+func NewCuid() (Cuid, error) {
 	u, err := newUniqueID()
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to generate client UID")

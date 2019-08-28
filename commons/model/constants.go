@@ -1,3 +1,3 @@
 package model
 
-const Version = "0.1"
+const ProtocolVersion = "0.1"

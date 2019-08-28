@@ -25,15 +25,18 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 type TypeRequests int32
 
 const (
-	TypeRequests_PUSHPULL_REQUEST TypeRequests = 0
+	TypeRequests_PUSHPULL_REQUEST     TypeRequests = 0
+	TypeRequests_CLIENTCREATE_REQUEST TypeRequests = 1
 )
 
 var TypeRequests_name = map[int32]string{
 	0: "PUSHPULL_REQUEST",
+	1: "CLIENTCREATE_REQUEST",
 }
 
 var TypeRequests_value = map[string]int32{
-	"PUSHPULL_REQUEST": 0,
+	"PUSHPULL_REQUEST":     0,
+	"CLIENTCREATE_REQUEST": 1,
 }
 
 func (x TypeRequests) String() string {
@@ -47,15 +50,18 @@ func (TypeRequests) EnumDescriptor() ([]byte, []int) {
 type TypeReplies int32
 
 const (
-	TypeReplies_PUSHPULL_REPLY TypeReplies = 0
+	TypeReplies_PUSHPULL_REPLY     TypeReplies = 0
+	TypeReplies_CLIENTCREATE_REPLY TypeReplies = 1
 )
 
 var TypeReplies_name = map[int32]string{
 	0: "PUSHPULL_REPLY",
+	1: "CLIENTCREATE_REPLY",
 }
 
 var TypeReplies_value = map[string]int32{
-	"PUSHPULL_REPLY": 0,
+	"PUSHPULL_REPLY":     0,
+	"CLIENTCREATE_REPLY": 1,
 }
 
 func (x TypeReplies) String() string {
@@ -67,11 +73,14 @@ func (TypeReplies) EnumDescriptor() ([]byte, []int) {
 }
 
 type RequestHeader struct {
-	Version              string       `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
-	Type                 TypeRequests `protobuf:"varint,2,opt,name=type,proto3,enum=model.TypeRequests" json:"type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
+	Version string `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	// Types that are valid to be assigned to Type:
+	//	*RequestHeader_TypeRequest
+	//	*RequestHeader_TypeReply
+	Type                 isRequestHeader_Type `protobuf_oneof:"type"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
 func (m *RequestHeader) Reset()         { *m = RequestHeader{} }
@@ -106,11 +115,49 @@ func (m *RequestHeader) GetVersion() string {
 	return ""
 }
 
-func (m *RequestHeader) GetType() TypeRequests {
+type isRequestHeader_Type interface {
+	isRequestHeader_Type()
+}
+
+type RequestHeader_TypeRequest struct {
+	TypeRequest TypeRequests `protobuf:"varint,2,opt,name=typeRequest,proto3,enum=model.TypeRequests,oneof"`
+}
+
+type RequestHeader_TypeReply struct {
+	TypeReply TypeReplies `protobuf:"varint,3,opt,name=typeReply,proto3,enum=model.TypeReplies,oneof"`
+}
+
+func (*RequestHeader_TypeRequest) isRequestHeader_Type() {}
+
+func (*RequestHeader_TypeReply) isRequestHeader_Type() {}
+
+func (m *RequestHeader) GetType() isRequestHeader_Type {
 	if m != nil {
 		return m.Type
 	}
+	return nil
+}
+
+func (m *RequestHeader) GetTypeRequest() TypeRequests {
+	if x, ok := m.GetType().(*RequestHeader_TypeRequest); ok {
+		return x.TypeRequest
+	}
 	return TypeRequests_PUSHPULL_REQUEST
+}
+
+func (m *RequestHeader) GetTypeReply() TypeReplies {
+	if x, ok := m.GetType().(*RequestHeader_TypeReply); ok {
+		return x.TypeReply
+	}
+	return TypeReplies_PUSHPULL_REPLY
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*RequestHeader) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*RequestHeader_TypeRequest)(nil),
+		(*RequestHeader_TypeReply)(nil),
+	}
 }
 
 type ReplyHeader struct {
@@ -152,6 +199,123 @@ func (m *ReplyHeader) GetType() TypeReplies {
 	return TypeReplies_PUSHPULL_REPLY
 }
 
+type ReplyState struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ReplyState) Reset()         { *m = ReplyState{} }
+func (m *ReplyState) String() string { return proto.CompactTextString(m) }
+func (*ReplyState) ProtoMessage()    {}
+func (*ReplyState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7bf67568605725bb, []int{2}
+}
+
+func (m *ReplyState) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ReplyState.Unmarshal(m, b)
+}
+func (m *ReplyState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ReplyState.Marshal(b, m, deterministic)
+}
+func (m *ReplyState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReplyState.Merge(m, src)
+}
+func (m *ReplyState) XXX_Size() int {
+	return xxx_messageInfo_ReplyState.Size(m)
+}
+func (m *ReplyState) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReplyState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReplyState proto.InternalMessageInfo
+
+type ClientRequest struct {
+	Header               *RequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	Client               *Client        `protobuf:"bytes,2,opt,name=client,proto3" json:"client,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *ClientRequest) Reset()         { *m = ClientRequest{} }
+func (m *ClientRequest) String() string { return proto.CompactTextString(m) }
+func (*ClientRequest) ProtoMessage()    {}
+func (*ClientRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7bf67568605725bb, []int{3}
+}
+
+func (m *ClientRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ClientRequest.Unmarshal(m, b)
+}
+func (m *ClientRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ClientRequest.Marshal(b, m, deterministic)
+}
+func (m *ClientRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClientRequest.Merge(m, src)
+}
+func (m *ClientRequest) XXX_Size() int {
+	return xxx_messageInfo_ClientRequest.Size(m)
+}
+func (m *ClientRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ClientRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ClientRequest proto.InternalMessageInfo
+
+func (m *ClientRequest) GetHeader() *RequestHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
+
+func (m *ClientRequest) GetClient() *Client {
+	if m != nil {
+		return m.Client
+	}
+	return nil
+}
+
+type ClientReply struct {
+	Header               *RequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *ClientReply) Reset()         { *m = ClientReply{} }
+func (m *ClientReply) String() string { return proto.CompactTextString(m) }
+func (*ClientReply) ProtoMessage()    {}
+func (*ClientReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7bf67568605725bb, []int{4}
+}
+
+func (m *ClientReply) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ClientReply.Unmarshal(m, b)
+}
+func (m *ClientReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ClientReply.Marshal(b, m, deterministic)
+}
+func (m *ClientReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClientReply.Merge(m, src)
+}
+func (m *ClientReply) XXX_Size() int {
+	return xxx_messageInfo_ClientReply.Size(m)
+}
+func (m *ClientReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_ClientReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ClientReply proto.InternalMessageInfo
+
+func (m *ClientReply) GetHeader() *RequestHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
+
 type PushPullRequest struct {
 	Header               *RequestHeader  `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Id                   int32           `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
@@ -165,7 +329,7 @@ func (m *PushPullRequest) Reset()         { *m = PushPullRequest{} }
 func (m *PushPullRequest) String() string { return proto.CompactTextString(m) }
 func (*PushPullRequest) ProtoMessage()    {}
 func (*PushPullRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7bf67568605725bb, []int{2}
+	return fileDescriptor_7bf67568605725bb, []int{5}
 }
 
 func (m *PushPullRequest) XXX_Unmarshal(b []byte) error {
@@ -220,7 +384,7 @@ func (m *PushPullReply) Reset()         { *m = PushPullReply{} }
 func (m *PushPullReply) String() string { return proto.CompactTextString(m) }
 func (*PushPullReply) ProtoMessage()    {}
 func (*PushPullReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7bf67568605725bb, []int{3}
+	return fileDescriptor_7bf67568605725bb, []int{6}
 }
 
 func (m *PushPullReply) XXX_Unmarshal(b []byte) error {
@@ -267,6 +431,9 @@ func init() {
 	proto.RegisterEnum("model.TypeReplies", TypeReplies_name, TypeReplies_value)
 	proto.RegisterType((*RequestHeader)(nil), "model.RequestHeader")
 	proto.RegisterType((*ReplyHeader)(nil), "model.ReplyHeader")
+	proto.RegisterType((*ReplyState)(nil), "model.ReplyState")
+	proto.RegisterType((*ClientRequest)(nil), "model.ClientRequest")
+	proto.RegisterType((*ClientReply)(nil), "model.ClientReply")
 	proto.RegisterType((*PushPullRequest)(nil), "model.PushPullRequest")
 	proto.RegisterType((*PushPullReply)(nil), "model.PushPullReply")
 }
@@ -274,28 +441,35 @@ func init() {
 func init() { proto.RegisterFile("request_reply.proto", fileDescriptor_7bf67568605725bb) }
 
 var fileDescriptor_7bf67568605725bb = []byte{
-	// 323 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x92, 0x4d, 0x4f, 0x32, 0x31,
-	0x10, 0xc7, 0x29, 0x3c, 0xf0, 0xc4, 0x59, 0xde, 0x32, 0x10, 0xb3, 0xe1, 0x84, 0xc4, 0x28, 0x21,
-	0x86, 0x03, 0xc6, 0x83, 0x27, 0x4f, 0x24, 0x1c, 0x48, 0xa8, 0x05, 0x0e, 0x9e, 0x08, 0xb2, 0x93,
-	0xb0, 0xb1, 0xda, 0xda, 0x2e, 0x24, 0xfb, 0x05, 0x3c, 0xf8, 0xa9, 0x8d, 0xa5, 0xe0, 0x82, 0x67,
-	0x4f, 0x9b, 0x9d, 0xfe, 0x5f, 0x7e, 0x9d, 0x14, 0x1a, 0x86, 0xde, 0x37, 0x64, 0x93, 0x85, 0x21,
-	0x2d, 0xd3, 0xbe, 0x36, 0x2a, 0x51, 0x58, 0x7c, 0x55, 0x11, 0xc9, 0x56, 0xe0, 0x3e, 0xbb, 0x59,
-	0x47, 0x40, 0x45, 0xec, 0xa4, 0x23, 0x5a, 0x46, 0x64, 0x30, 0x84, 0xff, 0x5b, 0x32, 0x36, 0x56,
-	0x6f, 0x21, 0x6b, 0xb3, 0xee, 0x99, 0xd8, 0xff, 0xe2, 0x35, 0xfc, 0x4b, 0x52, 0x4d, 0x61, 0xbe,
-	0xcd, 0xba, 0xd5, 0x41, 0xa3, 0xbf, 0x8b, 0x99, 0xa5, 0x9a, 0x7c, 0x82, 0x15, 0x4e, 0xd0, 0xb9,
-	0x83, 0x40, 0x7c, 0xd7, 0xfa, 0xc4, 0x2b, 0xef, 0x63, 0xce, 0x87, 0x47, 0x3e, 0x2d, 0x63, 0xda,
-	0xdb, 0x3e, 0x19, 0xd4, 0xf8, 0xc6, 0xae, 0xf9, 0x46, 0x4a, 0x9f, 0x88, 0x37, 0x50, 0x5a, 0xbb,
-	0x14, 0xe7, 0x0e, 0x06, 0x4d, 0xef, 0x3e, 0x62, 0x16, 0x5e, 0x83, 0x55, 0xc8, 0xc7, 0x91, 0xe3,
-	0x2b, 0x8a, 0x7c, 0x1c, 0xe1, 0x3d, 0x54, 0xb4, 0x0f, 0xe4, 0xcb, 0xd5, 0x8b, 0x0d, 0x0b, 0xed,
-	0x42, 0x37, 0x38, 0xa0, 0xf3, 0xcc, 0x99, 0x38, 0x56, 0x76, 0x3e, 0x18, 0x54, 0x7e, 0x60, 0xb4,
-	0x4c, 0xb1, 0x77, 0x82, 0x82, 0x07, 0x94, 0xc3, 0x55, 0xff, 0x00, 0xa4, 0x77, 0x09, 0xe5, 0xec,
-	0x8a, 0xb1, 0x09, 0x75, 0x3e, 0x9f, 0x8e, 0xf8, 0x7c, 0x3c, 0x5e, 0x88, 0xe1, 0xe3, 0x7c, 0x38,
-	0x9d, 0xd5, 0x73, 0xbd, 0x0b, 0x08, 0x32, 0x0b, 0x45, 0x84, 0x6a, 0x46, 0xc4, 0xc7, 0x4f, 0xf5,
-	0xdc, 0x60, 0x02, 0xe5, 0x89, 0x49, 0x94, 0x9a, 0x92, 0xd9, 0xc6, 0x2b, 0xc2, 0x07, 0xa8, 0x71,
-	0xa3, 0x56, 0x64, 0xed, 0xbe, 0x1e, 0xcf, 0x4f, 0x78, 0x7c, 0x69, 0xab, 0xf9, 0x6b, 0xae, 0x65,
-	0xfa, 0x5c, 0x72, 0x2f, 0xe8, 0xf6, 0x2b, 0x00, 0x00, 0xff, 0xff, 0x80, 0xb1, 0xdf, 0x67, 0x6c,
-	0x02, 0x00, 0x00,
+	// 441 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x53, 0xd1, 0x8a, 0xd3, 0x40,
+	0x14, 0xed, 0xb4, 0x6e, 0x65, 0x6f, 0x9a, 0x6e, 0xb9, 0x1b, 0x96, 0xb0, 0x4f, 0x25, 0xa0, 0x94,
+	0x22, 0xfb, 0x10, 0x11, 0x5d, 0x04, 0x45, 0x4b, 0xa0, 0x42, 0xd1, 0x38, 0x6d, 0x1f, 0x7c, 0x5a,
+	0x6a, 0x73, 0x61, 0x83, 0xe3, 0x66, 0x9c, 0x4c, 0x0b, 0xf9, 0x01, 0x41, 0x3f, 0xc2, 0x6f, 0x95,
+	0x4c, 0xa6, 0x6d, 0x1a, 0x7d, 0x51, 0xd8, 0xa7, 0x70, 0xcf, 0x3d, 0xe7, 0xcc, 0xb9, 0x33, 0x37,
+	0x70, 0xae, 0xe8, 0xdb, 0x86, 0x72, 0x7d, 0xa3, 0x48, 0x8a, 0xe2, 0x4a, 0xaa, 0x4c, 0x67, 0x78,
+	0xf2, 0x35, 0x4b, 0x48, 0x5c, 0x3a, 0xe6, 0x53, 0x61, 0xc1, 0x2f, 0x06, 0x2e, 0xaf, 0xb8, 0x53,
+	0x5a, 0x25, 0xa4, 0xd0, 0x87, 0x87, 0x5b, 0x52, 0x79, 0x9a, 0xdd, 0xf9, 0x6c, 0xc8, 0x46, 0xa7,
+	0x7c, 0x57, 0xe2, 0x73, 0x70, 0x74, 0x21, 0xc9, 0xd2, 0xfd, 0xf6, 0x90, 0x8d, 0xfa, 0xe1, 0xf9,
+	0x55, 0x65, 0xb7, 0x38, 0x74, 0xf2, 0x69, 0x8b, 0xd7, 0x99, 0x18, 0xc2, 0x69, 0x55, 0x4a, 0x51,
+	0xf8, 0x1d, 0x23, 0xc3, 0x23, 0x99, 0x14, 0x29, 0x95, 0xaa, 0x03, 0xed, 0x6d, 0x17, 0x1e, 0x94,
+	0x45, 0xf0, 0x0c, 0x1c, 0x03, 0xd8, 0x74, 0x8f, 0x2b, 0xd8, 0x44, 0xfb, 0xab, 0x0b, 0xaf, 0x64,
+	0x3d, 0x00, 0x23, 0x9b, 0xeb, 0x95, 0xa6, 0x20, 0x01, 0x77, 0x22, 0x52, 0xba, 0xd3, 0xbb, 0x44,
+	0x4f, 0xa0, 0x7b, 0x6b, 0x0c, 0x8d, 0x91, 0x13, 0x7a, 0xd6, 0xe8, 0xe8, 0x2a, 0xb8, 0xe5, 0xe0,
+	0x23, 0xe8, 0xae, 0x8d, 0xdc, 0xcc, 0xec, 0x84, 0xae, 0x65, 0x5b, 0x4f, 0xdb, 0x0c, 0x5e, 0x82,
+	0xb3, 0x3b, 0x45, 0x8a, 0xe2, 0xdf, 0xce, 0x08, 0x7e, 0x32, 0x38, 0x8b, 0x37, 0xf9, 0x6d, 0xbc,
+	0x11, 0xe2, 0xff, 0x52, 0xf6, 0xa1, 0x9d, 0x26, 0x26, 0xe1, 0x09, 0x6f, 0xa7, 0x09, 0x5e, 0x83,
+	0x2b, 0xad, 0x61, 0xbc, 0x5a, 0x7f, 0xc9, 0xfd, 0xce, 0xb0, 0x33, 0x72, 0xf6, 0x0f, 0x16, 0xd7,
+	0x7a, 0xfc, 0x98, 0x19, 0x7c, 0x67, 0xe0, 0x1e, 0xc2, 0x94, 0xc3, 0x8c, 0x1b, 0x51, 0x70, 0x1f,
+	0x65, 0xff, 0x36, 0xf7, 0x10, 0x64, 0xfc, 0x0a, 0x7a, 0xf5, 0xc5, 0x42, 0x0f, 0x06, 0xf1, 0x72,
+	0x3e, 0x8d, 0x97, 0xb3, 0xd9, 0x0d, 0x8f, 0x3e, 0x2e, 0xa3, 0xf9, 0x62, 0xd0, 0x42, 0x1f, 0xbc,
+	0xc9, 0xec, 0x5d, 0xf4, 0x7e, 0x31, 0xe1, 0xd1, 0x9b, 0x45, 0xb4, 0xef, 0xb0, 0xf1, 0x35, 0x38,
+	0xb5, 0xdd, 0x40, 0x84, 0x7e, 0x4d, 0x1e, 0xcf, 0x3e, 0x0d, 0x5a, 0x78, 0x01, 0xd8, 0x10, 0x97,
+	0x38, 0x0b, 0x7f, 0x30, 0xe8, 0x7d, 0x50, 0x3a, 0xcb, 0xe6, 0xa4, 0xb6, 0xe9, 0x9a, 0xf0, 0x35,
+	0x9c, 0xc5, 0x2a, 0x5b, 0x53, 0x9e, 0xef, 0x12, 0xe3, 0x45, 0x63, 0x04, 0x9b, 0xf3, 0xd2, 0xfb,
+	0x03, 0x2f, 0xef, 0xf0, 0x05, 0xf4, 0xaa, 0xfd, 0x98, 0x28, 0x5a, 0x69, 0x42, 0xef, 0x78, 0x8d,
+	0xac, 0x16, 0x1b, 0xa8, 0x14, 0xc5, 0xe7, 0xae, 0xf9, 0x59, 0x9f, 0xfe, 0x0e, 0x00, 0x00, 0xff,
+	0xff, 0x1f, 0x45, 0x8e, 0x20, 0xd7, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -311,6 +485,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type OrtooServiceClient interface {
 	ProcessPushPull(ctx context.Context, in *PushPullRequest, opts ...grpc.CallOption) (*PushPullReply, error)
+	ClientCreate(ctx context.Context, in *ClientRequest, opts ...grpc.CallOption) (*ClientReply, error)
 }
 
 type ortooServiceClient struct {
@@ -330,9 +505,19 @@ func (c *ortooServiceClient) ProcessPushPull(ctx context.Context, in *PushPullRe
 	return out, nil
 }
 
+func (c *ortooServiceClient) ClientCreate(ctx context.Context, in *ClientRequest, opts ...grpc.CallOption) (*ClientReply, error) {
+	out := new(ClientReply)
+	err := c.cc.Invoke(ctx, "/model.OrtooService/ClientCreate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrtooServiceServer is the server API for OrtooService service.
 type OrtooServiceServer interface {
 	ProcessPushPull(context.Context, *PushPullRequest) (*PushPullReply, error)
+	ClientCreate(context.Context, *ClientRequest) (*ClientReply, error)
 }
 
 func RegisterOrtooServiceServer(s *grpc.Server, srv OrtooServiceServer) {
@@ -357,6 +542,24 @@ func _OrtooService_ProcessPushPull_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrtooService_ClientCreate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClientRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrtooServiceServer).ClientCreate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/model.OrtooService/ClientCreate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrtooServiceServer).ClientCreate(ctx, req.(*ClientRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _OrtooService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "model.OrtooService",
 	HandlerType: (*OrtooServiceServer)(nil),
@@ -364,6 +567,10 @@ var _OrtooService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ProcessPushPull",
 			Handler:    _OrtooService_ProcessPushPull_Handler,
+		},
+		{
+			MethodName: "ClientCreate",
+			Handler:    _OrtooService_ClientCreate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

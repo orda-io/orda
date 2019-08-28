@@ -20,7 +20,12 @@ func (s *ClientServerTestSuite) SetupTest() {
 }
 
 func (s *ClientServerTestSuite) TestClientServer() {
-	client := client.NewOrtooClient("127.0.0.1:19061")
+	config := &client.OrtooClientConfig{
+		Address:        "127.0.0.1",
+		Port:           19061,
+		CollectionName: "",
+	}
+	client := client.NewOrtooClient(config)
 	if err := client.Connect(); err != nil {
 		s.Suite.Fail("fail to connect server")
 	}

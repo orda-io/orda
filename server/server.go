@@ -15,6 +15,11 @@ type OrtooServer struct {
 	server *grpc.Server
 }
 
+func (o *OrtooServer) ClientCreate(ctx context.Context, in *model.ClientCreateRequest) (*model.ClientCreateReply, error) {
+
+	return model.NewClientCreateReply(), nil
+}
+
 func (o *OrtooServer) ProcessPushPull(ctx context.Context, in *model.PushPullRequest) (*model.PushPullReply, error) {
 	log.Logger.Infof("Received: %v", proto.MarshalTextString(in))
 	return &model.PushPullReply{Id: in.Id}, nil
@@ -32,6 +37,7 @@ func (o *OrtooServer) Start() {
 		log.Logger.Fatalf("failed to listen: %v", err)
 	}
 	o.server = grpc.NewServer()
+
 	model.RegisterOrtooServiceServer(o.server, o)
 	if err := o.server.Serve(lis); err != nil {
 		_ = log.OrtooError(err, "failed to serve")
