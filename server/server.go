@@ -1,28 +1,18 @@
 package server
 
 import (
-	"context"
-	"github.com/golang/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/server/service"
 	"google.golang.org/grpc"
 
 	"net"
 )
 
 type OrtooServer struct {
-	conf   *OrtooServerConfig
-	server *grpc.Server
-}
-
-func (o *OrtooServer) ClientCreate(ctx context.Context, in *model.ClientCreateRequest) (*model.ClientCreateReply, error) {
-
-	return model.NewClientCreateReply(), nil
-}
-
-func (o *OrtooServer) ProcessPushPull(ctx context.Context, in *model.PushPullRequest) (*model.PushPullReply, error) {
-	log.Logger.Infof("Received: %v", proto.MarshalTextString(in))
-	return &model.PushPullReply{Id: in.Id}, nil
+	conf    *OrtooServerConfig
+	service *service.OrtooService
+	server  *grpc.Server
 }
 
 func NewOrtooServer(conf *OrtooServerConfig) *OrtooServer {
@@ -37,8 +27,8 @@ func (o *OrtooServer) Start() {
 		log.Logger.Fatalf("failed to listen: %v", err)
 	}
 	o.server = grpc.NewServer()
-
-	model.RegisterOrtooServiceServer(o.server, o)
+	o.service = &service.OrtooService{}
+	model.RegisterOrtooServiceServer(o.server, o.service)
 	if err := o.server.Serve(lis); err != nil {
 		_ = log.OrtooError(err, "failed to serve")
 	}

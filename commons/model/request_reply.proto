@@ -6,9 +6,10 @@ import "model.proto";
 
 message RequestHeader {
     string version = 1;
+    uint32 seq = 2;
     oneof type {
-        TypeRequests typeRequest = 2;
-        TypeReplies typeReply = 3;
+        TypeRequests typeRequest = 3;
+        TypeReplies typeReply = 4;
     }
 }
 
@@ -37,7 +38,6 @@ message ClientRequest {
 
 message ClientReply {
     RequestHeader header = 1;
-
 }
 
 message PushPullRequest {

@@ -15,5 +15,4 @@ func (d *DummyWire) DeliverOperation(wired WiredDatatype, ops model.Operation) {
 }
 
 func (d *DummyWire) DeliverTransaction(wired WiredDatatype, transaction []model.Operation) {
-
 }

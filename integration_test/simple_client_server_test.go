@@ -25,7 +25,10 @@ func (s *ClientServerTestSuite) TestClientServer() {
 		Port:           19061,
 		CollectionName: "",
 	}
-	client := client.NewOrtooClient(config)
+	client, err := client.NewOrtooClient(config)
+	if err != nil {
+		s.T().Fail()
+	}
 	if err := client.Connect(); err != nil {
 		s.Suite.Fail("fail to connect server")
 	}

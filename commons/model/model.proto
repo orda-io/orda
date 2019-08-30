@@ -6,6 +6,12 @@ message Client {
     bytes cuid = 1;
     string alias = 2;
     string collection = 3;
+    TypeSync syncType = 4;
+}
+
+enum TypeSync {
+    MANUALLY = 0;
+    INSTANTLY_WEBSOCKET = 1;
 }
 
 message OperationID {
