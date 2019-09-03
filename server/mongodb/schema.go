@@ -1,7 +1,7 @@
 package mongodb
 
-const CollectionClientName = "_/\\_Clients"
+const CollectionNameClient = "-_-Clients"
 
 var CollectionMap = map[string]string{
-	CollectionClientName: CollectionClientName,
+	CollectionNameClient: CollectionNameClient,
 }

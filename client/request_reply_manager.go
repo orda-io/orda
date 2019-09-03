@@ -25,7 +25,7 @@ func NewRequestReplyManager(ctx *context.OrtooContext, host string) *requestRepl
 
 func (r *requestReplyManager) ExchangeClientRequestReply(client *model.Client) error {
 	request := model.NewClientRequest(client, r.seq)
-	res, err := r.serviceClient.ClientCreate(r.ctx, request)
+	_, err := r.serviceClient.ClientCreate(r.ctx, request)
 	if err != nil {
 		return log.OrtooError(err, "fail to exchange clientRequestReply")
 	}

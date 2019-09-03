@@ -1,11 +1,14 @@
 package mongodb
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"context"
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 type CollectionClient struct {
 	*Collection
 }
 
-func NewCollectionClient(db *mongo.Database) *CollectionClient {
-	return &CollectionClient{NewCollection(db)}
+func NewCollectionClient(ctx context.Context, collection *mongo.Collection) *CollectionClient {
+	return &CollectionClient{NewCollection(ctx, collection)}
 }

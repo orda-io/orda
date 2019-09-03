@@ -29,12 +29,12 @@ func NewIntCounter(c client.Client, w datatypes.Wire) (IntCounter, error) {
 	snapshot := &intCounterSnapshot{
 		value: 0,
 	}
-	transactionMgr, err := datatypes.NewTransactionManager(model.TypeDatatype_INT_COUNTER, w, snapshot)
+	transactionDatatype, err := datatypes.NewTransactionDatatype(model.TypeDatatype_INT_COUNTER, w, snapshot)
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create transaction manager")
 	}
 	intCounter := &intCounter{
-		TransactionDatatypeImpl: transactionMgr,
+		TransactionDatatypeImpl: transactionDatatype,
 		snapshot:                snapshot,
 		transactionCtx:          nil,
 	}

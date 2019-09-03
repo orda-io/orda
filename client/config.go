@@ -2,6 +2,7 @@ package client
 
 import "fmt"
 
+//OrtooClientConfig is a configuration for OrtooClient
 type OrtooClientConfig struct {
 	Address        string
 	Port           int

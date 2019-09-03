@@ -2,7 +2,10 @@ version: "3"
 services:
   mongodb:
     container_name: ortoo_mongodb_testing
-    image: mongo:4.1.13-bionic
+    image: mongo:4.2.0-bionic
+    volumes:
+      - ./docker:/data
+      - mongodb_volume:/data/db
     ports:
       - 27017:27017
     environment:
@@ -22,3 +25,5 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: ortoo-test
     depends_on:
       - mongodb
+volumes:
+  mongodb_volume:

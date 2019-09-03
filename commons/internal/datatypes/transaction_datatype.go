@@ -9,6 +9,7 @@ import (
 
 const NotUserTransactionTag = "NotUserTransactionTag!@#$%ORTOO"
 
+//TransactionDatatypeImpl is the datatype responsible for the transaction.
 type TransactionDatatypeImpl struct {
 	*WiredDatatypeImpl
 	mutex            *sync.RWMutex
@@ -20,10 +21,12 @@ type TransactionDatatypeImpl struct {
 	transactionCtx   *TransactionContext
 }
 
+//TransactionDatatype is an interface allowed for transactions.
 type TransactionDatatype interface {
 	ExecuteTransactionRemote(transaction []model.Operation) error
 }
 
+//TransactionContext is a context used for transactions
 type TransactionContext struct {
 	tag          string
 	opBuffer     []model.Operation
@@ -31,18 +34,19 @@ type TransactionContext struct {
 	rollbackOpID *model.OperationID
 }
 
-func (t *TransactionContext) GetOpId() *model.OperationID {
-	if len(t.opBuffer) > 0 {
-		return t.opBuffer[0].GetBase().Id
-	}
-	return nil
-}
+//func (t *TransactionContext) GetOpId() *model.OperationID {
+//	if len(t.opBuffer) > 0 {
+//		return t.opBuffer[0].GetBase().Id
+//	}
+//	return nil
+//}
 
 func (t *TransactionContext) appendOperation(op model.Operation) {
 	t.opBuffer = append(t.opBuffer, op)
 }
 
-func NewTransactionManager(ty model.TypeDatatype, w Wire, snapshot Snapshot) (*TransactionDatatypeImpl, error) {
+//NewTransactionDatatype creates a new TransactionDatatype
+func NewTransactionDatatype(ty model.TypeDatatype, w Wire, snapshot Snapshot) (*TransactionDatatypeImpl, error) {
 	wiredDatatype, err := NewWiredDataType(ty, w)
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create int counter due to wiredDatatype")
@@ -59,6 +63,7 @@ func NewTransactionManager(ty model.TypeDatatype, w Wire, snapshot Snapshot) (*T
 	}, nil
 }
 
+//ExecuteTransactionRemote is a method to execute a transaction of remote operations
 func (t *TransactionDatatypeImpl) ExecuteTransactionRemote(transaction []model.Operation) error {
 	var transactionCtx *TransactionContext = nil
 	if len(transaction) > 1 {
@@ -75,6 +80,7 @@ func (t *TransactionDatatypeImpl) ExecuteTransactionRemote(transaction []model.O
 	return nil
 }
 
+//ExecuteTransaction is a method to execute a transaction of operations
 func (t *TransactionDatatypeImpl) ExecuteTransaction(ctx *TransactionContext, op model.Operation, isLocal bool) (interface{}, error) {
 	transactionCtx, err := t.BeginTransaction(NotUserTransactionTag, ctx, false)
 	if err != nil {
@@ -108,6 +114,7 @@ func (t *TransactionDatatypeImpl) beginTransaction(tag string) *TransactionConte
 	return t.transactionCtx
 }
 
+//BeginTransaction is called before a transaction is executed
 func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionContext, withOp bool) (*TransactionContext, error) {
 	if t.isLocked && t.transactionCtx == ctx { // after called doTransaction
 		return nil, nil
@@ -126,6 +133,7 @@ func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionC
 	}
 }
 
+//Rollback is called to rollback a transaction
 func (t *TransactionDatatypeImpl) Rollback() error {
 	t.Logger.Infof("Begin the rollback: '%s'", t.transactionCtx.tag)
 	snapshotDatatype, _ := t.opExecuter.(SnapshotDatatype)
@@ -148,10 +156,12 @@ func (t *TransactionDatatypeImpl) Rollback() error {
 	return nil
 }
 
+//SetTransactionFail is called when a transaction fails
 func (t *TransactionDatatypeImpl) SetTransactionFail() {
 	t.success = false
 }
 
+//EndTransaction is called when a transaction ends
 func (t *TransactionDatatypeImpl) EndTransaction(ctx *TransactionContext, withOp bool) error {
 	if ctx == t.transactionCtx {
 		defer t.unlock()
