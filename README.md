@@ -7,7 +7,7 @@
 ### Working envirnment (Maybe work on less versions of them)
  - go 1.12.6
  - docker 18.09.2 (for running MongoDB)
- - MongoDB 4.1.13
+ - MongoDB 4.2.0
  
 ### Install
  ```bash
