@@ -1,5 +1,6 @@
 package model
 
+//NewOperationID creates a new OperationID.
 func NewOperationID() *OperationID {
 	return &OperationID{
 		Era:     0,
@@ -9,6 +10,7 @@ func NewOperationID() *OperationID {
 	}
 }
 
+//NewOperationIDWithCuid creates a new OperationID with CUID.
 func NewOperationIDWithCuid(cuid *Cuid) *OperationID {
 	return &OperationID{
 		Era:     0,
@@ -18,6 +20,7 @@ func NewOperationIDWithCuid(cuid *Cuid) *OperationID {
 	}
 }
 
+//SetOperationID sets the values of OperationID.
 func (o *OperationID) SetOperationID(other *OperationID) {
 	o.Era = other.Era
 	o.Lamport = other.Lamport
@@ -26,6 +29,7 @@ func (o *OperationID) SetOperationID(other *OperationID) {
 
 }
 
+//Next increments an OperationID
 func (o *OperationID) Next() *OperationID {
 	o.Lamport++
 	o.Seq++
@@ -37,6 +41,7 @@ func (o *OperationID) Next() *OperationID {
 	}
 }
 
+//SyncLamport synchronizes the value of Lamport.
 func (o *OperationID) SyncLamport(other uint64) uint64 {
 	if o.Lamport < other {
 		o.Lamport = other
@@ -46,10 +51,12 @@ func (o *OperationID) SyncLamport(other uint64) uint64 {
 	return o.Lamport
 }
 
+//SetClient sets clientID
 func (o *OperationID) SetClient(cuid []byte) {
 	o.Cuid = cuid
 }
 
+//Clone ...
 func (o *OperationID) Clone() *OperationID {
 	return &OperationID{
 		Era:     o.Era,
@@ -59,6 +66,7 @@ func (o *OperationID) Clone() *OperationID {
 	}
 }
 
+//Compare compares two operationIDs.
 func Compare(a, b *OperationID) int {
 	retEra := a.Era - b.Era
 	if retEra > 0 {

@@ -9,12 +9,15 @@ import (
 	"time"
 )
 
+//OrtooLog defines the log of OrtooLog
 type OrtooLog struct {
 	*logrus.Entry
 }
 
+//Logger is a global instance of OrtooLog
 var Logger = NewOrtooLog()
 
+//NewOrtooLog creates a new OrtooLog.
 func NewOrtooLog() *OrtooLog {
 	logger := logrus.New()
 	logger.SetFormatter(&ortooFormatter{})
@@ -22,6 +25,7 @@ func NewOrtooLog() *OrtooLog {
 	return &OrtooLog{logrus.NewEntry(logger)}
 }
 
+//NewOrtooLogWithTag creates a new OrtooLog with a tag.
 func NewOrtooLogWithTag(tag string) *OrtooLog {
 	return &OrtooLog{NewOrtooLog().WithFields(logrus.Fields{tagField: tag})}
 }
@@ -60,6 +64,7 @@ func getColorByLevel(level logrus.Level) int {
 type ortooFormatter struct {
 }
 
+//Format implements format of the OrtooLog.
 func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestampFormat := time.StampMilli
 	b := &bytes.Buffer{}
@@ -89,6 +94,7 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
+//OrtooError is a method to present a error log.
 func (o *OrtooLog) OrtooError(err error, format string, args ...interface{}) error {
 	_, file, line, _ := runtime.Caller(2)
 	relativeCallFile := strings.Replace(file, basepath, "", 1)
@@ -106,6 +112,7 @@ func (o *OrtooLog) OrtooError(err error, format string, args ...interface{}) err
 	return err
 }
 
+//OrtooError is a method wrapping Logger.OrtooError()
 func OrtooError(err error, format string, args ...interface{}) error {
 	return Logger.OrtooError(err, format, args...)
 }

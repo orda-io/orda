@@ -7,12 +7,14 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
+//IntCounter is an Ortoo datatype which provides int counter interfaces.
 type IntCounter interface {
 	datatypes.PublicWiredDatatypeInterface
 	IntCounterInTransaction
 	DoTransaction(tag string, transFunc func(intCounter IntCounterInTransaction) error) error
 }
 
+//IntCounterInTransaction is an Ortoo datatype which provides int counter interfaces in a transaction.
 type IntCounterInTransaction interface {
 	Get() int32
 	Increase() (int32, error)
@@ -25,6 +27,7 @@ type intCounter struct {
 	transactionCtx *datatypes.TransactionContext
 }
 
+//NewIntCounter creates a new int counter
 func NewIntCounter(c client.Client, w datatypes.Wire) (IntCounter, error) {
 	snapshot := &intCounterSnapshot{
 		value: 0,

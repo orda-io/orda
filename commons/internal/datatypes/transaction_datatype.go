@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+//NotUserTransactionTag ...
 const NotUserTransactionTag = "NotUserTransactionTag!@#$%ORTOO"
 
 //TransactionDatatypeImpl is the datatype responsible for the transaction.
@@ -65,7 +66,7 @@ func NewTransactionDatatype(ty model.TypeDatatype, w Wire, snapshot Snapshot) (*
 
 //ExecuteTransactionRemote is a method to execute a transaction of remote operations
 func (t *TransactionDatatypeImpl) ExecuteTransactionRemote(transaction []model.Operation) error {
-	var transactionCtx *TransactionContext = nil
+	var transactionCtx *TransactionContext
 	if len(transaction) > 1 {
 		if err := validateTransaction(transaction); err != nil {
 			return t.Logger.OrtooError(err, "fail to validate transaction")
@@ -94,9 +95,8 @@ func (t *TransactionDatatypeImpl) ExecuteTransaction(ctx *TransactionContext, op
 		}
 		t.transactionCtx.appendOperation(op)
 		return ret.(int32), nil
-	} else {
-		t.executeRemoteBase(op)
 	}
+	t.executeRemoteBase(op)
 	return nil, nil
 }
 
@@ -118,19 +118,18 @@ func (t *TransactionDatatypeImpl) beginTransaction(tag string) *TransactionConte
 func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionContext, withOp bool) (*TransactionContext, error) {
 	if t.isLocked && t.transactionCtx == ctx { // after called doTransaction
 		return nil, nil
-	} else {
-		t.transactionCtx = t.beginTransaction(tag)
-		if withOp {
-			op, err := model.NewTransactionBeginOperation(tag)
-			if err != nil {
-				return nil, t.Logger.OrtooError(err, "fail to create TransactionBeginOperation")
-			}
-			t.transactionCtx.uuid = op.Uuid
-			t.SetNextOpID(op)
-			t.transactionCtx.appendOperation(op)
-		}
-		return t.transactionCtx, nil
 	}
+	t.transactionCtx = t.beginTransaction(tag)
+	if withOp {
+		op, err := model.NewTransactionBeginOperation(tag)
+		if err != nil {
+			return nil, t.Logger.OrtooError(err, "fail to create TransactionBeginOperation")
+		}
+		t.transactionCtx.uuid = op.Uuid
+		t.SetNextOpID(op)
+		t.transactionCtx.appendOperation(op)
+	}
+	return t.transactionCtx, nil
 }
 
 //Rollback is called to rollback a transaction

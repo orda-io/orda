@@ -15,7 +15,7 @@ type requestReplyManager struct {
 	ctx           *context.OrtooContext
 }
 
-func NewRequestReplyManager(ctx *context.OrtooContext, host string) *requestReplyManager {
+func newRequestReplyManager(ctx *context.OrtooContext, host string) *requestReplyManager {
 	return &requestReplyManager{
 		seq:  0,
 		host: host,
@@ -23,7 +23,7 @@ func NewRequestReplyManager(ctx *context.OrtooContext, host string) *requestRepl
 	}
 }
 
-func (r *requestReplyManager) ExchangeClientRequestReply(client *model.Client) error {
+func (r *requestReplyManager) exchangeClientRequestReply(client *model.Client) error {
 	request := model.NewClientRequest(client, r.seq)
 	_, err := r.serviceClient.ClientCreate(r.ctx, request)
 	if err != nil {

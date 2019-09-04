@@ -8,7 +8,7 @@ import (
 
 type clientImpl struct {
 	conf          *OrtooClientConfig
-	clientId      model.Cuid
+	clientID      model.Cuid
 	model         *model.Client
 	ctx           *context.OrtooContext
 	reqRepManager *requestReplyManager
@@ -20,7 +20,7 @@ func (c *clientImpl) Connect() error {
 		return log.OrtooError(err, "fail to connect")
 	}
 
-	c.reqRepManager.ExchangeClientRequestReply(c.model)
+	c.reqRepManager.exchangeClientRequestReply(c.model)
 	return nil
 }
 
@@ -41,6 +41,7 @@ func (c *clientImpl) Send() {
 	//c.serviceClient.ProcessPushPull(ctx, model.NewPushPullRequest(1))
 }
 
+//Client is a client of Ortoo which manages connections and data
 type Client interface {
 	Connect() error
 	createDatatype()
@@ -48,13 +49,14 @@ type Client interface {
 	Send()
 }
 
+//NewOrtooClient creates a new Ortoo client
 func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 	ctx := context.NewOrtooContext()
 	cuid, err := model.NewCuid()
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create cuid")
 	}
-	NewRequestReplyManager(ctx, conf.getServiceHost())
+	newRequestReplyManager(ctx, conf.getServiceHost())
 	client := &model.Client{
 		Cuid:       cuid,
 		Alias:      conf.Alias,
@@ -64,6 +66,6 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 		conf:     conf,
 		ctx:      ctx,
 		model:    client,
-		clientId: cuid,
+		clientID: cuid,
 	}, nil
 }

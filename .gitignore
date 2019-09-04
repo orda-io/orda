@@ -12,3 +12,4 @@
 *.out
 *.sum
 .idea/
+docker/

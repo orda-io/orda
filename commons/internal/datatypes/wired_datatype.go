@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
+//WiredDatatypeImpl implements the datatype features related to the synchronization with Ortoo server
 type WiredDatatypeImpl struct {
 	Wire
 	*baseDatatype
@@ -14,14 +15,17 @@ type WiredDatatypeImpl struct {
 	buffer     []*model.OperationOnWire
 }
 
+//WiredDatatyper defines the interface used in Wire
 type WiredDatatyper interface {
 	GetWired() WiredDatatype
 }
 
+//PublicWiredDatatypeInterface defines the interface related to the synchronization with Ortoo server
 type PublicWiredDatatypeInterface interface {
 	PublicBaseDatatypeInterface
 }
 
+//WiredDatatype defines the internal interface related to the synchronization with Ortoo server
 type WiredDatatype interface {
 	GetBase() *baseDatatype
 	ExecuteRemote(op model.Operation)
@@ -30,6 +34,7 @@ type WiredDatatype interface {
 	ApplyPushPullPack(*model.PushPullPack)
 }
 
+//NewWiredDataType creates a new wiredDatatype
 func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) {
 	baseDatatype, err := newBaseDatatype(t)
 	if err != nil {
@@ -43,6 +48,7 @@ func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) 
 	}, nil
 }
 
+//GetBase ...
 func (w *WiredDatatypeImpl) GetBase() *baseDatatype {
 	return w.baseDatatype
 }
@@ -51,11 +57,13 @@ func (w *WiredDatatypeImpl) String() string {
 	return w.baseDatatype.String()
 }
 
+//ExecuteRemote ...
 func (w *WiredDatatypeImpl) ExecuteRemote(op model.Operation) {
 	w.opID.SyncLamport(op.GetBase().GetId().Lamport)
 	w.GetBase().executeRemoteBase(op)
 }
 
+//ReceiveRemoteOperations ...
 func (w *WiredDatatypeImpl) ReceiveRemoteOperations(operations []model.Operation) error {
 	i := 0
 	transactionDatatype := w.opExecuter.(TransactionDatatype)
@@ -79,6 +87,7 @@ func (w *WiredDatatypeImpl) ReceiveRemoteOperations(operations []model.Operation
 	return nil
 }
 
+//CreatePushPullPack ...
 func (w *WiredDatatypeImpl) CreatePushPullPack() *model.PushPullPack {
 	seq := w.checkPoint.Cseq
 	operations := w.getOperationOnWires(seq + 1)
@@ -95,6 +104,7 @@ func (w *WiredDatatypeImpl) CreatePushPullPack() *model.PushPullPack {
 	}
 }
 
+//ApplyPushPullPack ...
 func (w *WiredDatatypeImpl) ApplyPushPullPack(ppp *model.PushPullPack) {
 
 	opList := ppp.GetOperations()
