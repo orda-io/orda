@@ -7,21 +7,20 @@ import (
 )
 
 type clientImpl struct {
-	conf          *OrtooClientConfig
-	clientID      model.Cuid
-	model         *model.Client
-	ctx           *context.OrtooContext
-	reqRepManager *requestReplyManager
+	conf            *OrtooClientConfig
+	clientID        model.Cuid
+	model           *model.Client
+	ctx             *context.OrtooContext
+	requestReplyMgr *requestReplyManager
 }
 
 func (c *clientImpl) Connect() error {
-	err := c.reqRepManager.Connect()
+	err := c.requestReplyMgr.Connect()
 	if err != nil {
 		return log.OrtooError(err, "fail to connect")
 	}
 
-	c.reqRepManager.exchangeClientRequestReply(c.model)
-	return nil
+	return c.requestReplyMgr.exchangeClientRequestReply(c.model)
 }
 
 func (c *clientImpl) createDatatype() {
@@ -29,7 +28,7 @@ func (c *clientImpl) createDatatype() {
 }
 
 func (c *clientImpl) Close() error {
-	if err := c.reqRepManager.Close(); err != nil {
+	if err := c.requestReplyMgr.Close(); err != nil {
 		return log.OrtooError(err, "fail to close grpc connection")
 	}
 	return nil
@@ -56,16 +55,17 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create cuid")
 	}
-	newRequestReplyManager(ctx, conf.getServiceHost())
-	client := &model.Client{
+	requestReplyMgr := newRequestReplyManager(ctx, conf.getServiceHost())
+	model := &model.Client{
 		Cuid:       cuid,
 		Alias:      conf.Alias,
 		Collection: conf.CollectionName,
 	}
 	return &clientImpl{
-		conf:     conf,
-		ctx:      ctx,
-		model:    client,
-		clientID: cuid,
+		conf:            conf,
+		ctx:             ctx,
+		model:           model,
+		clientID:        cuid,
+		requestReplyMgr: requestReplyMgr,
 	}, nil
 }

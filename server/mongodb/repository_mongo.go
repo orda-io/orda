@@ -10,14 +10,12 @@ import (
 )
 
 type RepositoryMongo struct {
-	config           *Config
-	ctx              context.Context
-	client           *mongo.Client
-	db               *mongo.Database
-	collectionClient *CollectionClient
+	*CollectionClient
+	config *Config
+	ctx    context.Context
+	client *mongo.Client
+	db     *mongo.Database
 }
-
-var mongodb *RepositoryMongo
 
 func New(conf *Config) (*RepositoryMongo, error) {
 	ctx := context.TODO()
@@ -39,7 +37,7 @@ func New(conf *Config) (*RepositoryMongo, error) {
 
 func (r *RepositoryMongo) InitializeCollections() error {
 
-	r.collectionClient = NewCollectionClient(r.ctx, r.db.Collection(CollectionNameClient))
+	r.CollectionClient = NewCollectionClient(r.ctx, r.db.Collection(CollectionNameClient))
 
 	names, err := r.db.ListCollectionNames(r.ctx, bson.D{})
 	if err != nil {
@@ -51,7 +49,9 @@ func (r *RepositoryMongo) InitializeCollections() error {
 	}
 
 	if _, ok := realCollections[CollectionNameClient]; !ok {
-		r.collectionClient.Create()
+		if err := r.CollectionClient.Create(); err != nil {
+			return log.OrtooError(err, "fail to create the client collection")
+		}
 	}
 	return nil
 }

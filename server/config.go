@@ -1,19 +1,16 @@
 package server
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/knowhunger/ortoo/server/mongodb"
+)
 
 type OrtooServerConfig struct {
-	host string
-	port int
+	Host  string
+	Port  int
+	Mongo *mongodb.Config
 }
 
 func (o *OrtooServerConfig) getHostAddress() string {
-	return fmt.Sprintf("%s:%d", o.host, o.port)
-}
-
-func DefaultConfig() *OrtooServerConfig {
-	return &OrtooServerConfig{
-		host: "0.0.0.0",
-		port: 19061,
-	}
+	return fmt.Sprintf("%s:%d", o.Host, o.Port)
 }

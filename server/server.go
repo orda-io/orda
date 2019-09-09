@@ -24,15 +24,19 @@ func NewOrtooServer(conf *OrtooServerConfig) *OrtooServer {
 func (o *OrtooServer) Start() {
 	lis, err := net.Listen("tcp", o.conf.getHostAddress())
 	if err != nil {
-		log.Logger.Fatalf("failed to listen: %v", err)
+		log.Logger.Fatalf("fail to listen: %v", err)
 	}
 	o.server = grpc.NewServer()
-	o.service = &service.OrtooService{}
+	if o.service, err = service.NewOrtooService(o.conf.Mongo); err != nil {
+		panic("fail to connect MongoDB")
+	}
 	model.RegisterOrtooServiceServer(o.server, o.service)
+	o.service.Initialize()
 	if err := o.server.Serve(lis); err != nil {
-		_ = log.OrtooError(err, "failed to serve")
+		_ = log.OrtooError(err, "fail to serve grpc")
 	}
 	log.Logger.Info("end of start()")
+
 }
 
 func (o *OrtooServer) Close() {

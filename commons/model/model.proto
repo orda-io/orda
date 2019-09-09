@@ -11,7 +11,7 @@ message Client {
 
 enum TypeSync {
     MANUALLY = 0;
-    INSTANTLY_WEBSOCKET = 1;
+    INSTANTLY_WS = 1;
 }
 
 message OperationID {

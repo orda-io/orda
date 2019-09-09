@@ -16,7 +16,7 @@ func NewClientRequest(client *Client, seq uint32) *ClientRequest {
 		Header: &RequestHeader{
 			Version: ProtocolVersion,
 			Seq:     seq,
-			Type:    &RequestHeader_TypeRequest{TypeRequests_CLIENTCREATE_REQUEST},
+			Type:    &RequestHeader_TypeRequest{TypeRequests_CLIENT_REQUEST},
 		},
 		Client: client,
 	}
@@ -27,7 +27,7 @@ func NewClientCreateReply(seq uint32) *ClientReply {
 		Header: &RequestHeader{
 			Version: ProtocolVersion,
 			Seq:     seq,
-			Type:    &RequestHeader_TypeReply{TypeReplies_CLIENTCREATE_REPLY},
+			Type:    &RequestHeader_TypeReply{TypeReplies_CLIENT_REPLY},
 		},
 	}
 }

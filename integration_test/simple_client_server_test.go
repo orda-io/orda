@@ -1,4 +1,4 @@
-package integration_test
+package integration
 
 import (
 	"github.com/knowhunger/ortoo/client"
@@ -14,27 +14,26 @@ type ClientServerTestSuite struct {
 }
 
 func (s *ClientServerTestSuite) SetupTest() {
-	s.server = server.NewOrtooServer(server.DefaultConfig())
+	s.server = server.NewOrtooServer(NewTestOrtooServerConfig())
 	go s.server.Start()
 	s.T().Log("SetupTest")
 }
 
 func (s *ClientServerTestSuite) TestClientServer() {
-	config := &client.OrtooClientConfig{
-		Address:        "127.0.0.1",
-		Port:           19061,
-		CollectionName: "",
-	}
-	client, err := client.NewOrtooClient(config)
-	if err != nil {
-		s.T().Fail()
-	}
-	if err := client.Connect(); err != nil {
-		s.Suite.Fail("fail to connect server")
-	}
-	defer client.Close()
-	log.Logger.Infof("%+v", client)
-	client.Send()
+	s.Run("Can create a client with server", func() {
+		config := NewTestOrtooClientConfig()
+		client1, err := client.NewOrtooClient(config)
+		if err != nil {
+			s.T().Fail()
+		}
+		if err := client1.Connect(); err != nil {
+			s.Suite.Fail("fail to connect server")
+		}
+		defer client1.Close()
+		log.Logger.Infof("%+v", client1)
+		client1.Send()
+	})
+
 }
 
 func (s *ClientServerTestSuite) TearDownTest() {

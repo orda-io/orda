@@ -20,7 +20,7 @@ func newUniqueID() (uniqueID, error) {
 }
 
 func (u uniqueID) String() string {
-	uid, err := uuid.FromBytes([]byte(u))
+	uid, err := uuid.FromBytes(u)
 	if err != nil {
 		return "fail to make string to uuid"
 	}

@@ -19,6 +19,10 @@ func newNilCuid() Cuid {
 	return Cuid(bin)
 }
 
+func (c *Cuid) String() string {
+	return uniqueID(*c).String()
+}
+
 func (c *Cuid) Compare(o *Cuid) {
 
 }

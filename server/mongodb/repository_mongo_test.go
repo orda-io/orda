@@ -1,15 +1,13 @@
 package mongodb
 
 import (
+	integration "github.com/knowhunger/ortoo/integration_test"
 	"log"
 	"testing"
 )
 
 func TestMongo(t *testing.T) {
-	conf := &Config{
-		Host:    "mongodb://root:ortoo-test@localhost:27017",
-		OrtooDB: "ortoo_test",
-	}
+	conf := integration.NewTestMongoDBConfig()
 	mongo, err := New(conf)
 	if err != nil {
 		log.Fatalf("fail to create mongoDB instance:%v", err)

@@ -19,12 +19,12 @@ message ReplyHeader {
 
 enum TypeRequests {
     PUSHPULL_REQUEST = 0;
-    CLIENTCREATE_REQUEST = 1;
+    CLIENT_REQUEST = 1;
 }
 
 enum TypeReplies {
     PUSHPULL_REPLY = 0;
-    CLIENTCREATE_REPLY = 1;
+    CLIENT_REPLY = 1;
 }
 
 message ReplyState {
