@@ -2,7 +2,6 @@ package integration
 
 import (
 	"github.com/knowhunger/ortoo/client"
-	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/stretchr/testify/suite"
 	"testing"
@@ -25,12 +24,13 @@ func (s *ClientServerTestSuite) TestClientServer() {
 		client1, err := client.NewOrtooClient(config)
 		if err != nil {
 			s.T().Fail()
+			return
 		}
 		if err := client1.Connect(); err != nil {
 			s.Suite.Fail("fail to connect server")
 		}
 		defer client1.Close()
-		log.Logger.Infof("%+v", client1)
+
 		client1.Send()
 	})
 

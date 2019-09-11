@@ -21,13 +21,3 @@ func NewClientRequest(client *Client, seq uint32) *ClientRequest {
 		Client: client,
 	}
 }
-
-func NewClientCreateReply(seq uint32) *ClientReply {
-	return &ClientReply{
-		Header: &RequestHeader{
-			Version: ProtocolVersion,
-			Seq:     seq,
-			Type:    &RequestHeader_TypeReply{TypeReplies_CLIENT_REPLY},
-		},
-	}
-}

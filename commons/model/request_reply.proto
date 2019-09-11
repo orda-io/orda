@@ -22,23 +22,34 @@ enum TypeRequests {
     CLIENT_REQUEST = 1;
 }
 
-enum TypeReplies {
-    PUSHPULL_REPLY = 0;
-    CLIENT_REPLY = 1;
-}
-
-message ReplyState {
-
-}
 
 message ClientRequest {
     RequestHeader header = 1;
     Client client = 2;
 }
 
+enum TypeReplies {
+    PUSHPULL_REPLY = 0;
+    CLIENT_REPLY = 1;
+}
+
+enum TypeReplyStates {
+    OK = 0;
+    ERR_CLIENT_INVALID_COLLECTION = 101;
+    ERR_CLIENT_INVALID_SYNCTYPE = 102;
+}
+
+message ReplyState {
+    TypeReplyStates state = 1;
+    string msg = 2;
+}
+
+
 message ClientReply {
     RequestHeader header = 1;
+    ReplyState state = 2;
 }
+
 
 message PushPullRequest {
     RequestHeader header = 1;

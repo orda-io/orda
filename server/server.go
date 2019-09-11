@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/server/service"
@@ -21,7 +22,7 @@ func NewOrtooServer(conf *OrtooServerConfig) *OrtooServer {
 	}
 }
 
-func (o *OrtooServer) Start() {
+func (o *OrtooServer) Start() error {
 	lis, err := net.Listen("tcp", o.conf.getHostAddress())
 	if err != nil {
 		log.Logger.Fatalf("fail to listen: %v", err)
@@ -31,12 +32,15 @@ func (o *OrtooServer) Start() {
 		panic("fail to connect MongoDB")
 	}
 	model.RegisterOrtooServiceServer(o.server, o.service)
-	o.service.Initialize()
+	err = o.service.Initialize(context.Background())
+	if err != nil {
+		return log.OrtooError(err, "fail to initialize service")
+	}
 	if err := o.server.Serve(lis); err != nil {
 		_ = log.OrtooError(err, "fail to serve grpc")
 	}
 	log.Logger.Info("end of start()")
-
+	return nil
 }
 
 func (o *OrtooServer) Close() {

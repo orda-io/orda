@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/mongodb"
 )
@@ -19,8 +20,8 @@ func NewOrtooService(mongoConf *mongodb.Config) (*OrtooService, error) {
 	}, nil
 }
 
-func (o *OrtooService) Initialize() error {
-	if err := o.mongo.InitializeCollections(); err != nil {
+func (o *OrtooService) Initialize(ctx context.Context) error {
+	if err := o.mongo.InitializeCollections(ctx); err != nil {
 		return log.OrtooError(err, "fail to initialize mongoDB")
 	}
 	return nil

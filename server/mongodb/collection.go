@@ -10,24 +10,23 @@ import (
 type Collection struct {
 	name       string
 	collection *mongo.Collection
-	ctx        context.Context
 }
 
-func NewCollection(ctx context.Context, collection *mongo.Collection) *Collection {
+func NewCollection(collection *mongo.Collection) *Collection {
 	return &Collection{
-		ctx:        ctx,
 		collection: collection,
 	}
 }
 
-func (c *Collection) Create() error {
-	result, err := c.collection.InsertOne(c.ctx, bson.D{})
+//Create creates an empty collection by inserting a document and immediately deleting it.
+func (c *Collection) Create(ctx context.Context) error {
+	result, err := c.collection.InsertOne(ctx, bson.D{})
 	if err != nil {
 		return log.OrtooError(err, "fail to create collection:%s", c.name)
 	}
-	log.Logger.Infof("%+v", result.InsertedID)
-	result2, err := c.collection.DeleteOne(c.ctx, bson.D{bson.E{"_id", result.InsertedID}})
-	log.Logger.Infof("%+v", result2)
+	if _, err = c.collection.DeleteOne(ctx, filterByID(result.InsertedID)); err != nil {
+		return log.OrtooError(err, "fail to delete inserted one")
+	}
 	log.Logger.Infof("Create collection:%s", c.collection.Name())
 	return nil
 }

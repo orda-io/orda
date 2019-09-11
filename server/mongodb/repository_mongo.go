@@ -35,11 +35,11 @@ func New(conf *Config) (*RepositoryMongo, error) {
 	}, nil
 }
 
-func (r *RepositoryMongo) InitializeCollections() error {
+func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 
-	r.CollectionClient = NewCollectionClient(r.ctx, r.db.Collection(CollectionNameClient))
+	r.CollectionClient = NewCollectionClient(r.db.Collection(CollectionNameClient))
 
-	names, err := r.db.ListCollectionNames(r.ctx, bson.D{})
+	names, err := r.db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
 		return log.OrtooError(err, "fail to list collection names")
 	}
@@ -49,9 +49,24 @@ func (r *RepositoryMongo) InitializeCollections() error {
 	}
 
 	if _, ok := realCollections[CollectionNameClient]; !ok {
-		if err := r.CollectionClient.Create(); err != nil {
+		if err := r.CollectionClient.Create(ctx); err != nil {
 			return log.OrtooError(err, "fail to create the client collection")
 		}
 	}
 	return nil
+}
+
+func (r *RepositoryMongo) GetOrCreateCollectionSnapshot(ctx context.Context, name string) (*CollectionSnapshot, error) {
+	snapshotName := PrefixSnapshot + name
+	names, err := r.db.ListCollectionNames(ctx, filterByName(snapshotName))
+	if err != nil {
+		return nil, log.OrtooError(err, "fail to list collections")
+	}
+	collection := newCollectionSnapshot(r.db.Collection(snapshotName), snapshotName)
+	if len(names) == 0 {
+		if err := collection.Create(ctx); err != nil {
+			return nil, log.OrtooError(err, "fail to create collection")
+		}
+	}
+	return collection, nil
 }
