@@ -8,7 +8,9 @@ import (
 type rpcErrorCode uint32
 
 const (
+	//RPCErrMongoDB is the error related to MongoDB
 	RPCErrMongoDB rpcErrorCode = iota
+	//RPCErrClientInconsistentCollection is the error when a client has different collection with the previously
 	RPCErrClientInconsistentCollection
 )
 
@@ -17,6 +19,7 @@ var formatMap = map[rpcErrorCode]string{
 	RPCErrClientInconsistentCollection: "invalid collections: %s (server) vs. %s (client)",
 }
 
+//RPCError defines errors of RPC
 type RPCError struct {
 	code rpcErrorCode
 	msg  string
@@ -30,6 +33,7 @@ func (r *RPCError) Error() string {
 	return r.msg
 }
 
+//NewRPCError creates a new RPCError
 func NewRPCError(code rpcErrorCode, args ...interface{}) *RPCError {
 	format := fmt.Sprintf("[RPCErr: %d] ", code) + formatMap[code]
 	err := &RPCError{

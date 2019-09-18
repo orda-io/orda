@@ -121,7 +121,7 @@ func OrtooError(err error, format string, args ...interface{}) error {
 	return Logger.ortooError(err, 2, format, args...)
 }
 
-//OrtooError is a method wrapping Logger.OrtooError()
+//OrtooErrorWithSkip is a method wrapping Logger.OrtooError()
 func OrtooErrorWithSkip(err error, skip int, format string, args ...interface{}) error {
 	return Logger.ortooError(err, skip, format, args...)
 }

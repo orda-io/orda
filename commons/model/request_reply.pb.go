@@ -22,81 +22,81 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type TypeRequests int32
+type TypeRequest int32
 
 const (
-	TypeRequests_PUSHPULL_REQUEST TypeRequests = 0
-	TypeRequests_CLIENT_REQUEST   TypeRequests = 1
+	TypeRequest_PUSHPULL_REQUEST TypeRequest = 0
+	TypeRequest_CLIENT_REQUEST   TypeRequest = 1
 )
 
-var TypeRequests_name = map[int32]string{
+var TypeRequest_name = map[int32]string{
 	0: "PUSHPULL_REQUEST",
 	1: "CLIENT_REQUEST",
 }
 
-var TypeRequests_value = map[string]int32{
+var TypeRequest_value = map[string]int32{
 	"PUSHPULL_REQUEST": 0,
 	"CLIENT_REQUEST":   1,
 }
 
-func (x TypeRequests) String() string {
-	return proto.EnumName(TypeRequests_name, int32(x))
+func (x TypeRequest) String() string {
+	return proto.EnumName(TypeRequest_name, int32(x))
 }
 
-func (TypeRequests) EnumDescriptor() ([]byte, []int) {
+func (TypeRequest) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_7bf67568605725bb, []int{0}
 }
 
-type TypeReplies int32
+type TypeResponse int32
 
 const (
-	TypeReplies_PUSHPULL_REPLY TypeReplies = 0
-	TypeReplies_CLIENT_REPLY   TypeReplies = 1
+	TypeResponse_PUSHPULL_REPLY TypeResponse = 0
+	TypeResponse_CLIENT_REPLY   TypeResponse = 1
 )
 
-var TypeReplies_name = map[int32]string{
+var TypeResponse_name = map[int32]string{
 	0: "PUSHPULL_REPLY",
 	1: "CLIENT_REPLY",
 }
 
-var TypeReplies_value = map[string]int32{
+var TypeResponse_value = map[string]int32{
 	"PUSHPULL_REPLY": 0,
 	"CLIENT_REPLY":   1,
 }
 
-func (x TypeReplies) String() string {
-	return proto.EnumName(TypeReplies_name, int32(x))
+func (x TypeResponse) String() string {
+	return proto.EnumName(TypeResponse_name, int32(x))
 }
 
-func (TypeReplies) EnumDescriptor() ([]byte, []int) {
+func (TypeResponse) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_7bf67568605725bb, []int{1}
 }
 
-type TypeReplyStates int32
+type TypeResponseStates int32
 
 const (
-	TypeReplyStates_OK                            TypeReplyStates = 0
-	TypeReplyStates_ERR_CLIENT_INVALID_COLLECTION TypeReplyStates = 101
-	TypeReplyStates_ERR_CLIENT_INVALID_SYNCTYPE   TypeReplyStates = 102
+	TypeResponseStates_OK                            TypeResponseStates = 0
+	TypeResponseStates_ERR_CLIENT_INVALID_COLLECTION TypeResponseStates = 101
+	TypeResponseStates_ERR_CLIENT_INVALID_SYNCTYPE   TypeResponseStates = 102
 )
 
-var TypeReplyStates_name = map[int32]string{
+var TypeResponseStates_name = map[int32]string{
 	0:   "OK",
 	101: "ERR_CLIENT_INVALID_COLLECTION",
 	102: "ERR_CLIENT_INVALID_SYNCTYPE",
 }
 
-var TypeReplyStates_value = map[string]int32{
+var TypeResponseStates_value = map[string]int32{
 	"OK":                            0,
 	"ERR_CLIENT_INVALID_COLLECTION": 101,
 	"ERR_CLIENT_INVALID_SYNCTYPE":   102,
 }
 
-func (x TypeReplyStates) String() string {
-	return proto.EnumName(TypeReplyStates_name, int32(x))
+func (x TypeResponseStates) String() string {
+	return proto.EnumName(TypeResponseStates_name, int32(x))
 }
 
-func (TypeReplyStates) EnumDescriptor() ([]byte, []int) {
+func (TypeResponseStates) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_7bf67568605725bb, []int{2}
 }
 
@@ -156,11 +156,11 @@ type isRequestHeader_Type interface {
 }
 
 type RequestHeader_TypeRequest struct {
-	TypeRequest TypeRequests `protobuf:"varint,3,opt,name=typeRequest,proto3,enum=model.TypeRequests,oneof"`
+	TypeRequest TypeRequest `protobuf:"varint,3,opt,name=typeRequest,proto3,enum=model.TypeRequest,oneof"`
 }
 
 type RequestHeader_TypeReply struct {
-	TypeReply TypeReplies `protobuf:"varint,4,opt,name=typeReply,proto3,enum=model.TypeReplies,oneof"`
+	TypeReply TypeResponse `protobuf:"varint,4,opt,name=typeReply,proto3,enum=model.TypeResponse,oneof"`
 }
 
 func (*RequestHeader_TypeRequest) isRequestHeader_Type() {}
@@ -174,18 +174,18 @@ func (m *RequestHeader) GetType() isRequestHeader_Type {
 	return nil
 }
 
-func (m *RequestHeader) GetTypeRequest() TypeRequests {
+func (m *RequestHeader) GetTypeRequest() TypeRequest {
 	if x, ok := m.GetType().(*RequestHeader_TypeRequest); ok {
 		return x.TypeRequest
 	}
-	return TypeRequests_PUSHPULL_REQUEST
+	return TypeRequest_PUSHPULL_REQUEST
 }
 
-func (m *RequestHeader) GetTypeReply() TypeReplies {
+func (m *RequestHeader) GetTypeReply() TypeResponse {
 	if x, ok := m.GetType().(*RequestHeader_TypeReply); ok {
 		return x.TypeReply
 	}
-	return TypeReplies_PUSHPULL_REPLY
+	return TypeResponse_PUSHPULL_REPLY
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
@@ -196,90 +196,43 @@ func (*RequestHeader) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-type ReplyHeader struct {
-	Type                 TypeReplies `protobuf:"varint,1,opt,name=type,proto3,enum=model.TypeReplies" json:"type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+type ResponseHeader struct {
+	Type                 TypeResponse `protobuf:"varint,1,opt,name=type,proto3,enum=model.TypeResponse" json:"type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
-func (m *ReplyHeader) Reset()         { *m = ReplyHeader{} }
-func (m *ReplyHeader) String() string { return proto.CompactTextString(m) }
-func (*ReplyHeader) ProtoMessage()    {}
-func (*ReplyHeader) Descriptor() ([]byte, []int) {
+func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
+func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
+func (*ResponseHeader) ProtoMessage()    {}
+func (*ResponseHeader) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7bf67568605725bb, []int{1}
 }
 
-func (m *ReplyHeader) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ReplyHeader.Unmarshal(m, b)
+func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResponseHeader.Unmarshal(m, b)
 }
-func (m *ReplyHeader) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ReplyHeader.Marshal(b, m, deterministic)
+func (m *ResponseHeader) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResponseHeader.Marshal(b, m, deterministic)
 }
-func (m *ReplyHeader) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ReplyHeader.Merge(m, src)
+func (m *ResponseHeader) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResponseHeader.Merge(m, src)
 }
-func (m *ReplyHeader) XXX_Size() int {
-	return xxx_messageInfo_ReplyHeader.Size(m)
+func (m *ResponseHeader) XXX_Size() int {
+	return xxx_messageInfo_ResponseHeader.Size(m)
 }
-func (m *ReplyHeader) XXX_DiscardUnknown() {
-	xxx_messageInfo_ReplyHeader.DiscardUnknown(m)
+func (m *ResponseHeader) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResponseHeader.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ReplyHeader proto.InternalMessageInfo
+var xxx_messageInfo_ResponseHeader proto.InternalMessageInfo
 
-func (m *ReplyHeader) GetType() TypeReplies {
+func (m *ResponseHeader) GetType() TypeResponse {
 	if m != nil {
 		return m.Type
 	}
-	return TypeReplies_PUSHPULL_REPLY
-}
-
-type ReplyState struct {
-	State                TypeReplyStates `protobuf:"varint,1,opt,name=state,proto3,enum=model.TypeReplyStates" json:"state,omitempty"`
-	Msg                  string          `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *ReplyState) Reset()         { *m = ReplyState{} }
-func (m *ReplyState) String() string { return proto.CompactTextString(m) }
-func (*ReplyState) ProtoMessage()    {}
-func (*ReplyState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7bf67568605725bb, []int{2}
-}
-
-func (m *ReplyState) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ReplyState.Unmarshal(m, b)
-}
-func (m *ReplyState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ReplyState.Marshal(b, m, deterministic)
-}
-func (m *ReplyState) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ReplyState.Merge(m, src)
-}
-func (m *ReplyState) XXX_Size() int {
-	return xxx_messageInfo_ReplyState.Size(m)
-}
-func (m *ReplyState) XXX_DiscardUnknown() {
-	xxx_messageInfo_ReplyState.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ReplyState proto.InternalMessageInfo
-
-func (m *ReplyState) GetState() TypeReplyStates {
-	if m != nil {
-		return m.State
-	}
-	return TypeReplyStates_OK
-}
-
-func (m *ReplyState) GetMsg() string {
-	if m != nil {
-		return m.Msg
-	}
-	return ""
+	return TypeResponse_PUSHPULL_REPLY
 }
 
 type ClientRequest struct {
@@ -294,7 +247,7 @@ func (m *ClientRequest) Reset()         { *m = ClientRequest{} }
 func (m *ClientRequest) String() string { return proto.CompactTextString(m) }
 func (*ClientRequest) ProtoMessage()    {}
 func (*ClientRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7bf67568605725bb, []int{3}
+	return fileDescriptor_7bf67568605725bb, []int{2}
 }
 
 func (m *ClientRequest) XXX_Unmarshal(b []byte) error {
@@ -329,47 +282,94 @@ func (m *ClientRequest) GetClient() *Client {
 	return nil
 }
 
-type ClientReply struct {
+type ResponseState struct {
+	State                TypeResponseStates `protobuf:"varint,1,opt,name=state,proto3,enum=model.TypeResponseStates" json:"state,omitempty"`
+	Msg                  string             `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
+}
+
+func (m *ResponseState) Reset()         { *m = ResponseState{} }
+func (m *ResponseState) String() string { return proto.CompactTextString(m) }
+func (*ResponseState) ProtoMessage()    {}
+func (*ResponseState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7bf67568605725bb, []int{3}
+}
+
+func (m *ResponseState) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResponseState.Unmarshal(m, b)
+}
+func (m *ResponseState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResponseState.Marshal(b, m, deterministic)
+}
+func (m *ResponseState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResponseState.Merge(m, src)
+}
+func (m *ResponseState) XXX_Size() int {
+	return xxx_messageInfo_ResponseState.Size(m)
+}
+func (m *ResponseState) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResponseState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResponseState proto.InternalMessageInfo
+
+func (m *ResponseState) GetState() TypeResponseStates {
+	if m != nil {
+		return m.State
+	}
+	return TypeResponseStates_OK
+}
+
+func (m *ResponseState) GetMsg() string {
+	if m != nil {
+		return m.Msg
+	}
+	return ""
+}
+
+type ClientResponse struct {
 	Header               *RequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	State                *ReplyState    `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	State                *ResponseState `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
 }
 
-func (m *ClientReply) Reset()         { *m = ClientReply{} }
-func (m *ClientReply) String() string { return proto.CompactTextString(m) }
-func (*ClientReply) ProtoMessage()    {}
-func (*ClientReply) Descriptor() ([]byte, []int) {
+func (m *ClientResponse) Reset()         { *m = ClientResponse{} }
+func (m *ClientResponse) String() string { return proto.CompactTextString(m) }
+func (*ClientResponse) ProtoMessage()    {}
+func (*ClientResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7bf67568605725bb, []int{4}
 }
 
-func (m *ClientReply) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ClientReply.Unmarshal(m, b)
+func (m *ClientResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ClientResponse.Unmarshal(m, b)
 }
-func (m *ClientReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ClientReply.Marshal(b, m, deterministic)
+func (m *ClientResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ClientResponse.Marshal(b, m, deterministic)
 }
-func (m *ClientReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClientReply.Merge(m, src)
+func (m *ClientResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClientResponse.Merge(m, src)
 }
-func (m *ClientReply) XXX_Size() int {
-	return xxx_messageInfo_ClientReply.Size(m)
+func (m *ClientResponse) XXX_Size() int {
+	return xxx_messageInfo_ClientResponse.Size(m)
 }
-func (m *ClientReply) XXX_DiscardUnknown() {
-	xxx_messageInfo_ClientReply.DiscardUnknown(m)
+func (m *ClientResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ClientResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ClientReply proto.InternalMessageInfo
+var xxx_messageInfo_ClientResponse proto.InternalMessageInfo
 
-func (m *ClientReply) GetHeader() *RequestHeader {
+func (m *ClientResponse) GetHeader() *RequestHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *ClientReply) GetState() *ReplyState {
+func (m *ClientResponse) GetState() *ResponseState {
 	if m != nil {
 		return m.State
 	}
@@ -431,8 +431,8 @@ func (m *PushPullRequest) GetPushPullPacks() []*PushPullPack {
 	return nil
 }
 
-type PushPullReply struct {
-	Header               *ReplyHeader    `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+type PushPullResponse struct {
+	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Id                   int32           `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 	PushPullPacks        []*PushPullPack `protobuf:"bytes,3,rep,name=pushPullPacks,proto3" json:"pushPullPacks,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
@@ -440,46 +440,46 @@ type PushPullReply struct {
 	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *PushPullReply) Reset()         { *m = PushPullReply{} }
-func (m *PushPullReply) String() string { return proto.CompactTextString(m) }
-func (*PushPullReply) ProtoMessage()    {}
-func (*PushPullReply) Descriptor() ([]byte, []int) {
+func (m *PushPullResponse) Reset()         { *m = PushPullResponse{} }
+func (m *PushPullResponse) String() string { return proto.CompactTextString(m) }
+func (*PushPullResponse) ProtoMessage()    {}
+func (*PushPullResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7bf67568605725bb, []int{6}
 }
 
-func (m *PushPullReply) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_PushPullReply.Unmarshal(m, b)
+func (m *PushPullResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PushPullResponse.Unmarshal(m, b)
 }
-func (m *PushPullReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_PushPullReply.Marshal(b, m, deterministic)
+func (m *PushPullResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PushPullResponse.Marshal(b, m, deterministic)
 }
-func (m *PushPullReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PushPullReply.Merge(m, src)
+func (m *PushPullResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PushPullResponse.Merge(m, src)
 }
-func (m *PushPullReply) XXX_Size() int {
-	return xxx_messageInfo_PushPullReply.Size(m)
+func (m *PushPullResponse) XXX_Size() int {
+	return xxx_messageInfo_PushPullResponse.Size(m)
 }
-func (m *PushPullReply) XXX_DiscardUnknown() {
-	xxx_messageInfo_PushPullReply.DiscardUnknown(m)
+func (m *PushPullResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_PushPullResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_PushPullReply proto.InternalMessageInfo
+var xxx_messageInfo_PushPullResponse proto.InternalMessageInfo
 
-func (m *PushPullReply) GetHeader() *ReplyHeader {
+func (m *PushPullResponse) GetHeader() *ResponseHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *PushPullReply) GetId() int32 {
+func (m *PushPullResponse) GetId() int32 {
 	if m != nil {
 		return m.Id
 	}
 	return 0
 }
 
-func (m *PushPullReply) GetPushPullPacks() []*PushPullPack {
+func (m *PushPullResponse) GetPushPullPacks() []*PushPullPack {
 	if m != nil {
 		return m.PushPullPacks
 	}
@@ -487,56 +487,56 @@ func (m *PushPullReply) GetPushPullPacks() []*PushPullPack {
 }
 
 func init() {
-	proto.RegisterEnum("model.TypeRequests", TypeRequests_name, TypeRequests_value)
-	proto.RegisterEnum("model.TypeReplies", TypeReplies_name, TypeReplies_value)
-	proto.RegisterEnum("model.TypeReplyStates", TypeReplyStates_name, TypeReplyStates_value)
+	proto.RegisterEnum("model.TypeRequest", TypeRequest_name, TypeRequest_value)
+	proto.RegisterEnum("model.TypeResponse", TypeResponse_name, TypeResponse_value)
+	proto.RegisterEnum("model.TypeResponseStates", TypeResponseStates_name, TypeResponseStates_value)
 	proto.RegisterType((*RequestHeader)(nil), "model.RequestHeader")
-	proto.RegisterType((*ReplyHeader)(nil), "model.ReplyHeader")
-	proto.RegisterType((*ReplyState)(nil), "model.ReplyState")
+	proto.RegisterType((*ResponseHeader)(nil), "model.ResponseHeader")
 	proto.RegisterType((*ClientRequest)(nil), "model.ClientRequest")
-	proto.RegisterType((*ClientReply)(nil), "model.ClientReply")
+	proto.RegisterType((*ResponseState)(nil), "model.ResponseState")
+	proto.RegisterType((*ClientResponse)(nil), "model.ClientResponse")
 	proto.RegisterType((*PushPullRequest)(nil), "model.PushPullRequest")
-	proto.RegisterType((*PushPullReply)(nil), "model.PushPullReply")
+	proto.RegisterType((*PushPullResponse)(nil), "model.PushPullResponse")
 }
 
 func init() { proto.RegisterFile("request_reply.proto", fileDescriptor_7bf67568605725bb) }
 
 var fileDescriptor_7bf67568605725bb = []byte{
-	// 537 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0x5f, 0x8f, 0xd2, 0x4e,
-	0x14, 0xa5, 0xb0, 0xf0, 0x0b, 0xb7, 0x14, 0xfa, 0xbb, 0x4b, 0x36, 0xcd, 0x1a, 0x23, 0x36, 0x51,
-	0x09, 0xd9, 0xec, 0x03, 0x1b, 0xe3, 0xfa, 0x64, 0xb4, 0x36, 0x81, 0xd8, 0x40, 0x1d, 0xc0, 0x84,
-	0x07, 0x43, 0x90, 0x8e, 0x6e, 0x63, 0x77, 0xdb, 0xed, 0x94, 0x4d, 0xf8, 0x02, 0x26, 0xfa, 0x69,
-	0xfc, 0x88, 0x66, 0xfe, 0x14, 0x0a, 0xee, 0x8b, 0x26, 0x3e, 0x75, 0xe6, 0xcc, 0x39, 0xe7, 0xde,
-	0x33, 0xbd, 0x2d, 0x1c, 0xa7, 0xf4, 0x76, 0x4d, 0x59, 0xb6, 0x48, 0x69, 0x12, 0x6d, 0xce, 0x93,
-	0x34, 0xce, 0x62, 0xac, 0x5e, 0xc7, 0x01, 0x8d, 0x4e, 0x75, 0xf1, 0x90, 0x98, 0xfd, 0x53, 0x03,
-	0x83, 0x48, 0xee, 0x80, 0x2e, 0x03, 0x9a, 0xa2, 0x05, 0xff, 0xdd, 0xd1, 0x94, 0x85, 0xf1, 0x8d,
-	0xa5, 0x75, 0xb4, 0x6e, 0x9d, 0xe4, 0x5b, 0x34, 0xa1, 0xc2, 0xe8, 0xad, 0x55, 0xee, 0x68, 0x5d,
-	0x83, 0xf0, 0x25, 0xbe, 0x00, 0x3d, 0xdb, 0x24, 0x54, 0x19, 0x58, 0x95, 0x8e, 0xd6, 0x6d, 0xf6,
-	0x8f, 0xcf, 0x65, 0x81, 0xe9, 0xee, 0x84, 0x0d, 0x4a, 0xa4, 0xc8, 0xc4, 0x3e, 0xd4, 0xe5, 0x36,
-	0x89, 0x36, 0xd6, 0x91, 0x90, 0xe1, 0x9e, 0x2c, 0x89, 0x42, 0xca, 0x55, 0x3b, 0xda, 0x9b, 0x1a,
-	0x1c, 0xf1, 0x8d, 0xfd, 0x1c, 0x74, 0x01, 0xa8, 0x7e, 0x9f, 0x4a, 0x58, 0x34, 0x7b, 0xaf, 0x0b,
-	0x91, 0x32, 0x0f, 0x40, 0xc8, 0x26, 0xd9, 0x32, 0xa3, 0x78, 0x06, 0x55, 0xc6, 0x17, 0x4a, 0x76,
-	0x72, 0x20, 0x93, 0x2c, 0x46, 0x24, 0x89, 0x27, 0xbf, 0x66, 0x5f, 0x44, 0xf2, 0x3a, 0xe1, 0x4b,
-	0x3b, 0x00, 0xc3, 0x89, 0x42, 0x7a, 0x93, 0xe5, 0x89, 0xce, 0xa0, 0x76, 0x25, 0x1a, 0x12, 0x8e,
-	0x7a, 0xbf, 0xad, 0x1c, 0xf7, 0x2e, 0x97, 0x28, 0x0e, 0x3e, 0x81, 0xda, 0x4a, 0xc8, 0x85, 0xa7,
-	0xde, 0x37, 0x14, 0x5b, 0x79, 0xaa, 0x43, 0x3b, 0x00, 0x3d, 0xaf, 0x92, 0x44, 0x9b, 0x3f, 0xac,
-	0xf1, 0x2c, 0x8f, 0x28, 0x4b, 0xfc, 0xbf, 0x25, 0xe7, 0xf1, 0x54, 0x3a, 0xfb, 0x87, 0x06, 0x2d,
-	0x7f, 0xcd, 0xae, 0xfc, 0x75, 0x14, 0xfd, 0x5d, 0x9c, 0x26, 0x94, 0xc3, 0x40, 0xd4, 0xa9, 0x92,
-	0x72, 0x18, 0xe0, 0x4b, 0x30, 0x12, 0x65, 0xe8, 0x2f, 0x57, 0x5f, 0x99, 0x55, 0xe9, 0x54, 0xba,
-	0xfa, 0x76, 0x32, 0xfc, 0xc2, 0x19, 0xd9, 0x67, 0xda, 0xdf, 0x34, 0x30, 0x76, 0xcd, 0xf0, 0xd4,
-	0xbd, 0x83, 0x56, 0xb0, 0x18, 0xe4, 0x9f, 0x35, 0xd2, 0xbb, 0x84, 0x46, 0x71, 0x82, 0xb1, 0x0d,
-	0xa6, 0x3f, 0x9b, 0x0c, 0xfc, 0x99, 0xe7, 0x2d, 0x88, 0xfb, 0x7e, 0xe6, 0x4e, 0xa6, 0x66, 0x09,
-	0x11, 0x9a, 0x8e, 0x37, 0x74, 0x47, 0xd3, 0x2d, 0xa6, 0xf5, 0x2e, 0x40, 0x2f, 0x8c, 0x1f, 0xa7,
-	0x14, 0x84, 0xbe, 0x37, 0x37, 0x4b, 0x68, 0x42, 0x63, 0x2b, 0xe3, 0x88, 0xd6, 0xfb, 0x08, 0xad,
-	0x83, 0xe1, 0xc3, 0x1a, 0x94, 0xc7, 0xef, 0xcc, 0x12, 0x3e, 0x86, 0x87, 0x2e, 0x21, 0x0b, 0x25,
-	0x18, 0x8e, 0x3e, 0xbc, 0xf6, 0x86, 0x6f, 0x17, 0xce, 0xd8, 0xf3, 0x5c, 0x67, 0x3a, 0x1c, 0x8f,
-	0x4c, 0x8a, 0x8f, 0xe0, 0xc1, 0x3d, 0x94, 0xc9, 0x7c, 0xe4, 0x4c, 0xe7, 0xbe, 0x6b, 0x7e, 0xee,
-	0x7f, 0xd7, 0xa0, 0x31, 0x4e, 0xb3, 0x38, 0x9e, 0xd0, 0xf4, 0x2e, 0x5c, 0x51, 0x7c, 0x05, 0x2d,
-	0x3f, 0x8d, 0x57, 0x94, 0xb1, 0xfc, 0x12, 0xf0, 0xe4, 0xe0, 0x56, 0x54, 0xf4, 0xd3, 0xf6, 0x6f,
-	0x38, 0x7f, 0x2d, 0x97, 0xd0, 0x90, 0xb3, 0xe9, 0xa4, 0x94, 0x7f, 0x23, 0xed, 0xfd, 0x11, 0x56,
-	0x5a, 0x3c, 0x40, 0x93, 0x68, 0xf3, 0xa9, 0x26, 0x7e, 0x3d, 0x17, 0xbf, 0x02, 0x00, 0x00, 0xff,
-	0xff, 0x7e, 0xa7, 0x7b, 0x61, 0xa5, 0x04, 0x00, 0x00,
+	// 536 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0x51, 0x8f, 0xd2, 0x40,
+	0x10, 0x66, 0xe1, 0xc0, 0x30, 0xa5, 0x5c, 0x33, 0xc7, 0x69, 0x3d, 0x63, 0xc4, 0x26, 0x46, 0x42,
+	0xf4, 0x4c, 0x38, 0xa3, 0xb9, 0xc4, 0x17, 0x0f, 0x9b, 0x40, 0x6c, 0xa0, 0x2e, 0x60, 0xc2, 0x13,
+	0x22, 0xac, 0x1e, 0xda, 0xa3, 0xbd, 0x6e, 0xb9, 0x84, 0xbf, 0x60, 0x7c, 0xf0, 0xa7, 0xf8, 0x13,
+	0x4d, 0x77, 0xb7, 0x50, 0x7a, 0xbc, 0x68, 0xe2, 0x13, 0xbb, 0x33, 0xdf, 0x37, 0xf3, 0xcd, 0xb7,
+	0x43, 0xe1, 0x28, 0x64, 0xd7, 0x2b, 0xc6, 0xa3, 0x49, 0xc8, 0x02, 0x6f, 0x7d, 0x1a, 0x84, 0x7e,
+	0xe4, 0x63, 0xf1, 0xca, 0x9f, 0x33, 0xef, 0x44, 0x13, 0x3f, 0x32, 0x66, 0xfd, 0x26, 0xa0, 0x53,
+	0x89, 0xed, 0xb0, 0xe9, 0x9c, 0x85, 0x68, 0xc2, 0x9d, 0x1b, 0x16, 0xf2, 0x85, 0xbf, 0x34, 0x49,
+	0x9d, 0x34, 0xca, 0x34, 0xb9, 0xa2, 0x01, 0x05, 0xce, 0xae, 0xcd, 0x7c, 0x9d, 0x34, 0x74, 0x1a,
+	0x1f, 0xf1, 0x15, 0x68, 0xd1, 0x3a, 0x60, 0xaa, 0x80, 0x59, 0xa8, 0x93, 0x46, 0xb5, 0x85, 0xa7,
+	0xb2, 0xc1, 0x70, 0x9b, 0xe9, 0xe4, 0x68, 0x1a, 0x88, 0x67, 0x50, 0x96, 0xd7, 0xc0, 0x5b, 0x9b,
+	0x07, 0x82, 0x75, 0xb4, 0xc3, 0xe2, 0x81, 0xbf, 0xe4, 0xac, 0x93, 0xa3, 0x5b, 0xdc, 0x45, 0x09,
+	0x0e, 0xe2, 0x8b, 0x75, 0x0e, 0xd5, 0x0d, 0x40, 0x4a, 0x7e, 0x2a, 0x33, 0x42, 0xef, 0xfe, 0x4a,
+	0x54, 0x52, 0xe7, 0xa0, 0xb7, 0xbd, 0x05, 0x5b, 0x46, 0x89, 0x90, 0x67, 0x50, 0xba, 0x14, 0x35,
+	0x04, 0x57, 0x6b, 0xd5, 0x14, 0x77, 0xc7, 0x12, 0xaa, 0x30, 0xf8, 0x04, 0x4a, 0x33, 0x41, 0x17,
+	0x1e, 0x68, 0x2d, 0x5d, 0xa1, 0x55, 0x4d, 0x95, 0xb4, 0x68, 0x6c, 0xa9, 0xec, 0x3b, 0x88, 0xa6,
+	0x11, 0xc3, 0x17, 0x50, 0xe4, 0xf1, 0x41, 0x09, 0xbc, 0xbf, 0x47, 0xa0, 0x00, 0x72, 0x2a, 0x71,
+	0xb1, 0xd3, 0x57, 0xfc, 0xab, 0xe8, 0x52, 0xa6, 0xf1, 0xd1, 0xfa, 0x06, 0xd5, 0x44, 0xb9, 0x24,
+	0xfc, 0xa5, 0xf4, 0x66, 0x22, 0x21, 0x9f, 0x01, 0xa7, 0xda, 0xab, 0xee, 0xd6, 0x0f, 0x02, 0x87,
+	0xee, 0x8a, 0x5f, 0xba, 0x2b, 0xcf, 0xfb, 0x37, 0xa3, 0xaa, 0x90, 0x5f, 0xcc, 0x45, 0xab, 0x22,
+	0xcd, 0x2f, 0xe6, 0x78, 0x0e, 0x7a, 0xa0, 0x0a, 0xba, 0xd3, 0xd9, 0x77, 0x6e, 0x16, 0xea, 0x85,
+	0x86, 0xb6, 0x79, 0x29, 0x37, 0x95, 0xa3, 0xbb, 0x48, 0xeb, 0x27, 0x01, 0x63, 0x2b, 0x46, 0xcd,
+	0xfe, 0x3c, 0xa3, 0xe6, 0x38, 0x33, 0xce, 0x7f, 0x93, 0xd3, 0x7c, 0x0d, 0x5a, 0x6a, 0xaf, 0xb1,
+	0x06, 0x86, 0x3b, 0x1a, 0x74, 0xdc, 0x91, 0xe3, 0x4c, 0xa8, 0xfd, 0x61, 0x64, 0x0f, 0x86, 0x46,
+	0x0e, 0x11, 0xaa, 0x6d, 0xa7, 0x6b, 0xf7, 0x86, 0x9b, 0x18, 0x69, 0xbe, 0x84, 0x4a, 0xfa, 0xbd,
+	0x63, 0x4c, 0x8a, 0xe9, 0x3a, 0x63, 0x23, 0x87, 0x06, 0x54, 0x36, 0xbc, 0x38, 0x42, 0x9a, 0x9f,
+	0x00, 0x6f, 0x6f, 0x09, 0x96, 0x20, 0xdf, 0x7f, 0x6f, 0xe4, 0xf0, 0x31, 0x3c, 0xb4, 0x29, 0x9d,
+	0x28, 0x4e, 0xb7, 0xf7, 0xf1, 0xad, 0xd3, 0x7d, 0x37, 0x69, 0xf7, 0x1d, 0xc7, 0x6e, 0x0f, 0xbb,
+	0xfd, 0x9e, 0xc1, 0xf0, 0x11, 0x3c, 0xd8, 0x03, 0x19, 0x8c, 0x7b, 0xed, 0xe1, 0xd8, 0xb5, 0x8d,
+	0x2f, 0xad, 0x5f, 0x04, 0x2a, 0xfd, 0x30, 0xf2, 0xfd, 0x01, 0x0b, 0x6f, 0x16, 0x33, 0x86, 0x17,
+	0x70, 0xe8, 0x86, 0xfe, 0x8c, 0x71, 0x9e, 0xf8, 0x80, 0x77, 0x33, 0xc6, 0xa8, 0xe9, 0x4f, 0xee,
+	0xdd, 0x8a, 0xab, 0xe1, 0xde, 0x80, 0xae, 0x6a, 0xc8, 0xa5, 0xc5, 0xda, 0xee, 0x3f, 0x45, 0xf1,
+	0x8f, 0x33, 0x51, 0xc9, 0xfe, 0x5c, 0x12, 0x9f, 0xa6, 0xb3, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff,
+	0x52, 0x50, 0x63, 0x9f, 0xc5, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -551,8 +551,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type OrtooServiceClient interface {
-	ProcessPushPull(ctx context.Context, in *PushPullRequest, opts ...grpc.CallOption) (*PushPullReply, error)
-	ClientCreate(ctx context.Context, in *ClientRequest, opts ...grpc.CallOption) (*ClientReply, error)
+	ProcessPushPull(ctx context.Context, in *PushPullRequest, opts ...grpc.CallOption) (*PushPullResponse, error)
+	ProcessClient(ctx context.Context, in *ClientRequest, opts ...grpc.CallOption) (*ClientResponse, error)
 }
 
 type ortooServiceClient struct {
@@ -563,8 +563,8 @@ func NewOrtooServiceClient(cc *grpc.ClientConn) OrtooServiceClient {
 	return &ortooServiceClient{cc}
 }
 
-func (c *ortooServiceClient) ProcessPushPull(ctx context.Context, in *PushPullRequest, opts ...grpc.CallOption) (*PushPullReply, error) {
-	out := new(PushPullReply)
+func (c *ortooServiceClient) ProcessPushPull(ctx context.Context, in *PushPullRequest, opts ...grpc.CallOption) (*PushPullResponse, error) {
+	out := new(PushPullResponse)
 	err := c.cc.Invoke(ctx, "/model.OrtooService/ProcessPushPull", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -572,9 +572,9 @@ func (c *ortooServiceClient) ProcessPushPull(ctx context.Context, in *PushPullRe
 	return out, nil
 }
 
-func (c *ortooServiceClient) ClientCreate(ctx context.Context, in *ClientRequest, opts ...grpc.CallOption) (*ClientReply, error) {
-	out := new(ClientReply)
-	err := c.cc.Invoke(ctx, "/model.OrtooService/ClientCreate", in, out, opts...)
+func (c *ortooServiceClient) ProcessClient(ctx context.Context, in *ClientRequest, opts ...grpc.CallOption) (*ClientResponse, error) {
+	out := new(ClientResponse)
+	err := c.cc.Invoke(ctx, "/model.OrtooService/ProcessClient", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -583,8 +583,8 @@ func (c *ortooServiceClient) ClientCreate(ctx context.Context, in *ClientRequest
 
 // OrtooServiceServer is the server API for OrtooService service.
 type OrtooServiceServer interface {
-	ProcessPushPull(context.Context, *PushPullRequest) (*PushPullReply, error)
-	ClientCreate(context.Context, *ClientRequest) (*ClientReply, error)
+	ProcessPushPull(context.Context, *PushPullRequest) (*PushPullResponse, error)
+	ProcessClient(context.Context, *ClientRequest) (*ClientResponse, error)
 }
 
 func RegisterOrtooServiceServer(s *grpc.Server, srv OrtooServiceServer) {
@@ -609,20 +609,20 @@ func _OrtooService_ProcessPushPull_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _OrtooService_ClientCreate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _OrtooService_ProcessClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClientRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(OrtooServiceServer).ClientCreate(ctx, in)
+		return srv.(OrtooServiceServer).ProcessClient(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/model.OrtooService/ClientCreate",
+		FullMethod: "/model.OrtooService/ProcessClient",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrtooServiceServer).ClientCreate(ctx, req.(*ClientRequest))
+		return srv.(OrtooServiceServer).ProcessClient(ctx, req.(*ClientRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -636,8 +636,8 @@ var _OrtooService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _OrtooService_ProcessPushPull_Handler,
 		},
 		{
-			MethodName: "ClientCreate",
-			Handler:    _OrtooService_ClientCreate_Handler,
+			MethodName: "ProcessClient",
+			Handler:    _OrtooService_ProcessClient_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

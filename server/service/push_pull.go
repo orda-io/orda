@@ -8,7 +8,7 @@ import (
 )
 
 //ProcessPushPull processes a grpc for Push-Pull
-func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRequest) (*model.PushPullReply, error) {
+func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRequest) (*model.PushPullResponse, error) {
 	log.Logger.Infof("Received: %v", proto.MarshalTextString(in))
-	return &model.PushPullReply{Id: in.Id}, nil
+	return &model.PushPullResponse{Id: in.Id}, nil
 }

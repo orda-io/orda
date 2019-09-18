@@ -1,7 +1,6 @@
 package commons
 
 import (
-	"github.com/knowhunger/ortoo/client"
 	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
@@ -28,7 +27,7 @@ type intCounter struct {
 }
 
 //NewIntCounter creates a new int counter
-func NewIntCounter(c client.Client, w datatypes.Wire) (IntCounter, error) {
+func NewIntCounter(w datatypes.Wire) (IntCounter, error) {
 	snapshot := &intCounterSnapshot{
 		value: 0,
 	}

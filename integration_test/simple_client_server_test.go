@@ -30,7 +30,7 @@ func (s *ClientServerTestSuite) TestClientServer() {
 			s.Suite.Fail("fail to connect server")
 		}
 		defer client1.Close()
-
+		intCounter1, err := client1.CreateAndRegisterIntCounter("key1")
 		client1.Send()
 	})
 

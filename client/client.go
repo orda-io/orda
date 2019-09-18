@@ -1,26 +1,28 @@
 package client
 
 import (
+	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/context"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
 type clientImpl struct {
-	conf            *OrtooClientConfig
-	clientID        model.Cuid
-	model           *model.Client
-	ctx             *context.OrtooContext
-	requestReplyMgr *requestReplyManager
+	conf      *OrtooClientConfig
+	clientID  model.Cuid
+	model     *model.Client
+	ctx       *context.OrtooContext
+	reqResMgr *requestResponseManager
+	dataMgr   *dataManager
 }
 
 func (c *clientImpl) Connect() error {
-	err := c.requestReplyMgr.Connect()
+	err := c.reqResMgr.Connect()
 	if err != nil {
 		return log.OrtooError(err, "fail to connect")
 	}
 
-	return c.requestReplyMgr.exchangeClientRequestReply(c.model)
+	return c.reqResMgr.exchangeClientRequestResponse(c.model)
 }
 
 func (c *clientImpl) createDatatype() {
@@ -28,10 +30,15 @@ func (c *clientImpl) createDatatype() {
 }
 
 func (c *clientImpl) Close() error {
-	if err := c.requestReplyMgr.Close(); err != nil {
+	if err := c.reqResMgr.Close(); err != nil {
 		return log.OrtooError(err, "fail to close grpc connection")
 	}
 	return nil
+}
+
+func (c *clientImpl) CreateAndRegisterIntCounter(key string) (commons.IntCounter, error) {
+	c.dataMgr.createAndRegister(key, model.TypeDatatype_INT_COUNTER)
+	return nil, nil
 }
 
 func (c *clientImpl) Send() {
@@ -46,6 +53,7 @@ type Client interface {
 	createDatatype()
 	Close() error
 	Send()
+	CreateAndRegisterIntCounter(key string) (commons.IntCounter, error)
 }
 
 //NewOrtooClient creates a new Ortoo client
@@ -55,17 +63,17 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create cuid")
 	}
-	requestReplyMgr := newRequestReplyManager(ctx, conf.getServiceHost())
+	requestReplyMgr := newRequestResponseManager(ctx, conf.getServiceHost())
 	model := &model.Client{
 		Cuid:       cuid,
 		Alias:      conf.Alias,
 		Collection: conf.CollectionName,
 	}
 	return &clientImpl{
-		conf:            conf,
-		ctx:             ctx,
-		model:           model,
-		clientID:        cuid,
-		requestReplyMgr: requestReplyMgr,
+		conf:      conf,
+		ctx:       ctx,
+		model:     model,
+		clientID:  cuid,
+		reqResMgr: requestReplyMgr,
 	}, nil
 }

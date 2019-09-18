@@ -8,11 +8,16 @@ import (
 	"time"
 )
 
-func (o *OrtooService) ClientCreate(ctx context.Context, in *model.ClientRequest) (*model.ClientReply, error) {
-
+//ProcessClient processes ClientRequest and returns ClientResponse
+func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
 	transferredDoc := schema.ClientModelToBson(in.Client)
-	storedDoc, err := o.mongo.GetClient(ctx, transferredDoc.Cuid)
 
+	collectionDoc, err := o.mongo.GetCollections(ctx, transferredDoc.Collection)
+	if err != nil {
+		return nil, model.NewRPCError(model.RPCErrMongoDB)
+	}
+
+	storedDoc, err := o.mongo.GetClient(ctx, transferredDoc.Cuid)
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to get client")
 	}
@@ -24,9 +29,19 @@ func (o *OrtooService) ClientCreate(ctx context.Context, in *model.ClientRequest
 		}
 	} else {
 		if storedDoc.Collection != transferredDoc.Collection {
-			return nil, model.NewRPCError(model.RPCErrMongoDB, storedDoc.Collection, transferredDoc.Collection)
+			return nil, model.NewRPCError(model.RPCErrClientInconsistentCollection, storedDoc.Collection, transferredDoc.Collection)
 		}
+		log.Logger.Infof("Client will be updated:%+v", transferredDoc)
 	}
-	o.mongo.UpdateClient(ctx, transferredDoc)
-	return model.NewClientReply(in.Header.Seq, model.TypeReplyStates_OK), nil
+	if err = o.mongo.UpdateClient(ctx, transferredDoc); err != nil {
+		return nil, model.NewRPCError(model.RPCErrMongoDB)
+	}
+	if collectionDoc == nil {
+		collectionDoc, err = o.mongo.InsertCollection(ctx, transferredDoc.Collection)
+		if err != nil {
+			return nil, model.NewRPCError(model.RPCErrMongoDB)
+		}
+		log.Logger.Infof("a new collection is created:%s", transferredDoc.Collection)
+	}
+	return model.NewClientReply(in.Header.Seq, model.TypeResponseStates_OK), nil
 }

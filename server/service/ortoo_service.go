@@ -6,10 +6,12 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb"
 )
 
+//OrtooService is a rpc service of Ortoo
 type OrtooService struct {
 	mongo *mongodb.RepositoryMongo
 }
 
+//NewOrtooService creates a new OrtooService
 func NewOrtooService(mongoConf *mongodb.Config) (*OrtooService, error) {
 	mongo, err := mongodb.New(mongoConf)
 	if err != nil {
@@ -20,6 +22,7 @@ func NewOrtooService(mongoConf *mongodb.Config) (*OrtooService, error) {
 	}, nil
 }
 
+//Initialize initializes mongoDB and something else
 func (o *OrtooService) Initialize(ctx context.Context) error {
 	if err := o.mongo.InitializeCollections(ctx); err != nil {
 		return log.OrtooError(err, "fail to initialize mongoDB")

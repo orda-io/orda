@@ -1,21 +1,29 @@
 package mongodb
 
 import (
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const CollectionNameClient = "-_-Clients"
+const (
+	//CollectionNameClients is the name of the collection for Clients
+	CollectionNameClients = "-_-Clients"
+	//CollectionNameCollections is the name of the collection for Collections
+	CollectionNameCollections = "-_-Collections"
+)
 
-const PrefixSnapshot = "[SN]"
+//var CollectionMap = map[string]string{
+//	CollectionNameClients:     CollectionNameClients,
+//	CollectionNameCollections: CollectionNameCollections,
+//}
 
-var CollectionMap = map[string]string{
-	CollectionNameClient: CollectionNameClient,
-}
+const (
+	//ID is an identifier of MongoDB
+	ID = "_id"
+)
 
-func filterByID(ID interface{}) bson.D {
-	return bson.D{bson.E{Key: schema.ID, Value: ID}}
+func filterByID(id interface{}) bson.D {
+	return bson.D{bson.E{Key: ID, Value: id}}
 }
 
 func filterByName(name string) bson.D {

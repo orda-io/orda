@@ -136,7 +136,7 @@ func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionC
 func (t *TransactionDatatypeImpl) Rollback() error {
 	t.Logger.Infof("Begin the rollback: '%s'", t.transactionCtx.tag)
 	snapshotDatatype, _ := t.opExecuter.(SnapshotDatatype)
-	redoOpID := t.GetBase().opID
+	redoOpID := t.opID
 	redoSnapshot := snapshotDatatype.GetSnapshot().CloneSnapshot()
 	t.SetOpID(t.transactionCtx.rollbackOpID)
 	snapshotDatatype.SetSnapshot(t.rollbackSnapshot)
@@ -148,7 +148,7 @@ func (t *TransactionDatatypeImpl) Rollback() error {
 			return t.Logger.OrtooError(err, "fail to replay operations")
 		}
 	}
-	t.rollbackOpID = t.GetBase().opID.Clone()
+	t.rollbackOpID = t.opID.Clone()
 	t.rollbackSnapshot = snapshotDatatype.GetSnapshot().CloneSnapshot()
 	t.rollbackOps = nil
 	t.Logger.Infof("End the rollback: '%s'", t.transactionCtx.tag)

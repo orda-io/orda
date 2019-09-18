@@ -10,18 +10,21 @@ import (
 	"net"
 )
 
+//OrtooServer is an Ortoo server
 type OrtooServer struct {
 	conf    *OrtooServerConfig
 	service *service.OrtooService
 	server  *grpc.Server
 }
 
+//NewOrtooServer creates a new Ortoo server
 func NewOrtooServer(conf *OrtooServerConfig) *OrtooServer {
 	return &OrtooServer{
 		conf: conf,
 	}
 }
 
+//Start start the Ortoo Server
 func (o *OrtooServer) Start() error {
 	lis, err := net.Listen("tcp", o.conf.getHostAddress())
 	if err != nil {
@@ -43,6 +46,7 @@ func (o *OrtooServer) Start() error {
 	return nil
 }
 
+//Close closes the Ortoo server
 func (o *OrtooServer) Close() {
 	o.server.GracefulStop()
 	log.Logger.Info("close Ortoo server")

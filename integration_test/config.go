@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb"
 )
 
+//NewTestOrtooClientConfig ...
 func NewTestOrtooClientConfig() *client.OrtooClientConfig {
 	return &client.OrtooClientConfig{
 		Address:        "127.0.0.1",
@@ -15,6 +16,7 @@ func NewTestOrtooClientConfig() *client.OrtooClientConfig {
 	}
 }
 
+//NewTestMongoDBConfig ...
 func NewTestMongoDBConfig() *mongodb.Config {
 	return &mongodb.Config{
 		Host:    "mongodb://root:ortoo-test@localhost:27017",
@@ -22,6 +24,7 @@ func NewTestMongoDBConfig() *mongodb.Config {
 	}
 }
 
+//NewTestOrtooServerConfig ...
 func NewTestOrtooServerConfig() *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
 		Host:  "127.0.0.1",

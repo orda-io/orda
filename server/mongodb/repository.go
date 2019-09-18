@@ -1,10 +1,5 @@
 package mongodb
 
-import (
-	"time"
-)
-
-const timeout = 10 * time.Second
-
+//Repository ...
 type Repository interface {
 }

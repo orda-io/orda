@@ -27,7 +27,7 @@ type PublicWiredDatatypeInterface interface {
 
 //WiredDatatype defines the internal interface related to the synchronization with Ortoo server
 type WiredDatatype interface {
-	GetBase() *baseDatatype
+	//GetBaseDatatype() *baseDatatype
 	ExecuteRemote(op model.Operation)
 	ReceiveRemoteOperations(operations []model.Operation) error
 	CreatePushPullPack() *model.PushPullPack
@@ -48,11 +48,6 @@ func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) 
 	}, nil
 }
 
-//GetBase ...
-func (w *WiredDatatypeImpl) GetBase() *baseDatatype {
-	return w.baseDatatype
-}
-
 func (w *WiredDatatypeImpl) String() string {
 	return w.baseDatatype.String()
 }
@@ -60,7 +55,7 @@ func (w *WiredDatatypeImpl) String() string {
 //ExecuteRemote ...
 func (w *WiredDatatypeImpl) ExecuteRemote(op model.Operation) {
 	w.opID.SyncLamport(op.GetBase().GetId().Lamport)
-	w.GetBase().executeRemoteBase(op)
+	w.executeRemoteBase(op)
 }
 
 //ReceiveRemoteOperations ...

@@ -8,16 +8,16 @@ message RequestHeader {
     string version = 1;
     uint32 seq = 2;
     oneof type {
-        TypeRequests typeRequest = 3;
-        TypeReplies typeReply = 4;
+        TypeRequest typeRequest = 3;
+        TypeResponse typeReply = 4;
     }
 }
 
-message ReplyHeader {
-    TypeReplies type = 1;
+message ResponseHeader {
+    TypeResponse type = 1;
 }
 
-enum TypeRequests {
+enum TypeRequest {
     PUSHPULL_REQUEST = 0;
     CLIENT_REQUEST = 1;
 }
@@ -28,26 +28,26 @@ message ClientRequest {
     Client client = 2;
 }
 
-enum TypeReplies {
+enum TypeResponse {
     PUSHPULL_REPLY = 0;
     CLIENT_REPLY = 1;
 }
 
-enum TypeReplyStates {
+enum TypeResponseStates {
     OK = 0;
     ERR_CLIENT_INVALID_COLLECTION = 101;
     ERR_CLIENT_INVALID_SYNCTYPE = 102;
 }
 
-message ReplyState {
-    TypeReplyStates state = 1;
+message ResponseState {
+    TypeResponseStates state = 1;
     string msg = 2;
 }
 
 
-message ClientReply {
+message ClientResponse {
     RequestHeader header = 1;
-    ReplyState state = 2;
+    ResponseState state = 2;
 }
 
 
@@ -57,13 +57,13 @@ message PushPullRequest {
     repeated PushPullPack pushPullPacks = 3;
 }
 
-message PushPullReply {
-    ReplyHeader header = 1;
+message PushPullResponse {
+    ResponseHeader header = 1;
     int32 id = 2;
     repeated PushPullPack pushPullPacks = 3;
 }
 
 service OrtooService {
-    rpc ProcessPushPull (PushPullRequest) returns (PushPullReply);
-    rpc ClientCreate (ClientRequest) returns (ClientReply);
+    rpc ProcessPushPull (PushPullRequest) returns (PushPullResponse);
+    rpc ProcessClient (ClientRequest) returns (ClientResponse);
 }
