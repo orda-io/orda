@@ -2,7 +2,6 @@ package datatypes
 
 import (
 	"github.com/knowhunger/ortoo/commons/internal/constants"
-	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
@@ -34,14 +33,10 @@ type WiredDatatype interface {
 	ApplyPushPullPack(*model.PushPullPack)
 }
 
-//NewWiredDataType creates a new wiredDatatype
-func NewWiredDataType(t model.TypeDatatype, w Wire) (*WiredDatatypeImpl, error) {
-	baseDatatype, err := newBaseDatatype(t)
-	if err != nil {
-		return nil, log.OrtooError(err, "fail to create wiredDatatype due to baseDatatype")
-	}
+//newWiredDataType creates a new wiredDatatype
+func newWiredDataType(b *baseDatatype, w Wire) (*WiredDatatypeImpl, error) {
 	return &WiredDatatypeImpl{
-		baseDatatype: baseDatatype,
+		baseDatatype: b,
 		checkPoint:   model.NewCheckPoint(),
 		buffer:       make([]*model.OperationOnWire, 0, constants.OperationBufferSize),
 		Wire:         w,
@@ -61,7 +56,7 @@ func (w *WiredDatatypeImpl) ExecuteRemote(op model.Operation) {
 //ReceiveRemoteOperations ...
 func (w *WiredDatatypeImpl) ReceiveRemoteOperations(operations []model.Operation) error {
 	i := 0
-	transactionDatatype := w.opExecuter.(TransactionDatatype)
+	transactionDatatype := w.finalDatatype.(TransactionDatatype)
 
 	for i < len(operations) {
 		op := operations[i]

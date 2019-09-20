@@ -6,20 +6,13 @@ import (
 
 //Operation defines the interfaces of Operation
 type Operation interface {
-	ExecuteLocal(datatype OperationExecuter) (interface{}, error)
-	ExecuteRemote(datatype OperationExecuter) (interface{}, error)
+	ExecuteLocal(datatype FinalDatatype) (interface{}, error)
+	ExecuteRemote(datatype FinalDatatype) (interface{}, error)
 	GetBase() *BaseOperation
 }
 
-//OperationExecuter defines the interface of executing operations, which is implemented by every datatype.
-type OperationExecuter interface {
-	ExecuteLocal(op interface{}) (interface{}, error)
-	ExecuteRemote(op interface{}) (interface{}, error)
-	Rollback() error
-}
-
 //NewOperation creates a new operation.
-func NewOperation(opType TypeOperation) *BaseOperation {
+func NewOperation(opType TypeOfOperation) *BaseOperation {
 	return &BaseOperation{
 		Id:     NewOperationID(),
 		OpType: opType,
@@ -40,19 +33,19 @@ func NewTransactionBeginOperation(tag string) (*TransactionOperation, error) {
 		return nil, log.OrtooError(err, "fail to create uuid")
 	}
 	return &TransactionOperation{
-		Base: NewOperation(TypeOperation_TRANSACTION_BEGIN),
+		Base: NewOperation(TypeOfOperation_TRANSACTION_BEGIN),
 		Uuid: uuid,
 		Tag:  tag,
 	}, nil
 }
 
 //ExecuteLocal ...
-func (t *TransactionOperation) ExecuteLocal(datatype OperationExecuter) (interface{}, error) {
+func (t *TransactionOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, error) {
 	return nil, nil
 }
 
 //ExecuteRemote ...
-func (t *TransactionOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
+func (t *TransactionOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
 	//datatype.BeginTransaction(t.Tag)
 	return nil, nil
 }
@@ -62,18 +55,18 @@ func (t *TransactionOperation) ExecuteRemote(datatype OperationExecuter) (interf
 //NewIncreaseOperation creates a new IncreaseOperation of IntCounter
 func NewIncreaseOperation(delta int32) *IncreaseOperation {
 	return &IncreaseOperation{
-		Base:  NewOperation(TypeOperation_INT_COUNTER_INCREASE),
+		Base:  NewOperation(TypeOfOperation_INT_COUNTER_INCREASE),
 		Delta: delta,
 	}
 }
 
 //ExecuteLocal ...
-func (i *IncreaseOperation) ExecuteLocal(datatype OperationExecuter) (interface{}, error) {
+func (i *IncreaseOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, error) {
 	return datatype.ExecuteLocal(i)
 }
 
 //ExecuteRemote ...
-func (i *IncreaseOperation) ExecuteRemote(datatype OperationExecuter) (interface{}, error) {
+func (i *IncreaseOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
 	return datatype.ExecuteRemote(i)
 }
 

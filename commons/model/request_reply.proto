@@ -7,17 +7,17 @@ import "model.proto";
 message RequestHeader {
     string version = 1;
     uint32 seq = 2;
-    oneof type {
-        TypeRequest typeRequest = 3;
-        TypeResponse typeReply = 4;
+    oneof typeOf {
+        TypeOfRequest typeOfRequest = 3;
+        TypeOfResponse typeOfReply = 4;
     }
 }
 
 message ResponseHeader {
-    TypeResponse type = 1;
+    TypeOfResponse type = 1;
 }
 
-enum TypeRequest {
+enum TypeOfRequest {
     PUSHPULL_REQUEST = 0;
     CLIENT_REQUEST = 1;
 }
@@ -28,19 +28,19 @@ message ClientRequest {
     Client client = 2;
 }
 
-enum TypeResponse {
+enum TypeOfResponse {
     PUSHPULL_REPLY = 0;
     CLIENT_REPLY = 1;
 }
 
-enum TypeResponseStates {
+enum StateOfResponse {
     OK = 0;
     ERR_CLIENT_INVALID_COLLECTION = 101;
     ERR_CLIENT_INVALID_SYNCTYPE = 102;
 }
 
 message ResponseState {
-    TypeResponseStates state = 1;
+    StateOfResponse state = 1;
     string msg = 2;
 }
 

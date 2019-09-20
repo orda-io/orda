@@ -43,5 +43,5 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 		}
 		log.Logger.Infof("a new collection is created:%s", transferredDoc.Collection)
 	}
-	return model.NewClientReply(in.Header.Seq, model.TypeResponseStates_OK), nil
+	return model.NewClientReply(in.Header.Seq, model.StateOfResponse_OK), nil
 }

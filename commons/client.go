@@ -1,8 +1,9 @@
-package client
+package commons
 
 import (
-	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/context"
+	"github.com/knowhunger/ortoo/commons/errors"
+	"github.com/knowhunger/ortoo/commons/internal/client"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 )
@@ -12,8 +13,8 @@ type clientImpl struct {
 	clientID  model.Cuid
 	model     *model.Client
 	ctx       *context.OrtooContext
-	reqResMgr *requestResponseManager
-	dataMgr   *dataManager
+	reqResMgr *client.RequestResponseManager
+	dataMgr   *client.DataManager
 }
 
 func (c *clientImpl) Connect() error {
@@ -22,7 +23,7 @@ func (c *clientImpl) Connect() error {
 		return log.OrtooError(err, "fail to connect")
 	}
 
-	return c.reqResMgr.exchangeClientRequestResponse(c.model)
+	return c.reqResMgr.ExchangeClientRequestResponse(c.model)
 }
 
 func (c *clientImpl) createDatatype() {
@@ -36,15 +37,37 @@ func (c *clientImpl) Close() error {
 	return nil
 }
 
-func (c *clientImpl) CreateAndRegisterIntCounter(key string) (commons.IntCounter, error) {
-	c.dataMgr.createAndRegister(key, model.TypeDatatype_INT_COUNTER)
-	return nil, nil
+func (c *clientImpl) LinkIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
+	intCounterCh = make(chan IntCounter)
+	errCh = make(chan error)
+
+	fromDataMgr := c.dataMgr.Get(key)
+	if fromDataMgr != nil {
+		if fromDataMgr.GetType() == model.TypeOfDatatype_INT_COUNTER {
+			log.Logger.Info("Already linked datatype")
+			intCounterCh <- fromDataMgr.(IntCounter)
+			return
+		}
+		errCh <- &errors.ErrLinkDatatype{}
+		return
+	}
+
+	ic, err := newIntCounter(key, c)
+	if err != nil {
+		errCh <- log.OrtooError(err, "fail to create intCounter")
+		return
+	}
+	icImpl := ic.(*intCounter)
+	c.dataMgr.Link(icImpl.CommonDatatype)
+
+	return
 }
 
-func (c *clientImpl) Send() {
+func (c *clientImpl) Sync() <-chan struct{} {
 	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	//defer cancel()
 	//c.serviceClient.ProcessPushPull(ctx, model.NewPushPullRequest(1))
+	return nil
 }
 
 //Client is a client of Ortoo which manages connections and data
@@ -52,8 +75,8 @@ type Client interface {
 	Connect() error
 	createDatatype()
 	Close() error
-	Send()
-	CreateAndRegisterIntCounter(key string) (commons.IntCounter, error)
+	Sync() <-chan struct{}
+	LinkIntCounter(key string) (chan IntCounter, chan error)
 }
 
 //NewOrtooClient creates a new Ortoo client
@@ -63,7 +86,7 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create cuid")
 	}
-	requestReplyMgr := newRequestResponseManager(ctx, conf.getServiceHost())
+	requestReplyMgr := client.NewRequestResponseManager(ctx, conf.getServiceHost())
 	model := &model.Client{
 		Cuid:       cuid,
 		Alias:      conf.Alias,

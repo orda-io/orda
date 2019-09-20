@@ -6,10 +6,10 @@ message Client {
     bytes cuid = 1;
     string alias = 2;
     string collection = 3;
-    TypeSync syncType = 4;
+    TypeOfSync syncType = 4;
 }
 
-enum TypeSync {
+enum TypeOfSync {
     MANUALLY = 0;
     INSTANTLY_WS = 1;
 }
@@ -23,7 +23,12 @@ message OperationID {
 
 message BaseOperation {
     OperationID id = 1;
-    TypeOperation opType = 2;
+    TypeOfOperation opType = 2;
+}
+
+message CreateOperation {
+    BaseOperation base = 1;
+
 }
 
 message IncreaseOperation {
@@ -38,8 +43,8 @@ message TransactionOperation {
     uint32 numOfOps = 4;
 }
 
-enum TypeOperation {
-    CREATE = 0;
+enum TypeOfOperation {
+    Create = 0;
     DELETE = 1;
     ERROR = 2;
     SNAPSHOT = 4;
@@ -48,12 +53,12 @@ enum TypeOperation {
     INT_COUNTER_INCREASE = 11;
 }
 
-enum TypeDatatype {
+enum TypeOfDatatype {
     INT_COUNTER = 0;
     JSON = 1;
 }
 
-enum StateDatatype {
+enum StateOfDatatype {
     LOCALLY_EXISTED = 0;
     REGISTERING = 1;
     REGISTERED = 2;

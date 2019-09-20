@@ -44,8 +44,8 @@ func (c *TestWire) DeliverTransaction(wired datatypes.WiredDatatype, transaction
 //SetDatatypes ...
 func (c *TestWire) SetDatatypes(datatypeList ...interface{}) {
 	for _, v := range datatypeList {
-		if opExecutor, ok := v.(datatypes.WiredDatatyper); ok {
-			c.wiredList = append(c.wiredList, opExecutor.GetWired())
+		if finalDatatype, ok := v.(datatypes.WiredDatatyper); ok {
+			c.wiredList = append(c.wiredList, finalDatatype.GetWired())
 		}
 	}
 }

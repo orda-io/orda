@@ -1,14 +1,17 @@
 package errors
 
-//NewTransactionError creates a new TransactionError
-func NewTransactionError() *TransactionError {
-	return &TransactionError{}
+//ErrTransaction is an error related to transaction
+type ErrTransaction struct {
 }
 
-//TransactionError is an error regarding to transaction
-type TransactionError struct {
-}
-
-func (t *TransactionError) Error() string {
+func (t *ErrTransaction) Error() string {
 	return "transaction error"
+}
+
+//ErrLinkDatatype is an error related to linking datatype
+type ErrLinkDatatype struct {
+}
+
+func (t *ErrLinkDatatype) Error() string {
+	return "fail to link datatype to Ortoo server"
 }

@@ -7,7 +7,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-type requestResponseManager struct {
+//RequestResponseManager is a manager exchanging request and response.
+type RequestResponseManager struct {
 	seq           uint32
 	host          string
 	conn          *grpc.ClientConn
@@ -15,15 +16,17 @@ type requestResponseManager struct {
 	ctx           *context.OrtooContext
 }
 
-func newRequestResponseManager(ctx *context.OrtooContext, host string) *requestResponseManager {
-	return &requestResponseManager{
+//NewRequestResponseManager ...
+func NewRequestResponseManager(ctx *context.OrtooContext, host string) *RequestResponseManager {
+	return &RequestResponseManager{
 		seq:  0,
 		host: host,
 		ctx:  ctx,
 	}
 }
 
-func (r *requestResponseManager) exchangeClientRequestResponse(client *model.Client) error {
+//ExchangeClientRequestResponse ...
+func (r *RequestResponseManager) ExchangeClientRequestResponse(client *model.Client) error {
 	request := model.NewClientRequest(client, r.seq)
 	_, err := r.serviceClient.ProcessClient(r.ctx, request)
 	if err != nil {
@@ -34,7 +37,8 @@ func (r *requestResponseManager) exchangeClientRequestResponse(client *model.Cli
 
 }
 
-func (r *requestResponseManager) Connect() error {
+//Connect ...
+func (r *RequestResponseManager) Connect() error {
 	conn, err := grpc.Dial(r.host, grpc.WithInsecure())
 	if err != nil {
 		return log.OrtooError(err, "fail to connect to Ortoo Server")
@@ -44,7 +48,8 @@ func (r *requestResponseManager) Connect() error {
 	return nil
 }
 
-func (r *requestResponseManager) Close() error {
+//Close ...
+func (r *RequestResponseManager) Close() error {
 	if err := r.conn.Close(); err != nil {
 		return log.OrtooError(err, "fail to close grpc connection")
 	}

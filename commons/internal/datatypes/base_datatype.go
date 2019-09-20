@@ -8,29 +8,31 @@ import (
 )
 
 type baseDatatype struct {
-	id         model.Duid
-	opID       *model.OperationID
-	typeOf     model.TypeDatatype
-	state      model.StateDatatype
-	opExecuter model.OperationExecuter
-	Logger     *log.OrtooLog
+	Key           string
+	id            model.Duid
+	opID          *model.OperationID
+	typeOf        model.TypeOfDatatype
+	state         model.StateOfDatatype
+	finalDatatype model.FinalDatatype
+	Logger        *log.OrtooLog
 }
 
 //PublicBaseDatatypeInterface is a public interface for a datatype.
 type PublicBaseDatatypeInterface interface {
-	GetType() model.TypeDatatype
+	GetType() model.TypeOfDatatype
 }
 
-func newBaseDatatype(t model.TypeDatatype) (*baseDatatype, error) {
+func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.Cuid) (*baseDatatype, error) {
 	duid, err := model.NewDuid()
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create base datatype due to duid")
 	}
 	return &baseDatatype{
+		Key:    key,
 		id:     duid,
-		opID:   model.NewOperationID(),
 		typeOf: t,
-		state:  model.StateDatatype_LOCALLY_EXISTED,
+		opID:   model.NewOperationIDWithCuid(cuid),
+		state:  model.StateOfDatatype_LOCALLY_EXISTED,
 		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
 	}, nil
 }
@@ -41,7 +43,7 @@ func (b *baseDatatype) String() string {
 
 func (b *baseDatatype) executeLocalBase(op model.Operation) (interface{}, error) {
 	b.SetNextOpID(op)
-	return op.ExecuteLocal(b.opExecuter)
+	return op.ExecuteLocal(b.finalDatatype)
 }
 
 func (b *baseDatatype) Replay(op model.Operation) error {
@@ -61,17 +63,25 @@ func (b *baseDatatype) SetNextOpID(op model.Operation) {
 }
 
 func (b *baseDatatype) executeRemoteBase(op model.Operation) {
-	op.ExecuteRemote(b.opExecuter)
+	op.ExecuteRemote(b.finalDatatype)
 }
 
-func (b *baseDatatype) GetType() model.TypeDatatype {
+func (b *baseDatatype) GetType() model.TypeOfDatatype {
 	return b.typeOf
 }
 
-func (b *baseDatatype) SetOperationExecuter(opExecuter model.OperationExecuter) {
-	b.opExecuter = opExecuter
+func (b *baseDatatype) SetFinalDatatype(finalDatatype model.FinalDatatype) {
+	b.finalDatatype = finalDatatype
+}
+
+func (b *baseDatatype) GetFinalDatatype() model.FinalDatatype {
+	return b.finalDatatype
 }
 
 func (b *baseDatatype) SetOpID(opID *model.OperationID) {
 	b.opID = opID
+}
+
+func (b *baseDatatype) GetKey() string {
+	return b.Key
 }

@@ -11,11 +11,11 @@ func NewOperationID() *OperationID {
 }
 
 //NewOperationIDWithCuid creates a new OperationID with CUID.
-func NewOperationIDWithCuid(cuid *Cuid) *OperationID {
+func NewOperationIDWithCuid(cuid Cuid) *OperationID {
 	return &OperationID{
 		Era:     0,
 		Lamport: 0,
-		Cuid:    []byte(*cuid),
+		Cuid:    cuid,
 		Seq:     0,
 	}
 }

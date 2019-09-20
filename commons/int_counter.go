@@ -21,26 +21,31 @@ type IntCounterInTransaction interface {
 }
 
 type intCounter struct {
-	*datatypes.TransactionDatatypeImpl
+	*datatypes.CommonDatatype
 	snapshot       *intCounterSnapshot
 	transactionCtx *datatypes.TransactionContext
 }
 
-//NewIntCounter creates a new int counter
-func NewIntCounter(w datatypes.Wire) (IntCounter, error) {
+//newIntCounter creates a new int counter
+func newIntCounter(key string, client Client) (IntCounter, error) {
 	snapshot := &intCounterSnapshot{
 		value: 0,
 	}
-	transactionDatatype, err := datatypes.NewTransactionDatatype(model.TypeDatatype_INT_COUNTER, w, snapshot)
-	if err != nil {
-		return nil, log.OrtooError(err, "fail to create transaction manager")
-	}
 	intCounter := &intCounter{
-		TransactionDatatypeImpl: transactionDatatype,
-		snapshot:                snapshot,
-		transactionCtx:          nil,
+		snapshot:       snapshot,
+		transactionCtx: nil,
 	}
-	intCounter.SetOperationExecuter(intCounter)
+	ci := client.(*clientImpl)
+	err := intCounter.Initialize(
+		key,
+		model.TypeOfDatatype_INT_COUNTER,
+		ci.model.Cuid,
+		ci.dataMgr,
+		snapshot,
+		intCounter)
+	if err != nil {
+		return nil, log.OrtooError(err, "fail to initialize intCounter")
+	}
 	return intCounter, nil
 }
 
@@ -82,9 +87,9 @@ func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 	transactionCtx, err := c.BeginTransaction(tag, c.transactionCtx, true)
 	defer c.EndTransaction(transactionCtx, true)
 	clone := &intCounter{
-		TransactionDatatypeImpl: c.TransactionDatatypeImpl,
-		snapshot:                c.snapshot,
-		transactionCtx:          transactionCtx,
+		CommonDatatype: c.CommonDatatype,
+		snapshot:       c.snapshot,
+		transactionCtx: transactionCtx,
 	}
 	err = transFunc(clone)
 	if err != nil {

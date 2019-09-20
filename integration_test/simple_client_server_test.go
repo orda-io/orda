@@ -1,7 +1,7 @@
 package integration
 
 import (
-	"github.com/knowhunger/ortoo/client"
+	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/stretchr/testify/suite"
 	"testing"
@@ -21,7 +21,7 @@ func (s *ClientServerTestSuite) SetupTest() {
 func (s *ClientServerTestSuite) TestClientServer() {
 	s.Run("Can create a client with server", func() {
 		config := NewTestOrtooClientConfig()
-		client1, err := client.NewOrtooClient(config)
+		client1, err := commons.NewOrtooClient(config)
 		if err != nil {
 			s.T().Fail()
 			return
@@ -30,8 +30,16 @@ func (s *ClientServerTestSuite) TestClientServer() {
 			s.Suite.Fail("fail to connect server")
 		}
 		defer client1.Close()
-		intCounter1, err := client1.CreateAndRegisterIntCounter("key1")
-		client1.Send()
+		//intCounter1, err := commons.newIntCounter("key", client1)
+		intCounterCh1, err1Ch := client1.LinkIntCounter("key")
+		var intCounter1 commons.IntCounter
+		select {
+		case intCounter1 = <-intCounterCh1:
+		case err1 := <-err1Ch:
+			s.Suite.Fail("fail to :", err1)
+		}
+		intCounter1.Increase()
+		client1.Sync()
 	})
 
 }

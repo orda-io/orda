@@ -2,6 +2,7 @@ package datatypes
 
 import (
 	"github.com/knowhunger/ortoo/commons/errors"
+	//"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"sync"
@@ -46,21 +47,18 @@ func (t *TransactionContext) appendOperation(op model.Operation) {
 	t.opBuffer = append(t.opBuffer, op)
 }
 
-//NewTransactionDatatype creates a new TransactionDatatype
-func NewTransactionDatatype(ty model.TypeDatatype, w Wire, snapshot Snapshot) (*TransactionDatatypeImpl, error) {
-	wiredDatatype, err := NewWiredDataType(ty, w)
-	if err != nil {
-		return nil, log.OrtooError(err, "fail to create int counter due to wiredDatatype")
-	}
+//newTransactionDatatype creates a new TransactionDatatype
+func newTransactionDatatype(w *WiredDatatypeImpl, snapshot Snapshot) (*TransactionDatatypeImpl, error) {
+
 	return &TransactionDatatypeImpl{
-		WiredDatatypeImpl: wiredDatatype,
+		WiredDatatypeImpl: w,
 		mutex:             new(sync.RWMutex),
 		isLocked:          false,
 		success:           true,
 		transactionCtx:    nil,
 		rollbackSnapshot:  snapshot.CloneSnapshot(),
 		rollbackOps:       nil,
-		rollbackOpID:      wiredDatatype.opID.Clone(),
+		rollbackOpID:      w.opID.Clone(),
 	}, nil
 }
 
@@ -135,7 +133,7 @@ func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionC
 //Rollback is called to rollback a transaction
 func (t *TransactionDatatypeImpl) Rollback() error {
 	t.Logger.Infof("Begin the rollback: '%s'", t.transactionCtx.tag)
-	snapshotDatatype, _ := t.opExecuter.(SnapshotDatatype)
+	snapshotDatatype, _ := t.finalDatatype.(SnapshotDatatype)
 	redoOpID := t.opID
 	redoSnapshot := snapshotDatatype.GetSnapshot().CloneSnapshot()
 	t.SetOpID(t.transactionCtx.rollbackOpID)
@@ -168,7 +166,7 @@ func (t *TransactionDatatypeImpl) EndTransaction(ctx *TransactionContext, withOp
 			if withOp {
 				beginOp, ok := t.transactionCtx.opBuffer[0].(*model.TransactionOperation)
 				if !ok {
-					return t.Logger.OrtooError(errors.NewTransactionError(), "invalidate transaction: no begin operation")
+					return t.Logger.OrtooError(&errors.ErrTransaction{}, "invalidate transaction: no begin operation")
 				}
 				beginOp.NumOfOps = uint32(len(t.transactionCtx.opBuffer))
 			}
@@ -194,10 +192,10 @@ func (t *TransactionDatatypeImpl) unlock() {
 func validateTransaction(transaction []model.Operation) error {
 	beginOp, ok := transaction[0].(*model.TransactionOperation)
 	if !ok {
-		return log.OrtooError(errors.NewTransactionError(), "invalidate transaction: no begin transaction")
+		return log.OrtooError(&errors.ErrTransaction{}, "invalidate transaction: no begin transaction")
 	}
 	if int(beginOp.NumOfOps) != len(transaction) {
-		return log.OrtooError(errors.NewTransactionError(), "invalidate transaction: incorrect number of operations")
+		return log.OrtooError(&errors.ErrTransaction{}, "invalidate transaction: incorrect number of operations")
 	}
 	return nil
 }

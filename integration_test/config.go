@@ -1,14 +1,14 @@
 package integration
 
 import (
-	"github.com/knowhunger/ortoo/client"
+	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
 )
 
 //NewTestOrtooClientConfig ...
-func NewTestOrtooClientConfig() *client.OrtooClientConfig {
-	return &client.OrtooClientConfig{
+func NewTestOrtooClientConfig() *commons.OrtooClientConfig {
+	return &commons.OrtooClientConfig{
 		Address:        "127.0.0.1",
 		Port:           19061,
 		CollectionName: "hello_world",

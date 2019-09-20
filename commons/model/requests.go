@@ -6,7 +6,7 @@ func NewPushPullRequest(seq uint32) *PushPullRequest {
 		Header: &RequestHeader{
 			Version: ProtocolVersion,
 			Seq:     seq,
-			Type:    &RequestHeader_TypeRequest{TypeRequest_PUSHPULL_REQUEST},
+			TypeOf:  &RequestHeader_TypeOfRequest{TypeOfRequest_PUSHPULL_REQUEST},
 		},
 		PushPullPacks: nil,
 	}
@@ -18,7 +18,7 @@ func NewClientRequest(client *Client, seq uint32) *ClientRequest {
 		Header: &RequestHeader{
 			Version: ProtocolVersion,
 			Seq:     seq,
-			Type:    &RequestHeader_TypeRequest{TypeRequest_CLIENT_REQUEST},
+			TypeOf:  &RequestHeader_TypeOfRequest{TypeOfRequest_CLIENT_REQUEST},
 		},
 		Client: client,
 	}
