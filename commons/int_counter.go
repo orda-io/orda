@@ -22,18 +22,17 @@ type IntCounterInTransaction interface {
 
 type intCounter struct {
 	*datatypes.CommonDatatype
-	snapshot       *intCounterSnapshot
-	transactionCtx *datatypes.TransactionContext
+	snapshot *intCounterSnapshot
 }
 
-//newIntCounter creates a new int counter
-func newIntCounter(key string, client Client) (IntCounter, error) {
+//NewIntCounter creates a new int counter
+func NewIntCounter(key string, client Client) (IntCounter, error) {
 	snapshot := &intCounterSnapshot{
-		value: 0,
+		Value: 0,
 	}
 	intCounter := &intCounter{
+		CommonDatatype: &datatypes.CommonDatatype{},
 		snapshot:       snapshot,
-		transactionCtx: nil,
 	}
 	ci := client.(*clientImpl)
 	err := intCounter.Initialize(
@@ -50,7 +49,7 @@ func newIntCounter(key string, client Client) (IntCounter, error) {
 }
 
 func (c *intCounter) Get() int32 {
-	return c.snapshot.value
+	return c.snapshot.Value
 }
 
 func (c *intCounter) Increase() (int32, error) {
@@ -59,7 +58,7 @@ func (c *intCounter) Increase() (int32, error) {
 
 func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 	op := model.NewIncreaseOperation(delta)
-	ret, err := c.ExecuteTransaction(c.transactionCtx, op, true)
+	ret, err := c.ExecuteTransaction(c.TransactionCtx, op, true)
 	if err != nil {
 		return 0, log.OrtooError(err, "fail to execute operation")
 	}
@@ -84,12 +83,11 @@ func (c *intCounter) GetWired() datatypes.WiredDatatype {
 }
 
 func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterInTransaction) error) error {
-	transactionCtx, err := c.BeginTransaction(tag, c.transactionCtx, true)
+	transactionCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
 	defer c.EndTransaction(transactionCtx, true)
 	clone := &intCounter{
 		CommonDatatype: c.CommonDatatype,
 		snapshot:       c.snapshot,
-		transactionCtx: transactionCtx,
 	}
 	err = transFunc(clone)
 	if err != nil {
@@ -99,27 +97,31 @@ func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 	return nil
 }
 
-func (c *intCounter) GetSnapshot() datatypes.Snapshot {
+func (c *intCounter) GetSnapshot() model.Snapshot {
 	return c.snapshot
 }
 
-func (c *intCounter) SetSnapshot(snapshot datatypes.Snapshot) {
+func (c *intCounter) SetSnapshot(snapshot model.Snapshot) {
 	c.snapshot = snapshot.(*intCounterSnapshot)
 }
 
 type intCounterSnapshot struct {
-	value int32
+	Value int32 `json:"value"`
 }
 
-func (c *intCounterSnapshot) CloneSnapshot() datatypes.Snapshot {
+func (i *intCounterSnapshot) CloneSnapshot() model.Snapshot {
 	return &intCounterSnapshot{
-		value: c.value,
+		Value: i.Value,
 	}
 }
 
-func (c *intCounterSnapshot) increaseCommon(delta int32) int32 {
-	temp := c.value
-	c.value = c.value + delta
-	log.Logger.Infof("increaseCommon: %d + %d = %d", temp, delta, c.value)
-	return c.value
+func (i *intCounterSnapshot) GetTypeUrl() string {
+	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
+}
+
+func (i *intCounterSnapshot) increaseCommon(delta int32) int32 {
+	temp := i.Value
+	i.Value = i.Value + delta
+	log.Logger.Infof("increaseCommon: %d + %d = %d", temp, delta, i.Value)
+	return i.Value
 }

@@ -8,4 +8,7 @@ type FinalDatatype interface {
 	GetType() TypeOfDatatype
 	GetFinalDatatype() FinalDatatype
 	GetKey() string
+	GetSnapshot() Snapshot
+	Subscribe() error
+	CreatePushPullPack() *PushPullPack
 }

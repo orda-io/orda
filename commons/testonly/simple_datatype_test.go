@@ -19,11 +19,11 @@ func (suite *SimpleDatatypeSuite) SetupTest() {
 
 func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 	tw := NewTestWire()
-	intCounter1, err := commons.newIntCounter(tw)
+	intCounter1, err := commons.NewIntCounter(tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}
-	intCounter2, err := commons.newIntCounter(tw)
+	intCounter2, err := commons.NewIntCounter(tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter2")
 	}
@@ -48,11 +48,11 @@ func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 
 func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	tw := NewTestWire()
-	intCounter1, err := commons.newIntCounter(tw)
+	intCounter1, err := commons.NewIntCounter(tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}
-	intCounter2, err := commons.newIntCounter(tw)
+	intCounter2, err := commons.NewIntCounter(tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter2")
 	}

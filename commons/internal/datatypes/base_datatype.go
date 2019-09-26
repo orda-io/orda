@@ -11,7 +11,7 @@ type baseDatatype struct {
 	Key           string
 	id            model.Duid
 	opID          *model.OperationID
-	typeOf        model.TypeOfDatatype
+	TypeOf        model.TypeOfDatatype
 	state         model.StateOfDatatype
 	finalDatatype model.FinalDatatype
 	Logger        *log.OrtooLog
@@ -30,11 +30,15 @@ func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.Cuid) (*base
 	return &baseDatatype{
 		Key:    key,
 		id:     duid,
-		typeOf: t,
+		TypeOf: t,
 		opID:   model.NewOperationIDWithCuid(cuid),
 		state:  model.StateOfDatatype_LOCALLY_EXISTED,
 		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
 	}, nil
+}
+
+func (b *baseDatatype) GetEra() uint32 {
+	return b.opID.GetEra()
 }
 
 func (b *baseDatatype) String() string {
@@ -67,7 +71,7 @@ func (b *baseDatatype) executeRemoteBase(op model.Operation) {
 }
 
 func (b *baseDatatype) GetType() model.TypeOfDatatype {
-	return b.typeOf
+	return b.TypeOf
 }
 
 func (b *baseDatatype) SetFinalDatatype(finalDatatype model.FinalDatatype) {

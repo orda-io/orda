@@ -17,7 +17,7 @@ type TransactionDatatypeImpl struct {
 	mutex            *sync.RWMutex
 	isLocked         bool
 	success          bool
-	rollbackSnapshot Snapshot
+	rollbackSnapshot model.Snapshot
 	rollbackOps      []model.Operation
 	rollbackOpID     *model.OperationID
 	transactionCtx   *TransactionContext
@@ -48,7 +48,7 @@ func (t *TransactionContext) appendOperation(op model.Operation) {
 }
 
 //newTransactionDatatype creates a new TransactionDatatype
-func newTransactionDatatype(w *WiredDatatypeImpl, snapshot Snapshot) (*TransactionDatatypeImpl, error) {
+func newTransactionDatatype(w *WiredDatatypeImpl, snapshot model.Snapshot) (*TransactionDatatypeImpl, error) {
 
 	return &TransactionDatatypeImpl{
 		WiredDatatypeImpl: w,
@@ -92,7 +92,7 @@ func (t *TransactionDatatypeImpl) ExecuteTransaction(ctx *TransactionContext, op
 			return 0, t.Logger.OrtooError(err, "fail to execute operation")
 		}
 		t.transactionCtx.appendOperation(op)
-		return ret.(int32), nil
+		return ret, nil
 	}
 	t.executeRemoteBase(op)
 	return nil, nil

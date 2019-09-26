@@ -1,14 +1,15 @@
 package model
 
 //NewPushPullRequest creates a new PushPullRequest
-func NewPushPullRequest(seq uint32) *PushPullRequest {
+func NewPushPullRequest(seq uint32, pushPullPackList ...*PushPullPack) *PushPullRequest {
+
 	return &PushPullRequest{
 		Header: &RequestHeader{
 			Version: ProtocolVersion,
 			Seq:     seq,
 			TypeOf:  &RequestHeader_TypeOfRequest{TypeOfRequest_PUSHPULL_REQUEST},
 		},
-		PushPullPacks: nil,
+		PushPullPacks: pushPullPackList,
 	}
 }
 

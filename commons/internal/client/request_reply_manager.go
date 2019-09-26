@@ -55,3 +55,12 @@ func (r *RequestResponseManager) Close() error {
 	}
 	return nil
 }
+
+func (r *RequestResponseManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, error) {
+	request := model.NewPushPullRequest(0, pppList...)
+	pushPullResponse, err := r.serviceClient.ProcessPushPull(r.ctx, request)
+	if err != nil {
+		return nil, log.OrtooError(err, "fail to sync push pull")
+	}
+	return pushPullResponse, nil
+}

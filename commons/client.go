@@ -18,8 +18,7 @@ type clientImpl struct {
 }
 
 func (c *clientImpl) Connect() error {
-	err := c.reqResMgr.Connect()
-	if err != nil {
+	if err := c.reqResMgr.Connect(); err != nil {
 		return log.OrtooError(err, "fail to connect")
 	}
 
@@ -37,14 +36,14 @@ func (c *clientImpl) Close() error {
 	return nil
 }
 
-func (c *clientImpl) LinkIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
+func (c *clientImpl) SubscribeIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
 	intCounterCh = make(chan IntCounter)
 	errCh = make(chan error)
 
 	fromDataMgr := c.dataMgr.Get(key)
 	if fromDataMgr != nil {
 		if fromDataMgr.GetType() == model.TypeOfDatatype_INT_COUNTER {
-			log.Logger.Info("Already linked datatype")
+			log.Logger.Info("Already subscribed datatype")
 			intCounterCh <- fromDataMgr.(IntCounter)
 			return
 		}
@@ -52,13 +51,17 @@ func (c *clientImpl) LinkIntCounter(key string) (intCounterCh chan IntCounter, e
 		return
 	}
 
-	ic, err := newIntCounter(key, c)
+	ic, err := NewIntCounter(key, c)
 	if err != nil {
 		errCh <- log.OrtooError(err, "fail to create intCounter")
 		return
 	}
 	icImpl := ic.(*intCounter)
-	c.dataMgr.Link(icImpl.CommonDatatype)
+	if err := c.dataMgr.Subscribe(icImpl); err != nil {
+		errCh <- log.OrtooError(err, "fail to subscribe intCounter")
+	}
+
+	c.dataMgr.Sync(icImpl.GetKey())
 
 	return
 }
@@ -76,7 +79,7 @@ type Client interface {
 	createDatatype()
 	Close() error
 	Sync() <-chan struct{}
-	LinkIntCounter(key string) (chan IntCounter, chan error)
+	SubscribeIntCounter(key string) (chan IntCounter, chan error)
 }
 
 //NewOrtooClient creates a new Ortoo client
@@ -86,7 +89,8 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 	if err != nil {
 		return nil, log.OrtooError(err, "fail to create cuid")
 	}
-	requestReplyMgr := client.NewRequestResponseManager(ctx, conf.getServiceHost())
+	reqResMgr := client.NewRequestResponseManager(ctx, conf.getServiceHost())
+	dataMgr := client.NewDataManager(reqResMgr)
 	model := &model.Client{
 		Cuid:       cuid,
 		Alias:      conf.Alias,
@@ -97,6 +101,7 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 		ctx:       ctx,
 		model:     model,
 		clientID:  cuid,
-		reqResMgr: requestReplyMgr,
+		reqResMgr: reqResMgr,
+		dataMgr:   dataMgr,
 	}, nil
 }

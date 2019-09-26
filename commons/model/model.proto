@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package model;
 
+import "google/protobuf/any.proto";
+
 message Client {
     bytes cuid = 1;
     string alias = 2;
@@ -26,9 +28,10 @@ message BaseOperation {
     TypeOfOperation opType = 2;
 }
 
-message CreateOperation {
+message SubscribeOperation {
     BaseOperation base = 1;
-
+    TypeOfDatatype type = 2;
+    google.protobuf.Any snapshot = 3;
 }
 
 message IncreaseOperation {
@@ -44,12 +47,11 @@ message TransactionOperation {
 }
 
 enum TypeOfOperation {
-    Create = 0;
+    SUBSCRIBE = 0;
     DELETE = 1;
     ERROR = 2;
     SNAPSHOT = 4;
-    TRANSACTION_BEGIN = 5;
-    TRANSACTION_END = 6;
+    TRANSACTION = 5;
     INT_COUNTER_INCREASE = 11;
 }
 
@@ -60,24 +62,27 @@ enum TypeOfDatatype {
 
 enum StateOfDatatype {
     LOCALLY_EXISTED = 0;
-    REGISTERING = 1;
-    REGISTERED = 2;
-    UNREGISTERED = 3;
+    SUBSCRIBING = 1;
+    SUBSCRIBED = 2;
+    UNSUBSCRIBING = 3;
+    UNSUBSCRIBED = 4;
 }
 
 message OperationOnWire {
     oneof body {
-        TransactionOperation transactionOperation = 5;
-        IncreaseOperation increaseOperation = 11;
+        SubscribeOperation subscribe = 1;
+        TransactionOperation transaction = 5;
+        IncreaseOperation increase = 11;
     }
 }
 
 message PushPullPack {
-    CheckPoint checkPoint = 1;
-    bytes duid = 2;
-    uint32 era = 3;
-    uint32 type = 4;
-    repeated OperationOnWire operations = 5;
+    bytes duid = 1;
+    fixed32 option = 2;
+    CheckPoint checkPoint = 3;
+    uint32 era = 4;
+    int32 type = 5;
+    repeated OperationOnWire operations = 6;
 }
 
 message CheckPoint {
