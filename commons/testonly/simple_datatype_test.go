@@ -87,7 +87,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 		suite.Equal(int32(-2), intCounter.Get())
 		intCounter.IncreaseBy(3)
 		intCounter.IncreaseBy(4)
-		return log.OrtooError(nil, "fail to do the transaction")
+		return log.OrtooErrorf(nil, "fail to do the transaction")
 	})
 	//
 	////wg.Wait()

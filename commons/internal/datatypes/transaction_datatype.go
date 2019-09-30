@@ -192,10 +192,10 @@ func (t *TransactionDatatypeImpl) unlock() {
 func validateTransaction(transaction []model.Operation) error {
 	beginOp, ok := transaction[0].(*model.TransactionOperation)
 	if !ok {
-		return log.OrtooError(&errors.ErrTransaction{}, "invalidate transaction: no begin transaction")
+		return log.OrtooErrorf(&errors.ErrTransaction{}, "invalidate transaction: no begin transaction")
 	}
 	if int(beginOp.NumOfOps) != len(transaction) {
-		return log.OrtooError(&errors.ErrTransaction{}, "invalidate transaction: incorrect number of operations")
+		return log.OrtooErrorf(&errors.ErrTransaction{}, "invalidate transaction: incorrect number of operations")
 	}
 	return nil
 }

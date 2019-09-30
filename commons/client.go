@@ -9,20 +9,20 @@ import (
 )
 
 type clientImpl struct {
-	conf      *OrtooClientConfig
-	clientID  model.Cuid
-	model     *model.Client
-	ctx       *context.OrtooContext
-	reqResMgr *client.RequestResponseManager
-	dataMgr   *client.DataManager
+	conf     *OrtooClientConfig
+	clientID model.Cuid
+	model    *model.Client
+	ctx      *context.OrtooContext
+	msgMgr   *client.MessageManager
+	dataMgr  *client.DataManager
 }
 
 func (c *clientImpl) Connect() error {
-	if err := c.reqResMgr.Connect(); err != nil {
-		return log.OrtooError(err, "fail to connect")
+	if err := c.msgMgr.Connect(); err != nil {
+		return log.OrtooErrorf(err, "fail to connect")
 	}
 
-	return c.reqResMgr.ExchangeClientRequestResponse(c.model)
+	return c.msgMgr.ExchangeClientRequestResponse(c.model)
 }
 
 func (c *clientImpl) createDatatype() {
@@ -30,8 +30,8 @@ func (c *clientImpl) createDatatype() {
 }
 
 func (c *clientImpl) Close() error {
-	if err := c.reqResMgr.Close(); err != nil {
-		return log.OrtooError(err, "fail to close grpc connection")
+	if err := c.msgMgr.Close(); err != nil {
+		return log.OrtooErrorf(err, "fail to close grpc connection")
 	}
 	return nil
 }
@@ -53,12 +53,12 @@ func (c *clientImpl) SubscribeIntCounter(key string) (intCounterCh chan IntCount
 
 	ic, err := NewIntCounter(key, c)
 	if err != nil {
-		errCh <- log.OrtooError(err, "fail to create intCounter")
+		errCh <- log.OrtooErrorf(err, "fail to create intCounter")
 		return
 	}
 	icImpl := ic.(*intCounter)
 	if err := c.dataMgr.Subscribe(icImpl); err != nil {
-		errCh <- log.OrtooError(err, "fail to subscribe intCounter")
+		errCh <- log.OrtooErrorf(err, "fail to subscribe intCounter")
 	}
 
 	c.dataMgr.Sync(icImpl.GetKey())
@@ -87,21 +87,21 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 	ctx := context.NewOrtooContext()
 	cuid, err := model.NewCuid()
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to create cuid")
+		return nil, log.OrtooErrorf(err, "fail to create cuid")
 	}
-	reqResMgr := client.NewRequestResponseManager(ctx, conf.getServiceHost())
-	dataMgr := client.NewDataManager(reqResMgr)
+	msgMgr := client.NewMessageManager(ctx, conf.CollectionName, conf.getServiceHost())
+	dataMgr := client.NewDataManager(msgMgr)
 	model := &model.Client{
 		Cuid:       cuid,
 		Alias:      conf.Alias,
 		Collection: conf.CollectionName,
 	}
 	return &clientImpl{
-		conf:      conf,
-		ctx:       ctx,
-		model:     model,
-		clientID:  cuid,
-		reqResMgr: reqResMgr,
-		dataMgr:   dataMgr,
+		conf:     conf,
+		ctx:      ctx,
+		model:    model,
+		clientID: cuid,
+		msgMgr:   msgMgr,
+		dataMgr:  dataMgr,
 	}, nil
 }

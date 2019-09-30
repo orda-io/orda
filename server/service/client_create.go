@@ -19,7 +19,7 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 
 	storedDoc, err := o.mongo.GetClient(ctx, transferredDoc.Cuid)
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to get client")
+		return nil, log.OrtooErrorf(err, "fail to get client")
 	}
 	if storedDoc == nil {
 		transferredDoc.CreatedAt = time.Now()
@@ -43,5 +43,5 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 		}
 		log.Logger.Infof("a new collection is created:%s", transferredDoc.Collection)
 	}
-	return model.NewClientReply(in.Header.Seq, model.StateOfResponse_OK), nil
+	return model.NewClientResponse(in.Header, model.StateOfResponse_OK), nil
 }

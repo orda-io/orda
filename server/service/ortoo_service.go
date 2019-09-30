@@ -15,7 +15,7 @@ type OrtooService struct {
 func NewOrtooService(mongoConf *mongodb.Config) (*OrtooService, error) {
 	mongo, err := mongodb.New(mongoConf)
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to connect to MongoDB")
+		return nil, log.OrtooErrorf(err, "fail to connect to MongoDB")
 	}
 	return &OrtooService{
 		mongo: mongo,
@@ -25,7 +25,7 @@ func NewOrtooService(mongoConf *mongodb.Config) (*OrtooService, error) {
 //Initialize initializes mongoDB and something else
 func (o *OrtooService) Initialize(ctx context.Context) error {
 	if err := o.mongo.InitializeCollections(ctx); err != nil {
-		return log.OrtooError(err, "fail to initialize mongoDB")
+		return log.OrtooErrorf(err, "fail to initialize mongoDB")
 	}
 	return nil
 }

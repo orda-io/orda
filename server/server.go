@@ -37,10 +37,10 @@ func (o *OrtooServer) Start() error {
 	model.RegisterOrtooServiceServer(o.server, o.service)
 	err = o.service.Initialize(context.Background())
 	if err != nil {
-		return log.OrtooError(err, "fail to initialize service")
+		return log.OrtooErrorf(err, "fail to initialize service")
 	}
 	if err := o.server.Serve(lis); err != nil {
-		_ = log.OrtooError(err, "fail to serve grpc")
+		_ = log.OrtooErrorf(err, "fail to serve grpc")
 	}
 	log.Logger.Info("end of start()")
 	return nil

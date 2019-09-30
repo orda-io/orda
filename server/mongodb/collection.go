@@ -24,15 +24,15 @@ func newCollection(collection *mongo.Collection) *baseCollection {
 func (c *baseCollection) create(ctx context.Context, docModel schema.MongoDBDoc) error {
 	result, err := c.collection.InsertOne(ctx, bson.D{})
 	if err != nil {
-		return log.OrtooError(err, "fail to create collection:%s", c.name)
+		return log.OrtooErrorf(err, "fail to create collection:%s", c.name)
 	}
 	if _, err = c.collection.DeleteOne(ctx, filterByID(result.InsertedID)); err != nil {
-		return log.OrtooError(err, "fail to delete inserted one")
+		return log.OrtooErrorf(err, "fail to delete inserted one")
 	}
 	log.Logger.Infof("Create collection:%s", c.collection.Name())
 	if docModel != nil {
 		if err := c.createIndex(ctx, docModel); err != nil {
-			return log.OrtooError(err, "fail to create indexes")
+			return log.OrtooErrorf(err, "fail to create indexes")
 		}
 
 	}
@@ -44,7 +44,7 @@ func (c *baseCollection) createIndex(ctx context.Context, docModel schema.MongoD
 	if len(indexModel) > 0 {
 		indexes, err := c.collection.Indexes().CreateMany(ctx, indexModel)
 		if err != nil {
-			return log.OrtooError(err, "fail to create indexes")
+			return log.OrtooErrorf(err, "fail to create indexes")
 		}
 		log.Logger.Infof("index is created: %v in %s", indexes, reflect.TypeOf(docModel))
 	}

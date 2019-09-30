@@ -27,11 +27,11 @@ func (c *CollectionCollections) GetCollections(ctx context.Context, name string)
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, log.OrtooError(err, "fail to get collection")
+		return nil, log.OrtooErrorf(err, "fail to get collection")
 	}
 	var collection schema.CollectionDoc
 	if err := sr.Decode(&collection); err != nil {
-		return nil, log.OrtooError(err, "fail to decode collectionDoc")
+		return nil, log.OrtooErrorf(err, "fail to decode collectionDoc")
 	}
 	return &collection, nil
 }
@@ -44,7 +44,7 @@ func (c *CollectionCollections) InsertCollection(ctx context.Context, name strin
 	}
 	_, err := c.collection.InsertOne(ctx, collection)
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to insert collection")
+		return nil, log.OrtooErrorf(err, "fail to insert collection")
 	}
 	return &collection, nil
 }

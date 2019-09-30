@@ -94,7 +94,7 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-//OrtooError is a method to present a error log.
+//OrtooErrorf is a method to present a error log.
 func (o *OrtooLog) OrtooError(err error, format string, args ...interface{}) error {
 	return o.ortooError(err, 3, format, args)
 }
@@ -116,12 +116,12 @@ func (o *OrtooLog) ortooError(err error, skip int, format string, args ...interf
 	return err
 }
 
-//OrtooError is a method wrapping Logger.OrtooError()
-func OrtooError(err error, format string, args ...interface{}) error {
+//OrtooErrorf is a method wrapping Logger.OrtooErrorf()
+func OrtooErrorf(err error, format string, args ...interface{}) error {
 	return Logger.ortooError(err, 2, format, args...)
 }
 
-//OrtooErrorWithSkip is a method wrapping Logger.OrtooError()
+//OrtooErrorWithSkip is a method wrapping Logger.OrtooErrorf()
 func OrtooErrorWithSkip(err error, skip int, format string, args ...interface{}) error {
 	return Logger.ortooError(err, skip, format, args...)
 }

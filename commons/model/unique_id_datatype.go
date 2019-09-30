@@ -11,7 +11,7 @@ type Duid uniqueID
 func NewDuid() (Duid, error) {
 	u, err := newUniqueID()
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to generate datatype UID")
+		return nil, log.OrtooErrorf(err, "fail to generate datatype UID")
 	}
 	return Duid(u), nil
 }

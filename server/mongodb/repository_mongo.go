@@ -47,7 +47,7 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 
 	names, err := r.db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
-		return log.OrtooError(err, "fail to list collection names")
+		return log.OrtooErrorf(err, "fail to list collection names")
 	}
 	var realCollections = make(map[string]bool)
 	for _, v := range names {
@@ -56,12 +56,12 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 
 	if _, ok := realCollections[CollectionNameClients]; !ok {
 		if err := r.CollectionClients.create(ctx, &schema.ClientDoc{}); err != nil {
-			return log.OrtooError(err, "fail to create the client collection")
+			return log.OrtooErrorf(err, "fail to create the client collection")
 		}
 	}
 	if _, ok := realCollections[CollectionNameCollections]; !ok {
 		if err := r.CollectionCollections.create(ctx, &schema.CollectionDoc{}); err != nil {
-			return log.OrtooError(err, "fail to create the collections collection")
+			return log.OrtooErrorf(err, "fail to create the collections collection")
 		}
 	}
 	return nil
@@ -72,12 +72,12 @@ func (r *RepositoryMongo) GetOrCreateCollectionSnapshot(ctx context.Context, nam
 
 	names, err := r.db.ListCollectionNames(ctx, filterByName(name))
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to list collections")
+		return nil, log.OrtooErrorf(err, "fail to list collections")
 	}
 	collection := newCollectionSnapshot(r.db.Collection(name), name)
 	if len(names) == 0 {
 		if err := collection.create(ctx, nil); err != nil {
-			return nil, log.OrtooError(err, "fail to create collection")
+			return nil, log.OrtooErrorf(err, "fail to create collection")
 		}
 	}
 	return collection, nil

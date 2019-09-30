@@ -25,7 +25,7 @@ type PublicBaseDatatypeInterface interface {
 func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.Cuid) (*baseDatatype, error) {
 	duid, err := model.NewDuid()
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to create base datatype due to duid")
+		return nil, log.OrtooErrorf(err, "fail to create base datatype due to duid")
 	}
 	return &baseDatatype{
 		Key:    key,
@@ -54,7 +54,7 @@ func (b *baseDatatype) Replay(op model.Operation) error {
 	if bytes.Compare(b.opID.Cuid, op.GetBase().Id.Cuid) == 0 {
 		_, err := b.executeLocalBase(op)
 		if err != nil {
-			return log.OrtooError(err, "fail to replay local operation")
+			return log.OrtooErrorf(err, "fail to replay local operation")
 		}
 	} else {
 		b.executeRemoteBase(op)

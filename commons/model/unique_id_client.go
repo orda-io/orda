@@ -11,7 +11,7 @@ type Cuid uniqueID
 func NewCuid() (Cuid, error) {
 	u, err := newUniqueID()
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to generate client UID")
+		return nil, log.OrtooErrorf(err, "fail to generate client UID")
 	}
 	return Cuid(u), nil
 }

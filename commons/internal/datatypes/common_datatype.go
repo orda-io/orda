@@ -15,17 +15,17 @@ type CommonDatatype struct {
 func (c *CommonDatatype) Initialize(key string, typeOf model.TypeOfDatatype, cuid model.Cuid, w Wire, snapshot model.Snapshot, finalDatatype model.FinalDatatype) error {
 	baseDatatype, err := newBaseDatatype(key, typeOf, cuid)
 	if err != nil {
-		return log.OrtooError(err, "fail to create baseDatatype")
+		return log.OrtooErrorf(err, "fail to create baseDatatype")
 	}
 
 	wiredDatatype, err := newWiredDataType(baseDatatype, w)
 	if err != nil {
-		return log.OrtooError(err, "fail to create wiredDatatype")
+		return log.OrtooErrorf(err, "fail to create wiredDatatype")
 	}
 
 	transactionDatatype, err := newTransactionDatatype(wiredDatatype, snapshot)
 	if err != nil {
-		return log.OrtooError(err, "fail to create transaction manager")
+		return log.OrtooErrorf(err, "fail to create transaction manager")
 	}
 	c.TransactionDatatypeImpl = transactionDatatype
 	c.TransactionCtx = nil
@@ -37,11 +37,11 @@ func (c *CommonDatatype) Initialize(key string, typeOf model.TypeOfDatatype, cui
 func (c *CommonDatatype) Subscribe() error {
 	subscOp, err := model.NewSubscribeOperation(c.TypeOf, c.finalDatatype.GetSnapshot())
 	if err != nil {
-		return log.OrtooError(err, "fail to subscribe")
+		return log.OrtooErrorf(err, "fail to subscribe")
 	}
 	_, err = c.ExecuteTransaction(c.TransactionCtx, subscOp, true)
 	if err != nil {
-		return log.OrtooError(err, "fail to execute SubscribeOperation")
+		return log.OrtooErrorf(err, "fail to execute SubscribeOperation")
 	}
 	return nil
 }

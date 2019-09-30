@@ -24,7 +24,7 @@ func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.Cli
 	_, err := c.collection.UpdateOne(ctx, filterByID(client.Cuid), client.ToUpdateBson(), upsertOption)
 
 	if err != nil {
-		return log.OrtooError(err, "fail to insert")
+		return log.OrtooErrorf(err, "fail to insert")
 	}
 	return nil
 }
@@ -36,12 +36,12 @@ func (c *CollectionClients) GetClient(ctx context.Context, cuid string) (*schema
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, log.OrtooError(err, "fail to get client")
+		return nil, log.OrtooErrorf(err, "fail to get client")
 	}
 
 	var client *schema.ClientDoc
 	if err := sr.Decode(client); err != nil {
-		return nil, log.OrtooError(err, "fail to decode clientDoc")
+		return nil, log.OrtooErrorf(err, "fail to decode clientDoc")
 	}
 	return client, nil
 }

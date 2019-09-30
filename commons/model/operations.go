@@ -33,7 +33,7 @@ func (o *BaseOperation) SetOperationID(opID *OperationID) {
 func NewTransactionBeginOperation(tag string) (*TransactionOperation, error) {
 	uuid, err := newUniqueID()
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to create uuid")
+		return nil, log.OrtooErrorf(err, "fail to create uuid")
 	}
 	return &TransactionOperation{
 		Base: NewOperation(TypeOfOperation_TRANSACTION),
@@ -57,7 +57,7 @@ func (t *TransactionOperation) ExecuteRemote(datatype FinalDatatype) (interface{
 func NewSubscribeOperation(datatype TypeOfDatatype, snapshot Snapshot) (*SubscribeOperation, error) {
 	snapshotBinary, err := json.Marshal(snapshot)
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to create subscribe operation")
+		return nil, log.OrtooErrorf(err, "fail to create subscribe operation")
 	}
 	return &SubscribeOperation{
 		Base: NewOperation(TypeOfOperation_SUBSCRIBE),

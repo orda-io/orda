@@ -4,33 +4,19 @@ package model;
 
 import "model.proto";
 
-message RequestHeader {
+message MessageHeader {
     string version = 1;
     uint32 seq = 2;
-    oneof typeOf {
-        TypeOfRequest typeOfRequest = 3;
-        TypeOfResponse typeOfReply = 4;
-    }
+    TypeOfMessage typeOf = 3;
+    string collection = 4;
 }
 
-message ResponseHeader {
-    TypeOfResponse type = 1;
-}
+enum TypeOfMessage {
+    REQUEST_CLIENT = 0;
+    REQUEST_PUSHPULL = 1;
 
-enum TypeOfRequest {
-    PUSHPULL_REQUEST = 0;
-    CLIENT_REQUEST = 1;
-}
-
-
-message ClientRequest {
-    RequestHeader header = 1;
-    Client client = 2;
-}
-
-enum TypeOfResponse {
-    PUSHPULL_REPLY = 0;
-    CLIENT_REPLY = 1;
+    RESPONSE_CLIENT = 10;
+    RESPONSE_PUSHPULL = 11;
 }
 
 enum StateOfResponse {
@@ -45,20 +31,25 @@ message ResponseState {
 }
 
 
+message ClientRequest {
+    MessageHeader header = 1;
+    Client client = 2;
+}
+
 message ClientResponse {
-    RequestHeader header = 1;
+    MessageHeader header = 1;
     ResponseState state = 2;
 }
 
 
 message PushPullRequest {
-    RequestHeader header = 1;
+    MessageHeader header = 1;
     int32 id = 2;
     repeated PushPullPack pushPullPacks = 3;
 }
 
 message PushPullResponse {
-    ResponseHeader header = 1;
+    MessageHeader header = 1;
     int32 id = 2;
     repeated PushPullPack pushPullPacks = 3;
 }

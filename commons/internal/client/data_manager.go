@@ -9,7 +9,7 @@ import (
 //DataManager manages Ortoo datatypes regarding operations
 type DataManager struct {
 	//cuid model.Cuid
-	reqResMgr *RequestResponseManager
+	reqResMgr *MessageManager
 	dataMap   map[string]model.FinalDatatype
 }
 
@@ -23,7 +23,7 @@ func (d *DataManager) DeliverTransaction(wired datatypes.WiredDatatype, transact
 	//panic("implement me")
 }
 
-func NewDataManager(manager *RequestResponseManager) *DataManager {
+func NewDataManager(manager *MessageManager) *DataManager {
 	return &DataManager{
 		dataMap:   make(map[string]model.FinalDatatype),
 		reqResMgr: manager,
@@ -44,14 +44,19 @@ func (d *DataManager) Subscribe(dt model.FinalDatatype) error {
 	if _, ok := d.dataMap[dt.GetKey()]; !ok {
 		d.dataMap[dt.GetKey()] = dt
 		if err := dt.Subscribe(); err != nil {
-			return log.OrtooError(err, "fail to subscribe")
+			return log.OrtooErrorf(err, "fail to subscribe")
 		}
 	}
 	return nil
 }
 
-func (d *DataManager) Sync(key string) {
+func (d *DataManager) Sync(key string) error {
 	data := d.dataMap[key]
 	ppp := data.CreatePushPullPack()
 	pushpullResponse, err := d.reqResMgr.Sync(ppp)
+	if err != nil {
+		return log.OrtooErrorf(err, "fail to sync")
+	}
+	log.Logger.Infof("%+v", pushpullResponse)
+	return nil
 }

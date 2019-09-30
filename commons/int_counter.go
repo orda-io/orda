@@ -43,7 +43,7 @@ func NewIntCounter(key string, client Client) (IntCounter, error) {
 		snapshot,
 		intCounter)
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to initialize intCounter")
+		return nil, log.OrtooErrorf(err, "fail to initialize intCounter")
 	}
 	return intCounter, nil
 }
@@ -60,7 +60,7 @@ func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 	op := model.NewIncreaseOperation(delta)
 	ret, err := c.ExecuteTransaction(c.TransactionCtx, op, true)
 	if err != nil {
-		return 0, log.OrtooError(err, "fail to execute operation")
+		return 0, log.OrtooErrorf(err, "fail to execute operation")
 	}
 	return ret.(int32), nil
 }
@@ -92,7 +92,7 @@ func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 	err = transFunc(clone)
 	if err != nil {
 		c.SetTransactionFail()
-		return log.OrtooError(err, "fail to do the transaction: '%s'", tag)
+		return log.OrtooErrorf(err, "fail to do the transaction: '%s'", tag)
 	}
 	return nil
 }
