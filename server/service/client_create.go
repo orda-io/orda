@@ -12,7 +12,7 @@ import (
 func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
 	transferredDoc := schema.ClientModelToBson(in.Client)
 
-	collectionDoc, err := o.mongo.GetCollections(ctx, transferredDoc.Collection)
+	collectionDoc, err := o.mongo.GetCollection(ctx, transferredDoc.Collection)
 	if err != nil {
 		return nil, model.NewRPCError(model.RPCErrMongoDB)
 	}

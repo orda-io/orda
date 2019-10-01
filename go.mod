@@ -21,3 +21,5 @@ require (
 	google.golang.org/grpc v1.21.1
 	gotest.tools v2.2.0+incompatible
 )
+
+go 1.13

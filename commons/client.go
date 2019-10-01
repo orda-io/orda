@@ -22,7 +22,7 @@ func (c *clientImpl) Connect() error {
 		return log.OrtooErrorf(err, "fail to connect")
 	}
 
-	return c.msgMgr.ExchangeClientRequestResponse(c.model)
+	return c.msgMgr.ExchangeClientRequestResponse()
 }
 
 func (c *clientImpl) createDatatype() {
@@ -89,17 +89,18 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to create cuid")
 	}
-	msgMgr := client.NewMessageManager(ctx, conf.CollectionName, conf.getServiceHost())
-	dataMgr := client.NewDataManager(msgMgr)
-	model := &model.Client{
+
+	clientModel := &model.Client{
 		Cuid:       cuid,
 		Alias:      conf.Alias,
 		Collection: conf.CollectionName,
 	}
+	msgMgr := client.NewMessageManager(ctx, clientModel, conf.getServiceHost())
+	dataMgr := client.NewDataManager(msgMgr)
 	return &clientImpl{
 		conf:     conf,
 		ctx:      ctx,
-		model:    model,
+		model:    clientModel,
 		clientID: cuid,
 		msgMgr:   msgMgr,
 		dataMgr:  dataMgr,

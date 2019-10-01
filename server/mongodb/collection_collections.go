@@ -20,8 +20,8 @@ func NewCollectionCollections(collection *mongo.Collection) *CollectionCollectio
 	}
 }
 
-//GetCollections gets a collectionDoc by the name
-func (c *CollectionCollections) GetCollections(ctx context.Context, name string) (*schema.CollectionDoc, error) {
+//GetCollection gets a collectionDoc by the name
+func (c *CollectionCollections) GetCollection(ctx context.Context, name string) (*schema.CollectionDoc, error) {
 	sr := c.collection.FindOne(ctx, filterByID(name))
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
