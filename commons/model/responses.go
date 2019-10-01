@@ -17,7 +17,7 @@ func NewClientResponse(header *MessageHeader, state StateOfResponse, args ...int
 		log.Logger.Errorf(responseFormat[state], args)
 	}
 	return &ClientResponse{
-		Header: NewRequestHeader(header.Seq, TypeOfMessage_RESPONSE_CLIENT, header.Collection),
+		Header: NewMessageHeader(header.Seq, TypeOfMessage_RESPONSE_CLIENT, header.Collection, header.Cuid),
 		State: &ResponseState{
 			State: state,
 			Msg:   fmt.Sprintf(responseFormat[state], args),

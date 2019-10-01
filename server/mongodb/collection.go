@@ -11,11 +11,13 @@ import (
 
 type baseCollection struct {
 	name       string
+	client     *mongo.Client
 	collection *mongo.Collection
 }
 
-func newCollection(collection *mongo.Collection) *baseCollection {
+func newCollection(client *mongo.Client, collection *mongo.Collection) *baseCollection {
 	return &baseCollection{
+		client:     client,
 		collection: collection,
 	}
 }

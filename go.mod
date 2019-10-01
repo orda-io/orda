@@ -16,8 +16,10 @@ require (
 	github.com/tidwall/pretty v1.0.0 // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
-	go.mongodb.org/mongo-driver v1.1.0
+	go.mongodb.org/mongo-driver v1.1.1
 	golang.org/x/lint v0.0.0-20190909230951-414d861bb4ac // indirect
 	google.golang.org/grpc v1.21.1
 	gotest.tools v2.2.0+incompatible
 )
+
+go 1.13

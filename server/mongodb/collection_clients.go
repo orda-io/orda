@@ -14,8 +14,8 @@ type CollectionClients struct {
 }
 
 //NewCollectionClients creates a new CollectionClients
-func NewCollectionClients(collection *mongo.Collection) *CollectionClients {
-	return &CollectionClients{newCollection(collection)}
+func NewCollectionClients(client *mongo.Client, collection *mongo.Collection) *CollectionClients {
+	return &CollectionClients{newCollection(client, collection)}
 }
 
 //UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
@@ -39,9 +39,9 @@ func (c *CollectionClients) GetClient(ctx context.Context, cuid string) (*schema
 		return nil, log.OrtooErrorf(err, "fail to get client")
 	}
 
-	var client *schema.ClientDoc
-	if err := sr.Decode(client); err != nil {
+	var client schema.ClientDoc
+	if err := sr.Decode(&client); err != nil {
 		return nil, log.OrtooErrorf(err, "fail to decode clientDoc")
 	}
-	return client, nil
+	return &client, nil
 }

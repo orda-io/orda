@@ -11,25 +11,25 @@ import (
 type MessageManager struct {
 	seq           uint32
 	host          string
-	collection    string
+	client        *model.Client
 	conn          *grpc.ClientConn
 	serviceClient model.OrtooServiceClient
 	ctx           *context.OrtooContext
 }
 
 //NewMessageManager ...
-func NewMessageManager(ctx *context.OrtooContext, collection string, host string) *MessageManager {
+func NewMessageManager(ctx *context.OrtooContext, client *model.Client, host string) *MessageManager {
 	return &MessageManager{
-		seq:        0,
-		host:       host,
-		collection: collection,
-		ctx:        ctx,
+		seq:    0,
+		ctx:    ctx,
+		host:   host,
+		client: client,
 	}
 }
 
 //ExchangeClientRequestResponse ...
-func (r *MessageManager) ExchangeClientRequestResponse(client *model.Client) error {
-	request := model.NewClientRequest(r.NextSeq(), r.collection, client)
+func (r *MessageManager) ExchangeClientRequestResponse() error {
+	request := model.NewClientRequest(r.NextSeq(), r.client)
 	_, err := r.serviceClient.ProcessClient(r.ctx, request)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to exchange clientRequestReply")
@@ -65,7 +65,7 @@ func (r *MessageManager) Close() error {
 }
 
 func (r *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, error) {
-	request := model.NewPushPullRequest(r.NextSeq(), r.collection, pppList...)
+	request := model.NewPushPullRequest(r.NextSeq(), r.client, pppList...)
 	pushPullResponse, err := r.serviceClient.ProcessPushPull(r.ctx, request)
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to sync push pull")
