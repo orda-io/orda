@@ -8,13 +8,14 @@
  - go 1.12.6
  - docker 18.09.2 (for running MongoDB)
  - MongoDB 4.2.0
- - gogo/protobuf 
+ - gogo/protobuf (how to install: http://google.github.io/proto-lens/installing-protoc.html)
  
 ### Install
  ```bash
  # git clone https://github.com/knowhunger/ortoo.git
  # cd ortoo 
- # make docker-up 
+ # make docker-up
+ # make protoc-gen
  ```
 
 ## For developers 
