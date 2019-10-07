@@ -14,8 +14,8 @@ type CollectionClients struct {
 }
 
 //NewCollectionClients creates a new CollectionClients
-func NewCollectionClients(collection *mongo.Collection) *CollectionClients {
-	return &CollectionClients{newCollection(collection)}
+func NewCollectionClients(client *mongo.Client, collection *mongo.Collection) *CollectionClients {
+	return &CollectionClients{newCollection(client, collection)}
 }
 
 //UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
