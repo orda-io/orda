@@ -6,6 +6,8 @@ import (
 )
 
 const (
+	//CollectionNameCounters is the name of the collection for Counters
+	CollectionNameCounters = "-_-Counters"
 	//CollectionNameClients is the name of the collection for Clients
 	CollectionNameClients = "-_-Clients"
 	//CollectionNameCollections is the name of the collection for Collections

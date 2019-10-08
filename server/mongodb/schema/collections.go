@@ -2,6 +2,7 @@ package schema
 
 import (
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/x/bsonx"
 	"time"
 )
 
@@ -14,5 +15,7 @@ type CollectionDoc struct {
 
 //GetIndexModel returns the index models of CollectionDoc
 func (c *CollectionDoc) GetIndexModel() []mongo.IndexModel {
-	return []mongo.IndexModel{{}}
+	return []mongo.IndexModel{{
+		Keys: bsonx.Doc{{Key: "num", Value: bsonx.Int32(1)}},
+	}}
 }

@@ -10,7 +10,7 @@ import (
 
 //ClientDoc defines the document related to client
 type ClientDoc struct {
-	Cuid       string    `bson:"_id"`
+	CUID       string    `bson:"_id"`
 	Alias      string    `bson:"alias"`
 	Collection string    `bson:"collection"`
 	SyncType   string    `bson:"syncType"`
@@ -43,7 +43,7 @@ func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
 //ClientModelToBson returns a ClientDoc from a model.Client
 func ClientModelToBson(model *model.Client) *ClientDoc {
 	return &ClientDoc{
-		Cuid:       model.GetCuidString(),
+		CUID:       model.GetCuidString(),
 		Alias:      model.Alias,
 		Collection: model.Collection,
 		SyncType:   model.SyncType.String(),

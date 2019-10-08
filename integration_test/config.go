@@ -17,10 +17,10 @@ func NewTestOrtooClientConfig() *commons.OrtooClientConfig {
 }
 
 //NewTestMongoDBConfig ...
-func NewTestMongoDBConfig() *mongodb.Config {
+func NewTestMongoDBConfig(dbName string) *mongodb.Config {
 	return &mongodb.Config{
 		Host:    "mongodb://root:ortoo-test@localhost:27017",
-		OrtooDB: "ortoo_test",
+		OrtooDB: dbName,
 	}
 }
 
@@ -29,6 +29,6 @@ func NewTestOrtooServerConfig() *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
 		Host:  "127.0.0.1",
 		Port:  19061,
-		Mongo: NewTestMongoDBConfig(),
+		Mongo: NewTestMongoDBConfig("ortoo_test"),
 	}
 }

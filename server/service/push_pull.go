@@ -30,7 +30,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	}
 	var chanList []chan *model.PushPullPack
 	for _, ppp := range in.PushPullPacks {
-		handler := NewPushPullHandler(ppp)
+		handler := NewPushPullHandler(ctx, o.mongo, ppp)
 		chanList = append(chanList, handler.Start())
 	}
 	remainingChan := len(chanList)
@@ -76,5 +76,5 @@ func (p *PushPullHandler) Start() chan *model.PushPullPack {
 func (p *PushPullHandler) _start(chan *model.PushPullPack) {
 	p.duid = hex.EncodeToString(p.pushPullPack.Duid)
 
-	p.mongo.GetDatatype()
+	//p.mongo.GetDatatype()
 }

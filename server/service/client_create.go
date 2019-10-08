@@ -17,7 +17,7 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 		return nil, model.NewRPCError(model.RPCErrMongoDB)
 	}
 
-	storedDoc, err := o.mongo.GetClient(ctx, transferredDoc.Cuid)
+	storedDoc, err := o.mongo.GetClient(ctx, transferredDoc.CUID)
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to get client")
 	}

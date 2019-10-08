@@ -12,6 +12,7 @@ import (
 
 //RepositoryMongo is a tool struct for MongoDB
 type RepositoryMongo struct {
+	*CollectionCounters
 	*CollectionClients
 	*CollectionCollections
 	config *Config
@@ -42,8 +43,9 @@ func New(conf *Config) (*RepositoryMongo, error) {
 //InitializeCollections initialize collections
 func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 
-	r.CollectionClients = NewCollectionClients(r.db.Collection(CollectionNameClients))
-	r.CollectionCollections = NewCollectionCollections(r.db.Collection(CollectionNameCollections))
+	r.CollectionCounters = NewCollectionCounters(r.client, r.db.Collection(CollectionNameCounters))
+	r.CollectionClients = NewCollectionClients(r.client, r.db.Collection(CollectionNameClients))
+	r.CollectionCollections = NewCollectionCollections(r.client, r.CollectionCounters, r.db.Collection(CollectionNameCollections))
 
 	names, err := r.db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
@@ -74,7 +76,7 @@ func (r *RepositoryMongo) GetOrCreateCollectionSnapshot(ctx context.Context, nam
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to list collections")
 	}
-	collection := newCollectionSnapshot(r.db.Collection(name), name)
+	collection := newCollectionSnapshot(r.client, r.db.Collection(name), name)
 	if len(names) == 0 {
 		if err := collection.create(ctx, nil); err != nil {
 			return nil, log.OrtooErrorf(err, "fail to create collection")

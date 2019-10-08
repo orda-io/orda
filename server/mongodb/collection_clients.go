@@ -21,7 +21,7 @@ func NewCollectionClients(client *mongo.Client, collection *mongo.Collection) *C
 //UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
 func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.ClientDoc) error {
 	client.CreatedAt = time.Now()
-	_, err := c.collection.UpdateOne(ctx, filterByID(client.Cuid), client.ToUpdateBson(), upsertOption)
+	_, err := c.collection.UpdateOne(ctx, filterByID(client.CUID), client.ToUpdateBson(), upsertOption)
 
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to insert")

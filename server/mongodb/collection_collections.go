@@ -5,18 +5,22 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"time"
 )
 
 //CollectionCollections is a struct for Collections
 type CollectionCollections struct {
 	*baseCollection
+	counterCollection *CollectionCounters
 }
 
 //NewCollectionCollections creates a new CollectionCollections
-func NewCollectionCollections(client *mongo.Client, collection *mongo.Collection) *CollectionCollections {
+func NewCollectionCollections(client *mongo.Client, counterCollection *CollectionCounters, collection *mongo.Collection) *CollectionCollections {
 	return &CollectionCollections{
 		newCollection(client, collection),
+		counterCollection,
 	}
 }
 
@@ -36,30 +40,64 @@ func (c *CollectionCollections) GetCollection(ctx context.Context, name string) 
 	return &collection, nil
 }
 
+func (c *CollectionCollections) DeleteCollection(ctx context.Context, name string) error {
+	return nil
+}
+
 //InsertCollection inserts a collection document
-func (c *CollectionCollections) InsertCollection(ctx context.Context, name string) (*schema.CollectionDoc, error) {
+func (c *CollectionCollections) InsertCollection(ctx context.Context, name string) (collection *schema.CollectionDoc, err error) {
 
 	session, err := c.client.StartSession()
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to start session")
 	}
 
-	if err := session.StartTransaction(); err != nil {
+	opt := &options.TransactionOptions{
+		ReadConcern:    readconcern.Majority(),
+		ReadPreference: nil,
+		WriteConcern:   nil,
+		MaxCommitTime:  nil,
+	}
+	if err := session.StartTransaction(opt); err != nil {
 		return nil, log.OrtooErrorf(err, "fail to start transaction")
 	}
+
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
-		//if result, err = collection.UpdateOne(sc, bson.M{"_id": id}, update); err != nil {
-		//	t.Fatal(err)
+		//var num uint32 = 0
+		//filter := bson.D{}
+		//opts := options.Find()
+		//opts.SetSort(bson.D{{Key: "num", Value: -1}})
+		//opts.SetLimit(1)
+		//cur, err := c.collection.Find(ctx, filter, opts)
+		//if err != nil {
+		//	if err == mongo.ErrNoDocuments {
+		//		num = 0
+		//	}
+		//	return log.OrtooErrorf(err, "fail to get")
+		//} else {
+		//	var prev schema.CollectionDoc
+		//	for cur.Next(ctx) {
+		//		if err := cur.Decode(&prev); err != nil {
+		//			return log.OrtooErrorf(err, "fail to decode collection")
+		//		}
+		//		num = prev.Num
+		//	}
 		//}
-		//if result.MatchedCount != 1 || result.ModifiedCount != 1 {
-		//	t.Fatal("replace failed, expected 1 but got", result.MatchedCount)
-		//}
-		collection := schema.CollectionDoc{
+		//defer cur.Close(ctx)
+		num, err := c.counterCollection.NextCollectionNum(ctx)
+		if err != nil {
+			return log.OrtooErrorf(err, "fail to get next counter")
+		}
+
+		collection = &schema.CollectionDoc{
 			Name:      name,
+			Num:       num + 1,
 			CreatedAt: time.Now(),
 		}
-		c.collection.Aggregate(ctx, pip)
-
+		_, err = c.collection.InsertOne(ctx, collection)
+		if err != nil {
+			return log.OrtooErrorf(err, "fail to insert collection")
+		}
 		if err = session.CommitTransaction(sc); err != nil {
 			return log.OrtooErrorf(err, "fail to commit transaction")
 		}
@@ -68,12 +106,8 @@ func (c *CollectionCollections) InsertCollection(ctx context.Context, name strin
 		return nil, log.OrtooErrorf(err, "fail to work with session")
 	}
 	session.EndSession(ctx)
-
-	_, err := c.collection.InsertOne(ctx, collection)
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to insert collection")
-	}
-	return &collection, nil
+	log.Logger.Infof("Collection is inserted: %+v", collection)
+	return collection, nil
 }
 
 //PurgeAllCollection ...
