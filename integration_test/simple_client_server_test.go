@@ -1,10 +1,17 @@
 package integration
 
 import (
+	"context"
 	"github.com/knowhunger/ortoo/commons"
+	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/stretchr/testify/suite"
 	"testing"
+)
+
+const (
+	dbName         = "ortoo_test_db"
+	collectionName = "ortoo_test_collection"
 )
 
 type ClientServerTestSuite struct {
@@ -13,14 +20,23 @@ type ClientServerTestSuite struct {
 }
 
 func (s *ClientServerTestSuite) SetupTest() {
-	s.server = server.NewOrtooServer(NewTestOrtooServerConfig())
-	go s.server.Start()
 	s.T().Log("SetupTest")
+	var err error
+	s.server, err = server.NewOrtooServer(context.TODO(), NewTestOrtooServerConfig(dbName))
+	if err != nil {
+		_ = log.OrtooError(err)
+		s.Fail("fail to setup")
+	}
+	if err := MakeTestCollection(s.server.Mongo, collectionName); err != nil {
+		s.Fail("fail to test collection")
+	}
+	go s.server.Start()
+
 }
 
 func (s *ClientServerTestSuite) TestClientServer() {
 	s.Run("Can create a client with server", func() {
-		config := NewTestOrtooClientConfig()
+		config := NewTestOrtooClientConfig(dbName, collectionName)
 		client1, err := commons.NewOrtooClient(config)
 		if err != nil {
 			s.T().Fail()

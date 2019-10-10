@@ -67,7 +67,7 @@ func (t *TransactionDatatypeImpl) ExecuteTransactionRemote(transaction []model.O
 	var transactionCtx *TransactionContext
 	if len(transaction) > 1 {
 		if err := validateTransaction(transaction); err != nil {
-			return t.Logger.OrtooError(err, "fail to validate transaction")
+			return t.Logger.OrtooErrorf(err, "fail to validate transaction")
 		}
 		beginOp := transaction[0].(*model.TransactionOperation)
 		transactionCtx = t.beginTransaction(beginOp.Tag)
@@ -83,13 +83,13 @@ func (t *TransactionDatatypeImpl) ExecuteTransactionRemote(transaction []model.O
 func (t *TransactionDatatypeImpl) ExecuteTransaction(ctx *TransactionContext, op model.Operation, isLocal bool) (interface{}, error) {
 	transactionCtx, err := t.BeginTransaction(NotUserTransactionTag, ctx, false)
 	if err != nil {
-		return 0, t.Logger.OrtooError(err, "fail to execute transaction")
+		return 0, t.Logger.OrtooErrorf(err, "fail to execute transaction")
 	}
 	defer t.EndTransaction(transactionCtx, false)
 	if isLocal {
 		ret, err := t.executeLocalBase(op)
 		if err != nil {
-			return 0, t.Logger.OrtooError(err, "fail to execute operation")
+			return 0, t.Logger.OrtooErrorf(err, "fail to execute operation")
 		}
 		t.transactionCtx.appendOperation(op)
 		return ret, nil
@@ -121,7 +121,7 @@ func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionC
 	if withOp {
 		op, err := model.NewTransactionBeginOperation(tag)
 		if err != nil {
-			return nil, t.Logger.OrtooError(err, "fail to create TransactionBeginOperation")
+			return nil, t.Logger.OrtooErrorf(err, "fail to create TransactionBeginOperation")
 		}
 		t.transactionCtx.uuid = op.Uuid
 		t.SetNextOpID(op)
@@ -143,7 +143,7 @@ func (t *TransactionDatatypeImpl) Rollback() error {
 		if err != nil {
 			t.SetOpID(redoOpID)
 			snapshotDatatype.SetSnapshot(redoSnapshot)
-			return t.Logger.OrtooError(err, "fail to replay operations")
+			return t.Logger.OrtooErrorf(err, "fail to replay operations")
 		}
 	}
 	t.rollbackOpID = t.opID.Clone()
@@ -166,7 +166,7 @@ func (t *TransactionDatatypeImpl) EndTransaction(ctx *TransactionContext, withOp
 			if withOp {
 				beginOp, ok := t.transactionCtx.opBuffer[0].(*model.TransactionOperation)
 				if !ok {
-					return t.Logger.OrtooError(&errors.ErrTransaction{}, "invalidate transaction: no begin operation")
+					return t.Logger.OrtooErrorf(&errors.ErrTransaction{}, "invalidate transaction: no begin operation")
 				}
 				beginOp.NumOfOps = uint32(len(t.transactionCtx.opBuffer))
 			}

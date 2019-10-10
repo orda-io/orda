@@ -5,6 +5,8 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 )
 
@@ -15,6 +17,9 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 	collectionDoc, err := o.mongo.GetCollection(ctx, transferredDoc.Collection)
 	if err != nil {
 		return nil, model.NewRPCError(model.RPCErrMongoDB)
+	}
+	if collectionDoc == nil {
+		return nil, log.OrtooError(status.New(codes.InvalidArgument, "fail to find collection").Err())
 	}
 
 	storedDoc, err := o.mongo.GetClient(ctx, transferredDoc.CUID)
@@ -36,12 +41,6 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 	if err = o.mongo.UpdateClient(ctx, transferredDoc); err != nil {
 		return nil, model.NewRPCError(model.RPCErrMongoDB)
 	}
-	if collectionDoc == nil {
-		collectionDoc, err = o.mongo.InsertCollection(ctx, transferredDoc.Collection)
-		if err != nil {
-			return nil, model.NewRPCError(model.RPCErrMongoDB)
-		}
-		log.Logger.Infof("a new collection is created:%s", transferredDoc.Collection)
-	}
+
 	return model.NewClientResponse(in.Header, model.StateOfResponse_OK), nil
 }

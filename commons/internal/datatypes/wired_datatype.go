@@ -71,7 +71,7 @@ func (w *WiredDatatypeImpl) ReceiveRemoteOperations(operations []model.Operation
 		}
 		err := transactionDatatype.ExecuteTransactionRemote(transaction)
 		if err != nil {
-			return w.Logger.OrtooError(err, "fail to execute Transaction")
+			return w.Logger.OrtooErrorf(err, "fail to execute Transaction")
 		}
 	}
 	return nil

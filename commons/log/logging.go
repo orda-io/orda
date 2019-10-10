@@ -77,7 +77,9 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	b.WriteString("\x1b[0m")
 
 	if entry.Data[fieldErrorAt] != nil {
-		b.WriteString("[" + entry.Data[fieldError].(string) + "]")
+		if entry.Data[fieldError] != nil {
+			b.WriteString("[" + entry.Data[fieldError].(string) + "]")
+		}
 		b.WriteString("[ " + entry.Data[fieldErrorAt].(string) + " ] ")
 	} else {
 		relativeCallFile := strings.Replace(entry.Caller.File, basepath, "", 1)
@@ -95,11 +97,11 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 //OrtooErrorf is a method to present a error log.
-func (o *OrtooLog) OrtooError(err error, format string, args ...interface{}) error {
-	return o.ortooError(err, 3, format, args)
+func (o *OrtooLog) OrtooErrorf(err error, format string, args ...interface{}) error {
+	return o.ortooErrorf(err, 3, format, args)
 }
 
-func (o *OrtooLog) ortooError(err error, skip int, format string, args ...interface{}) error {
+func (o *OrtooLog) ortooErrorf(err error, skip int, format string, args ...interface{}) error {
 	_, file, line, _ := runtime.Caller(skip)
 	relativeCallFile := strings.Replace(file, basepath, "", 1)
 	errorPlace := fmt.Sprintf("%s:%d", relativeCallFile, line)
@@ -118,10 +120,28 @@ func (o *OrtooLog) ortooError(err error, skip int, format string, args ...interf
 
 //OrtooErrorf is a method wrapping Logger.OrtooErrorf()
 func OrtooErrorf(err error, format string, args ...interface{}) error {
-	return Logger.ortooError(err, 2, format, args...)
+	return Logger.ortooErrorf(err, 2, format, args...)
+}
+
+func OrtooError(err error) error {
+	_, file, line, _ := runtime.Caller(2)
+	relativeCallFile := strings.Replace(file, basepath, "", 1)
+	errorPlace := fmt.Sprintf("%s:%d", relativeCallFile, line)
+	var errString = "nil"
+	if err != nil {
+		errString = err.Error()
+	} else {
+		err = fmt.Errorf("nil")
+	}
+
+	Logger.WithFields(logrus.Fields{
+		fieldErrorAt: errorPlace,
+	}).Errorf("%s", errString)
+
+	return err
 }
 
 //OrtooErrorWithSkip is a method wrapping Logger.OrtooErrorf()
 func OrtooErrorWithSkip(err error, skip int, format string, args ...interface{}) error {
-	return Logger.ortooError(err, skip, format, args...)
+	return Logger.ortooErrorf(err, skip, format, args...)
 }

@@ -5,8 +5,6 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"time"
 )
 
@@ -41,6 +39,13 @@ func (c *CollectionCollections) GetCollection(ctx context.Context, name string) 
 }
 
 func (c *CollectionCollections) DeleteCollection(ctx context.Context, name string) error {
+	result, err := c.collection.DeleteOne(ctx, filterByID(name))
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if result.DeletedCount == 1 {
+		log.Logger.Infof("Collection is successfully removed:%s", name)
+	}
 	return nil
 }
 
@@ -52,43 +57,15 @@ func (c *CollectionCollections) InsertCollection(ctx context.Context, name strin
 		return nil, log.OrtooErrorf(err, "fail to start session")
 	}
 
-	opt := &options.TransactionOptions{
-		ReadConcern:    readconcern.Majority(),
-		ReadPreference: nil,
-		WriteConcern:   nil,
-		MaxCommitTime:  nil,
-	}
-	if err := session.StartTransaction(opt); err != nil {
+	if err := session.StartTransaction(); err != nil {
 		return nil, log.OrtooErrorf(err, "fail to start transaction")
 	}
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
-		//var num uint32 = 0
-		//filter := bson.D{}
-		//opts := options.Find()
-		//opts.SetSort(bson.D{{Key: "num", Value: -1}})
-		//opts.SetLimit(1)
-		//cur, err := c.collection.Find(ctx, filter, opts)
-		//if err != nil {
-		//	if err == mongo.ErrNoDocuments {
-		//		num = 0
-		//	}
-		//	return log.OrtooErrorf(err, "fail to get")
-		//} else {
-		//	var prev schema.CollectionDoc
-		//	for cur.Next(ctx) {
-		//		if err := cur.Decode(&prev); err != nil {
-		//			return log.OrtooErrorf(err, "fail to decode collection")
-		//		}
-		//		num = prev.Num
-		//	}
-		//}
-		//defer cur.Close(ctx)
-		num, err := c.counterCollection.NextCollectionNum(ctx)
+		num, err := c.counterCollection.GetNextCollectionNum(ctx)
 		if err != nil {
 			return log.OrtooErrorf(err, "fail to get next counter")
 		}
-
 		collection = &schema.CollectionDoc{
 			Name:      name,
 			Num:       num + 1,
@@ -98,6 +75,7 @@ func (c *CollectionCollections) InsertCollection(ctx context.Context, name strin
 		if err != nil {
 			return log.OrtooErrorf(err, "fail to insert collection")
 		}
+		log.Logger.Infof("Collection is inserted: %+v", collection)
 		if err = session.CommitTransaction(sc); err != nil {
 			return log.OrtooErrorf(err, "fail to commit transaction")
 		}
@@ -106,7 +84,7 @@ func (c *CollectionCollections) InsertCollection(ctx context.Context, name strin
 		return nil, log.OrtooErrorf(err, "fail to work with session")
 	}
 	session.EndSession(ctx)
-	log.Logger.Infof("Collection is inserted: %+v", collection)
+
 	return collection, nil
 }
 

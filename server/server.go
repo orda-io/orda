@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/service"
 	"google.golang.org/grpc"
 
@@ -12,26 +13,36 @@ import (
 
 //OrtooServer is an Ortoo server
 type OrtooServer struct {
+	ctx     context.Context
 	conf    *OrtooServerConfig
 	service *service.OrtooService
 	server  *grpc.Server
+	Mongo   *mongodb.RepositoryMongo
 }
 
 //NewOrtooServer creates a new Ortoo server
-func NewOrtooServer(conf *OrtooServerConfig) *OrtooServer {
-	return &OrtooServer{
-		conf: conf,
+func NewOrtooServer(ctx context.Context, conf *OrtooServerConfig) (*OrtooServer, error) {
+	mongo, err := mongodb.New(ctx, conf.Mongo)
+	if err != nil {
+		return nil, log.OrtooError(err)
 	}
+
+	return &OrtooServer{
+		ctx:   ctx,
+		conf:  conf,
+		Mongo: mongo,
+	}, nil
 }
 
 //Start start the Ortoo Server
 func (o *OrtooServer) Start() error {
+
 	lis, err := net.Listen("tcp", o.conf.getHostAddress())
 	if err != nil {
 		log.Logger.Fatalf("fail to listen: %v", err)
 	}
 	o.server = grpc.NewServer()
-	if o.service, err = service.NewOrtooService(o.conf.Mongo); err != nil {
+	if o.service, err = service.NewOrtooService(o.Mongo); err != nil {
 		panic("fail to connect MongoDB")
 	}
 	model.RegisterOrtooServiceServer(o.server, o.service)

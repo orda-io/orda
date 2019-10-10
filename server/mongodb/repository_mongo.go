@@ -22,8 +22,7 @@ type RepositoryMongo struct {
 }
 
 //New creates a new RepositoryMongo
-func New(conf *Config) (*RepositoryMongo, error) {
-	ctx := context.TODO()
+func New(ctx context.Context, conf *Config) (*RepositoryMongo, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.Host)) //"mongodb://root:ortoo-test@localhost:27017"))
 	if err != nil {
 		return nil, fmt.Errorf("fail to connect:%v", err)
@@ -32,12 +31,15 @@ func New(conf *Config) (*RepositoryMongo, error) {
 		return nil, fmt.Errorf("fail to ping: %v", err)
 	}
 	db := client.Database(conf.OrtooDB)
-
-	return &RepositoryMongo{
+	repo := &RepositoryMongo{
 		db:     db,
 		ctx:    ctx,
 		client: client,
-	}, nil
+	}
+	if err := repo.InitializeCollections(ctx); err != nil {
+		return nil, log.OrtooError(err)
+	}
+	return repo, nil
 }
 
 //InitializeCollections initialize collections

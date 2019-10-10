@@ -21,7 +21,7 @@ func NewCollectionCounters(client *mongo.Client, collection *mongo.Collection) *
 	return &CollectionCounters{newCollection(client, collection)}
 }
 
-func (c *CollectionCounters) NextCollectionNum(ctx context.Context) (uint32, error) {
+func (c *CollectionCounters) GetNextCollectionNum(ctx context.Context) (uint32, error) {
 	opts := options.FindOneAndUpdate()
 	opts.SetUpsert(true)
 	var update = bson.M{
