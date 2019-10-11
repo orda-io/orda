@@ -10,27 +10,38 @@ import (
 
 //ClientDoc defines the document related to client
 type ClientDoc struct {
-	CUID       string    `bson:"_id"`
-	Alias      string    `bson:"alias"`
-	Collection string    `bson:"collection"`
-	SyncType   string    `bson:"syncType"`
-	CreatedAt  time.Time `bson:"createdAt"`
-	UpdatedAt  time.Time `bson:"updatedAt"`
+	CUID        string                       `bson:"_id"`
+	Alias       string                       `bson:"alias"`
+	Collection  string                       `bson:"collection"`
+	SyncType    string                       `bson:"syncType"`
+	CheckPoints map[string]*model.CheckPoint `bson:"checkPoint,omitempty"`
+	CreatedAt   time.Time                    `bson:"createdAt"`
+	UpdatedAt   time.Time                    `bson:"updatedAt"`
 }
 
 //ToUpdateBson returns a bson from a ClientDoc
 func (c *ClientDoc) ToUpdateBson() bson.D {
+
+	var checkPointBson map[string]bson.M
+	if c.CheckPoints != nil {
+		checkPointBson = make(map[string]bson.M)
+		for k, v := range c.CheckPoints {
+			checkPointBson[k] = bson.M{"s": v.Sseq, "c": v.Cseq}
+		}
+	}
 	return bson.D{
 		{"$set", bson.D{
 			{"alias", c.Alias},
 			{"collection", c.Collection},
 			{"createdAt", c.CreatedAt},
 			{"syncType", c.SyncType},
+			{"checkPoint", checkPointBson},
 		}},
 		{"$currentDate", bson.D{
 			{"updatedAt", true},
 		}},
 	}
+
 }
 
 //GetIndexModel returns the index models of ClientDoc

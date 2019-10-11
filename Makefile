@@ -3,7 +3,7 @@
 protoc-gen:
 	protoc commons/model/*.proto \
 			-I=./commons/model/ \
-			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,:./commons/model
+			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,Mgithub.com/gogo/protobuf/gogoproto/gogo.proto,:./commons/model
 
 dependency:
 	go get -v ./...

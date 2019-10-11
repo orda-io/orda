@@ -68,7 +68,7 @@ func (c *CollectionCollections) InsertCollection(ctx context.Context, name strin
 		}
 		collection = &schema.CollectionDoc{
 			Name:      name,
-			Num:       num + 1,
+			Num:       num,
 			CreatedAt: time.Now(),
 		}
 		_, err = c.collection.InsertOne(ctx, collection)

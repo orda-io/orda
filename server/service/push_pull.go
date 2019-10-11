@@ -7,6 +7,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"reflect"
 )
 
@@ -30,7 +31,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	}
 	var chanList []chan *model.PushPullPack
 	for _, ppp := range in.PushPullPacks {
-		handler := NewPushPullHandler(ctx, o.mongo, ppp)
+		handler := NewPushPullHandler(ctx, o.mongo, ppp, clientDoc)
 		chanList = append(chanList, handler.Start())
 	}
 	remainingChan := len(chanList)
@@ -52,7 +53,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	return &model.PushPullResponse{Id: in.Id}, nil
 }
 
-func NewPushPullHandler(ctx context.Context, mongo *mongodb.RepositoryMongo, ppp *model.PushPullPack) *PushPullHandler {
+func NewPushPullHandler(ctx context.Context, mongo *mongodb.RepositoryMongo, ppp *model.PushPullPack, clientDoc *schema.ClientDoc) *PushPullHandler {
 	return &PushPullHandler{
 		ctx:          ctx,
 		mongo:        mongo,
@@ -61,7 +62,8 @@ func NewPushPullHandler(ctx context.Context, mongo *mongodb.RepositoryMongo, ppp
 }
 
 type PushPullHandler struct {
-	ctx          context.Context
+	ctx context.Context
+
 	mongo        *mongodb.RepositoryMongo
 	pushPullPack *model.PushPullPack
 	duid         string
@@ -73,7 +75,7 @@ func (p *PushPullHandler) Start() chan *model.PushPullPack {
 	return retCh
 }
 
-func (p *PushPullHandler) _start(chan *model.PushPullPack) {
+func (p *PushPullHandler) _start(retCh <-chan *model.PushPullPack) {
 	p.duid = hex.EncodeToString(p.pushPullPack.Duid)
 
 	//p.mongo.GetDatatype()

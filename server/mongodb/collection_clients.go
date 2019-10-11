@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -31,7 +32,9 @@ func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.Cli
 
 //GetClient gets a client with CUID
 func (c *CollectionClients) GetClient(ctx context.Context, cuid string) (*schema.ClientDoc, error) {
-	sr := c.collection.FindOne(ctx, filterByID(cuid))
+	opts := options.FindOne()
+	//opts.SetProjection(bson.M{"checkPoint":0})
+	sr := c.collection.FindOne(ctx, filterByID(cuid), opts)
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -44,4 +47,11 @@ func (c *CollectionClients) GetClient(ctx context.Context, cuid string) (*schema
 		return nil, log.OrtooErrorf(err, "fail to decode clientDoc")
 	}
 	return &client, nil
+}
+
+func (c *CollectionClients) GetClientWithCheckPoint(ctx context.Context, cuid string, duid string) (*schema.ClientDoc, error) {
+	//filter := bson.D{bson.E{Key: ID, Value: cuid}, bson.E{}}
+	//
+	//c.collection.FindOne(ctx, )
+	return nil, nil
 }

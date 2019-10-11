@@ -18,20 +18,12 @@ func NewTestOrtooClientConfig(dbName string, collectionName string) *commons.Ort
 	}
 }
 
-//NewTestMongoDBConfig ...
-func NewTestMongoDBConfig(dbName string) *mongodb.Config {
-	return &mongodb.Config{
-		Host:    "mongodb://root:ortoo-test@localhost:27017",
-		OrtooDB: dbName,
-	}
-}
-
 //NewTestOrtooServerConfig ...
 func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
 		Host:  "127.0.0.1",
 		Port:  19061,
-		Mongo: NewTestMongoDBConfig(dbName),
+		Mongo: mongodb.NewTestMongoDBConfig(dbName),
 	}
 }
 
@@ -47,6 +39,6 @@ func MakeTestCollection(mongo *mongodb.RepositoryMongo, collectionName string) e
 	if err != nil {
 		return log.OrtooError(err)
 	}
-	log.Logger.Infof("a new collection is created:%s", collectionDoc)
+	log.Logger.Infof("a new collection is created:%+v", collectionDoc)
 	return nil
 }

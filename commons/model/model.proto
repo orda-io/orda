@@ -3,6 +3,7 @@ syntax = "proto3";
 package model;
 
 import "google/protobuf/any.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 message Client {
     bytes cuid = 1;
@@ -86,6 +87,6 @@ message PushPullPack {
 }
 
 message CheckPoint {
-    uint64 sseq = 1;
-    uint64 cseq = 2;
+    uint64 sseq = 1 [(gogoproto.bsontag) = "s"];
+    uint64 cseq = 2 [(gogoproto.bsontag) = "c"];
 }
