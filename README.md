@@ -8,6 +8,7 @@
  - go 1.12.6
  - docker 18.09.2 (for running MongoDB)
  - MongoDB 4.2.0
+ - docker-compose
  - gogo/protobuf (how to install: http://google.github.io/proto-lens/installing-protoc.html)
  
 ### Install
