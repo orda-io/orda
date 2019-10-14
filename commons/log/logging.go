@@ -98,7 +98,7 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 //OrtooErrorf is a method to present a error log.
 func (o *OrtooLog) OrtooErrorf(err error, format string, args ...interface{}) error {
-	return o.ortooErrorf(err, 3, format, args)
+	return o.ortooErrorf(err, 3, format, args...)
 }
 
 func (o *OrtooLog) ortooErrorf(err error, skip int, format string, args ...interface{}) error {
@@ -124,7 +124,7 @@ func OrtooErrorf(err error, format string, args ...interface{}) error {
 }
 
 func OrtooError(err error) error {
-	_, file, line, _ := runtime.Caller(2)
+	_, file, line, _ := runtime.Caller(1)
 	relativeCallFile := strings.Replace(file, basepath, "", 1)
 	errorPlace := fmt.Sprintf("%s:%d", relativeCallFile, line)
 	var errString = "nil"

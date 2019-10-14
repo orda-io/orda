@@ -1,6 +1,7 @@
 module github.com/knowhunger/ortoo
 
 require (
+	github.com/favadi/protoc-go-inject-tag v0.0.0-20181008023834-c2c1884c833d // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.3.0
 	github.com/golang/protobuf v1.3.1

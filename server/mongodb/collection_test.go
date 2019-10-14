@@ -2,6 +2,7 @@ package mongodb_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
@@ -47,6 +48,10 @@ func TestMongo(t *testing.T) {
 		}
 	})
 
+	t.Run("Can get clientDoc with checkpoint", func(t *testing.T) {
+
+	})
+
 	t.Run("Can update clientDoc", func(t *testing.T) {
 		c := &schema.ClientDoc{
 			CUID:       "test_cuid",
@@ -61,11 +66,21 @@ func TestMongo(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 		if err := mongo.UpdateClient(context.TODO(), c); err != nil {
-			t.Fail()
+			_ = log.OrtooError(err)
+			return
 		}
 		cstored, err := mongo.GetClient(context.TODO(), c.CUID)
 		if err != nil {
-			t.Fail()
+			_ = log.OrtooError(err)
+			return
+		}
+		if err := mongo.DeleteClient(context.TODO(), c.CUID); err != nil {
+			_ = log.OrtooError(err)
+			return
+		}
+		if err := mongo.DeleteClient(context.TODO(), c.CUID); err == nil {
+			_ = log.OrtooError(errors.New("should be err != nil"))
+			return
 		}
 		log.Logger.Infof("%+v", cstored)
 	})

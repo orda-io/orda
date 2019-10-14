@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,12 +23,26 @@ func NewCollectionClients(client *mongo.Client, collection *mongo.Collection) *C
 //UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
 func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.ClientDoc) error {
 	client.CreatedAt = time.Now()
-	_, err := c.collection.UpdateOne(ctx, filterByID(client.CUID), client.ToUpdateBson(), upsertOption)
+	res, err := c.collection.UpdateOne(ctx, filterByID(client.CUID), client.ToUpdateBson(), upsertOption)
 
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to insert")
 	}
-	return nil
+	if res.ModifiedCount == 1 || res.UpsertedCount == 1 {
+		return nil
+	}
+	return errors.New("fail to modify")
+}
+
+func (c *CollectionClients) DeleteClient(ctx context.Context, cuid string) error {
+	result, err := c.collection.DeleteOne(ctx, filterByID(cuid))
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if result.DeletedCount == 1 {
+		return nil
+	}
+	return log.OrtooError(errors.New("fail to find something to delete"))
 }
 
 //GetClient gets a client with CUID
