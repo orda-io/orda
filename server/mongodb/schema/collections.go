@@ -13,9 +13,19 @@ type CollectionDoc struct {
 	CreatedAt time.Time `bson:"createdAt"`
 }
 
+var CollectionDocFields = struct {
+	Name      string
+	Num       string
+	CreatedAt string
+}{
+	Name:      "_id",
+	Num:       "num",
+	CreatedAt: "createdAt",
+}
+
 //GetIndexModel returns the index models of CollectionDoc
 func (c *CollectionDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
-		Keys: bsonx.Doc{{Key: "num", Value: bsonx.Int32(1)}},
+		Keys: bsonx.Doc{{Key: CollectionDocFields.Num, Value: bsonx.Int32(1)}},
 	}}
 }

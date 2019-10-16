@@ -25,7 +25,7 @@ func (c *CollectionCounters) GetNextCollectionNum(ctx context.Context) (uint32, 
 	opts := options.FindOneAndUpdate()
 	opts.SetUpsert(true)
 	var update = bson.M{
-		"$inc": bson.M{"num": 1},
+		"$inc": bson.M{schema.CounterDocFields.Num: 1},
 	}
 	//_ = json.Unmarshal([]byte(`{ "$inc": {"num": 1}}`), &update)
 	result := c.collection.FindOneAndUpdate(ctx, filterByID(idForCollection), update, opts)

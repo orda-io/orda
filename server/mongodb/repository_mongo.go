@@ -15,6 +15,7 @@ type RepositoryMongo struct {
 	*CollectionCounters
 	*CollectionClients
 	*CollectionCollections
+	*CollectionDatatypes
 	config *Config
 	ctx    context.Context
 	client *mongo.Client
@@ -48,7 +49,7 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 	r.CollectionCounters = NewCollectionCounters(r.client, r.db.Collection(CollectionNameCounters))
 	r.CollectionClients = NewCollectionClients(r.client, r.db.Collection(CollectionNameClients))
 	r.CollectionCollections = NewCollectionCollections(r.client, r.CollectionCounters, r.db.Collection(CollectionNameCollections))
-
+	r.CollectionDatatypes = NewCollectionDatatypes(r.client, r.db.Collection(CollectionNameDatatypes))
 	names, err := r.db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to list collection names")
@@ -68,6 +69,12 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 			return log.OrtooErrorf(err, "fail to create the collections collection")
 		}
 	}
+	if _, ok := realCollections[CollectionNameDatatypes]; !ok {
+		if err := r.CollectionDatatypes.create(ctx, &schema.DatatypeDoc{}); err != nil {
+			return log.OrtooErrorf(err, "fail to create the collections collection")
+		}
+	}
+
 	return nil
 }
 

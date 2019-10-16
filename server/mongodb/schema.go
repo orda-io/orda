@@ -12,12 +12,9 @@ const (
 	CollectionNameClients = "-_-Clients"
 	//CollectionNameCollections is the name of the collection for Collections
 	CollectionNameCollections = "-_-Collections"
+	//CollectionNameDatatypes is the name of the collection for Datatypes
+	CollectionNameDatatypes = "-_-Datatypes"
 )
-
-//var CollectionMap = map[string]string{
-//	CollectionNameClients:     CollectionNameClients,
-//	CollectionNameCollections: CollectionNameCollections,
-//}
 
 const (
 	//ID is an identifier of MongoDB
@@ -32,6 +29,7 @@ func filterByName(name string) bson.D {
 	return bson.D{bson.E{Key: "name", Value: name}}
 }
 
+// options
 var (
 	upsert       = true
 	upsertOption = &options.UpdateOptions{

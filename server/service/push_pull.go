@@ -26,10 +26,10 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	if clientDoc == nil {
 		return nil, model.NewRPCError(model.RPCErrNoClient)
 	}
-	if clientDoc.Collection != collectionDoc.Name {
-		return nil, model.NewRPCError(model.RPCErrClientInconsistentCollection, clientDoc.Collection, collectionDoc.Name)
+	if clientDoc.CollectionNum != collectionDoc.Num {
+		return nil, model.NewRPCError(model.RPCErrClientInconsistentCollection, clientDoc.CollectionNum, collectionDoc.Name)
 	}
-	var chanList []chan *model.PushPullPack
+	var chanList []<-chan *model.PushPullPack
 	for _, ppp := range in.PushPullPacks {
 		handler := NewPushPullHandler(ctx, o.mongo, ppp, clientDoc)
 		chanList = append(chanList, handler.Start())
@@ -56,27 +56,55 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 func NewPushPullHandler(ctx context.Context, mongo *mongodb.RepositoryMongo, ppp *model.PushPullPack, clientDoc *schema.ClientDoc) *PushPullHandler {
 	return &PushPullHandler{
 		ctx:          ctx,
+		clientDoc:    clientDoc,
 		mongo:        mongo,
 		pushPullPack: ppp,
 	}
 }
 
 type PushPullHandler struct {
-	ctx context.Context
-
+	ctx          context.Context
+	checkPoint   *model.CheckPoint
+	clientDoc    *schema.ClientDoc
 	mongo        *mongodb.RepositoryMongo
 	pushPullPack *model.PushPullPack
 	duid         string
+	cuid         string
 }
 
-func (p *PushPullHandler) Start() chan *model.PushPullPack {
+func (p *PushPullHandler) Start() <-chan *model.PushPullPack {
 	retCh := make(chan *model.PushPullPack)
-	go p._start(retCh)
+	go p.process(retCh)
 	return retCh
 }
 
-func (p *PushPullHandler) _start(retCh <-chan *model.PushPullPack) {
+func (p *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	p.duid = hex.EncodeToString(p.pushPullPack.Duid)
+	p.cuid = p.clientDoc.CUID
+	retPushPullPack := &model.PushPullPack{
+		Duid:   p.pushPullPack.Duid,
+		Option: p.pushPullPack.Option,
+		Era:    p.pushPullPack.Era,
+		Type:   p.pushPullPack.Type,
+		//Operations:           ,
+	}
 
-	//p.mongo.GetDatatype()
+	checkPoint, err := p.mongo.GetCheckPointFromClient(p.ctx, p.cuid, p.duid)
+	if err != nil {
+		_ = log.OrtooError(err)
+		model.PushPullPackOption(retPushPullPack.Option).SetErrorBit()
+		retCh <- retPushPullPack
+		return
+	}
+	if checkPoint == nil {
+		checkPoint = model.NewCheckPoint()
+	}
+
+	retCh <-
+}
+
+const ()
+
+func (p *PushPullHandler) preprocess() {
+
 }

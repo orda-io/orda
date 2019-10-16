@@ -29,11 +29,11 @@ func (c *CollectionCollections) GetCollection(ctx context.Context, name string) 
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, log.OrtooErrorf(err, "fail to get collection")
+		return nil, log.OrtooError(err)
 	}
 	var collection schema.CollectionDoc
 	if err := sr.Decode(&collection); err != nil {
-		return nil, log.OrtooErrorf(err, "fail to decode collectionDoc")
+		return nil, log.OrtooError(err)
 	}
 	return &collection, nil
 }

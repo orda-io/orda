@@ -10,17 +10,35 @@ import (
 
 //ClientDoc defines the document related to client
 type ClientDoc struct {
-	CUID        string                       `bson:"_id"`
-	Alias       string                       `bson:"alias"`
-	Collection  string                       `bson:"collection"`
-	SyncType    string                       `bson:"syncType"`
-	CheckPoints map[string]*model.CheckPoint `bson:"checkPoint,omitempty"`
-	CreatedAt   time.Time                    `bson:"createdAt"`
-	UpdatedAt   time.Time                    `bson:"updatedAt"`
+	CUID          string                       `bson:"_id"`
+	Alias         string                       `bson:"alias"`
+	CollectionNum uint32                       `bson:"colNum"`
+	SyncType      string                       `bson:"syncType"`
+	CheckPoints   map[string]*model.CheckPoint `bson:"checkpoints,omitempty"`
+	CreatedAt     time.Time                    `bson:"createdAt"`
+	UpdatedAt     time.Time                    `bson:"updatedAt"`
 }
 
-//ToUpdateBson returns a bson from a ClientDoc
-func (c *ClientDoc) ToUpdateBson() bson.D {
+var ClientDocFields = struct {
+	CUID          string
+	Alias         string
+	CollectionNum string
+	SyncType      string
+	CheckPoints   string
+	CreatedAt     string
+	UpdatedAt     string
+}{
+	CUID:          "_id",
+	Alias:         "alias",
+	CollectionNum: "colNum",
+	SyncType:      "syncType",
+	CheckPoints:   "checkpoints",
+	CreatedAt:     "createdAt",
+	UpdatedAt:     "updatedAt",
+}
+
+//ToUpdateBSON returns a bson from a ClientDoc
+func (c *ClientDoc) ToUpdateBSON() bson.D {
 
 	var checkPointBson map[string]bson.M
 	if c.CheckPoints != nil {
@@ -31,14 +49,14 @@ func (c *ClientDoc) ToUpdateBson() bson.D {
 	}
 	return bson.D{
 		{"$set", bson.D{
-			{"alias", c.Alias},
-			{"collection", c.Collection},
-			{"createdAt", c.CreatedAt},
-			{"syncType", c.SyncType},
-			{"checkPoint", checkPointBson},
+			{ClientDocFields.Alias, c.Alias},
+			{ClientDocFields.CollectionNum, c.CollectionNum},
+			{ClientDocFields.SyncType, c.SyncType},
+			{ClientDocFields.CheckPoints, checkPointBson},
+			{ClientDocFields.CreatedAt, c.CreatedAt},
 		}},
 		{"$currentDate", bson.D{
-			{"updatedAt", true},
+			{ClientDocFields.UpdatedAt, true},
 		}},
 	}
 
@@ -47,16 +65,16 @@ func (c *ClientDoc) ToUpdateBson() bson.D {
 //GetIndexModel returns the index models of ClientDoc
 func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
-		Keys: bsonx.Doc{{Key: "collection", Value: bsonx.Int32(1)}},
+		Keys: bsonx.Doc{{Key: ClientDocFields.CollectionNum, Value: bsonx.Int32(1)}},
 	}}
 }
 
 //ClientModelToBson returns a ClientDoc from a model.Client
-func ClientModelToBson(model *model.Client) *ClientDoc {
+func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	return &ClientDoc{
-		CUID:       model.GetCuidString(),
-		Alias:      model.Alias,
-		Collection: model.Collection,
-		SyncType:   model.SyncType.String(),
+		CUID:          model.GetCuidString(),
+		Alias:         model.Alias,
+		CollectionNum: collectionNum,
+		SyncType:      model.SyncType.String(),
 	}
 }
