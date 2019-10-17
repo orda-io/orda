@@ -7,12 +7,15 @@ import (
 	"time"
 )
 
+type DatatypeDocState string
+
 type DatatypeDoc struct {
 	DUID          string    `bson:"_id"`
 	Key           string    `bson:"key"`
 	CollectionNum uint32    `bson:"colNum"`
 	Type          string    `bson:"type"`
 	Sseq          uint64    `bson:"sseq"`
+	Visible       bool      `bson:"visible"`
 	CreatedAt     time.Time `bson:"createdAt"`
 	UpdatedAt     time.Time `bson:"updatedAt"`
 }

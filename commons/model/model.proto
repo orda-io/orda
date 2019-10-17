@@ -61,11 +61,12 @@ enum TypeOfDatatype {
 }
 
 enum StateOfDatatype {
-    LOCALLY_EXISTED = 0;
-    SUBSCRIBING = 1;
-    SUBSCRIBED = 2;
-    UNSUBSCRIBING = 3;
-    UNSUBSCRIBED = 4;
+    WAIT_FOR_CREATING = 0;
+    WAIT_FOR_SUBSCRIBING = 1;
+    WAIT_FOR_SUBSCRIBING_CREATING = 2;
+    SUBSCRIBED = 4;
+    UNSUBSCRIBING = 5;
+    UNSUBSCRIBED = 6;
 }
 
 message OperationOnWire {

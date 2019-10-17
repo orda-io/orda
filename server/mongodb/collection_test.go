@@ -95,11 +95,30 @@ func TestMongo(t *testing.T) {
 			Key:           "test_key",
 			CollectionNum: 1,
 			Type:          "test_datatype",
+			Visible:       true,
 			Sseq:          0,
 			CreatedAt:     time.Now(),
 		}
 		if err := mongo.UpdateDatatype(context.TODO(), d); err != nil {
 			t.Fatal(err)
 		}
+
+		datatypeDoc1, err := mongo.GetDatatype(context.TODO(), d.DUID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		log.Logger.Infof("%+v", datatypeDoc1)
+		datatypeDoc2, err := mongo.GetDatatype(context.TODO(), "not exist")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if datatypeDoc2 != nil {
+			t.FailNow()
+		}
+		datatypeDoc3, err := mongo.GetDatatypeByKey(context.TODO(), d.CollectionNum, d.Key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		log.Logger.Infof("%+v", datatypeDoc3)
 	})
 }

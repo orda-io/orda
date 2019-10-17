@@ -87,7 +87,7 @@ func (w *WiredDatatypeImpl) CreatePushPullPack() *model.PushPullPack {
 	}
 	option := model.PushPullBitNormal
 	if w.state == model.StateOfDatatype_LOCALLY_EXISTED {
-		option = option | model.PushPullBitSubscribe
+		option.SetSubscribeBit()
 	}
 	return &model.PushPullPack{
 		Duid:       w.id,

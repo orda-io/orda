@@ -36,7 +36,13 @@ func (c *clientImpl) Close() error {
 	return nil
 }
 
-func (c *clientImpl) SubscribeIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
+func (c *clientImpl) CreateIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
+	intCounterCh = make(chan IntCounter)
+	errCh = make(chan error)
+
+}
+
+func (c *clientImpl) SubscribeOrCreateIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
 	intCounterCh = make(chan IntCounter)
 	errCh = make(chan error)
 
@@ -47,7 +53,7 @@ func (c *clientImpl) SubscribeIntCounter(key string) (intCounterCh chan IntCount
 			intCounterCh <- fromDataMgr.(IntCounter)
 			return
 		}
-		errCh <- &errors.ErrLinkDatatype{}
+		errCh <- &errors.ErrSubscribeDatatype{}
 		return
 	}
 
@@ -57,7 +63,7 @@ func (c *clientImpl) SubscribeIntCounter(key string) (intCounterCh chan IntCount
 		return
 	}
 	icImpl := ic.(*intCounter)
-	if err := c.dataMgr.Subscribe(icImpl); err != nil {
+	if err := c.dataMgr.SubscribeOrCreate(icImpl); err != nil {
 		errCh <- log.OrtooErrorf(err, "fail to subscribe intCounter")
 	}
 
@@ -79,7 +85,8 @@ type Client interface {
 	createDatatype()
 	Close() error
 	Sync() <-chan struct{}
-	SubscribeIntCounter(key string) (chan IntCounter, chan error)
+	SubscribeOrCreateIntCounter(key string) (chan IntCounter, chan error)
+	CreateIntCounter(key string) (chan IntCounter, chan error)
 }
 
 //NewOrtooClient creates a new Ortoo client

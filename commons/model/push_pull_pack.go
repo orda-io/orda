@@ -2,17 +2,23 @@ package model
 
 const (
 	PushPullBitNormal      PushPullPackOption = 0x00
-	PushPullBitSubscribe   PushPullPackOption = 0x01
-	PushPullBitUnsubscribe PushPullPackOption = 0x02
-	PushPullBitDelete      PushPullPackOption = 0x04
-	PushPullBitSnapshot    PushPullPackOption = 0x08
-	PushPullBitError       PushPullPackOption = 0x10
+	PushPullBitCreate      PushPullPackOption = 0x01
+	PushPullBitSubscribe   PushPullPackOption = 0x02
+	PushPullBitUnsubscribe PushPullPackOption = 0x04
+	PushPullBitDelete      PushPullPackOption = 0x08
+	PushPullBitSnapshot    PushPullPackOption = 0x10
+	PushPullBitError       PushPullPackOption = 0x20
 )
 
 type PushPullPackOption uint32
 
 func (p PushPullPackOption) SetNormalBit() PushPullPackOption {
 	p |= PushPullBitNormal
+	return p
+}
+
+func (p PushPullPackOption) SetCreateBit() PushPullPackOption {
+	p |= PushPullBitCreate
 	return p
 }
 
@@ -41,11 +47,15 @@ func (p PushPullPackOption) SetErrorBit() PushPullPackOption {
 	return p
 }
 
-func (p PushPullPackOption) HasLinkBit() bool {
+func (p PushPullPackOption) HasCreateBit() bool {
+	return (p & PushPullBitCreate) == PushPullBitCreate
+}
+
+func (p PushPullPackOption) HasSubscribeBit() bool {
 	return (p & PushPullBitSubscribe) == PushPullBitSubscribe
 }
 
-func (p PushPullPackOption) HasUnlinkBit() bool {
+func (p PushPullPackOption) HasUnsubscribeBit() bool {
 	return (p & PushPullBitUnsubscribe) == PushPullBitUnsubscribe
 }
 

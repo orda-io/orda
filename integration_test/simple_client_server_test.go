@@ -47,7 +47,7 @@ func (s *ClientServerTestSuite) TestClientServer() {
 		}
 		defer client1.Close()
 		//intCounter1, err := commons.newIntCounter("key", client1)
-		intCounterCh1, err1Ch := client1.SubscribeIntCounter("key")
+		intCounterCh1, err1Ch := client1.SubscribeOrCreateIntCounter("key")
 		var intCounter1 commons.IntCounter
 		select {
 		case intCounter1 = <-intCounterCh1:

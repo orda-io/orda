@@ -100,11 +100,11 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) {
 		checkPoint = model.NewCheckPoint()
 	}
 
-	retCh <-
+	//retCh <-
 }
 
 const ()
 
 func (p *PushPullHandler) preprocess() {
-
+	p.mongo.GetDatatypeByKey()
 }

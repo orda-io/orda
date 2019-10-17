@@ -34,12 +34,12 @@ func (c *CommonDatatype) Initialize(key string, typeOf model.TypeOfDatatype, cui
 	return nil
 }
 
-func (c *CommonDatatype) Subscribe() error {
-	subscOp, err := model.NewSubscribeOperation(c.TypeOf, c.finalDatatype.GetSnapshot())
+func (c *CommonDatatype) SubscribeOrCreate() error {
+	subscribeOp, err := model.NewSubscribeOperation(c.TypeOf, c.finalDatatype.GetSnapshot())
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to subscribe")
 	}
-	_, err = c.ExecuteTransaction(c.TransactionCtx, subscOp, true)
+	_, err = c.ExecuteTransaction(c.TransactionCtx, subscribeOp, true)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to execute SubscribeOperation")
 	}

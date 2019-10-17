@@ -39,8 +39,8 @@ func (d *DataManager) Get(key string) model.FinalDatatype {
 	return nil
 }
 
-//Subscribe links a datatype with the datatype
-func (d *DataManager) Subscribe(dt model.FinalDatatype) error {
+//SubscribeOrCreate links a datatype with the datatype
+func (d *DataManager) SubscribeOrCreate(dt model.FinalDatatype) error {
 	if _, ok := d.dataMap[dt.GetKey()]; !ok {
 		d.dataMap[dt.GetKey()] = dt
 		if err := dt.Subscribe(); err != nil {
