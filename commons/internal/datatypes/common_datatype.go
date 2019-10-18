@@ -12,7 +12,12 @@ type CommonDatatype struct {
 }
 
 //Initialize is a method for initialization
-func (c *CommonDatatype) Initialize(key string, typeOf model.TypeOfDatatype, cuid model.Cuid, w Wire, snapshot model.Snapshot, finalDatatype model.FinalDatatype) error {
+func (c *CommonDatatype) Initialize(
+	key string,
+	typeOf model.TypeOfDatatype,
+	cuid model.CUID, w Wire,
+	snapshot model.Snapshot,
+	finalDatatype model.FinalDatatype) error {
 	baseDatatype, err := newBaseDatatype(key, typeOf, cuid)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to create baseDatatype")

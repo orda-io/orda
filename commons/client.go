@@ -8,9 +8,45 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
+//Client is a client of Ortoo which manages connections and data
+type Client interface {
+	Connect() error
+	createDatatype()
+	Close() error
+	Sync() <-chan struct{}
+	SubscribeOrCreateIntCounter(key string) (chan IntCounter, chan error)
+	SubscribeIntCounter(key string) (chan IntCounter, chan error)
+	CreateIntCounter(key string) (chan IntCounter, chan error)
+}
+
+//NewOrtooClient creates a new Ortoo client
+func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
+	ctx := context.NewOrtooContext()
+	cuid, err := model.NewCuid()
+	if err != nil {
+		return nil, log.OrtooErrorf(err, "fail to create cuid")
+	}
+
+	clientModel := &model.Client{
+		CUID:       cuid,
+		Alias:      conf.Alias,
+		Collection: conf.CollectionName,
+	}
+	msgMgr := client.NewMessageManager(ctx, clientModel, conf.getServiceHost())
+	dataMgr := client.NewDataManager(msgMgr)
+	return &clientImpl{
+		conf:     conf,
+		ctx:      ctx,
+		model:    clientModel,
+		clientID: cuid,
+		msgMgr:   msgMgr,
+		dataMgr:  dataMgr,
+	}, nil
+}
+
 type clientImpl struct {
 	conf     *OrtooClientConfig
-	clientID model.Cuid
+	clientID model.CUID
 	model    *model.Client
 	ctx      *context.OrtooContext
 	msgMgr   *client.MessageManager
@@ -37,14 +73,20 @@ func (c *clientImpl) Close() error {
 }
 
 func (c *clientImpl) CreateIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
-	intCounterCh = make(chan IntCounter)
-	errCh = make(chan error)
-
+	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE)
 }
 
-func (c *clientImpl) SubscribeOrCreateIntCounter(key string, state model.StateOfDatatype) (intCounterCh chan IntCounter, errCh chan error) {
-	intCounterCh = make(chan IntCounter)
+func (c *clientImpl) SubscribeIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
+	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE)
+}
+
+func (c *clientImpl) SubscribeOrCreateIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
+	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE)
+}
+
+func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype) (intCounterCh chan IntCounter, errCh chan error) {
 	errCh = make(chan error)
+	intCounterCh = make(chan IntCounter)
 
 	fromDataMgr := c.dataMgr.Get(key)
 	if fromDataMgr != nil {
@@ -77,39 +119,4 @@ func (c *clientImpl) Sync() <-chan struct{} {
 	//defer cancel()
 	//c.serviceClient.ProcessPushPull(ctx, model.NewPushPullRequest(1))
 	return nil
-}
-
-//Client is a client of Ortoo which manages connections and data
-type Client interface {
-	Connect() error
-	createDatatype()
-	Close() error
-	Sync() <-chan struct{}
-	SubscribeOrCreateIntCounter(key string) (chan IntCounter, chan error)
-	CreateIntCounter(key string) (chan IntCounter, chan error)
-}
-
-//NewOrtooClient creates a new Ortoo client
-func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
-	ctx := context.NewOrtooContext()
-	cuid, err := model.NewCuid()
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to create cuid")
-	}
-
-	clientModel := &model.Client{
-		Cuid:       cuid,
-		Alias:      conf.Alias,
-		Collection: conf.CollectionName,
-	}
-	msgMgr := client.NewMessageManager(ctx, clientModel, conf.getServiceHost())
-	dataMgr := client.NewDataManager(msgMgr)
-	return &clientImpl{
-		conf:     conf,
-		ctx:      ctx,
-		model:    clientModel,
-		clientID: cuid,
-		msgMgr:   msgMgr,
-		dataMgr:  dataMgr,
-	}, nil
 }

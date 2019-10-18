@@ -9,6 +9,7 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"reflect"
+	"time"
 )
 
 //ProcessPushPull processes a GRPC for Push-Pull
@@ -79,17 +80,18 @@ func NewPushPullHandler(
 }
 
 type PushPullHandler struct {
-	ctx           context.Context
-	checkPoint    *model.CheckPoint
-	clientDoc     *schema.ClientDoc
-	datatypeDoc   *schema.DatatypeDoc
-	collectionDoc *schema.CollectionDoc
-	mongo         *mongodb.RepositoryMongo
-	pushPullPack  *model.PushPullPack
-	Option        model.PushPullPackOption
-	DUID          string
-	CUID          string
-	Key           string
+	ctx               context.Context
+	checkPoint        *model.CheckPoint
+	clientDoc         *schema.ClientDoc
+	datatypeDoc       *schema.DatatypeDoc
+	collectionDoc     *schema.CollectionDoc
+	mongo             *mongodb.RepositoryMongo
+	pushPullPack      *model.PushPullPack
+	Option            model.PushPullPackOption
+	pushingOperations []interface{}
+	DUID              string
+	CUID              string
+	Key               string
 }
 
 func (p *PushPullHandler) Start() <-chan *model.PushPullPack {
@@ -98,7 +100,7 @@ func (p *PushPullHandler) Start() <-chan *model.PushPullPack {
 	return retCh
 }
 
-func (p *PushPullHandler) process(retCh chan *model.PushPullPack) {
+func (p *PushPullHandler) process(retCh chan *model.PushPullPack) error {
 	retPushPullPack := p.pushPullPack.GetReturnPushPullPack()
 
 	checkPoint, err := p.mongo.GetCheckPointFromClient(p.ctx, p.CUID, p.DUID)
@@ -111,8 +113,34 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	if checkPoint == nil {
 		checkPoint = model.NewCheckPoint()
 	}
+	casePushPull, err := p.evaluatePushPullCase()
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if err := p.processSubscribeOrCreate(casePushPull); err != nil {
+		return log.OrtooError(err)
+	}
 
-	//retCh <-
+	p.pushOperations()
+
+	return nil
+}
+
+func (p *PushPullHandler) pullOperations() {
+
+}
+
+func (p *PushPullHandler) pushOperations() error {
+	var operations []interface{}
+	for _, opOnWire := range p.pushPullPack.Operations {
+		op := model.ToOperation(opOnWire)
+
+		operations = append(operations, op)
+	}
+	//if err := p.mongo.InsertOperations(p.ctx, operations); err != nil {
+	//	return log.OrtooError(err)
+	//}
+	return nil
 }
 
 type pushPullCase uint32
@@ -128,14 +156,44 @@ const (
 	caseAllMatchedNotVisible
 )
 
-func (p *PushPullHandler) evaluate(code pushPullCase) {
+func (p *PushPullHandler) processSubscribeOrCreate(code pushPullCase) error {
 	if p.Option.HasSubscribeBit() && p.Option.HasCreateBit() {
 
 	} else if p.Option.HasSubscribeBit() {
 
 	} else if p.Option.HasCreateBit() {
+		switch code {
+		case caseMatchNothing: // can create with key and duid
+			if err := p.createDatatype(); err != nil {
+				return log.OrtooError(err)
+			}
+		case caseMatchDUID: // duplicate DUID; can create with key but with another DUID
+		case caseMatchKeyNotType: // key is already used;
+		case caseAllMatchedSubscribed: // error: already created and subscribed; might duplicate creation
+		case caseAllMatchedNotSubscribed: // error: already created but not subscribed;
+		case caseAllMatchedNotVisible: //
 
+		default:
+
+		}
 	}
+	return nil
+}
+
+func (p *PushPullHandler) createDatatype() error {
+	p.datatypeDoc = &schema.DatatypeDoc{
+		DUID:          p.DUID,
+		Key:           p.Key,
+		CollectionNum: p.collectionDoc.Num,
+		Type:          model.TypeOfDatatype_name[p.pushPullPack.Type],
+		Sseq:          0,
+		Visible:       true,
+		CreatedAt:     time.Now(),
+	}
+	if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
+		return log.OrtooError(err)
+	}
+	return nil
 }
 
 func (p *PushPullHandler) evaluatePushPullCase() (pushPullCase, error) {
@@ -171,22 +229,5 @@ func (p *PushPullHandler) evaluatePushPullCase() (pushPullCase, error) {
 			return caseMatchKeyNotType, nil
 		}
 	}
-	//} else if p.Option {
-	//	p.datatypeDoc, err = p.mongo.GetDatatype(p.ctx, p.DUID)
-	//	if p.datatypeDoc == nil {
-	//		p.datatypeDoc, err = p.mongo.GetDatatypeByKey(p.ctx, p.collectionDoc.Num, p.Key)
-	//		if p.datatypeDoc == nil {
-	//			return caseMatchNothing, nil
-	//		} else {
-	//			return caseMatchKey, nil
-	//		}
-	//	} else {
-	//		if p.Key == p.datatypeDoc.Key {
-	//
-	//		} else {
-	//
-	//		}
-	//	}
-	//}
 
 }

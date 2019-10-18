@@ -5,15 +5,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+//CollectionNameXXXX  is the name of the collection for XXXX
 const (
-	//CollectionNameCounters is the name of the collection for Counters
-	CollectionNameCounters = "-_-Counters"
-	//CollectionNameClients is the name of the collection for Clients
-	CollectionNameClients = "-_-Clients"
-	//CollectionNameCollections is the name of the collection for Collections
+	CollectionNameCounters    = "-_-Counters"
+	CollectionNameClients     = "-_-Clients"
 	CollectionNameCollections = "-_-Collections"
-	//CollectionNameDatatypes is the name of the collection for Datatypes
-	CollectionNameDatatypes = "-_-Datatypes"
+	CollectionNameDatatypes   = "-_-Datatypes"
+	CollectionNameOperations  = "-_-Operations"
 )
 
 const (
@@ -21,12 +19,30 @@ const (
 	ID = "_id"
 )
 
-func filterByID(id interface{}) bson.D {
-	return bson.D{bson.E{Key: ID, Value: id}}
+type filter bson.D
+
+func (b filter) AddFilterEQ(key string, value interface{}) filter {
+	return append(b, bson.E{Key: key, Value: value})
 }
 
-func filterByName(name string) bson.D {
-	return bson.D{bson.E{Key: "name", Value: name}}
+func (b filter) AddFilterGTE(key string, from uint32) filter {
+	return append(b, bson.E{Key: key, Value: bson.D{{Key: "$gte", Value: from}}})
+}
+
+func (b filter) AddFilterLTE(key string, until uint32) filter {
+	return append(b, bson.E{Key: key, Value: bson.D{{Key: "$lte", Value: until}}})
+}
+
+func GetFilter() filter {
+	return filter{}
+}
+
+func filterByID(id interface{}) filter {
+	return filter{bson.E{Key: ID, Value: id}}
+}
+
+func filterByName(name string) filter {
+	return filter{bson.E{Key: "name", Value: name}}
 }
 
 // options

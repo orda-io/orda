@@ -5,7 +5,7 @@ package model;
 import "google/protobuf/any.proto";
 
 message Client {
-    bytes cuid = 1;
+    bytes CUID = 1;
     string alias = 2;
     string collection = 3;
     TypeOfSync syncType = 4;
@@ -19,12 +19,12 @@ enum TypeOfSync {
 message OperationID {
     uint32 era = 1;
     uint64 lamport = 2;
-    bytes cuid = 3;
+    bytes CUID = 3;
     uint64 seq = 4;
 }
 
 message BaseOperation {
-    OperationID id = 1;
+    OperationID ID = 1;
     TypeOfOperation opType = 2;
 }
 

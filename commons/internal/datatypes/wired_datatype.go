@@ -49,7 +49,7 @@ func (w *WiredDatatypeImpl) String() string {
 
 //ExecuteRemote ...
 func (w *WiredDatatypeImpl) ExecuteRemote(op model.Operation) {
-	w.opID.SyncLamport(op.GetBase().GetId().Lamport)
+	w.opID.SyncLamport(op.GetBase().GetID().Lamport)
 	w.executeRemoteBase(op)
 }
 
@@ -115,7 +115,7 @@ func (w *WiredDatatypeImpl) ApplyPushPullPack(ppp *model.PushPullPack) {
 
 func (w *WiredDatatypeImpl) getOperationOnWires(cseq uint64) []*model.OperationOnWire {
 	op := model.ToOperation(w.buffer[0])
-	startCseq := op.GetBase().Id.GetSeq()
+	startCseq := op.GetBase().ID.GetSeq()
 	var start = int(cseq - startCseq)
 	if len(w.buffer) > start {
 		return w.buffer[start:]

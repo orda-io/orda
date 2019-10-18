@@ -17,14 +17,14 @@ type Operation interface {
 //NewOperation creates a new operation.
 func NewOperation(opType TypeOfOperation) *BaseOperation {
 	return &BaseOperation{
-		Id:     NewOperationID(),
+		ID:     NewOperationID(),
 		OpType: opType,
 	}
 }
 
 //SetOperationID sets the ID of an operation.
 func (o *BaseOperation) SetOperationID(opID *OperationID) {
-	o.Id = opID
+	o.ID = opID
 }
 
 //////////////////// TransactionOperation ////////////////////

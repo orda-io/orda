@@ -121,4 +121,58 @@ func TestMongo(t *testing.T) {
 		}
 		log.Logger.Infof("%+v", datatypeDoc3)
 	})
+
+	t.Run("Can manipulate operationDoc", func(t *testing.T) {
+		op, err := model.NewSnapshotOperation(
+			model.TypeOfDatatype_INT_COUNTER,
+			model.StateOfDatatype_DUE_TO_CREATE,
+			&testSnapshot{Value: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var operations []interface{}
+		opDoc := &schema.OperationDoc{
+			ID:            "test_duid:1",
+			DUID:          "test_duid",
+			CollectionNum: 1,
+			OpType:        "Snapshot",
+			Sseq:          1,
+			Operation:     op,
+			CreatedAt:     time.Now(),
+		}
+		operations = append(operations, opDoc)
+
+		_, err = mongo.DeleteOperation(context.TODO(), opDoc.DUID, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := mongo.InsertOperations(context.TODO(), operations); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := mongo.GetOperations(context.TODO(), opDoc.DUID, 1); err != nil {
+			t.Fatal(err)
+		}
+
+		//deletedNum,  err := mongo.DeleteOperation(context.TODO(), opDoc.DUID, 1)
+		//if err != nil || deletedNum != 1{
+		//	t.Fatal(err)
+		//}
+
+	})
+}
+
+type testSnapshot struct {
+	Value int32 `json:"value"`
+}
+
+func (i *testSnapshot) CloneSnapshot() model.Snapshot {
+	return &testSnapshot{
+		Value: i.Value,
+	}
+}
+
+func (i *testSnapshot) GetTypeUrl() string {
+	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
 }

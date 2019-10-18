@@ -4,28 +4,28 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 )
 
-//Cuid is a uniqueID
-type Cuid uniqueID
+//CUID is a uniqueID
+type CUID uniqueID
 
 //NewCuid creates a new CUID
-func NewCuid() (Cuid, error) {
+func NewCuid() (CUID, error) {
 	u, err := newUniqueID()
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to generate client UID")
 	}
-	return Cuid(u), nil
+	return CUID(u), nil
 }
 
-func newNilCuid() Cuid {
+func newNilCuid() CUID {
 	bin := make([]byte, 16)
-	return Cuid(bin)
+	return CUID(bin)
 }
 
-func (c *Cuid) String() string {
+func (c *CUID) String() string {
 	return uniqueID(*c).String()
 }
 
 //Compare makes two CUID compared
-func (c *Cuid) Compare(o *Cuid) {
+func (c *CUID) Compare(o *CUID) {
 
 }

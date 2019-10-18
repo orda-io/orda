@@ -8,7 +8,7 @@ import (
 
 //DataManager manages Ortoo datatypes regarding operations
 type DataManager struct {
-	//cuid model.Cuid
+	//cuid model.CUID
 	reqResMgr *MessageManager
 	dataMap   map[string]model.FinalDatatype
 }

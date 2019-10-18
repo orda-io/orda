@@ -5,7 +5,6 @@ import (
 	"errors"
 	log "github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -13,12 +12,13 @@ type CollectionDatatypes struct {
 	*baseCollection
 }
 
-func NewCollectionDatatypes(client *mongo.Client, datatype *mongo.Collection) *CollectionDatatypes {
-	return &CollectionDatatypes{newCollection(client, datatype)}
+func NewCollectionDatatypes(client *mongo.Client, datatypes *mongo.Collection) *CollectionDatatypes {
+	return &CollectionDatatypes{newCollection(client, datatypes)}
 }
 
 func (c *CollectionDatatypes) GetDatatype(ctx context.Context, duid string) (*schema.DatatypeDoc, error) {
-	result := c.collection.FindOne(ctx, filterByID(duid))
+	f := GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, duid)
+	result := c.collection.FindOne(ctx, f)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -33,10 +33,10 @@ func (c *CollectionDatatypes) GetDatatype(ctx context.Context, duid string) (*sc
 }
 
 func (c *CollectionDatatypes) GetDatatypeByKey(ctx context.Context, collectionNum uint32, key string) (*schema.DatatypeDoc, error) {
-	result := c.collection.FindOne(ctx, bson.D{
-		bson.E{Key: schema.DatatypeDocFields.CollectionNum, Value: collectionNum},
-		bson.E{Key: schema.DatatypeDocFields.Key, Value: key},
-	})
+	f := GetFilter().
+		AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum).
+		AddFilterEQ(schema.DatatypeDocFields.Key, key)
+	result := c.collection.FindOne(ctx, f)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -51,7 +51,8 @@ func (c *CollectionDatatypes) GetDatatypeByKey(ctx context.Context, collectionNu
 }
 
 func (c *CollectionDatatypes) UpdateDatatype(ctx context.Context, datatype *schema.DatatypeDoc) error {
-	result, err := c.collection.UpdateOne(ctx, filterByID(datatype.DUID), datatype.ToUpdateBSON(), upsertOption)
+	f := GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, datatype.DUID)
+	result, err := c.collection.UpdateOne(ctx, f, datatype.ToUpdateBSON(), upsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}

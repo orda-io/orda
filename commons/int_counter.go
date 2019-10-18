@@ -38,7 +38,7 @@ func NewIntCounter(key string, client Client) (IntCounter, error) {
 	err := intCounter.Initialize(
 		key,
 		model.TypeOfDatatype_INT_COUNTER,
-		ci.model.Cuid,
+		ci.model.CUID,
 		ci.dataMgr,
 		snapshot,
 		intCounter)

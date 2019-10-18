@@ -91,9 +91,9 @@ type MessageHeader struct {
 	TypeOf               TypeOfMessage `protobuf:"varint,3,opt,name=typeOf,proto3,enum=model.TypeOfMessage" json:"typeOf,omitempty"`
 	Collection           string        `protobuf:"bytes,4,opt,name=collection,proto3" json:"collection,omitempty"`
 	Cuid                 []byte        `protobuf:"bytes,5,opt,name=cuid,proto3" json:"cuid,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-" bson:"-"`
+	XXX_unrecognized     []byte        `json:"-" bson:"-"`
+	XXX_sizecache        int32         `json:"-" bson:"-"`
 }
 
 func (m *MessageHeader) Reset()         { *m = MessageHeader{} }
@@ -167,9 +167,9 @@ func (m *MessageHeader) GetCuid() []byte {
 type ResponseState struct {
 	State                StateOfResponse `protobuf:"varint,1,opt,name=state,proto3,enum=model.StateOfResponse" json:"state,omitempty"`
 	Msg                  string          `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-" bson:"-"`
+	XXX_unrecognized     []byte          `json:"-" bson:"-"`
+	XXX_sizecache        int32           `json:"-" bson:"-"`
 }
 
 func (m *ResponseState) Reset()         { *m = ResponseState{} }
@@ -222,9 +222,9 @@ func (m *ResponseState) GetMsg() string {
 type ClientRequest struct {
 	Header               *MessageHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Client               *Client        `protobuf:"bytes,2,opt,name=client,proto3" json:"client,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-" bson:"-"`
+	XXX_unrecognized     []byte         `json:"-" bson:"-"`
+	XXX_sizecache        int32          `json:"-" bson:"-"`
 }
 
 func (m *ClientRequest) Reset()         { *m = ClientRequest{} }
@@ -277,9 +277,9 @@ func (m *ClientRequest) GetClient() *Client {
 type ClientResponse struct {
 	Header               *MessageHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	State                *ResponseState `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-" bson:"-"`
+	XXX_unrecognized     []byte         `json:"-" bson:"-"`
+	XXX_sizecache        int32          `json:"-" bson:"-"`
 }
 
 func (m *ClientResponse) Reset()         { *m = ClientResponse{} }
@@ -333,9 +333,9 @@ type PushPullRequest struct {
 	Header               *MessageHeader  `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Id                   int32           `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 	PushPullPacks        []*PushPullPack `protobuf:"bytes,3,rep,name=pushPullPacks,proto3" json:"pushPullPacks,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-" bson:"-"`
+	XXX_unrecognized     []byte          `json:"-" bson:"-"`
+	XXX_sizecache        int32           `json:"-" bson:"-"`
 }
 
 func (m *PushPullRequest) Reset()         { *m = PushPullRequest{} }
@@ -396,9 +396,9 @@ type PushPullResponse struct {
 	Header               *MessageHeader  `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Id                   int32           `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 	PushPullPacks        []*PushPullPack `protobuf:"bytes,3,rep,name=pushPullPacks,proto3" json:"pushPullPacks,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-" bson:"-"`
+	XXX_unrecognized     []byte          `json:"-" bson:"-"`
+	XXX_sizecache        int32           `json:"-" bson:"-"`
 }
 
 func (m *PushPullResponse) Reset()         { *m = PushPullResponse{} }
