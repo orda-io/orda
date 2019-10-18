@@ -86,11 +86,15 @@ func (w *WiredDatatypeImpl) CreatePushPullPack() *model.PushPullPack {
 		Cseq: w.checkPoint.GetCseq() + uint64(len(operations)),
 	}
 	option := model.PushPullBitNormal
-	if w.state == model.StateOfDatatype_LOCALLY_EXISTED {
+	if w.state == model.StateOfDatatype_DUE_TO_CREATE {
+		option.SetCreateBit()
+	} else if w.state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
 		option.SetSubscribeBit()
+	} else if w.state == model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE {
+		option.SetSubscribeBit().SetCreateBit()
 	}
 	return &model.PushPullPack{
-		Duid:       w.id,
+		DUID:       w.id,
 		Option:     uint32(option),
 		CheckPoint: cp,
 		Era:        w.GetEra(),

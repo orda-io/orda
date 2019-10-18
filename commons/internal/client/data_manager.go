@@ -40,10 +40,10 @@ func (d *DataManager) Get(key string) model.FinalDatatype {
 }
 
 //SubscribeOrCreate links a datatype with the datatype
-func (d *DataManager) SubscribeOrCreate(dt model.FinalDatatype) error {
+func (d *DataManager) SubscribeOrCreate(dt model.FinalDatatype, state model.StateOfDatatype) error {
 	if _, ok := d.dataMap[dt.GetKey()]; !ok {
 		d.dataMap[dt.GetKey()] = dt
-		if err := dt.Subscribe(); err != nil {
+		if err := dt.SubscribeOrCreate(state); err != nil {
 			return log.OrtooErrorf(err, "fail to subscribe")
 		}
 	}

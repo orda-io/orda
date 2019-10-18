@@ -9,6 +9,7 @@ type FinalDatatype interface {
 	GetFinalDatatype() FinalDatatype
 	GetKey() string
 	GetSnapshot() Snapshot
-	SubscribeOrCreate() error
+	SubscribeOrCreate(state StateOfDatatype) error
 	CreatePushPullPack() *PushPullPack
+	SetState(state StateOfDatatype)
 }

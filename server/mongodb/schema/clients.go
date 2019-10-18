@@ -69,10 +69,17 @@ func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
 	}}
 }
 
+func (c *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
+	if checkPoint, ok := c.CheckPoints[duid]; ok {
+		return checkPoint
+	}
+	return nil
+}
+
 //ClientModelToBson returns a ClientDoc from a model.Client
 func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	return &ClientDoc{
-		CUID:          model.GetCuidString(),
+		CUID:          model.GetCUIDString(),
 		Alias:         model.Alias,
 		CollectionNum: collectionNum,
 		SyncType:      model.SyncType.String(),

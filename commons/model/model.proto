@@ -28,10 +28,11 @@ message BaseOperation {
     TypeOfOperation opType = 2;
 }
 
-message SubscribeOperation {
+message SnapshotOperation {
     BaseOperation base = 1;
     TypeOfDatatype type = 2;
-    google.protobuf.Any snapshot = 3;
+    StateOfDatatype state = 3;
+    google.protobuf.Any snapshot = 4;
 }
 
 message IncreaseOperation {
@@ -47,11 +48,10 @@ message TransactionOperation {
 }
 
 enum TypeOfOperation {
-    SUBSCRIBE = 0;
+    SNAPSHOT = 0;
     DELETE = 1;
     ERROR = 2;
-    SNAPSHOT = 4;
-    TRANSACTION = 5;
+    TRANSACTION = 3;
     INT_COUNTER_INCREASE = 11;
 }
 
@@ -61,29 +61,31 @@ enum TypeOfDatatype {
 }
 
 enum StateOfDatatype {
-    WAIT_FOR_CREATING = 0;
-    WAIT_FOR_SUBSCRIBING = 1;
-    WAIT_FOR_SUBSCRIBING_CREATING = 2;
+    DUE_TO_CREATE = 0;
+    DUE_TO_SUBSCRIBE = 1;
+    DUE_TO_SUBSCRIBE_CREATE = 2;
     SUBSCRIBED = 4;
-    UNSUBSCRIBING = 5;
+    DUE_TO_UNSUBSCRIBE = 5;
     UNSUBSCRIBED = 6;
+    DELETED = 7;
 }
 
 message OperationOnWire {
     oneof body {
-        SubscribeOperation subscribe = 1;
+        SnapshotOperation snapshot = 1;
         TransactionOperation transaction = 5;
         IncreaseOperation increase = 11;
     }
 }
 
 message PushPullPack {
-    bytes duid = 1;
-    fixed32 option = 2;
-    CheckPoint checkPoint = 3;
-    uint32 era = 4;
-    int32 type = 5;
-    repeated OperationOnWire operations = 6;
+    bytes DUID = 1;
+    string key = 2;
+    fixed32 option = 3;
+    CheckPoint checkPoint = 4;
+    uint32 era = 5;
+    int32 type = 6;
+    repeated OperationOnWire operations = 7;
 }
 
 message CheckPoint {

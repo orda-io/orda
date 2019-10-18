@@ -29,8 +29,8 @@ func (o *BaseOperation) SetOperationID(opID *OperationID) {
 
 //////////////////// TransactionOperation ////////////////////
 
-//NewTransactionBeginOperation creates a transaction operation
-func NewTransactionBeginOperation(tag string) (*TransactionOperation, error) {
+//NewTransactionOperation creates a transaction operation
+func NewTransactionOperation(tag string) (*TransactionOperation, error) {
 	uuid, err := newUniqueID()
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to create uuid")
@@ -54,14 +54,15 @@ func (t *TransactionOperation) ExecuteRemote(datatype FinalDatatype) (interface{
 }
 
 //////////////////// SubscribeOperation ////////////////////
-func NewSubscribeOperation(datatype TypeOfDatatype, snapshot Snapshot) (*SubscribeOperation, error) {
+func NewSnapshotOperation(datatype TypeOfDatatype, state StateOfDatatype, snapshot Snapshot) (*SnapshotOperation, error) {
 	snapshotBinary, err := json.Marshal(snapshot)
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to create subscribe operation")
 	}
-	return &SubscribeOperation{
-		Base: NewOperation(TypeOfOperation_SUBSCRIBE),
-		Type: datatype,
+	return &SnapshotOperation{
+		Base:  NewOperation(TypeOfOperation_SNAPSHOT),
+		Type:  datatype,
+		State: state,
 		Snapshot: &types.Any{
 			TypeUrl: snapshot.GetTypeUrl(),
 			Value:   snapshotBinary,
@@ -70,12 +71,13 @@ func NewSubscribeOperation(datatype TypeOfDatatype, snapshot Snapshot) (*Subscri
 }
 
 //ExecuteLocal ...
-func (s *SubscribeOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, error) {
+func (s *SnapshotOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, error) {
+	datatype.SetState(s.State)
 	return nil, nil
 }
 
 //ExecuteRemote ...
-func (s *SubscribeOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
+func (s *SnapshotOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
 	//datatype.BeginTransaction(t.Tag)
 	return nil, nil
 }
@@ -103,8 +105,8 @@ func (i *IncreaseOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, 
 //ToOperationOnWire transforms an Operation to OperationOnWire.
 func ToOperationOnWire(op Operation) *OperationOnWire {
 	switch o := op.(type) {
-	case *SubscribeOperation:
-		return &OperationOnWire{Body: &OperationOnWire_Subscribe{o}}
+	case *SnapshotOperation:
+		return &OperationOnWire{Body: &OperationOnWire_Snapshot{o}}
 	case *IncreaseOperation:
 		return &OperationOnWire{Body: &OperationOnWire_Increase{o}}
 	case *TransactionOperation:
@@ -117,8 +119,8 @@ func ToOperationOnWire(op Operation) *OperationOnWire {
 //ToOperation transforms an OperationOnWire to Operation.
 func ToOperation(op *OperationOnWire) Operation {
 	switch o := op.Body.(type) {
-	case *OperationOnWire_Subscribe:
-		return o.Subscribe
+	case *OperationOnWire_Snapshot:
+		return o.Snapshot
 	case *OperationOnWire_Increase:
 		return o.Increase
 	case *OperationOnWire_Transaction:

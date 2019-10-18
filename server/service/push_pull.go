@@ -31,7 +31,17 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	}
 	var chanList []<-chan *model.PushPullPack
 	for _, ppp := range in.PushPullPacks {
-		handler := NewPushPullHandler(ctx, o.mongo, ppp, clientDoc)
+		handler := &PushPullHandler{
+			ctx:           ctx,
+			clientDoc:     clientDoc,
+			collectionDoc: collectionDoc,
+			mongo:         o.mongo,
+			pushPullPack:  ppp,
+			Option:        model.PushPullPackOption(ppp.Option),
+			DUID:          hex.EncodeToString(ppp.DUID),
+			CUID:          clientDoc.CUID,
+			Key:           ppp.Key,
+		}
 		chanList = append(chanList, handler.Start())
 	}
 	remainingChan := len(chanList)
@@ -53,23 +63,33 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	return &model.PushPullResponse{Id: in.Id}, nil
 }
 
-func NewPushPullHandler(ctx context.Context, mongo *mongodb.RepositoryMongo, ppp *model.PushPullPack, clientDoc *schema.ClientDoc) *PushPullHandler {
+func NewPushPullHandler(
+	ctx context.Context,
+	mongo *mongodb.RepositoryMongo,
+	ppp *model.PushPullPack,
+	collectionDoc *schema.CollectionDoc,
+	clientDoc *schema.ClientDoc) *PushPullHandler {
 	return &PushPullHandler{
-		ctx:          ctx,
-		clientDoc:    clientDoc,
-		mongo:        mongo,
-		pushPullPack: ppp,
+		ctx:           ctx,
+		collectionDoc: collectionDoc,
+		clientDoc:     clientDoc,
+		mongo:         mongo,
+		pushPullPack:  ppp,
 	}
 }
 
 type PushPullHandler struct {
-	ctx          context.Context
-	checkPoint   *model.CheckPoint
-	clientDoc    *schema.ClientDoc
-	mongo        *mongodb.RepositoryMongo
-	pushPullPack *model.PushPullPack
-	duid         string
-	cuid         string
+	ctx           context.Context
+	checkPoint    *model.CheckPoint
+	clientDoc     *schema.ClientDoc
+	datatypeDoc   *schema.DatatypeDoc
+	collectionDoc *schema.CollectionDoc
+	mongo         *mongodb.RepositoryMongo
+	pushPullPack  *model.PushPullPack
+	Option        model.PushPullPackOption
+	DUID          string
+	CUID          string
+	Key           string
 }
 
 func (p *PushPullHandler) Start() <-chan *model.PushPullPack {
@@ -79,17 +99,9 @@ func (p *PushPullHandler) Start() <-chan *model.PushPullPack {
 }
 
 func (p *PushPullHandler) process(retCh chan *model.PushPullPack) {
-	p.duid = hex.EncodeToString(p.pushPullPack.Duid)
-	p.cuid = p.clientDoc.CUID
-	retPushPullPack := &model.PushPullPack{
-		Duid:   p.pushPullPack.Duid,
-		Option: p.pushPullPack.Option,
-		Era:    p.pushPullPack.Era,
-		Type:   p.pushPullPack.Type,
-		//Operations:           ,
-	}
+	retPushPullPack := p.pushPullPack.GetReturnPushPullPack()
 
-	checkPoint, err := p.mongo.GetCheckPointFromClient(p.ctx, p.cuid, p.duid)
+	checkPoint, err := p.mongo.GetCheckPointFromClient(p.ctx, p.CUID, p.DUID)
 	if err != nil {
 		_ = log.OrtooError(err)
 		model.PushPullPackOption(retPushPullPack.Option).SetErrorBit()
@@ -103,8 +115,78 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	//retCh <-
 }
 
-const ()
+type pushPullCase uint32
 
-func (p *PushPullHandler) preprocess() {
-	p.mongo.GetDatatypeByKey()
+const (
+	caseError pushPullCase = iota
+	caseMatchKey
+	caseMatchNothing
+	caseMatchDUID
+	caseMatchKeyNotType
+	caseAllMatchedSubscribed
+	caseAllMatchedNotSubscribed
+	caseAllMatchedNotVisible
+)
+
+func (p *PushPullHandler) evaluate(code pushPullCase) {
+	if p.Option.HasSubscribeBit() && p.Option.HasCreateBit() {
+
+	} else if p.Option.HasSubscribeBit() {
+
+	} else if p.Option.HasCreateBit() {
+
+	}
+}
+
+func (p *PushPullHandler) evaluatePushPullCase() (pushPullCase, error) {
+	var err error
+	//if p.Option.HasSubscribeBit() {
+	p.datatypeDoc, err = p.mongo.GetDatatypeByKey(p.ctx, p.collectionDoc.Num, p.pushPullPack.Key)
+	if err != nil {
+		return caseError, log.OrtooError(err)
+	}
+	if p.datatypeDoc == nil {
+		p.datatypeDoc, err = p.mongo.GetDatatype(p.ctx, p.DUID)
+		if err != nil {
+			return caseError, log.OrtooError(err)
+		}
+		if p.datatypeDoc == nil {
+			return caseMatchNothing, nil
+		} else {
+			return caseMatchDUID, nil
+		}
+	} else {
+		if p.datatypeDoc.Type == model.TypeOfDatatype_name[p.pushPullPack.Type] {
+			if p.datatypeDoc.Visible {
+				checkPoint := p.clientDoc.GetCheckPoint(p.DUID)
+				if checkPoint != nil {
+					return caseAllMatchedSubscribed, nil
+				} else {
+					return caseAllMatchedNotSubscribed, nil
+				}
+			} else {
+				return caseAllMatchedNotVisible, nil
+			}
+		} else {
+			return caseMatchKeyNotType, nil
+		}
+	}
+	//} else if p.Option {
+	//	p.datatypeDoc, err = p.mongo.GetDatatype(p.ctx, p.DUID)
+	//	if p.datatypeDoc == nil {
+	//		p.datatypeDoc, err = p.mongo.GetDatatypeByKey(p.ctx, p.collectionDoc.Num, p.Key)
+	//		if p.datatypeDoc == nil {
+	//			return caseMatchNothing, nil
+	//		} else {
+	//			return caseMatchKey, nil
+	//		}
+	//	} else {
+	//		if p.Key == p.datatypeDoc.Key {
+	//
+	//		} else {
+	//
+	//		}
+	//	}
+	//}
+
 }

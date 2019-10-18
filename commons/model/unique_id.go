@@ -16,7 +16,7 @@ func newUniqueID() (uniqueID, error) {
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to generate unique ID")
 	}
-	return uniqueID(b), nil
+	return b, nil
 }
 
 func (u uniqueID) String() string {

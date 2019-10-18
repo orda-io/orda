@@ -119,7 +119,7 @@ func (t *TransactionDatatypeImpl) BeginTransaction(tag string, ctx *TransactionC
 	}
 	t.transactionCtx = t.beginTransaction(tag)
 	if withOp {
-		op, err := model.NewTransactionBeginOperation(tag)
+		op, err := model.NewTransactionOperation(tag)
 		if err != nil {
 			return nil, t.Logger.OrtooErrorf(err, "fail to create TransactionBeginOperation")
 		}

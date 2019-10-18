@@ -34,8 +34,9 @@ func (c *CommonDatatype) Initialize(key string, typeOf model.TypeOfDatatype, cui
 	return nil
 }
 
-func (c *CommonDatatype) SubscribeOrCreate() error {
-	subscribeOp, err := model.NewSubscribeOperation(c.TypeOf, c.finalDatatype.GetSnapshot())
+func (c *CommonDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
+
+	subscribeOp, err := model.NewSnapshotOperation(c.TypeOf, state, c.finalDatatype.GetSnapshot())
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to subscribe")
 	}

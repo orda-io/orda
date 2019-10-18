@@ -52,29 +52,26 @@ func (TypeOfSync) EnumDescriptor() ([]byte, []int) {
 type TypeOfOperation int32
 
 const (
-	TypeOfOperation_SUBSCRIBE            TypeOfOperation = 0
+	TypeOfOperation_SNAPSHOT             TypeOfOperation = 0
 	TypeOfOperation_DELETE               TypeOfOperation = 1
 	TypeOfOperation_ERROR                TypeOfOperation = 2
-	TypeOfOperation_SNAPSHOT             TypeOfOperation = 4
-	TypeOfOperation_TRANSACTION          TypeOfOperation = 5
+	TypeOfOperation_TRANSACTION          TypeOfOperation = 3
 	TypeOfOperation_INT_COUNTER_INCREASE TypeOfOperation = 11
 )
 
 var TypeOfOperation_name = map[int32]string{
-	0:  "SUBSCRIBE",
+	0:  "SNAPSHOT",
 	1:  "DELETE",
 	2:  "ERROR",
-	4:  "SNAPSHOT",
-	5:  "TRANSACTION",
+	3:  "TRANSACTION",
 	11: "INT_COUNTER_INCREASE",
 }
 
 var TypeOfOperation_value = map[string]int32{
-	"SUBSCRIBE":            0,
+	"SNAPSHOT":             0,
 	"DELETE":               1,
 	"ERROR":                2,
-	"SNAPSHOT":             4,
-	"TRANSACTION":          5,
+	"TRANSACTION":          3,
 	"INT_COUNTER_INCREASE": 11,
 }
 
@@ -114,27 +111,33 @@ func (TypeOfDatatype) EnumDescriptor() ([]byte, []int) {
 type StateOfDatatype int32
 
 const (
-	StateOfDatatype_LOCALLY_EXISTED StateOfDatatype = 0
-	StateOfDatatype_SUBSCRIBING     StateOfDatatype = 1
-	StateOfDatatype_SUBSCRIBED      StateOfDatatype = 2
-	StateOfDatatype_UNSUBSCRIBING   StateOfDatatype = 3
-	StateOfDatatype_UNSUBSCRIBED    StateOfDatatype = 4
+	StateOfDatatype_DUE_TO_CREATE           StateOfDatatype = 0
+	StateOfDatatype_DUE_TO_SUBSCRIBE        StateOfDatatype = 1
+	StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE StateOfDatatype = 2
+	StateOfDatatype_SUBSCRIBED              StateOfDatatype = 4
+	StateOfDatatype_DUE_TO_UNSUBSCRIBE      StateOfDatatype = 5
+	StateOfDatatype_UNSUBSCRIBED            StateOfDatatype = 6
+	StateOfDatatype_DELETED                 StateOfDatatype = 7
 )
 
 var StateOfDatatype_name = map[int32]string{
-	0: "LOCALLY_EXISTED",
-	1: "SUBSCRIBING",
-	2: "SUBSCRIBED",
-	3: "UNSUBSCRIBING",
-	4: "UNSUBSCRIBED",
+	0: "DUE_TO_CREATE",
+	1: "DUE_TO_SUBSCRIBE",
+	2: "DUE_TO_SUBSCRIBE_CREATE",
+	4: "SUBSCRIBED",
+	5: "DUE_TO_UNSUBSCRIBE",
+	6: "UNSUBSCRIBED",
+	7: "DELETED",
 }
 
 var StateOfDatatype_value = map[string]int32{
-	"LOCALLY_EXISTED": 0,
-	"SUBSCRIBING":     1,
-	"SUBSCRIBED":      2,
-	"UNSUBSCRIBING":   3,
-	"UNSUBSCRIBED":    4,
+	"DUE_TO_CREATE":           0,
+	"DUE_TO_SUBSCRIBE":        1,
+	"DUE_TO_SUBSCRIBE_CREATE": 2,
+	"SUBSCRIBED":              4,
+	"DUE_TO_UNSUBSCRIBE":      5,
+	"UNSUBSCRIBED":            6,
+	"DELETED":                 7,
 }
 
 func (x StateOfDatatype) String() string {
@@ -339,30 +342,31 @@ func (m *BaseOperation) GetOpType() TypeOfOperation {
 	if m != nil {
 		return m.OpType
 	}
-	return TypeOfOperation_SUBSCRIBE
+	return TypeOfOperation_SNAPSHOT
 }
 
-type SubscribeOperation struct {
-	Base                 *BaseOperation `protobuf:"bytes,1,opt,name=base,proto3" json:"base,omitempty"`
-	Type                 TypeOfDatatype `protobuf:"varint,2,opt,name=type,proto3,enum=model.TypeOfDatatype" json:"type,omitempty"`
-	Snapshot             *types.Any     `protobuf:"bytes,3,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
+type SnapshotOperation struct {
+	Base                 *BaseOperation  `protobuf:"bytes,1,opt,name=base,proto3" json:"base,omitempty"`
+	Type                 TypeOfDatatype  `protobuf:"varint,2,opt,name=type,proto3,enum=model.TypeOfDatatype" json:"type,omitempty"`
+	State                StateOfDatatype `protobuf:"varint,3,opt,name=state,proto3,enum=model.StateOfDatatype" json:"state,omitempty"`
+	Snapshot             *types.Any      `protobuf:"bytes,4,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *SubscribeOperation) Reset()         { *m = SubscribeOperation{} }
-func (m *SubscribeOperation) String() string { return proto.CompactTextString(m) }
-func (*SubscribeOperation) ProtoMessage()    {}
-func (*SubscribeOperation) Descriptor() ([]byte, []int) {
+func (m *SnapshotOperation) Reset()         { *m = SnapshotOperation{} }
+func (m *SnapshotOperation) String() string { return proto.CompactTextString(m) }
+func (*SnapshotOperation) ProtoMessage()    {}
+func (*SnapshotOperation) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4c16552f9fdb66d8, []int{3}
 }
-func (m *SubscribeOperation) XXX_Unmarshal(b []byte) error {
+func (m *SnapshotOperation) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *SubscribeOperation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *SnapshotOperation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_SubscribeOperation.Marshal(b, m, deterministic)
+		return xxx_messageInfo_SnapshotOperation.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -372,33 +376,40 @@ func (m *SubscribeOperation) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *SubscribeOperation) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SubscribeOperation.Merge(m, src)
+func (m *SnapshotOperation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SnapshotOperation.Merge(m, src)
 }
-func (m *SubscribeOperation) XXX_Size() int {
+func (m *SnapshotOperation) XXX_Size() int {
 	return m.Size()
 }
-func (m *SubscribeOperation) XXX_DiscardUnknown() {
-	xxx_messageInfo_SubscribeOperation.DiscardUnknown(m)
+func (m *SnapshotOperation) XXX_DiscardUnknown() {
+	xxx_messageInfo_SnapshotOperation.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_SubscribeOperation proto.InternalMessageInfo
+var xxx_messageInfo_SnapshotOperation proto.InternalMessageInfo
 
-func (m *SubscribeOperation) GetBase() *BaseOperation {
+func (m *SnapshotOperation) GetBase() *BaseOperation {
 	if m != nil {
 		return m.Base
 	}
 	return nil
 }
 
-func (m *SubscribeOperation) GetType() TypeOfDatatype {
+func (m *SnapshotOperation) GetType() TypeOfDatatype {
 	if m != nil {
 		return m.Type
 	}
 	return TypeOfDatatype_INT_COUNTER
 }
 
-func (m *SubscribeOperation) GetSnapshot() *types.Any {
+func (m *SnapshotOperation) GetState() StateOfDatatype {
+	if m != nil {
+		return m.State
+	}
+	return StateOfDatatype_DUE_TO_CREATE
+}
+
+func (m *SnapshotOperation) GetSnapshot() *types.Any {
 	if m != nil {
 		return m.Snapshot
 	}
@@ -533,7 +544,7 @@ func (m *TransactionOperation) GetNumOfOps() uint32 {
 
 type OperationOnWire struct {
 	// Types that are valid to be assigned to Body:
-	//	*OperationOnWire_Subscribe
+	//	*OperationOnWire_Snapshot
 	//	*OperationOnWire_Transaction
 	//	*OperationOnWire_Increase
 	Body                 isOperationOnWire_Body `protobuf_oneof:"body"`
@@ -581,17 +592,17 @@ type isOperationOnWire_Body interface {
 	Size() int
 }
 
-type OperationOnWire_Subscribe struct {
-	Subscribe *SubscribeOperation `protobuf:"bytes,1,opt,name=subscribe,proto3,oneof"`
+type OperationOnWire_Snapshot struct {
+	Snapshot *SnapshotOperation `protobuf:"bytes,1,opt,name=snapshot,proto3,oneof" json:"snapshot,omitempty"`
 }
 type OperationOnWire_Transaction struct {
-	Transaction *TransactionOperation `protobuf:"bytes,5,opt,name=transaction,proto3,oneof"`
+	Transaction *TransactionOperation `protobuf:"bytes,5,opt,name=transaction,proto3,oneof" json:"transaction,omitempty"`
 }
 type OperationOnWire_Increase struct {
-	Increase *IncreaseOperation `protobuf:"bytes,11,opt,name=increase,proto3,oneof"`
+	Increase *IncreaseOperation `protobuf:"bytes,11,opt,name=increase,proto3,oneof" json:"increase,omitempty"`
 }
 
-func (*OperationOnWire_Subscribe) isOperationOnWire_Body()   {}
+func (*OperationOnWire_Snapshot) isOperationOnWire_Body()    {}
 func (*OperationOnWire_Transaction) isOperationOnWire_Body() {}
 func (*OperationOnWire_Increase) isOperationOnWire_Body()    {}
 
@@ -602,9 +613,9 @@ func (m *OperationOnWire) GetBody() isOperationOnWire_Body {
 	return nil
 }
 
-func (m *OperationOnWire) GetSubscribe() *SubscribeOperation {
-	if x, ok := m.GetBody().(*OperationOnWire_Subscribe); ok {
-		return x.Subscribe
+func (m *OperationOnWire) GetSnapshot() *SnapshotOperation {
+	if x, ok := m.GetBody().(*OperationOnWire_Snapshot); ok {
+		return x.Snapshot
 	}
 	return nil
 }
@@ -626,19 +637,20 @@ func (m *OperationOnWire) GetIncrease() *IncreaseOperation {
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*OperationOnWire) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*OperationOnWire_Subscribe)(nil),
+		(*OperationOnWire_Snapshot)(nil),
 		(*OperationOnWire_Transaction)(nil),
 		(*OperationOnWire_Increase)(nil),
 	}
 }
 
 type PushPullPack struct {
-	Duid                 []byte             `protobuf:"bytes,1,opt,name=duid,proto3" json:"duid,omitempty"`
-	Option               uint32             `protobuf:"fixed32,2,opt,name=option,proto3" json:"option,omitempty"`
-	CheckPoint           *CheckPoint        `protobuf:"bytes,3,opt,name=checkPoint,proto3" json:"checkPoint,omitempty"`
-	Era                  uint32             `protobuf:"varint,4,opt,name=era,proto3" json:"era,omitempty"`
-	Type                 int32              `protobuf:"varint,5,opt,name=type,proto3" json:"type,omitempty"`
-	Operations           []*OperationOnWire `protobuf:"bytes,6,rep,name=operations,proto3" json:"operations,omitempty"`
+	DUID                 []byte             `protobuf:"bytes,1,opt,name=DUID,proto3" json:"DUID,omitempty"`
+	Key                  string             `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Option               uint32             `protobuf:"fixed32,3,opt,name=option,proto3" json:"option,omitempty"`
+	CheckPoint           *CheckPoint        `protobuf:"bytes,4,opt,name=checkPoint,proto3" json:"checkPoint,omitempty"`
+	Era                  uint32             `protobuf:"varint,5,opt,name=era,proto3" json:"era,omitempty"`
+	Type                 int32              `protobuf:"varint,6,opt,name=type,proto3" json:"type,omitempty"`
+	Operations           []*OperationOnWire `protobuf:"bytes,7,rep,name=operations,proto3" json:"operations,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -677,11 +689,18 @@ func (m *PushPullPack) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PushPullPack proto.InternalMessageInfo
 
-func (m *PushPullPack) GetDuid() []byte {
+func (m *PushPullPack) GetDUID() []byte {
 	if m != nil {
-		return m.Duid
+		return m.DUID
 	}
 	return nil
+}
+
+func (m *PushPullPack) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
 }
 
 func (m *PushPullPack) GetOption() uint32 {
@@ -784,7 +803,7 @@ func init() {
 	proto.RegisterType((*Client)(nil), "model.Client")
 	proto.RegisterType((*OperationID)(nil), "model.OperationID")
 	proto.RegisterType((*BaseOperation)(nil), "model.BaseOperation")
-	proto.RegisterType((*SubscribeOperation)(nil), "model.SubscribeOperation")
+	proto.RegisterType((*SnapshotOperation)(nil), "model.SnapshotOperation")
 	proto.RegisterType((*IncreaseOperation)(nil), "model.IncreaseOperation")
 	proto.RegisterType((*TransactionOperation)(nil), "model.TransactionOperation")
 	proto.RegisterType((*OperationOnWire)(nil), "model.OperationOnWire")
@@ -795,58 +814,59 @@ func init() {
 func init() { proto.RegisterFile("model.proto", fileDescriptor_4c16552f9fdb66d8) }
 
 var fileDescriptor_4c16552f9fdb66d8 = []byte{
-	// 803 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xcd, 0x8e, 0xe3, 0x44,
-	0x10, 0x4e, 0x27, 0x4e, 0x36, 0x53, 0x99, 0x4c, 0x7a, 0x8a, 0xb0, 0xf2, 0x2e, 0x52, 0x34, 0xf2,
-	0x29, 0x0c, 0x90, 0x85, 0x45, 0x5a, 0x89, 0x13, 0xca, 0x8f, 0xc5, 0x18, 0x05, 0x3b, 0x6a, 0x3b,
-	0x5a, 0xf6, 0x14, 0x75, 0x1c, 0xef, 0x8c, 0xb5, 0x1e, 0x3b, 0xf8, 0xe7, 0x90, 0x23, 0x3c, 0x05,
-	0x12, 0x2f, 0x84, 0x84, 0x90, 0x78, 0x04, 0x34, 0xbc, 0x08, 0xea, 0xf6, 0x4f, 0x9c, 0x1d, 0x0e,
-	0x68, 0x6f, 0x5d, 0xe5, 0xaf, 0xaa, 0xbe, 0xaa, 0xaf, 0xca, 0xd0, 0xbb, 0x8f, 0x76, 0x5e, 0x30,
-	0xd9, 0xc7, 0x51, 0x1a, 0x61, 0x5b, 0x1a, 0xcf, 0x9f, 0xdd, 0x46, 0xd1, 0x6d, 0xe0, 0xbd, 0x90,
-	0xce, 0x6d, 0xf6, 0xf6, 0x05, 0x0f, 0x0f, 0x39, 0x42, 0xfb, 0x99, 0x40, 0x67, 0x1e, 0xf8, 0x5e,
-	0x98, 0x22, 0x82, 0xe2, 0x66, 0xfe, 0x4e, 0x25, 0x57, 0x64, 0x7c, 0xce, 0xe4, 0x1b, 0x87, 0xd0,
-	0xe6, 0x81, 0xcf, 0x13, 0xb5, 0x79, 0x45, 0xc6, 0x67, 0x2c, 0x37, 0x70, 0x04, 0xe0, 0x46, 0x41,
-	0xe0, 0xb9, 0xa9, 0x1f, 0x85, 0x6a, 0x4b, 0x7e, 0xaa, 0x79, 0xf0, 0x0b, 0xe8, 0x26, 0x87, 0xd0,
-	0x75, 0x0e, 0x7b, 0x4f, 0x55, 0xae, 0xc8, 0xf8, 0xe2, 0xe5, 0xe5, 0x24, 0xa7, 0x25, 0x5c, 0xd6,
-	0x5b, 0xfb, 0x10, 0xba, 0xac, 0x82, 0x68, 0x1b, 0xe8, 0x59, 0x7b, 0x2f, 0xe6, 0x22, 0xd6, 0x58,
-	0x20, 0x85, 0x96, 0x17, 0x73, 0x49, 0xa3, 0xcf, 0xc4, 0x13, 0x55, 0x78, 0x12, 0xf0, 0xfb, 0x7d,
-	0x14, 0xa7, 0x92, 0x87, 0xc2, 0x4a, 0xb3, 0xe2, 0xdc, 0xaa, 0x71, 0xa6, 0xd0, 0x4a, 0xbc, 0x9f,
-	0x64, 0x61, 0x85, 0x89, 0xa7, 0xe6, 0x42, 0x7f, 0xc6, 0x13, 0xaf, 0x2a, 0x82, 0x1a, 0x34, 0x8b,
-	0x46, 0x7b, 0x2f, 0xb1, 0xa0, 0x56, 0xa3, 0xc0, 0x9a, 0xfe, 0x0e, 0x27, 0xd0, 0x89, 0xf6, 0xb2,
-	0x85, 0xa6, 0x6c, 0xe1, 0xe9, 0x49, 0x0b, 0x15, 0x9a, 0x15, 0x28, 0xed, 0x37, 0x02, 0x68, 0x67,
-	0xdb, 0xc4, 0x8d, 0xfd, 0x6d, 0xad, 0xd4, 0x18, 0x94, 0x2d, 0x4f, 0xbc, 0xa2, 0xd8, 0xb0, 0x48,
-	0x72, 0x42, 0x87, 0x49, 0x04, 0x7e, 0x0a, 0x4a, 0x7a, 0x2c, 0xf7, 0xf1, 0x49, 0xb9, 0x05, 0x4f,
-	0xb9, 0xf8, 0xc8, 0x24, 0x04, 0xbf, 0x84, 0x6e, 0x12, 0xf2, 0x7d, 0x72, 0x17, 0xa5, 0xb2, 0x75,
-	0x91, 0x38, 0xd7, 0x78, 0x52, 0x6a, 0x3c, 0x99, 0x86, 0x07, 0x56, 0xa1, 0x34, 0x1b, 0x2e, 0x8d,
-	0xd0, 0x8d, 0xbd, 0x93, 0x31, 0xfc, 0x7f, 0x6e, 0x43, 0x68, 0xef, 0xbc, 0x20, 0xe5, 0x92, 0x5c,
-	0x9b, 0xe5, 0x86, 0xf6, 0x0b, 0x81, 0xa1, 0x13, 0xf3, 0x30, 0xe1, 0x52, 0xf7, 0x0f, 0x49, 0x8c,
-	0xa0, 0x64, 0x42, 0xc0, 0x66, 0x2e, 0x60, 0x56, 0x08, 0x98, 0xf2, 0xdb, 0x62, 0xaf, 0xc4, 0x13,
-	0x9f, 0x43, 0x37, 0xcc, 0xee, 0xc5, 0xd4, 0x13, 0xa9, 0x6b, 0x9f, 0x55, 0xb6, 0xf6, 0x27, 0x81,
-	0x41, 0x95, 0xd5, 0x0a, 0x5f, 0xfb, 0xb1, 0x87, 0xdf, 0xc0, 0x59, 0x52, 0x4a, 0x51, 0x90, 0x78,
-	0x56, 0x90, 0x78, 0x2c, 0xd1, 0x4d, 0x83, 0x1d, 0xd1, 0xf8, 0x2d, 0xf4, 0xd2, 0x63, 0x4b, 0x6a,
-	0x5b, 0x06, 0x7f, 0x52, 0x8a, 0xf1, 0x1f, 0xcd, 0xde, 0x34, 0x58, 0x3d, 0x02, 0x5f, 0x41, 0xd7,
-	0x2f, 0x26, 0xad, 0xf6, 0x64, 0xb4, 0x5a, 0x44, 0x3f, 0x12, 0xe0, 0xa6, 0xc1, 0x2a, 0xec, 0xac,
-	0x03, 0xca, 0x36, 0xda, 0x1d, 0xb4, 0x3f, 0x08, 0x9c, 0xaf, 0xb2, 0xe4, 0x6e, 0x95, 0x05, 0xc1,
-	0x8a, 0xbb, 0xef, 0xc4, 0x88, 0x76, 0xb5, 0xbb, 0x14, 0x6f, 0x7c, 0x2a, 0x96, 0x53, 0x12, 0x14,
-	0x83, 0x7b, 0xc2, 0x0a, 0x0b, 0xbf, 0x02, 0x70, 0xef, 0x3c, 0xf7, 0xdd, 0x2a, 0xf2, 0xc3, 0x72,
-	0x35, 0xca, 0xdb, 0x9b, 0x57, 0x1f, 0x58, 0x0d, 0x54, 0x9e, 0x9b, 0x72, 0x3c, 0x37, 0x2c, 0x16,
-	0xb1, 0x2d, 0xb5, 0xce, 0x37, 0xee, 0x15, 0x40, 0x54, 0xd2, 0x4e, 0xd4, 0xce, 0x55, 0x6b, 0xdc,
-	0xab, 0x2e, 0xe2, 0xbd, 0xe9, 0xb3, 0x1a, 0x52, 0x9b, 0x00, 0x1c, 0xeb, 0xe2, 0x00, 0x94, 0x44,
-	0xdc, 0x26, 0x91, 0xb7, 0x49, 0x12, 0xe1, 0x70, 0x85, 0x23, 0x3f, 0x6b, 0xe2, 0x5e, 0x7f, 0x0e,
-	0x70, 0xfc, 0x47, 0xe0, 0x39, 0x74, 0x7f, 0x98, 0x9a, 0xeb, 0xe9, 0x72, 0xf9, 0x86, 0x36, 0x90,
-	0xc2, 0xb9, 0x61, 0xda, 0xce, 0xd4, 0x74, 0x96, 0x6f, 0x36, 0xaf, 0x6d, 0x4a, 0xae, 0xf7, 0x30,
-	0x78, 0xef, 0x1c, 0xb1, 0x0f, 0x67, 0xf6, 0x7a, 0x66, 0xcf, 0x99, 0x31, 0xd3, 0x69, 0x03, 0x01,
-	0x3a, 0x0b, 0x7d, 0xa9, 0x3b, 0x3a, 0x25, 0x78, 0x06, 0x6d, 0x9d, 0x31, 0x8b, 0xd1, 0xa6, 0x48,
-	0x6c, 0x9b, 0xd3, 0x95, 0x7d, 0x63, 0x39, 0x54, 0xc1, 0x01, 0xf4, 0x1c, 0x36, 0x35, 0xed, 0xe9,
-	0xdc, 0x31, 0x2c, 0x93, 0xb6, 0x51, 0x85, 0xa1, 0x61, 0x3a, 0x9b, 0xb9, 0xb5, 0x36, 0x1d, 0x9d,
-	0x6d, 0x0c, 0x73, 0xce, 0xf4, 0xa9, 0xad, 0xd3, 0xde, 0xf5, 0x67, 0x70, 0x71, 0x7a, 0x91, 0x22,
-	0xb8, 0x86, 0xa5, 0x0d, 0xec, 0x82, 0xf2, 0xbd, 0x6d, 0x99, 0x94, 0x5c, 0x07, 0x30, 0xb0, 0x53,
-	0x9e, 0xd6, 0xd1, 0x1f, 0xc1, 0x60, 0x69, 0xcd, 0x45, 0x43, 0x1b, 0xfd, 0x47, 0xc3, 0x76, 0xf4,
-	0x05, 0x6d, 0x88, 0x14, 0x25, 0x67, 0xc3, 0xfc, 0x8e, 0x12, 0xbc, 0x00, 0xa8, 0x9a, 0x58, 0xd0,
-	0x26, 0x5e, 0x42, 0x7f, 0x6d, 0xd6, 0x21, 0x2d, 0x31, 0x8c, 0xa3, 0x4b, 0x5f, 0x50, 0x65, 0x46,
-	0x7f, 0x7f, 0x18, 0x91, 0xbf, 0x1e, 0x46, 0xe4, 0xef, 0x87, 0x11, 0xf9, 0xf5, 0x9f, 0x51, 0x63,
-	0xdb, 0x91, 0x3f, 0x83, 0xaf, 0xff, 0x0d, 0x00, 0x00, 0xff, 0xff, 0xd1, 0x35, 0x83, 0x12, 0x14,
-	0x06, 0x00, 0x00,
+	// 823 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xcd, 0x6e, 0xe3, 0x54,
+	0x14, 0xce, 0x4d, 0xec, 0x24, 0x73, 0xdc, 0x36, 0xb7, 0x47, 0xa1, 0x98, 0x19, 0x29, 0xaa, 0xbc,
+	0x0a, 0x65, 0xc8, 0xc0, 0x20, 0xcd, 0x16, 0x25, 0xb1, 0xa5, 0x06, 0x15, 0x3b, 0xba, 0x76, 0x34,
+	0x9a, 0x55, 0x74, 0xeb, 0x78, 0xda, 0xa8, 0xae, 0x1d, 0x62, 0x67, 0x91, 0x25, 0x3c, 0x05, 0x2b,
+	0x9e, 0xa7, 0x62, 0xc5, 0x0b, 0x20, 0xa1, 0xf2, 0x22, 0xe8, 0x5e, 0xff, 0x26, 0xb0, 0x40, 0xb3,
+	0x3b, 0xe7, 0xf8, 0x3b, 0xf7, 0x7c, 0xe7, 0xe7, 0x33, 0x68, 0x8f, 0xf1, 0x2a, 0x08, 0x47, 0x9b,
+	0x6d, 0x9c, 0xc6, 0xa8, 0x4a, 0xe7, 0xe5, 0x17, 0x77, 0x71, 0x7c, 0x17, 0x06, 0x6f, 0x64, 0xf0,
+	0x76, 0xf7, 0xf1, 0x0d, 0x8f, 0xf6, 0x19, 0xc2, 0xf8, 0x99, 0x40, 0x7b, 0x1a, 0xae, 0x83, 0x28,
+	0x45, 0x04, 0xc5, 0xdf, 0xad, 0x57, 0x3a, 0xb9, 0x24, 0xc3, 0x13, 0x26, 0x6d, 0xec, 0x83, 0xca,
+	0xc3, 0x35, 0x4f, 0xf4, 0xe6, 0x25, 0x19, 0xbe, 0x60, 0x99, 0x83, 0x03, 0x00, 0x3f, 0x0e, 0xc3,
+	0xc0, 0x4f, 0xd7, 0x71, 0xa4, 0xb7, 0xe4, 0xa7, 0x5a, 0x04, 0xbf, 0x86, 0x6e, 0xb2, 0x8f, 0x7c,
+	0x6f, 0xbf, 0x09, 0x74, 0xe5, 0x92, 0x0c, 0xcf, 0xde, 0x9e, 0x8f, 0x32, 0x5a, 0x22, 0xe4, 0x7c,
+	0x74, 0xf7, 0x91, 0xcf, 0x4a, 0x88, 0xb1, 0x04, 0xcd, 0xd9, 0x04, 0x5b, 0x2e, 0x72, 0x67, 0x26,
+	0x52, 0x68, 0x05, 0x5b, 0x2e, 0x69, 0x9c, 0x32, 0x61, 0xa2, 0x0e, 0x9d, 0x90, 0x3f, 0x6e, 0xe2,
+	0x6d, 0x2a, 0x79, 0x28, 0xac, 0x70, 0x4b, 0xce, 0xad, 0x1a, 0x67, 0x0a, 0xad, 0x24, 0xf8, 0x49,
+	0x16, 0x56, 0x98, 0x30, 0x0d, 0x1f, 0x4e, 0x27, 0x3c, 0x09, 0xca, 0x22, 0x68, 0x40, 0x33, 0x6f,
+	0x54, 0x7b, 0x8b, 0x39, 0xb5, 0x1a, 0x05, 0xd6, 0x5c, 0xaf, 0x70, 0x04, 0xed, 0x78, 0x23, 0x5b,
+	0x68, 0xca, 0x16, 0x2e, 0x0e, 0x5a, 0x28, 0xd1, 0x2c, 0x47, 0x19, 0x4f, 0x04, 0xce, 0xdd, 0x88,
+	0x6f, 0x92, 0xfb, 0x38, 0xad, 0x2a, 0x0d, 0x41, 0xb9, 0xe5, 0x49, 0x90, 0xd7, 0xea, 0xe7, 0x6f,
+	0x1c, 0xb0, 0x61, 0x12, 0x81, 0x5f, 0x82, 0x92, 0x56, 0xd5, 0x3e, 0x3b, 0xa8, 0x66, 0xf2, 0x94,
+	0x8b, 0x8f, 0x4c, 0x42, 0xf0, 0x35, 0xa8, 0x49, 0xca, 0xd3, 0x40, 0xb6, 0x5d, 0x31, 0x73, 0x45,
+	0xac, 0x06, 0xce, 0x40, 0xf8, 0x0d, 0x74, 0x93, 0x9c, 0x97, 0x1c, 0x8a, 0xa0, 0x91, 0x1d, 0xc4,
+	0xa8, 0x38, 0x88, 0xd1, 0x38, 0xda, 0xb3, 0x12, 0x65, 0xb8, 0x70, 0x3e, 0x8b, 0xfc, 0x6d, 0x70,
+	0x30, 0xb3, 0xff, 0xdf, 0x49, 0x1f, 0xd4, 0x55, 0x10, 0xa6, 0x5c, 0xb6, 0xa2, 0xb2, 0xcc, 0x31,
+	0x7e, 0x21, 0xd0, 0xf7, 0xb6, 0x3c, 0x4a, 0xb8, 0x3c, 0x92, 0x4f, 0x79, 0x18, 0x41, 0xd9, 0x89,
+	0x6d, 0x37, 0xb3, 0x6d, 0xef, 0xf2, 0x6d, 0xa7, 0xfc, 0x2e, 0x3f, 0x42, 0x61, 0xe2, 0x4b, 0xe8,
+	0x46, 0xbb, 0x47, 0xb1, 0xa2, 0x44, 0xf6, 0x7b, 0xca, 0x4a, 0xdf, 0xf8, 0x9d, 0x40, 0xaf, 0x7c,
+	0xd5, 0x89, 0xde, 0xaf, 0xb7, 0x01, 0xbe, 0xab, 0xcd, 0x27, 0xe3, 0xa0, 0x17, 0x03, 0x3d, 0x5e,
+	0xe7, 0x75, 0xa3, 0x9a, 0x12, 0x7e, 0x0f, 0x5a, 0x5a, 0xf5, 0xa3, 0xab, 0x32, 0xf5, 0x55, 0xb1,
+	0xb7, 0xff, 0xe8, 0xf4, 0xba, 0xc1, 0xea, 0x19, 0xa2, 0xf0, 0x3a, 0x1f, 0xb3, 0xae, 0x1d, 0x14,
+	0xfe, 0xd7, 0xf4, 0x45, 0xe1, 0x02, 0x3b, 0x69, 0x83, 0x72, 0x1b, 0xaf, 0xf6, 0xc6, 0x9f, 0x04,
+	0x4e, 0xe6, 0xbb, 0xe4, 0x7e, 0xbe, 0x0b, 0xc3, 0x39, 0xf7, 0x1f, 0xc4, 0x7c, 0xcc, 0xc5, 0xcc,
+	0x2c, 0x14, 0x2c, 0x6c, 0x31, 0x9f, 0x87, 0x60, 0x9f, 0xeb, 0x57, 0x98, 0x78, 0x21, 0x0e, 0xbb,
+	0x54, 0x6e, 0x87, 0xe5, 0x1e, 0x7e, 0x0b, 0xe0, 0xdf, 0x07, 0xfe, 0xc3, 0x3c, 0x5e, 0x47, 0xc5,
+	0xa5, 0x14, 0xba, 0x9d, 0x96, 0x1f, 0x58, 0x0d, 0x54, 0x48, 0x55, 0xad, 0xa4, 0x8a, 0xf9, 0x15,
+	0xb7, 0xe5, 0xea, 0xb3, 0x73, 0x7d, 0x07, 0x10, 0x17, 0x8d, 0x24, 0x7a, 0xe7, 0xb2, 0x35, 0xd4,
+	0xca, 0x9b, 0x3d, 0x5a, 0x06, 0xab, 0x21, 0x8d, 0x11, 0x40, 0x55, 0x17, 0x7b, 0xa0, 0x24, 0x42,
+	0xd7, 0x44, 0xea, 0x9a, 0x24, 0x22, 0xe0, 0x8b, 0x40, 0xf6, 0x4b, 0x20, 0xfe, 0xd5, 0x6b, 0x80,
+	0xea, 0xff, 0x82, 0x27, 0xd0, 0xfd, 0x71, 0x6c, 0x2f, 0xc6, 0x37, 0x37, 0x1f, 0x68, 0x03, 0x29,
+	0x9c, 0xcc, 0x6c, 0xd7, 0x1b, 0xdb, 0xde, 0xcd, 0x87, 0xe5, 0x7b, 0x97, 0x92, 0x2b, 0x0e, 0xbd,
+	0x23, 0x29, 0x8b, 0x14, 0xd7, 0x1e, 0xcf, 0xdd, 0x6b, 0xc7, 0xa3, 0x0d, 0x04, 0x68, 0x9b, 0xd6,
+	0x8d, 0xe5, 0x59, 0x94, 0xe0, 0x0b, 0x50, 0x2d, 0xc6, 0x1c, 0x46, 0x9b, 0xd8, 0x03, 0xcd, 0x63,
+	0x63, 0xdb, 0x1d, 0x4f, 0xbd, 0x99, 0x63, 0xd3, 0x16, 0xea, 0xd0, 0x9f, 0xd9, 0xde, 0x72, 0xea,
+	0x2c, 0x6c, 0xcf, 0x62, 0xcb, 0x99, 0x3d, 0x65, 0xd6, 0xd8, 0xb5, 0xa8, 0x76, 0xf5, 0x15, 0x9c,
+	0x1d, 0xea, 0x57, 0x24, 0xd7, 0xb0, 0xb4, 0x81, 0x5d, 0x50, 0x7e, 0x70, 0x1d, 0x9b, 0x92, 0xab,
+	0xdf, 0x08, 0xf4, 0x8e, 0x14, 0x8c, 0xe7, 0x70, 0x6a, 0x2e, 0xac, 0xa5, 0xe7, 0x2c, 0xc5, 0x9b,
+	0x9e, 0x45, 0x1b, 0xd8, 0x07, 0x9a, 0x87, 0xdc, 0xc5, 0xc4, 0x9d, 0xb2, 0xd9, 0x44, 0xf0, 0x7b,
+	0x05, 0x9f, 0x1f, 0x47, 0x8b, 0x94, 0x26, 0x9e, 0x01, 0x94, 0x51, 0x93, 0x2a, 0x78, 0x01, 0x98,
+	0x83, 0x17, 0x76, 0xf5, 0x88, 0x2a, 0x66, 0x54, 0x0b, 0x98, 0xb4, 0x8d, 0x1a, 0x74, 0xb2, 0x11,
+	0x98, 0xb4, 0x33, 0xa1, 0x4f, 0xcf, 0x03, 0xf2, 0xc7, 0xf3, 0x80, 0xfc, 0xf5, 0x3c, 0x20, 0xbf,
+	0xfe, 0x3d, 0x68, 0xdc, 0xb6, 0xe5, 0xff, 0xe3, 0xbb, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x68,
+	0x4d, 0xeb, 0xc3, 0x74, 0x06, 0x00, 0x00,
 }
 
 func (m *Client) Marshal() (dAtA []byte, err error) {
@@ -995,7 +1015,7 @@ func (m *BaseOperation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *SubscribeOperation) Marshal() (dAtA []byte, err error) {
+func (m *SnapshotOperation) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1005,12 +1025,12 @@ func (m *SubscribeOperation) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *SubscribeOperation) MarshalTo(dAtA []byte) (int, error) {
+func (m *SnapshotOperation) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *SubscribeOperation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *SnapshotOperation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1029,7 +1049,12 @@ func (m *SubscribeOperation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintModel(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x22
+	}
+	if m.State != 0 {
+		i = encodeVarintModel(dAtA, i, uint64(m.State))
+		i--
+		dAtA[i] = 0x18
 	}
 	if m.Type != 0 {
 		i = encodeVarintModel(dAtA, i, uint64(m.Type))
@@ -1189,15 +1214,16 @@ func (m *OperationOnWire) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *OperationOnWire_Subscribe) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+func (m *OperationOnWire_Snapshot) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *OperationOnWire_Subscribe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *OperationOnWire_Snapshot) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.Subscribe != nil {
+	if m.Snapshot != nil {
 		{
-			size, err := m.Subscribe.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.Snapshot.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1210,7 +1236,8 @@ func (m *OperationOnWire_Subscribe) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *OperationOnWire_Transaction) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *OperationOnWire_Transaction) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1230,7 +1257,8 @@ func (m *OperationOnWire_Transaction) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 func (m *OperationOnWire_Increase) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *OperationOnWire_Increase) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1284,18 +1312,18 @@ func (m *PushPullPack) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintModel(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x32
+			dAtA[i] = 0x3a
 		}
 	}
 	if m.Type != 0 {
 		i = encodeVarintModel(dAtA, i, uint64(m.Type))
 		i--
-		dAtA[i] = 0x28
+		dAtA[i] = 0x30
 	}
 	if m.Era != 0 {
 		i = encodeVarintModel(dAtA, i, uint64(m.Era))
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x28
 	}
 	if m.CheckPoint != nil {
 		{
@@ -1307,18 +1335,25 @@ func (m *PushPullPack) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintModel(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x22
 	}
 	if m.Option != 0 {
 		i -= 4
 		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(m.Option))
 		i--
-		dAtA[i] = 0x15
+		dAtA[i] = 0x1d
 	}
-	if len(m.Duid) > 0 {
-		i -= len(m.Duid)
-		copy(dAtA[i:], m.Duid)
-		i = encodeVarintModel(dAtA, i, uint64(len(m.Duid)))
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintModel(dAtA, i, uint64(len(m.Key)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.DUID) > 0 {
+		i -= len(m.DUID)
+		copy(dAtA[i:], m.DUID)
+		i = encodeVarintModel(dAtA, i, uint64(len(m.DUID)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1444,7 +1479,7 @@ func (m *BaseOperation) Size() (n int) {
 	return n
 }
 
-func (m *SubscribeOperation) Size() (n int) {
+func (m *SnapshotOperation) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1456,6 +1491,9 @@ func (m *SubscribeOperation) Size() (n int) {
 	}
 	if m.Type != 0 {
 		n += 1 + sovModel(uint64(m.Type))
+	}
+	if m.State != 0 {
+		n += 1 + sovModel(uint64(m.State))
 	}
 	if m.Snapshot != nil {
 		l = m.Snapshot.Size()
@@ -1528,14 +1566,14 @@ func (m *OperationOnWire) Size() (n int) {
 	return n
 }
 
-func (m *OperationOnWire_Subscribe) Size() (n int) {
+func (m *OperationOnWire_Snapshot) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Subscribe != nil {
-		l = m.Subscribe.Size()
+	if m.Snapshot != nil {
+		l = m.Snapshot.Size()
 		n += 1 + l + sovModel(uint64(l))
 	}
 	return n
@@ -1570,7 +1608,11 @@ func (m *PushPullPack) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Duid)
+	l = len(m.DUID)
+	if l > 0 {
+		n += 1 + l + sovModel(uint64(l))
+	}
+	l = len(m.Key)
 	if l > 0 {
 		n += 1 + l + sovModel(uint64(l))
 	}
@@ -2048,7 +2090,7 @@ func (m *BaseOperation) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *SubscribeOperation) Unmarshal(dAtA []byte) error {
+func (m *SnapshotOperation) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2071,10 +2113,10 @@ func (m *SubscribeOperation) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: SubscribeOperation: wiretype end group for non-group")
+			return fmt.Errorf("proto: SnapshotOperation: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SubscribeOperation: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: SnapshotOperation: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2133,6 +2175,25 @@ func (m *SubscribeOperation) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
+			}
+			m.State = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModel
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.State |= StateOfDatatype(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Snapshot", wireType)
 			}
@@ -2508,7 +2569,7 @@ func (m *OperationOnWire) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Subscribe", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Snapshot", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2535,11 +2596,11 @@ func (m *OperationOnWire) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &SubscribeOperation{}
+			v := &SnapshotOperation{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Body = &OperationOnWire_Subscribe{v}
+			m.Body = &OperationOnWire_Snapshot{v}
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -2694,12 +2755,44 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Duid = append(m.Duid[:0], dAtA[iNdEx:postIndex]...)
-			if m.Duid == nil {
-				m.Duid = []byte{}
+			m.DUID = append(m.DUID[:0], dAtA[iNdEx:postIndex]...)
+			if m.DUID == nil {
+				m.DUID = []byte{}
 			}
 			iNdEx = postIndex
 		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModel
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModel
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthModel
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
 			if wireType != 5 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Option", wireType)
 			}
@@ -2709,7 +2802,7 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 			}
 			m.Option = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
-		case 3:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CheckPoint", wireType)
 			}
@@ -2745,7 +2838,7 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 4:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Era", wireType)
 			}
@@ -2764,7 +2857,7 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 5:
+		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
 			}
@@ -2783,7 +2876,7 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 6:
+		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Operations", wireType)
 			}
@@ -2937,6 +3030,7 @@ func (m *CheckPoint) Unmarshal(dAtA []byte) error {
 func skipModel(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -2968,10 +3062,8 @@ func skipModel(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -2992,55 +3084,30 @@ func skipModel(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthModel
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthModel
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowModel
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipModel(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthModel
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupModel
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthModel
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthModel = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowModel   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthModel        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowModel          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupModel = fmt.Errorf("proto: unexpected end of group")
 )

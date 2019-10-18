@@ -74,3 +74,13 @@ func (p PushPullPackOption) HasErrorBit() bool {
 func (p *PushPullPack) GetPushPullPackOption() PushPullPackOption {
 	return PushPullPackOption(p.Option)
 }
+
+func (p *PushPullPack) GetReturnPushPullPack() *PushPullPack {
+	return &PushPullPack{
+		DUID:   p.DUID,
+		Option: p.Option,
+		Era:    p.Era,
+		Type:   p.Type,
+		//Operations:           ,
+	}
+}

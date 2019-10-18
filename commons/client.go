@@ -42,7 +42,7 @@ func (c *clientImpl) CreateIntCounter(key string) (intCounterCh chan IntCounter,
 
 }
 
-func (c *clientImpl) SubscribeOrCreateIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
+func (c *clientImpl) SubscribeOrCreateIntCounter(key string, state model.StateOfDatatype) (intCounterCh chan IntCounter, errCh chan error) {
 	intCounterCh = make(chan IntCounter)
 	errCh = make(chan error)
 
@@ -63,7 +63,7 @@ func (c *clientImpl) SubscribeOrCreateIntCounter(key string) (intCounterCh chan 
 		return
 	}
 	icImpl := ic.(*intCounter)
-	if err := c.dataMgr.SubscribeOrCreate(icImpl); err != nil {
+	if err := c.dataMgr.SubscribeOrCreate(icImpl, state); err != nil {
 		errCh <- log.OrtooErrorf(err, "fail to subscribe intCounter")
 	}
 

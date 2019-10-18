@@ -32,7 +32,7 @@ func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.Cuid) (*base
 		id:     duid,
 		TypeOf: t,
 		opID:   model.NewOperationIDWithCuid(cuid),
-		state:  model.StateOfDatatype_LOCALLY_EXISTED,
+		state:  model.StateOfDatatype_DUE_TO_CREATE,
 		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
 	}, nil
 }
@@ -88,4 +88,8 @@ func (b *baseDatatype) SetOpID(opID *model.OperationID) {
 
 func (b *baseDatatype) GetKey() string {
 	return b.Key
+}
+
+func (b *baseDatatype) SetState(state model.StateOfDatatype) {
+	b.state = state
 }
