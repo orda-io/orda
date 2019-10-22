@@ -3,8 +3,10 @@ package mongodb_test
 import (
 	"context"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	//"log"
@@ -130,6 +132,9 @@ func TestMongo(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		model.ToOperationOnWire(op)
+		opb, _ := proto.Marshal(op)
+
 		var operations []interface{}
 		opDoc := &schema.OperationDoc{
 			ID:            "test_duid:1",
@@ -137,7 +142,7 @@ func TestMongo(t *testing.T) {
 			CollectionNum: 1,
 			OpType:        "Snapshot",
 			Sseq:          1,
-			Operation:     op,
+			Operation:     opb,
 			CreatedAt:     time.Now(),
 		}
 		operations = append(operations, opDoc)
@@ -151,7 +156,8 @@ func TestMongo(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := mongo.GetOperations(context.TODO(), opDoc.DUID, 1); err != nil {
+		_, err = mongo.GetOperations(context.TODO(), opDoc.DUID, 1, constants.InfinitySseq)
+		if err != nil {
 			t.Fatal(err)
 		}
 

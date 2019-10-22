@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"time"
@@ -33,6 +34,7 @@ type PushPullHandler struct {
 	pushPullPack      *model.PushPullPack
 	Option            model.PushPullPackOption
 	pushingOperations []interface{}
+	pulledOperations  []model.Operation
 	DUID              string
 	CUID              string
 	Key               string
@@ -77,7 +79,13 @@ func (p *PushPullHandler) commitToMongoDB() {
 
 }
 
-func (p *PushPullHandler) pullOperations() {
+func (p *PushPullHandler) pullOperations() error {
+	beginSseq := p.pushPullPack.CheckPoint.Sseq + 1
+	cseq := p.checkPoint.GetCseq()
+	operations, err := p.mongo.GetOperations(p.ctx, p.DUID, beginSseq, constants.InfinitySseq)
+	if err != nil {
+		return log.OrtooError(err)
+	}
 
 }
 

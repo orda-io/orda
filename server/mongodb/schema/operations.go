@@ -7,13 +7,13 @@ import (
 )
 
 type OperationDoc struct {
-	ID            string      `bson:"_id"`
-	DUID          string      `bson:"duid"`
-	CollectionNum uint32      `bson:"colNum"`
-	OpType        string      `bson:"type"`
-	Sseq          uint64      `bson:"sseq"`
-	Operation     interface{} `bson:"op"`
-	CreatedAt     time.Time   `bson:"createdAt"`
+	ID            string    `bson:"_id"`
+	DUID          string    `bson:"duid"`
+	CollectionNum uint32    `bson:"colNum"`
+	OpType        string    `bson:"type"`
+	Sseq          uint64    `bson:"sseq"`
+	Operation     []byte    `bson:"op"`
+	CreatedAt     time.Time `bson:"createdAt"`
 }
 
 var OperationDocFields = struct {

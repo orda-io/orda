@@ -25,12 +25,12 @@ func (b filter) AddFilterEQ(key string, value interface{}) filter {
 	return append(b, bson.E{Key: key, Value: value})
 }
 
-func (b filter) AddFilterGTE(key string, from uint32) filter {
+func (b filter) AddFilterGTE(key string, from interface{}) filter {
 	return append(b, bson.E{Key: key, Value: bson.D{{Key: "$gte", Value: from}}})
 }
 
-func (b filter) AddFilterLTE(key string, until uint32) filter {
-	return append(b, bson.E{Key: key, Value: bson.D{{Key: "$lte", Value: until}}})
+func (b filter) AddFilterLTE(key string, to interface{}) filter {
+	return append(b, bson.E{Key: key, Value: bson.D{{Key: "$lte", Value: to}}})
 }
 
 func GetFilter() filter {
