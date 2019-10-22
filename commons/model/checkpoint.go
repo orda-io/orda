@@ -14,3 +14,10 @@ func (c *CheckPoint) Set(sseq, cseq uint64) *CheckPoint {
 	c.Cseq = cseq
 	return c
 }
+
+func (c *CheckPoint) SyncCseq(cseq uint64) *CheckPoint {
+	if c.Cseq < cseq {
+
+	}
+	return c
+}
