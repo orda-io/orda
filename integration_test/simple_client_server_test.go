@@ -54,10 +54,13 @@ func (s *ClientServerTestSuite) TestClientServer() {
 		case err1 := <-err1Ch:
 			s.Suite.Fail("fail to :", err1)
 		}
-		intCounter1.Increase()
-		client1.Sync()
+		if intCounter1 != nil {
+			_, _ = intCounter1.Increase()
+			_, _ = intCounter1.Increase()
+			_, _ = intCounter1.Increase()
+			client1.Sync()
+		}
 	})
-
 }
 
 func (s *ClientServerTestSuite) TearDownTest() {

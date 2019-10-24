@@ -75,6 +75,11 @@ func TestMongo(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		err = mongo.UpdateCheckPointInClient(context.TODO(), c.CUID, "test_duid1", &model.CheckPoint{Cseq: 2, Sseq: 2})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		clientWithCheckPoints, err := mongo.GetClient(context.TODO(), c.CUID)
 		if err != nil {
 			t.Fatal(err)

@@ -24,8 +24,8 @@ func NewCollectionClients(client *mongo.Client, collection *mongo.Collection) *C
 
 //UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
 func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.ClientDoc) error {
-
-	result, err := c.collection.UpdateOne(ctx, filterByID(client.CUID), client.ToUpdateBSON(), upsertOption)
+	log.Logger.Infof("%+v", client.ToUpdateBSON())
+	result, err := c.collection.UpdateOne(ctx, schema.FilterByID(client.CUID), client.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -36,8 +36,22 @@ func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.Cli
 	return log.OrtooError(errors.New("fail to update client"))
 }
 
+func (c *CollectionClients) UpdateCheckPointInClient(ctx context.Context, cuid, duid string, checkPoint *model.CheckPoint) error {
+	//f := schema.GetFilter()//.AddSetCheckPoint(duid, checkPoint)
+	f := bson.D{{"$set", bson.D{{"alias", "test_alias1"}}}}
+	log.Logger.Infof("%+v", f)
+	result, err := c.collection.UpdateOne(ctx, schema.FilterByID(cuid), f, schema.UpsertOption)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if result.ModifiedCount == 1 {
+		return nil
+	}
+	return nil
+}
+
 func (c *CollectionClients) DeleteClient(ctx context.Context, cuid string) error {
-	result, err := c.collection.DeleteOne(ctx, filterByID(cuid))
+	result, err := c.collection.DeleteOne(ctx, schema.FilterByID(cuid))
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -51,7 +65,7 @@ func (c *CollectionClients) GetCheckPointFromClient(ctx context.Context, cuid st
 	opts := options.FindOne()
 	projectField := fmt.Sprintf("%s.%s", cuid, duid)
 	opts.SetProjection(bson.M{projectField: 1})
-	sr := c.collection.FindOne(ctx, filterByID(cuid), opts)
+	sr := c.collection.FindOne(ctx, schema.FilterByID(cuid), opts)
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -83,7 +97,7 @@ func (c *CollectionClients) getClient(ctx context.Context, cuid string, withChec
 	if !withCheckPoint {
 		opts.SetProjection(bson.M{schema.ClientDocFields.CheckPoints: 0})
 	}
-	sr := c.collection.FindOne(ctx, filterByID(cuid), opts)
+	sr := c.collection.FindOne(ctx, schema.FilterByID(cuid), opts)
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil

@@ -13,7 +13,7 @@ type Client interface {
 	Connect() error
 	createDatatype()
 	Close() error
-	Sync() <-chan struct{}
+	Sync() error
 	SubscribeOrCreateIntCounter(key string) (chan IntCounter, chan error)
 	SubscribeIntCounter(key string) (chan IntCounter, chan error)
 	CreateIntCounter(key string) (chan IntCounter, chan error)
@@ -109,14 +109,16 @@ func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOf
 		errCh <- log.OrtooErrorf(err, "fail to subscribe intCounter")
 	}
 
-	c.dataMgr.Sync(icImpl.GetKey())
+	go func() {
+		if err := c.dataMgr.Sync(icImpl.GetKey()); err != nil {
+			errCh <- err
+		}
+		intCounterCh <- icImpl
+	}()
 
 	return
 }
 
-func (c *clientImpl) Sync() <-chan struct{} {
-	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	//defer cancel()
-	//c.serviceClient.ProcessPushPull(ctx, model.NewPushPullRequest(1))
-	return nil
+func (c *clientImpl) Sync() error {
+	return c.dataMgr.SyncAll()
 }

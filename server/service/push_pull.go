@@ -48,25 +48,22 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 	}
 	response := &model.PushPullResponse{
-		Header:               in.Header,
-		ID:                   0,
-		PushPullPacks:        nil,
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
+		Header: in.Header,
+		Id:     in.Id,
 	}
 
-	for remainingChan > 0 {
+	for remainingChan > 0 && chanList != nil {
 		chosen, value, ok := reflect.Select(cases)
+		remainingChan--
 		if !ok {
 			_ = log.OrtooErrorf(nil, "fail to run")
+			continue
+		} else {
+			ch := chanList[chosen]
+			msg := value.Interface()
+			log.Logger.Infof("%v %v", ch, msg)
 		}
-		ch := chanList[chosen]
-		msg := value.Interface()
-
-		log.Logger.Infof("%v %v", ch, msg)
-		remainingChan--
 	}
 
-	return &model.PushPullResponse{Id: in.Id}, nil
+	return response, nil
 }

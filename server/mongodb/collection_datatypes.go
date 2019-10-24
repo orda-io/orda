@@ -17,7 +17,7 @@ func NewCollectionDatatypes(client *mongo.Client, datatypes *mongo.Collection) *
 }
 
 func (c *CollectionDatatypes) GetDatatype(ctx context.Context, duid string) (*schema.DatatypeDoc, error) {
-	f := GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, duid)
+	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, duid)
 	result := c.collection.FindOne(ctx, f)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -33,7 +33,7 @@ func (c *CollectionDatatypes) GetDatatype(ctx context.Context, duid string) (*sc
 }
 
 func (c *CollectionDatatypes) GetDatatypeByKey(ctx context.Context, collectionNum uint32, key string) (*schema.DatatypeDoc, error) {
-	f := GetFilter().
+	f := schema.GetFilter().
 		AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.DatatypeDocFields.Key, key)
 	result := c.collection.FindOne(ctx, f)
@@ -51,8 +51,8 @@ func (c *CollectionDatatypes) GetDatatypeByKey(ctx context.Context, collectionNu
 }
 
 func (c *CollectionDatatypes) UpdateDatatype(ctx context.Context, datatype *schema.DatatypeDoc) error {
-	f := GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, datatype.DUID)
-	result, err := c.collection.UpdateOne(ctx, f, datatype.ToUpdateBSON(), upsertOption)
+	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, datatype.DUID)
+	result, err := c.collection.UpdateOne(ctx, f, datatype.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}

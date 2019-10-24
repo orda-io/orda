@@ -113,6 +113,7 @@ func (p *PushPullHandler) commitToMongoDB() error {
 	if err != nil {
 		return log.OrtooError(err)
 	}
+
 	return nil
 }
 
@@ -122,7 +123,6 @@ func (p *PushPullHandler) pullOperations() error {
 	var operations []*model.OperationOnWire
 	if p.datatypeDoc.SseqBegin <= sseqBegin && !p.gotOption.HasSnapshotBit() {
 		err := p.mongo.GetOperations(p.ctx, p.DUID, sseqBegin, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
-
 			var opOnWire model.OperationOnWire
 			if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
 				_ = log.OrtooError(err)

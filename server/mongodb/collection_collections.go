@@ -24,7 +24,7 @@ func NewCollectionCollections(client *mongo.Client, counterCollection *Collectio
 
 //GetCollection gets a collectionDoc by the name
 func (c *CollectionCollections) GetCollection(ctx context.Context, name string) (*schema.CollectionDoc, error) {
-	sr := c.collection.FindOne(ctx, filterByID(name))
+	sr := c.collection.FindOne(ctx, schema.FilterByID(name))
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -39,7 +39,7 @@ func (c *CollectionCollections) GetCollection(ctx context.Context, name string) 
 }
 
 func (c *CollectionCollections) DeleteCollection(ctx context.Context, name string) error {
-	result, err := c.collection.DeleteOne(ctx, filterByID(name))
+	result, err := c.collection.DeleteOne(ctx, schema.FilterByID(name))
 	if err != nil {
 		return log.OrtooError(err)
 	}

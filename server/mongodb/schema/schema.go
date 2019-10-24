@@ -1,6 +1,7 @@
-package mongodb
+package schema
 
 import (
+	"github.com/knowhunger/ortoo/commons/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -33,22 +34,26 @@ func (b filter) AddFilterLTE(key string, to interface{}) filter {
 	return append(b, bson.E{Key: key, Value: bson.D{{Key: "$lte", Value: to}}})
 }
 
+func ToCheckPointBSON(checkPoint *model.CheckPoint) bson.M {
+	return bson.M{"s": checkPoint.Sseq, "c": checkPoint.Cseq}
+}
+
 func GetFilter() filter {
 	return filter{}
 }
 
-func filterByID(id interface{}) filter {
+func FilterByID(id interface{}) filter {
 	return filter{bson.E{Key: ID, Value: id}}
 }
 
-func filterByName(name string) filter {
+func FilterByName(name string) filter {
 	return filter{bson.E{Key: "name", Value: name}}
 }
 
 // options
 var (
 	upsert       = true
-	upsertOption = &options.UpdateOptions{
+	UpsertOption = &options.UpdateOptions{
 		Upsert: &upsert,
 	}
 )

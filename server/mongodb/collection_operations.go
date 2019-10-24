@@ -28,7 +28,7 @@ func (c *CollectionOperations) InsertOperations(ctx context.Context, operations 
 }
 
 func (c *CollectionOperations) DeleteOperation(ctx context.Context, duid string, sseq uint32) (int64, error) {
-	f := GetFilter().
+	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterEQ(schema.OperationDocFields.Sseq, sseq)
 	result, err := c.collection.DeleteOne(ctx, f)
@@ -43,7 +43,7 @@ func (c *CollectionOperations) GetOperations(
 	duid string,
 	from, to uint64,
 	operationDocHandler func(opDoc *schema.OperationDoc) error) error {
-	f := GetFilter().
+	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterGTE(schema.OperationDocFields.Sseq, from)
 	if to != constants.InfinitySseq {

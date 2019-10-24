@@ -28,7 +28,7 @@ func (c *CollectionCounters) GetNextCollectionNum(ctx context.Context) (uint32, 
 		"$inc": bson.M{schema.CounterDocFields.Num: 1},
 	}
 	//_ = json.Unmarshal([]byte(`{ "$inc": {"num": 1}}`), &update)
-	result := c.collection.FindOneAndUpdate(ctx, filterByID(idForCollection), update, opts)
+	result := c.collection.FindOneAndUpdate(ctx, schema.FilterByID(idForCollection), update, opts)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return 1, nil

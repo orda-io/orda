@@ -53,10 +53,24 @@ func (d *DataManager) SubscribeOrCreate(dt model.FinalDatatype, state model.Stat
 func (d *DataManager) Sync(key string) error {
 	data := d.dataMap[key]
 	ppp := data.CreatePushPullPack()
-	pushpullResponse, err := d.reqResMgr.Sync(ppp)
+	pushPullResponse, err := d.reqResMgr.Sync(ppp)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to sync")
 	}
-	log.Logger.Infof("%+v", pushpullResponse)
+	log.Logger.Infof("%+v", pushPullResponse)
+	return nil
+}
+
+func (d *DataManager) SyncAll() error {
+	var pushPullPacks []*model.PushPullPack
+	for _, v := range d.dataMap {
+		ppp := v.CreatePushPullPack()
+		pushPullPacks = append(pushPullPacks, ppp)
+	}
+	pushPullResponse, err := d.reqResMgr.Sync(pushPullPacks...)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	log.Logger.Infof("%+v", pushPullResponse)
 	return nil
 }

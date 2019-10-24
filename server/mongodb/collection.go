@@ -28,7 +28,7 @@ func (c *baseCollection) create(ctx context.Context, docModel schema.MongoDBDoc)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to create collection:%s", c.name)
 	}
-	if _, err = c.collection.DeleteOne(ctx, filterByID(result.InsertedID)); err != nil {
+	if _, err = c.collection.DeleteOne(ctx, schema.FilterByID(result.InsertedID)); err != nil {
 		return log.OrtooErrorf(err, "fail to delete inserted one")
 	}
 	log.Logger.Infof("Create collection:%s", c.collection.Name())

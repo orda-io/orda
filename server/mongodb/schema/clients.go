@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"github.com/knowhunger/ortoo/commons/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -44,7 +45,7 @@ func (c *ClientDoc) ToUpdateBSON() bson.D {
 	if c.CheckPoints != nil {
 		checkPointBson = make(map[string]bson.M)
 		for k, v := range c.CheckPoints {
-			checkPointBson[k] = bson.M{"s": v.Sseq, "c": v.Cseq}
+			checkPointBson[k] = ToCheckPointBSON(v)
 		}
 	}
 	return bson.D{
@@ -60,6 +61,12 @@ func (c *ClientDoc) ToUpdateBSON() bson.D {
 		}},
 	}
 
+}
+
+func (b filter) AddSetCheckPoint(key string, checkPoint *model.CheckPoint) filter {
+	return append(b, bson.E{Key: "$set", Value: bson.D{
+		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: ToCheckPointBSON(checkPoint)},
+	}})
 }
 
 //GetIndexModel returns the index models of ClientDoc
