@@ -17,7 +17,11 @@ func (c *CheckPoint) Set(sseq, cseq uint64) *CheckPoint {
 
 func (c *CheckPoint) SyncCseq(cseq uint64) *CheckPoint {
 	if c.Cseq < cseq {
-
+		c.Cseq = cseq
 	}
 	return c
+}
+
+func (c *CheckPoint) Clone() *CheckPoint {
+	return NewCheckPoint().Set(c.Cseq, c.Sseq)
 }

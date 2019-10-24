@@ -14,7 +14,8 @@ type DatatypeDoc struct {
 	Key           string    `bson:"key"`
 	CollectionNum uint32    `bson:"colNum"`
 	Type          string    `bson:"type"`
-	Sseq          uint64    `bson:"sseq"`
+	SseqBegin     uint64    `bson:"sseqBegin"`
+	SseqEnd       uint64    `bson:"sseqEnd"`
 	Visible       bool      `bson:"visible"`
 	CreatedAt     time.Time `bson:"createdAt"`
 	UpdatedAt     time.Time `bson:"updatedAt"`
@@ -25,7 +26,8 @@ var DatatypeDocFields = struct {
 	Key           string
 	CollectionNum string
 	Type          string
-	Sseq          string
+	SseqBegin     string
+	SseqEnd       string
 	CreatedAt     string
 	UpdatedAt     string
 }{
@@ -33,7 +35,8 @@ var DatatypeDocFields = struct {
 	Key:           "key",
 	CollectionNum: "colNum",
 	Type:          "type",
-	Sseq:          "sseq",
+	SseqBegin:     "sseqBegin",
+	SseqEnd:       "sseqEnd",
 	CreatedAt:     "createdAt",
 	UpdatedAt:     "updatedAt",
 }
@@ -54,7 +57,7 @@ func (c *DatatypeDoc) ToUpdateBSON() bson.D {
 			{DatatypeDocFields.Key, c.Key},
 			{DatatypeDocFields.CollectionNum, c.CollectionNum},
 			{DatatypeDocFields.Type, c.Type},
-			{DatatypeDocFields.Sseq, c.Sseq},
+			{DatatypeDocFields.SseqEnd, c.SseqEnd},
 			{DatatypeDocFields.CreatedAt, c.CreatedAt},
 		}},
 		{"$currentDate", bson.D{

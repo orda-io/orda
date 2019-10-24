@@ -45,14 +45,14 @@ message ClientResponse {
 
 message PushPullRequest {
     MessageHeader header = 1;
-    int32 id = 2;
-    repeated PushPullPack pushPullPacks = 3;
+    int32 ID = 2;
+    repeated PushPullPack PushPullPacks = 3;
 }
 
 message PushPullResponse {
     MessageHeader header = 1;
-    int32 id = 2;
-    repeated PushPullPack pushPullPacks = 3;
+    int32 ID = 2;
+    repeated PushPullPack PushPullPacks = 3;
 }
 
 service OrtooService {

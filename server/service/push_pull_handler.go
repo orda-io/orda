@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/server/constants"
@@ -25,19 +26,28 @@ const (
 )
 
 type PushPullHandler struct {
-	ctx               context.Context
-	checkPoint        *model.CheckPoint
-	clientDoc         *schema.ClientDoc
-	datatypeDoc       *schema.DatatypeDoc
-	collectionDoc     *schema.CollectionDoc
-	mongo             *mongodb.RepositoryMongo
-	pushPullPack      *model.PushPullPack
-	Option            model.PushPullPackOption
+	Key  string
+	DUID string
+	CUID string
+
+	ctx   context.Context
+	mongo *mongodb.RepositoryMongo
+
+	initialCheckPoint *model.CheckPoint
+	currentCheckPoint *model.CheckPoint
+
+	clientDoc     *schema.ClientDoc
+	datatypeDoc   *schema.DatatypeDoc
+	collectionDoc *schema.CollectionDoc
+
+	gotPushPullPack *model.PushPullPack
+	gotOption       *model.PushPullPackOption
+
+	retPushPullPack *model.PushPullPack
+	retCh           chan *model.PushPullPack
+
 	pushingOperations []interface{}
 	pulledOperations  []model.Operation
-	DUID              string
-	CUID              string
-	Key               string
 }
 
 func (p *PushPullHandler) Start() <-chan *model.PushPullPack {
@@ -46,20 +56,36 @@ func (p *PushPullHandler) Start() <-chan *model.PushPullPack {
 	return retCh
 }
 
-func (p *PushPullHandler) process(retCh chan *model.PushPullPack) error {
-	retPushPullPack := p.pushPullPack.GetReturnPushPullPack()
+func (p *PushPullHandler) finalize(err error) {
+	p.retCh <- p.retPushPullPack
+	log.Logger.Infof("processed push-pull:%s", p.DUID)
+}
+
+func (p *PushPullHandler) initialize(retCh chan *model.PushPullPack) error {
+	p.retCh = retCh
+	p.retPushPullPack = p.gotPushPullPack.GetReturnPushPullPack()
 
 	checkPoint, err := p.mongo.GetCheckPointFromClient(p.ctx, p.CUID, p.DUID)
 	if err != nil {
-		_ = log.OrtooError(err)
-		model.PushPullPackOption(retPushPullPack.Option).SetErrorBit()
-		retCh <- retPushPullPack
-		return
+		p.retPushPullPack.GetPushPullPackOption().SetErrorBit()
+		return log.OrtooError(err)
 	}
 	if checkPoint == nil {
 		checkPoint = model.NewCheckPoint()
 	}
-	p.checkPoint = checkPoint
+
+	p.initialCheckPoint = checkPoint.Clone()
+	p.currentCheckPoint = checkPoint.Clone()
+	return nil
+}
+
+func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
+	defer p.finalize(err)
+
+	if err := p.initialize(retCh); err != nil {
+		return log.OrtooError(err)
+	}
+
 	casePushPull, err := p.evaluatePushPullCase()
 	if err != nil {
 		return log.OrtooError(err)
@@ -68,52 +94,92 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) error {
 		return log.OrtooError(err)
 	}
 
-	p.pushOperations()
-	p.pullOperations()
-	p.commitToMongoDB()
+	if err := p.pushOperations(); err != nil {
+		return log.OrtooError(err)
+	}
+	if err := p.pullOperations(); err != nil {
+		return log.OrtooError(err)
+	}
+	if err := p.commitToMongoDB(); err != nil {
+		return log.OrtooError(err)
+	}
 
 	return nil
 }
 
-func (p *PushPullHandler) commitToMongoDB() {
+func (p *PushPullHandler) commitToMongoDB() error {
 
-}
-
-func (p *PushPullHandler) pullOperations() error {
-	beginSseq := p.pushPullPack.CheckPoint.Sseq + 1
-	cseq := p.checkPoint.GetCseq()
-	operations, err := p.mongo.GetOperations(p.ctx, p.DUID, beginSseq, constants.InfinitySseq)
+	err := p.mongo.InsertOperations(p.ctx, p.pushingOperations)
 	if err != nil {
 		return log.OrtooError(err)
 	}
+	return nil
+}
 
+func (p *PushPullHandler) pullOperations() error {
+	sseqBegin := p.gotPushPullPack.CheckPoint.Sseq + 1
+
+	var operations []*model.OperationOnWire
+	if p.datatypeDoc.SseqBegin <= sseqBegin && !p.gotOption.HasSnapshotBit() {
+		err := p.mongo.GetOperations(p.ctx, p.DUID, sseqBegin, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
+
+			var opOnWire model.OperationOnWire
+			if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
+				_ = log.OrtooError(err)
+				return nil
+			}
+			operations = append(operations, &opOnWire)
+			p.retPushPullPack.CheckPoint.Sseq = opDoc.Sseq
+			return nil
+		})
+		if err != nil {
+			return log.OrtooError(err)
+		}
+		p.retPushPullPack.Operations = operations
+	}
+	return nil
 }
 
 func (p *PushPullHandler) pushOperations() error {
-	var operations []interface{}
-	for _, opOnWire := range p.pushPullPack.Operations {
+
+	sseq := p.initialCheckPoint.Sseq
+	for _, opOnWire := range p.gotPushPullPack.Operations {
 		op := model.ToOperation(opOnWire)
-		if p.checkPoint.Cseq+1 == op.GetBase().ID.GetSeq() {
-			operations = append(operations, op)
-			p.checkPoint.SyncCseq(op.GetBase().ID.GetSeq())
-		} else if p.checkPoint.Cseq > op.GetBase().ID.GetSeq() {
+		if p.initialCheckPoint.Cseq+1 == op.GetBase().ID.GetSeq() {
+			sseq++
+			marshaledOp, err := proto.Marshal(opOnWire)
+			if err != nil {
+				return log.OrtooError(err)
+			}
+			opDoc := &schema.OperationDoc{
+				ID:            fmt.Sprintf("%s:%d", p.DUID, sseq),
+				DUID:          p.DUID,
+				CollectionNum: p.collectionDoc.Num,
+				OpType:        op.GetBase().OpType.String(),
+				Sseq:          sseq,
+				Operation:     marshaledOp,
+				CreatedAt:     time.Now(),
+			}
+			p.pushingOperations = append(p.pushingOperations, opDoc)
+			p.retPushPullPack.Operations = append(p.retPushPullPack.Operations, opOnWire)
+			p.retPushPullPack.CheckPoint.SyncCseq(op.GetBase().ID.GetSeq())
+		} else if p.initialCheckPoint.Cseq > op.GetBase().ID.GetSeq() {
 			log.Logger.Infof("reject operation due to duplicate: %v", op)
 		} else {
 			return log.OrtooError(
 				fmt.Errorf("something is missing in pushed operations: checkpoint.Cseq=%d vs op.Seq=%d",
-					p.checkPoint.Cseq, op.GetBase().ID.GetSeq()))
+					p.initialCheckPoint.Cseq, op.GetBase().ID.GetSeq()))
 		}
 	}
-	p.pushingOperations = operations
 	return nil
 }
 
 func (p *PushPullHandler) processSubscribeOrCreate(code pushPullCase) error {
-	if p.Option.HasSubscribeBit() && p.Option.HasCreateBit() {
+	if p.gotOption.HasSubscribeBit() && p.gotOption.HasCreateBit() {
 
-	} else if p.Option.HasSubscribeBit() {
+	} else if p.gotOption.HasSubscribeBit() {
 
-	} else if p.Option.HasCreateBit() {
+	} else if p.gotOption.HasCreateBit() {
 		switch code {
 		case caseMatchNothing: // can create with key and duid
 			if err := p.createDatatype(); err != nil {
@@ -137,8 +203,8 @@ func (p *PushPullHandler) createDatatype() error {
 		DUID:          p.DUID,
 		Key:           p.Key,
 		CollectionNum: p.collectionDoc.Num,
-		Type:          model.TypeOfDatatype_name[p.pushPullPack.Type],
-		Sseq:          0,
+		Type:          model.TypeOfDatatype_name[p.gotPushPullPack.Type],
+		SseqEnd:       0,
 		Visible:       true,
 		CreatedAt:     time.Now(),
 	}
@@ -150,8 +216,8 @@ func (p *PushPullHandler) createDatatype() error {
 
 func (p *PushPullHandler) evaluatePushPullCase() (pushPullCase, error) {
 	var err error
-	//if p.Option.HasSubscribeBit() {
-	p.datatypeDoc, err = p.mongo.GetDatatypeByKey(p.ctx, p.collectionDoc.Num, p.pushPullPack.Key)
+
+	p.datatypeDoc, err = p.mongo.GetDatatypeByKey(p.ctx, p.collectionDoc.Num, p.gotPushPullPack.Key)
 	if err != nil {
 		return caseError, log.OrtooError(err)
 	}
@@ -166,7 +232,7 @@ func (p *PushPullHandler) evaluatePushPullCase() (pushPullCase, error) {
 			return caseMatchDUID, nil
 		}
 	} else {
-		if p.datatypeDoc.Type == model.TypeOfDatatype_name[p.pushPullPack.Type] {
+		if p.datatypeDoc.Type == model.TypeOfDatatype_name[p.gotPushPullPack.Type] {
 			if p.datatypeDoc.Visible {
 				checkPoint := p.clientDoc.GetCheckPoint(p.DUID)
 				if checkPoint != nil {

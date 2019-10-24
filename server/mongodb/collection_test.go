@@ -98,7 +98,7 @@ func TestMongo(t *testing.T) {
 			CollectionNum: 1,
 			Type:          "test_datatype",
 			Visible:       true,
-			Sseq:          0,
+			SseqEnd:       0,
 			CreatedAt:     time.Now(),
 		}
 		if err := mongo.UpdateDatatype(context.TODO(), d); err != nil {
@@ -156,7 +156,7 @@ func TestMongo(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = mongo.GetOperations(context.TODO(), opDoc.DUID, 1, constants.InfinitySseq)
+		err = mongo.GetOperations(context.TODO(), opDoc.DUID, 1, constants.InfinitySseq, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

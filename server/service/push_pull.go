@@ -30,15 +30,15 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	var chanList []<-chan *model.PushPullPack
 	for _, ppp := range in.PushPullPacks {
 		handler := &PushPullHandler{
-			ctx:           ctx,
-			clientDoc:     clientDoc,
-			collectionDoc: collectionDoc,
-			mongo:         o.mongo,
-			pushPullPack:  ppp,
-			Option:        model.PushPullPackOption(ppp.Option),
-			DUID:          hex.EncodeToString(ppp.DUID),
-			CUID:          clientDoc.CUID,
-			Key:           ppp.Key,
+			Key:             ppp.Key,
+			DUID:            hex.EncodeToString(ppp.DUID),
+			CUID:            clientDoc.CUID,
+			ctx:             ctx,
+			mongo:           o.mongo,
+			clientDoc:       clientDoc,
+			collectionDoc:   collectionDoc,
+			gotPushPullPack: ppp,
+			gotOption:       ppp.GetPushPullPackOption(),
 		}
 		chanList = append(chanList, handler.Start())
 	}
@@ -47,6 +47,15 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	for i, ch := range chanList {
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 	}
+	response := &model.PushPullResponse{
+		Header:               in.Header,
+		ID:                   0,
+		PushPullPacks:        nil,
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     nil,
+		XXX_sizecache:        0,
+	}
+
 	for remainingChan > 0 {
 		chosen, value, ok := reflect.Select(cases)
 		if !ok {
@@ -56,6 +65,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 		msg := value.Interface()
 
 		log.Logger.Infof("%v %v", ch, msg)
+		remainingChan--
 	}
 
 	return &model.PushPullResponse{Id: in.Id}, nil
