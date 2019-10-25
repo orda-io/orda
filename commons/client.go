@@ -22,7 +22,7 @@ type Client interface {
 //NewOrtooClient creates a new Ortoo client
 func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 	ctx := context.NewOrtooContext()
-	cuid, err := model.NewCuid()
+	cuid, err := model.NewCUID()
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to create cuid")
 	}
@@ -99,7 +99,7 @@ func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOf
 		return
 	}
 
-	ic, err := NewIntCounter(key, c)
+	ic, err := NewIntCounter(key, c.model.CUID, c.dataMgr)
 	if err != nil {
 		errCh <- log.OrtooErrorf(err, "fail to create intCounter")
 		return

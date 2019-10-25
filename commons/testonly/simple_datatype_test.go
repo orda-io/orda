@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
@@ -19,11 +20,11 @@ func (suite *SimpleDatatypeSuite) SetupTest() {
 
 func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 	tw := NewTestWire()
-	intCounter1, err := commons.NewIntCounter(tw)
+	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}
-	intCounter2, err := commons.NewIntCounter(tw)
+	intCounter2, err := commons.NewIntCounter("key2", model.NewNilCUID(), tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter2")
 	}
@@ -48,11 +49,11 @@ func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 
 func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	tw := NewTestWire()
-	intCounter1, err := commons.NewIntCounter(tw)
+	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}
-	intCounter2, err := commons.NewIntCounter(tw)
+	intCounter2, err := commons.NewIntCounter("key2", model.NewNilCUID(), tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter2")
 	}
@@ -97,7 +98,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 }
 
 func (suite *SimpleDatatypeSuite) TestPushPullPackSync() {
-	intCounter1, err := commons.newIntCounter(datatypes.NewDummyWire())
+	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), datatypes.NewDummyWire())
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}

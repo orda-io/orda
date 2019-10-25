@@ -7,8 +7,8 @@ import (
 //CUID is a uniqueID
 type CUID uniqueID
 
-//NewCuid creates a new CUID
-func NewCuid() (CUID, error) {
+//NewCUID creates a new CUID
+func NewCUID() (CUID, error) {
 	u, err := newUniqueID()
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to generate client UID")
@@ -16,9 +16,9 @@ func NewCuid() (CUID, error) {
 	return CUID(u), nil
 }
 
-func newNilCuid() CUID {
+func NewNilCUID() CUID {
 	bin := make([]byte, 16)
-	return CUID(bin)
+	return bin
 }
 
 func (c *CUID) String() string {

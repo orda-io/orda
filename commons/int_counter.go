@@ -26,7 +26,7 @@ type intCounter struct {
 }
 
 //NewIntCounter creates a new int counter
-func NewIntCounter(key string, client Client) (IntCounter, error) {
+func NewIntCounter(key string, cuid model.CUID, wire datatypes.Wire) (IntCounter, error) {
 	snapshot := &intCounterSnapshot{
 		Value: 0,
 	}
@@ -34,14 +34,7 @@ func NewIntCounter(key string, client Client) (IntCounter, error) {
 		CommonDatatype: &datatypes.CommonDatatype{},
 		snapshot:       snapshot,
 	}
-	ci := client.(*clientImpl)
-	err := intCounter.Initialize(
-		key,
-		model.TypeOfDatatype_INT_COUNTER,
-		ci.model.CUID,
-		ci.dataMgr,
-		snapshot,
-		intCounter)
+	err := intCounter.Initialize(key, model.TypeOfDatatype_INT_COUNTER, cuid, wire, snapshot, intCounter)
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to initialize intCounter")
 	}

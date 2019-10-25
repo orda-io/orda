@@ -24,7 +24,6 @@ func NewCollectionClients(client *mongo.Client, collection *mongo.Collection) *C
 
 //UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
 func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.ClientDoc) error {
-	log.Logger.Infof("%+v", client.ToUpdateBSON())
 	result, err := c.collection.UpdateOne(ctx, schema.FilterByID(client.CUID), client.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
@@ -37,10 +36,9 @@ func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.Cli
 }
 
 func (c *CollectionClients) UpdateCheckPointInClient(ctx context.Context, cuid, duid string, checkPoint *model.CheckPoint) error {
-	//f := schema.GetFilter()//.AddSetCheckPoint(duid, checkPoint)
-	f := bson.D{{"$set", bson.D{{"alias", "test_alias1"}}}}
-	log.Logger.Infof("%+v", f)
-	result, err := c.collection.UpdateOne(ctx, schema.FilterByID(cuid), f, schema.UpsertOption)
+
+	x := schema.GetFilter().AddSetCheckPoint(duid, checkPoint)
+	result, err := c.collection.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(x), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -58,7 +56,8 @@ func (c *CollectionClients) DeleteClient(ctx context.Context, cuid string) error
 	if result.DeletedCount == 1 {
 		return nil
 	}
-	return log.OrtooError(errors.New("fail to find something to delete"))
+	log.Logger.Warn("fail to find something to delete")
+	return nil
 }
 
 func (c *CollectionClients) GetCheckPointFromClient(ctx context.Context, cuid string, duid string) (*model.CheckPoint, error) {

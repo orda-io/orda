@@ -9,6 +9,8 @@ import (
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"gotest.tools/assert"
+
 	//"log"
 	"sync"
 	"testing"
@@ -84,6 +86,7 @@ func TestMongo(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		assert.Equal(t, clientWithCheckPoints.CheckPoints["test_duid1"].Sseq, uint64(2))
 
 		if err := mongo.DeleteClient(context.TODO(), c.CUID); err != nil {
 			t.Fatal(err)
