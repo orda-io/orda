@@ -45,6 +45,7 @@ func (c *CollectionClients) UpdateCheckPointInClient(ctx context.Context, cuid, 
 	if result.ModifiedCount == 1 {
 		return nil
 	}
+	log.Logger.Warnf("updated no checkpoint of %s in client %s", duid, cuid)
 	return nil
 }
 

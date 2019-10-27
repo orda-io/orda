@@ -109,8 +109,15 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
 
 func (p *PushPullHandler) commitToMongoDB() error {
 
-	err := p.mongo.InsertOperations(p.ctx, p.pushingOperations)
-	if err != nil {
+	if err := p.mongo.InsertOperations(p.ctx, p.pushingOperations); err != nil {
+		return log.OrtooError(err)
+	}
+
+	if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
+		return log.OrtooError(err)
+	}
+
+	if err := p.mongo.UpdateCheckPointInClient(p.ctx, p.CUID, p.DUID, p.currentCheckPoint); err != nil {
 		return log.OrtooError(err)
 	}
 

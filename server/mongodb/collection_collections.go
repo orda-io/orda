@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-//CollectionCollections is a struct for Collections
+// CollectionCollections is a struct for Collections
 type CollectionCollections struct {
 	*baseCollection
 	counterCollection *CollectionCounters
 }
 
-//NewCollectionCollections creates a new CollectionCollections
+// NewCollectionCollections creates a new CollectionCollections
 func NewCollectionCollections(client *mongo.Client, counterCollection *CollectionCounters, collection *mongo.Collection) *CollectionCollections {
 	return &CollectionCollections{
 		newCollection(client, collection),
@@ -22,7 +22,7 @@ func NewCollectionCollections(client *mongo.Client, counterCollection *Collectio
 	}
 }
 
-//GetCollection gets a collectionDoc by the name
+// GetCollection gets a collectionDoc by the name
 func (c *CollectionCollections) GetCollection(ctx context.Context, name string) (*schema.CollectionDoc, error) {
 	sr := c.collection.FindOne(ctx, schema.FilterByID(name))
 	if err := sr.Err(); err != nil {
@@ -49,7 +49,7 @@ func (c *CollectionCollections) DeleteCollection(ctx context.Context, name strin
 	return nil
 }
 
-//InsertCollection inserts a collection document
+// InsertCollection inserts a collection document
 func (c *CollectionCollections) InsertCollection(ctx context.Context, name string) (collection *schema.CollectionDoc, err error) {
 
 	session, err := c.client.StartSession()
@@ -88,7 +88,7 @@ func (c *CollectionCollections) InsertCollection(ctx context.Context, name strin
 	return collection, nil
 }
 
-//PurgeAllCollection ...
+// PurgeAllCollection ...
 func (c *CollectionCollections) PurgeAllCollection(ctx context.Context, name string) {
 
 }

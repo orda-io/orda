@@ -27,18 +27,18 @@ func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	}
 }
 
-func MakeTestCollection(mongo *mongodb.RepositoryMongo, collectionName string) error {
+func MakeTestCollection(mongo *mongodb.RepositoryMongo, collectionName string) (uint32, error) {
 	collectionDoc, err := mongo.GetCollection(context.TODO(), collectionName)
 	if err != nil {
-		return log.OrtooError(err)
+		return 0, log.OrtooError(err)
 	}
 	if collectionDoc != nil {
-		return nil
+		return collectionDoc.Num, nil
 	}
 	collectionDoc, err = mongo.InsertCollection(context.TODO(), collectionName)
 	if err != nil {
-		return log.OrtooError(err)
+		return 0, log.OrtooError(err)
 	}
 	log.Logger.Infof("a new collection is created:%+v", collectionDoc)
-	return nil
+	return collectionDoc.Num, nil
 }

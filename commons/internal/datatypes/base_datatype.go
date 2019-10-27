@@ -17,7 +17,7 @@ type baseDatatype struct {
 	Logger        *log.OrtooLog
 }
 
-//PublicBaseDatatypeInterface is a public interface for a datatype.
+// PublicBaseDatatypeInterface is a public interface for a datatype.
 type PublicBaseDatatypeInterface interface {
 	GetType() model.TypeOfDatatype
 }

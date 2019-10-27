@@ -6,8 +6,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/integration_test/test_helper"
 	"github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"gotest.tools/assert"
 
@@ -18,11 +18,9 @@ import (
 )
 
 func TestMongo(t *testing.T) {
-
-	conf := mongodb.NewTestMongoDBConfig("ortoo_unit_test")
-	mongo, err := mongodb.New(context.TODO(), conf)
+	mongo, err := test_helper.GetMongo("ortoo_unit_test")
 	if err != nil {
-		log.Logger.Fatalf("fail to create mongoDB instance:%v", err)
+		t.Fatal("fail to initialize mongoDB")
 	}
 
 	t.Run("Make collections simultaneously", func(t *testing.T) {

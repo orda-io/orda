@@ -62,3 +62,8 @@ func (c *CollectionDatatypes) UpdateDatatype(ctx context.Context, datatype *sche
 	}
 	return log.OrtooError(errors.New("fail to update datatype"))
 }
+
+func (c *CollectionDatatypes) PurgeDatatype(ctx context.Context, collNum uint32, duid string) error {
+
+	return nil
+}
