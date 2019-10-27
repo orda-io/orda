@@ -56,7 +56,7 @@ func (c *CollectionClients) DeleteClient(ctx context.Context, cuid string) error
 	if result.DeletedCount == 1 {
 		return nil
 	}
-	log.Logger.Warn("fail to find something to delete")
+	log.Logger.Warnf("fail to find a client to delete: %s", cuid)
 	return nil
 }
 

@@ -6,20 +6,20 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-//TestWire ...
+// TestWire ...
 type TestWire struct {
 	wiredList []datatypes.WiredDatatype
 	list      []model.Operation
 }
 
-//NewTestWire ...
+// NewTestWire ...
 func NewTestWire() *TestWire {
 	return &TestWire{
 		wiredList: make([]datatypes.WiredDatatype, 0),
 	}
 }
 
-//DeliverOperation ...
+// DeliverOperation ...
 func (c *TestWire) DeliverOperation(wired datatypes.WiredDatatype, op model.Operation) {
 	for _, w := range c.wiredList {
 		if wired != w {
@@ -30,7 +30,7 @@ func (c *TestWire) DeliverOperation(wired datatypes.WiredDatatype, op model.Oper
 	c.list = append(c.list, op)
 }
 
-//DeliverTransaction ...
+// DeliverTransaction ...
 func (c *TestWire) DeliverTransaction(wired datatypes.WiredDatatype, transaction []model.Operation) {
 	for _, w := range c.wiredList {
 		if wired != w {
@@ -41,7 +41,7 @@ func (c *TestWire) DeliverTransaction(wired datatypes.WiredDatatype, transaction
 	c.list = append(c.list, transaction...)
 }
 
-//SetDatatypes ...
+// SetDatatypes ...
 func (c *TestWire) SetDatatypes(datatypeList ...interface{}) {
 	for _, v := range datatypeList {
 		if finalDatatype, ok := v.(datatypes.WiredDatatyper); ok {

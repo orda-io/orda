@@ -27,6 +27,13 @@ func TestMongo(t *testing.T) {
 
 	t.Run("Make collections simultaneously", func(t *testing.T) {
 		madeCollections := make(map[uint32]*schema.CollectionDoc)
+
+		for i := 0; i < 10; i++ {
+			if err := mongo.DeleteCollection(context.TODO(), fmt.Sprintf("hello_%d", i)); err != nil {
+				t.Fail()
+			}
+		}
+
 		wg := sync.WaitGroup{}
 		wg.Add(10)
 		for i := 0; i < 10; i++ {
@@ -45,11 +52,7 @@ func TestMongo(t *testing.T) {
 		if len(madeCollections) != 10 {
 			t.Fail()
 		}
-		for _, v := range madeCollections {
-			if err := mongo.DeleteCollection(context.TODO(), v.Name); err != nil {
-				t.Fail()
-			}
-		}
+
 	})
 
 	t.Run("Can get clientDoc with checkpoint", func(t *testing.T) {
@@ -91,7 +94,7 @@ func TestMongo(t *testing.T) {
 		if err := mongo.DeleteClient(context.TODO(), c.CUID); err != nil {
 			t.Fatal(err)
 		}
-		if err := mongo.DeleteClient(context.TODO(), c.CUID); err == nil {
+		if err := mongo.DeleteClient(context.TODO(), c.CUID); err != nil {
 			t.Fatal(err)
 		}
 

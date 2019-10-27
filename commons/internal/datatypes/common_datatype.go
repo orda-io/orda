@@ -5,13 +5,13 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-//CommonDatatype defines common methods
+// CommonDatatype defines common methods
 type CommonDatatype struct {
 	*TransactionDatatypeImpl
 	TransactionCtx *TransactionContext
 }
 
-//Initialize is a method for initialization
+// Initialize is a method for initialization
 func (c *CommonDatatype) Initialize(
 	key string,
 	typeOf model.TypeOfDatatype,
@@ -48,6 +48,32 @@ func (c *CommonDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 	_, err = c.ExecuteTransaction(c.TransactionCtx, subscribeOp, true)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to execute SubscribeOperation")
+	}
+	return nil
+}
+
+// ExecuteTransactionRemote is a method to execute a transaction of remote operations
+func (c *CommonDatatype) ExecuteTransactionRemote(transaction []model.Operation) error {
+	var transactionCtx *TransactionContext
+	var err error
+	if len(transaction) > 1 {
+		if err := validateTransaction(transaction); err != nil {
+			return log.OrtooErrorf(err, "fail to validate transaction")
+		}
+		transactionOp := transaction[0].(*model.TransactionOperation)
+		transactionCtx, err = c.BeginTransaction(transactionOp.Tag, c.TransactionCtx, false)
+		if err != nil {
+			return log.OrtooError(err)
+		}
+		defer func() {
+			if err := c.EndTransaction(transactionCtx, false); err != nil {
+				_ = log.OrtooError(err)
+			}
+		}()
+		transaction = transaction[1:]
+	}
+	for _, op := range transaction {
+		c.ExecuteTransaction(transactionCtx, op, false)
 	}
 	return nil
 }

@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-//RepositoryMongo is a tool struct for MongoDB
+// RepositoryMongo is a tool struct for MongoDB
 type RepositoryMongo struct {
 	*CollectionCounters
 	*CollectionClients
@@ -23,14 +22,14 @@ type RepositoryMongo struct {
 	db     *mongo.Database
 }
 
-//New creates a new RepositoryMongo
+// New creates a new RepositoryMongo
 func New(ctx context.Context, conf *Config) (*RepositoryMongo, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.Host)) //"mongodb://root:ortoo-test@localhost:27017"))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.Host)) // "mongodb://root:ortoo-test@localhost:27017"))
 	if err != nil {
-		return nil, fmt.Errorf("fail to connect:%v", err)
+		return nil, log.OrtooErrorf(err, "fail to connect MongoDB")
 	}
 	if err = client.Ping(ctx, nil); err != nil {
-		return nil, fmt.Errorf("fail to ping: %v", err)
+		return nil, log.OrtooErrorf(err, "fail to ping MongoDB")
 	}
 	db := client.Database(conf.OrtooDB)
 	repo := &RepositoryMongo{
@@ -44,7 +43,7 @@ func New(ctx context.Context, conf *Config) (*RepositoryMongo, error) {
 	return repo, nil
 }
 
-//InitializeCollections initialize collections
+// InitializeCollections initialize collections
 func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 
 	r.CollectionCounters = NewCollectionCounters(r.client, r.db.Collection(schema.CollectionNameCounters))
@@ -84,7 +83,7 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 	return nil
 }
 
-//GetOrCreateCollectionSnapshot is a method that gets or creates a collection of snapshot
+// GetOrCreateCollectionSnapshot is a method that gets or creates a collection of snapshot
 func (r *RepositoryMongo) GetOrCreateCollectionSnapshot(ctx context.Context, name string) (*CollectionSnapshots, error) {
 
 	names, err := r.db.ListCollectionNames(ctx, schema.FilterByName(name))

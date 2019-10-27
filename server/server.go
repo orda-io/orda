@@ -11,7 +11,7 @@ import (
 	"net"
 )
 
-//OrtooServer is an Ortoo server
+// OrtooServer is an Ortoo server
 type OrtooServer struct {
 	ctx     context.Context
 	conf    *OrtooServerConfig
@@ -20,7 +20,7 @@ type OrtooServer struct {
 	Mongo   *mongodb.RepositoryMongo
 }
 
-//NewOrtooServer creates a new Ortoo server
+// NewOrtooServer creates a new Ortoo server
 func NewOrtooServer(ctx context.Context, conf *OrtooServerConfig) (*OrtooServer, error) {
 	mongo, err := mongodb.New(ctx, conf.Mongo)
 	if err != nil {
@@ -34,7 +34,7 @@ func NewOrtooServer(ctx context.Context, conf *OrtooServerConfig) (*OrtooServer,
 	}, nil
 }
 
-//Start start the Ortoo Server
+// Start start the Ortoo Server
 func (o *OrtooServer) Start() error {
 
 	lis, err := net.Listen("tcp", o.conf.getHostAddress())
@@ -57,7 +57,7 @@ func (o *OrtooServer) Start() error {
 	return nil
 }
 
-//Close closes the Ortoo server
+// Close closes the Ortoo server
 func (o *OrtooServer) Close() {
 	o.server.GracefulStop()
 	log.Logger.Info("close Ortoo server")

@@ -15,7 +15,8 @@ type SimpleDatatypeSuite struct {
 }
 
 func (suite *SimpleDatatypeSuite) SetupTest() {
-	suite.T().Log("SetupTest")
+
+	log.Logger.Infof("Set up test")
 }
 
 func (suite *SimpleDatatypeSuite) TestTransactionFail() {
@@ -29,21 +30,27 @@ func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 		suite.Fail("fail to create intCounter2")
 	}
 	tw.SetDatatypes(intCounter1, intCounter2)
-	intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
-		intCounter.IncreaseBy(2)
+	if err := intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
+		_, _ = intCounter.IncreaseBy(2)
 		suite.Equal(int32(2), intCounter.Get())
-		intCounter.IncreaseBy(4)
+		_, _ = intCounter.IncreaseBy(4)
 		suite.Equal(int32(6), intCounter.Get())
 		return nil
-	})
+	}); err != nil {
+		suite.T().Fatal(err)
+	}
+
 	suite.Equal(int32(6), intCounter1.Get())
-	intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
-		intCounter.IncreaseBy(3)
+
+	if err := intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
+		_, _ = intCounter.IncreaseBy(3)
 		suite.Equal(int32(9), intCounter.Get())
-		intCounter.IncreaseBy(5)
+		_, _ = intCounter.IncreaseBy(5)
 		suite.Equal(int32(14), intCounter.Get())
 		return fmt.Errorf("err")
-	})
+	}); err == nil {
+		suite.T().FailNow()
+	}
 	suite.Equal(int32(6), intCounter1.Get())
 }
 
