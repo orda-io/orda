@@ -1,10 +1,17 @@
 package integration
 
 import (
+	"context"
 	"github.com/knowhunger/ortoo/commons"
+	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/stretchr/testify/suite"
 	"testing"
+)
+
+const (
+	dbName         = "ortoo_test_db"
+	collectionName = "ortoo_test_collection"
 )
 
 type ClientServerTestSuite struct {
@@ -13,14 +20,23 @@ type ClientServerTestSuite struct {
 }
 
 func (s *ClientServerTestSuite) SetupTest() {
-	s.server = server.NewOrtooServer(NewTestOrtooServerConfig())
-	go s.server.Start()
 	s.T().Log("SetupTest")
+	var err error
+	s.server, err = server.NewOrtooServer(context.TODO(), NewTestOrtooServerConfig(dbName))
+	if err != nil {
+		_ = log.OrtooError(err)
+		s.Fail("fail to setup")
+	}
+	if err := MakeTestCollection(s.server.Mongo, collectionName); err != nil {
+		s.Fail("fail to test collection")
+	}
+	go s.server.Start()
+
 }
 
 func (s *ClientServerTestSuite) TestClientServer() {
 	s.Run("Can create a client with server", func() {
-		config := NewTestOrtooClientConfig()
+		config := NewTestOrtooClientConfig(dbName, collectionName)
 		client1, err := commons.NewOrtooClient(config)
 		if err != nil {
 			s.T().Fail()
@@ -31,17 +47,20 @@ func (s *ClientServerTestSuite) TestClientServer() {
 		}
 		defer client1.Close()
 		//intCounter1, err := commons.newIntCounter("key", client1)
-		intCounterCh1, err1Ch := client1.SubscribeIntCounter("key")
+		intCounterCh1, err1Ch := client1.CreateIntCounter("key")
 		var intCounter1 commons.IntCounter
 		select {
 		case intCounter1 = <-intCounterCh1:
 		case err1 := <-err1Ch:
 			s.Suite.Fail("fail to :", err1)
 		}
-		intCounter1.Increase()
-		client1.Sync()
+		if intCounter1 != nil {
+			_, _ = intCounter1.Increase()
+			_, _ = intCounter1.Increase()
+			_, _ = intCounter1.Increase()
+			client1.Sync()
+		}
 	})
-
 }
 
 func (s *ClientServerTestSuite) TearDownTest() {

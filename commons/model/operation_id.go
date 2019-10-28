@@ -5,17 +5,17 @@ func NewOperationID() *OperationID {
 	return &OperationID{
 		Era:     0,
 		Lamport: 0,
-		Cuid:    make([]byte, 16),
+		CUID:    make([]byte, 16),
 		Seq:     0,
 	}
 }
 
 //NewOperationIDWithCuid creates a new OperationID with CUID.
-func NewOperationIDWithCuid(cuid Cuid) *OperationID {
+func NewOperationIDWithCuid(cuid CUID) *OperationID {
 	return &OperationID{
 		Era:     0,
 		Lamport: 0,
-		Cuid:    cuid,
+		CUID:    cuid,
 		Seq:     0,
 	}
 }
@@ -24,7 +24,7 @@ func NewOperationIDWithCuid(cuid Cuid) *OperationID {
 func (o *OperationID) SetOperationID(other *OperationID) {
 	o.Era = other.Era
 	o.Lamport = other.Lamport
-	o.Cuid = other.Cuid
+	o.CUID = other.CUID
 	o.Seq = other.Seq
 
 }
@@ -36,7 +36,7 @@ func (o *OperationID) Next() *OperationID {
 	return &OperationID{
 		Era:     o.Era,
 		Lamport: o.Lamport,
-		Cuid:    o.Cuid,
+		CUID:    o.CUID,
 		Seq:     o.Seq,
 	}
 }
@@ -53,7 +53,7 @@ func (o *OperationID) SyncLamport(other uint64) uint64 {
 
 //SetClient sets clientID
 func (o *OperationID) SetClient(cuid []byte) {
-	o.Cuid = cuid
+	o.CUID = cuid
 }
 
 //Clone ...
@@ -61,7 +61,7 @@ func (o *OperationID) Clone() *OperationID {
 	return &OperationID{
 		Era:     o.Era,
 		Lamport: o.Lamport,
-		Cuid:    o.Cuid,
+		CUID:    o.CUID,
 		Seq:     o.Seq,
 	}
 }

@@ -6,25 +6,21 @@ import (
 )
 
 var (
-	replyMessageFormat = map[StateOfResponse]string{
+	responseFormat = map[StateOfResponse]string{
 		StateOfResponse_ERR_CLIENT_INVALID_COLLECTION: "invalid collection: in server %s but %s",
 	}
 )
 
-//NewClientReply creates a new ClientReply
-func NewClientReply(seq uint32, state StateOfResponse, args ...interface{}) *ClientResponse {
+//NewClientResponse creates a new ClientReply
+func NewClientResponse(header *MessageHeader, state StateOfResponse, args ...interface{}) *ClientResponse {
 	if state != StateOfResponse_OK {
-		log.Logger.Errorf(replyMessageFormat[state], args)
+		log.Logger.Errorf(responseFormat[state], args)
 	}
 	return &ClientResponse{
-		Header: &RequestHeader{
-			Version: ProtocolVersion,
-			Seq:     seq,
-			TypeOf:  &RequestHeader_TypeOfReply{TypeOfResponse_CLIENT_REPLY},
-		},
+		Header: NewMessageHeader(header.Seq, TypeOfMessage_RESPONSE_CLIENT, header.Collection, header.Cuid),
 		State: &ResponseState{
 			State: state,
-			Msg:   fmt.Sprintf(replyMessageFormat[state], args),
+			Msg:   fmt.Sprintf(responseFormat[state], args),
 		},
 	}
 }

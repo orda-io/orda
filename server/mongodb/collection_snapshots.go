@@ -10,10 +10,10 @@ type CollectionSnapshots struct {
 	name string
 }
 
-func newCollectionSnapshot(collection *mongo.Collection, name string) *CollectionSnapshots {
+func newCollectionSnapshot(client *mongo.Client, collection *mongo.Collection, name string) *CollectionSnapshots {
 
 	return &CollectionSnapshots{
-		baseCollection: newCollection(collection),
+		baseCollection: newCollection(client, collection),
 		name:           name,
 	}
 }

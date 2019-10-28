@@ -22,17 +22,17 @@ type PublicBaseDatatypeInterface interface {
 	GetType() model.TypeOfDatatype
 }
 
-func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.Cuid) (*baseDatatype, error) {
+func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*baseDatatype, error) {
 	duid, err := model.NewDuid()
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to create base datatype due to duid")
+		return nil, log.OrtooErrorf(err, "fail to create base datatype due to duid")
 	}
 	return &baseDatatype{
 		Key:    key,
 		id:     duid,
 		TypeOf: t,
 		opID:   model.NewOperationIDWithCuid(cuid),
-		state:  model.StateOfDatatype_LOCALLY_EXISTED,
+		state:  model.StateOfDatatype_DUE_TO_CREATE,
 		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
 	}, nil
 }
@@ -51,10 +51,10 @@ func (b *baseDatatype) executeLocalBase(op model.Operation) (interface{}, error)
 }
 
 func (b *baseDatatype) Replay(op model.Operation) error {
-	if bytes.Compare(b.opID.Cuid, op.GetBase().Id.Cuid) == 0 {
+	if bytes.Compare(b.opID.CUID, op.GetBase().ID.CUID) == 0 {
 		_, err := b.executeLocalBase(op)
 		if err != nil {
-			return log.OrtooError(err, "fail to replay local operation")
+			return log.OrtooErrorf(err, "fail to replay local operation")
 		}
 	} else {
 		b.executeRemoteBase(op)
@@ -88,4 +88,8 @@ func (b *baseDatatype) SetOpID(opID *model.OperationID) {
 
 func (b *baseDatatype) GetKey() string {
 	return b.Key
+}
+
+func (b *baseDatatype) SetState(state model.StateOfDatatype) {
+	b.state = state
 }

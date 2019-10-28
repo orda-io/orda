@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
@@ -14,45 +15,52 @@ type SimpleDatatypeSuite struct {
 }
 
 func (suite *SimpleDatatypeSuite) SetupTest() {
-	suite.T().Log("SetupTest")
+
+	log.Logger.Infof("Set up test")
 }
 
 func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 	tw := NewTestWire()
-	intCounter1, err := commons.NewIntCounter(tw)
+	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}
-	intCounter2, err := commons.NewIntCounter(tw)
+	intCounter2, err := commons.NewIntCounter("key2", model.NewNilCUID(), tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter2")
 	}
 	tw.SetDatatypes(intCounter1, intCounter2)
-	intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
-		intCounter.IncreaseBy(2)
+	if err := intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
+		_, _ = intCounter.IncreaseBy(2)
 		suite.Equal(int32(2), intCounter.Get())
-		intCounter.IncreaseBy(4)
+		_, _ = intCounter.IncreaseBy(4)
 		suite.Equal(int32(6), intCounter.Get())
 		return nil
-	})
+	}); err != nil {
+		suite.T().Fatal(err)
+	}
+
 	suite.Equal(int32(6), intCounter1.Get())
-	intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
-		intCounter.IncreaseBy(3)
+
+	if err := intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
+		_, _ = intCounter.IncreaseBy(3)
 		suite.Equal(int32(9), intCounter.Get())
-		intCounter.IncreaseBy(5)
+		_, _ = intCounter.IncreaseBy(5)
 		suite.Equal(int32(14), intCounter.Get())
 		return fmt.Errorf("err")
-	})
+	}); err == nil {
+		suite.T().FailNow()
+	}
 	suite.Equal(int32(6), intCounter1.Get())
 }
 
 func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	tw := NewTestWire()
-	intCounter1, err := commons.NewIntCounter(tw)
+	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}
-	intCounter2, err := commons.NewIntCounter(tw)
+	intCounter2, err := commons.NewIntCounter("key2", model.NewNilCUID(), tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter2")
 	}
@@ -87,7 +95,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 		suite.Equal(int32(-2), intCounter.Get())
 		intCounter.IncreaseBy(3)
 		intCounter.IncreaseBy(4)
-		return log.OrtooError(nil, "fail to do the transaction")
+		return log.OrtooErrorf(nil, "fail to do the transaction")
 	})
 	//
 	////wg.Wait()
@@ -97,7 +105,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 }
 
 func (suite *SimpleDatatypeSuite) TestPushPullPackSync() {
-	intCounter1, err := commons.newIntCounter(datatypes.NewDummyWire())
+	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), datatypes.NewDummyWire())
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}

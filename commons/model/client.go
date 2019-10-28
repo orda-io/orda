@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 )
 
-//GetCuidString returns the string of CUID
-func (c *Client) GetCuidString() string {
-	return hex.EncodeToString(c.Cuid)
+//GetCUIDString returns the string of CUID
+func (c *Client) GetCUIDString() string {
+	return hex.EncodeToString(c.CUID)
 }

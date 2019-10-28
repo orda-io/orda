@@ -8,10 +8,10 @@ func (t *ErrTransaction) Error() string {
 	return "transaction error"
 }
 
-//ErrLinkDatatype is an error related to linking datatype
-type ErrLinkDatatype struct {
+//ErrSubscribeDatatype is an error related to linking datatype
+type ErrSubscribeDatatype struct {
 }
 
-func (t *ErrLinkDatatype) Error() string {
-	return "fail to link datatype to Ortoo server"
+func (t *ErrSubscribeDatatype) Error() string {
+	return "fail to subscribe datatype to Ortoo server"
 }

@@ -6,14 +6,14 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-//IntCounter is an Ortoo datatype which provides int counter interfaces.
+// IntCounter is an Ortoo datatype which provides int counter interfaces.
 type IntCounter interface {
 	datatypes.PublicWiredDatatypeInterface
 	IntCounterInTransaction
 	DoTransaction(tag string, transFunc func(intCounter IntCounterInTransaction) error) error
 }
 
-//IntCounterInTransaction is an Ortoo datatype which provides int counter interfaces in a transaction.
+// IntCounterInTransaction is an Ortoo datatype which provides int counter interfaces in a transaction.
 type IntCounterInTransaction interface {
 	Get() int32
 	Increase() (int32, error)
@@ -25,8 +25,8 @@ type intCounter struct {
 	snapshot *intCounterSnapshot
 }
 
-//NewIntCounter creates a new int counter
-func NewIntCounter(key string, client Client) (IntCounter, error) {
+// NewIntCounter creates a new int counter
+func NewIntCounter(key string, cuid model.CUID, wire datatypes.Wire) (IntCounter, error) {
 	snapshot := &intCounterSnapshot{
 		Value: 0,
 	}
@@ -34,16 +34,9 @@ func NewIntCounter(key string, client Client) (IntCounter, error) {
 		CommonDatatype: &datatypes.CommonDatatype{},
 		snapshot:       snapshot,
 	}
-	ci := client.(*clientImpl)
-	err := intCounter.Initialize(
-		key,
-		model.TypeOfDatatype_INT_COUNTER,
-		ci.model.Cuid,
-		ci.dataMgr,
-		snapshot,
-		intCounter)
+	err := intCounter.Initialize(key, model.TypeOfDatatype_INT_COUNTER, cuid, wire, snapshot, intCounter)
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to initialize intCounter")
+		return nil, log.OrtooErrorf(err, "fail to initialize intCounter")
 	}
 	return intCounter, nil
 }
@@ -60,17 +53,17 @@ func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 	op := model.NewIncreaseOperation(delta)
 	ret, err := c.ExecuteTransaction(c.TransactionCtx, op, true)
 	if err != nil {
-		return 0, log.OrtooError(err, "fail to execute operation")
+		return 0, log.OrtooErrorf(err, "fail to execute operation")
 	}
 	return ret.(int32), nil
 }
 
-//ExecuteLocal is the
+// ExecuteLocal is the
 func (c *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
 	iop := op.(*model.IncreaseOperation)
-	//c.Logger.Info("delta:", proto.MarshalTextString(iop))
+	// c.Logger.Info("delta:", proto.MarshalTextString(iop))
 	return c.snapshot.increaseCommon(iop.Delta), nil
-	//return nil, nil
+	// return nil, nil
 }
 
 func (c *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
@@ -84,15 +77,23 @@ func (c *intCounter) GetWired() datatypes.WiredDatatype {
 
 func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterInTransaction) error) error {
 	transactionCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
-	defer c.EndTransaction(transactionCtx, true)
+	defer func() {
+		if err := c.EndTransaction(transactionCtx, true); err != nil {
+			_ = log.OrtooError(err)
+		}
+	}()
+	// make a clone of intCounter have nil CommonDatatype.transactionCtx, which means
 	clone := &intCounter{
-		CommonDatatype: c.CommonDatatype,
-		snapshot:       c.snapshot,
+		CommonDatatype: &datatypes.CommonDatatype{
+			TransactionDatatypeImpl: c.CommonDatatype.TransactionDatatypeImpl,
+			TransactionCtx:          transactionCtx,
+		},
+		snapshot: c.snapshot,
 	}
 	err = transFunc(clone)
 	if err != nil {
 		c.SetTransactionFail()
-		return log.OrtooError(err, "fail to do the transaction: '%s'", tag)
+		return log.OrtooErrorf(err, "fail to do the transaction: '%s'", tag)
 	}
 	return nil
 }

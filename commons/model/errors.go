@@ -12,11 +12,14 @@ const (
 	RPCErrMongoDB rpcErrorCode = iota
 	//RPCErrClientInconsistentCollection is the error when a client has different collection with the previously
 	RPCErrClientInconsistentCollection
+	//RPCErrNoClient is the error when the given client does not exist.
+	RPCErrNoClient
 )
 
 var formatMap = map[rpcErrorCode]string{
 	RPCErrMongoDB:                      "MongoDB is not working",
 	RPCErrClientInconsistentCollection: "invalid collections: %s (server) vs. %s (client)",
+	RPCErrNoClient:                     "No client exists in the server",
 }
 
 //RPCError defines errors of RPC

@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package model;
+
+import "model.proto";
+
+message MessageHeader {
+    string version = 1;
+    uint32 seq = 2;
+    TypeOfMessage typeOf = 3;
+    string collection = 4;
+    bytes cuid = 5;
+}
+
+enum TypeOfMessage {
+    REQUEST_CLIENT = 0;
+    REQUEST_PUSHPULL = 1;
+
+    RESPONSE_CLIENT = 10;
+    RESPONSE_PUSHPULL = 11;
+}
+
+enum StateOfResponse {
+    OK = 0;
+    ERR_CLIENT_INVALID_COLLECTION = 101;
+    ERR_CLIENT_INVALID_SYNCTYPE = 102;
+}
+
+message ResponseState {
+    StateOfResponse state = 1;
+    string msg = 2;
+}
+
+
+message ClientRequest {
+    MessageHeader header = 1;
+    Client client = 2;
+}
+
+message ClientResponse {
+    MessageHeader header = 1;
+    ResponseState state = 2;
+}
+
+
+message PushPullRequest {
+    MessageHeader header = 1;
+    int32 ID = 2;
+    repeated PushPullPack PushPullPacks = 3;
+}
+
+message PushPullResponse {
+    MessageHeader header = 1;
+    int32 ID = 2;
+    repeated PushPullPack PushPullPacks = 3;
+}
+
+service OrtooService {
+    rpc ProcessPushPull (PushPullRequest) returns (PushPullResponse);
+    rpc ProcessClient (ClientRequest) returns (ClientResponse);
+}

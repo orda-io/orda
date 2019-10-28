@@ -1,26 +1,27 @@
 package model
 
-//NewPushPullRequest creates a new PushPullRequest
-func NewPushPullRequest(seq uint32, pushPullPackList ...*PushPullPack) *PushPullRequest {
+func NewMessageHeader(seq uint32, typeOf TypeOfMessage, collection string, cuid []byte) *MessageHeader {
+	return &MessageHeader{
+		Version:    ProtocolVersion,
+		Seq:        seq,
+		TypeOf:     typeOf,
+		Collection: collection,
+		Cuid:       cuid,
+	}
+}
 
+//NewPushPullRequest creates a new PushPullRequest
+func NewPushPullRequest(seq uint32, client *Client, pushPullPackList ...*PushPullPack) *PushPullRequest {
 	return &PushPullRequest{
-		Header: &RequestHeader{
-			Version: ProtocolVersion,
-			Seq:     seq,
-			TypeOf:  &RequestHeader_TypeOfRequest{TypeOfRequest_PUSHPULL_REQUEST},
-		},
+		Header:        NewMessageHeader(seq, TypeOfMessage_REQUEST_PUSHPULL, client.Collection, client.CUID),
 		PushPullPacks: pushPullPackList,
 	}
 }
 
 //NewClientRequest creates a new ClientRequest
-func NewClientRequest(client *Client, seq uint32) *ClientRequest {
+func NewClientRequest(seq uint32, client *Client) *ClientRequest {
 	return &ClientRequest{
-		Header: &RequestHeader{
-			Version: ProtocolVersion,
-			Seq:     seq,
-			TypeOf:  &RequestHeader_TypeOfRequest{TypeOfRequest_CLIENT_REQUEST},
-		},
+		Header: NewMessageHeader(seq, TypeOfMessage_REQUEST_CLIENT, client.Collection, client.CUID),
 		Client: client,
 	}
 }

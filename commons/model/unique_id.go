@@ -10,13 +10,13 @@ type uniqueID []byte
 func newUniqueID() (uniqueID, error) {
 	u, err := uuid.NewUUID()
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to generate unique ID")
+		return nil, log.OrtooErrorf(err, "fail to generate unique ID")
 	}
 	b, err := u.MarshalBinary()
 	if err != nil {
-		return nil, log.OrtooError(err, "fail to generate unique ID")
+		return nil, log.OrtooErrorf(err, "fail to generate unique ID")
 	}
-	return uniqueID(b), nil
+	return b, nil
 }
 
 func (u uniqueID) String() string {
