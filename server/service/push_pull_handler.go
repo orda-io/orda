@@ -90,6 +90,7 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
 	if err != nil {
 		return log.OrtooError(err)
 	}
+	log.Logger.Infof("PushPullCase: %d", casePushPull)
 	if err := p.processSubscribeOrCreate(casePushPull); err != nil {
 		return log.OrtooError(err)
 	}
@@ -108,7 +109,8 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
 }
 
 func (p *PushPullHandler) commitToMongoDB() error {
-
+	p.datatypeDoc.SseqEnd = p.currentCheckPoint.Sseq
+	p.retPushPullPack.CheckPoint = p.currentCheckPoint
 	if err := p.mongo.InsertOperations(p.ctx, p.pushingOperations); err != nil {
 		return log.OrtooError(err)
 	}
@@ -152,7 +154,7 @@ func (p *PushPullHandler) pushOperations() error {
 	sseq := p.initialCheckPoint.Sseq
 	for _, opOnWire := range p.gotPushPullPack.Operations {
 		op := model.ToOperation(opOnWire)
-		if p.initialCheckPoint.Cseq+1 == op.GetBase().ID.GetSeq() {
+		if p.currentCheckPoint.Cseq+1 == op.GetBase().ID.GetSeq() {
 			sseq++
 			marshaledOp, err := proto.Marshal(opOnWire)
 			if err != nil {
@@ -169,8 +171,10 @@ func (p *PushPullHandler) pushOperations() error {
 			}
 			p.pushingOperations = append(p.pushingOperations, opDoc)
 			p.retPushPullPack.Operations = append(p.retPushPullPack.Operations, opOnWire)
-			p.retPushPullPack.CheckPoint.SyncCseq(op.GetBase().ID.GetSeq())
-		} else if p.initialCheckPoint.Cseq > op.GetBase().ID.GetSeq() {
+			p.currentCheckPoint.SyncCseq(op.GetBase().ID.GetSeq())
+			p.currentCheckPoint.Sseq++
+
+		} else if p.currentCheckPoint.Cseq >= op.GetBase().ID.GetSeq() {
 			log.Logger.Infof("reject operation due to duplicate: %v", op)
 		} else {
 			return log.OrtooError(
@@ -211,6 +215,7 @@ func (p *PushPullHandler) createDatatype() error {
 		Key:           p.Key,
 		CollectionNum: p.collectionDoc.Num,
 		Type:          model.TypeOfDatatype_name[p.gotPushPullPack.Type],
+		SseqBegin:     1,
 		SseqEnd:       0,
 		Visible:       true,
 		CreatedAt:     time.Now(),
@@ -243,6 +248,8 @@ func (p *PushPullHandler) evaluatePushPullCase() (pushPullCase, error) {
 			if p.datatypeDoc.Visible {
 				checkPoint := p.clientDoc.GetCheckPoint(p.DUID)
 				if checkPoint != nil {
+					p.initialCheckPoint = checkPoint
+					p.currentCheckPoint = checkPoint.Clone()
 					return caseAllMatchedSubscribed, nil
 				} else {
 					return caseAllMatchedNotSubscribed, nil

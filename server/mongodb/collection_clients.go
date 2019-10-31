@@ -12,17 +12,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-//CollectionClients is a struct for Clients
+// CollectionClients is a struct for Clients
 type CollectionClients struct {
 	*baseCollection
 }
 
-//NewCollectionClients creates a new CollectionClients
+// NewCollectionClients creates a new CollectionClients
 func NewCollectionClients(client *mongo.Client, collection *mongo.Collection) *CollectionClients {
 	return &CollectionClients{newCollection(client, collection)}
 }
 
-//UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
+// UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
 func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.ClientDoc) error {
 	result, err := c.collection.UpdateOne(ctx, schema.FilterByID(client.CUID), client.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
@@ -83,7 +83,7 @@ func (c *CollectionClients) GetCheckPointFromClient(ctx context.Context, cuid st
 	return checkPoint, nil
 }
 
-//GetClient gets a client with CUID
+// GetClient gets a client with CUID
 func (c *CollectionClients) GetClientWithoutCheckPoints(ctx context.Context, cuid string) (*schema.ClientDoc, error) {
 	return c.getClient(ctx, cuid, false)
 }
