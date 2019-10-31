@@ -49,8 +49,9 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 	r.CollectionCounters = NewCollectionCounters(r.client, r.db.Collection(schema.CollectionNameCounters))
 	r.CollectionClients = NewCollectionClients(r.client, r.db.Collection(schema.CollectionNameClients))
 	r.CollectionCollections = NewCollectionCollections(r.client, r.CollectionCounters, r.db.Collection(schema.CollectionNameCollections))
-	r.CollectionDatatypes = NewCollectionDatatypes(r.client, r.db.Collection(schema.CollectionNameDatatypes))
 	r.CollectionOperations = NewCollectionOperations(r.client, r.db.Collection(schema.CollectionNameOperations))
+	r.CollectionDatatypes = NewCollectionDatatypes(r.client, r.db.Collection(schema.CollectionNameDatatypes), r.CollectionOperations)
+
 	names, err := r.db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to list collection names")

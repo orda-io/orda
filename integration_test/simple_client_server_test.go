@@ -20,7 +20,9 @@ func (s *ClientServerTestSuite) TestClientServer() {
 
 	key := test_helper.GetFunctionName()
 
-	s.mongo.PurgeDatatype(context.Background(), s.collectionNum, key)
+	if err := s.mongo.PurgeDatatype(context.Background(), s.collectionNum, key); err != nil {
+		s.T().Fatal(err)
+	}
 
 	s.Run("Can create a client with server", func() {
 		config := NewTestOrtooClientConfig(dbName, s.collectionName)

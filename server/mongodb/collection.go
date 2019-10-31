@@ -52,3 +52,27 @@ func (c *baseCollection) createIndex(ctx context.Context, docModel schema.MongoD
 	}
 	return nil
 }
+
+func (c *baseCollection) doTransaction(ctx context.Context, transactions func() error) error {
+	session, err := c.client.StartSession()
+	if err != nil {
+		return log.OrtooErrorf(err, "fail to start session")
+	}
+
+	if err := session.StartTransaction(); err != nil {
+		return log.OrtooErrorf(err, "fail to start transaction")
+	}
+	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+		if err := transactions(); err != nil {
+			return log.OrtooError(err)
+		}
+		if err = session.CommitTransaction(sc); err != nil {
+			return log.OrtooErrorf(err, "fail to commit transaction")
+		}
+		return nil
+	}); err != nil {
+		return log.OrtooErrorf(err, "fail to work with session")
+	}
+	session.EndSession(ctx)
+	return nil
+}

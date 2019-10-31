@@ -67,3 +67,19 @@ func (c *CollectionOperations) GetOperations(
 	}
 	return nil
 }
+
+func (c *CollectionOperations) PurgeOperations(ctx context.Context, collectionNum uint32, duid string) error {
+	f := schema.GetFilter().
+		AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum).
+		AddFilterEQ(schema.OperationDocFields.DUID, duid)
+	result, err := c.collection.DeleteMany(ctx, f)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if result.DeletedCount > 0 {
+		log.Logger.Infof("deleted %d operations of %s(%d)", result.DeletedCount, duid, collectionNum)
+		return nil
+	}
+	log.Logger.Warnf("deleted no operations")
+	return nil
+}

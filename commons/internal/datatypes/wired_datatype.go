@@ -93,6 +93,7 @@ func (w *WiredDatatypeImpl) CreatePushPullPack() *model.PushPullPack {
 		option.SetSubscribeBit().SetCreateBit()
 	}
 	return &model.PushPullPack{
+		Key:        w.Key,
 		DUID:       w.id,
 		Option:     uint32(option),
 		CheckPoint: cp,

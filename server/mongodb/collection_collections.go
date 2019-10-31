@@ -52,16 +52,7 @@ func (c *CollectionCollections) DeleteCollection(ctx context.Context, name strin
 // InsertCollection inserts a collection document
 func (c *CollectionCollections) InsertCollection(ctx context.Context, name string) (collection *schema.CollectionDoc, err error) {
 
-	session, err := c.client.StartSession()
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to start session")
-	}
-
-	if err := session.StartTransaction(); err != nil {
-		return nil, log.OrtooErrorf(err, "fail to start transaction")
-	}
-
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+	if err := c.doTransaction(ctx, func() error {
 		num, err := c.counterCollection.GetNextCollectionNum(ctx)
 		if err != nil {
 			return log.OrtooErrorf(err, "fail to get next counter")
@@ -76,16 +67,46 @@ func (c *CollectionCollections) InsertCollection(ctx context.Context, name strin
 			return log.OrtooErrorf(err, "fail to insert collection")
 		}
 		log.Logger.Infof("Collection is inserted: %+v", collection)
-		if err = session.CommitTransaction(sc); err != nil {
-			return log.OrtooErrorf(err, "fail to commit transaction")
-		}
 		return nil
 	}); err != nil {
-		return nil, log.OrtooErrorf(err, "fail to work with session")
+		return nil, log.OrtooError(err)
 	}
-	session.EndSession(ctx)
-
 	return collection, nil
+
+	//session, err := c.client.StartSession()
+	//if err != nil {
+	//	return nil, log.OrtooErrorf(err, "fail to start session")
+	//}
+	//
+	//if err := session.StartTransaction(); err != nil {
+	//	return nil, log.OrtooErrorf(err, "fail to start transaction")
+	//}
+	//
+	//if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+	//	num, err := c.counterCollection.GetNextCollectionNum(ctx)
+	//	if err != nil {
+	//		return log.OrtooErrorf(err, "fail to get next counter")
+	//	}
+	//	collection = &schema.CollectionDoc{
+	//		Name:      name,
+	//		Num:       num,
+	//		CreatedAt: time.Now(),
+	//	}
+	//	_, err = c.collection.InsertOne(ctx, collection)
+	//	if err != nil {
+	//		return log.OrtooErrorf(err, "fail to insert collection")
+	//	}
+	//	log.Logger.Infof("Collection is inserted: %+v", collection)
+	//	if err = session.CommitTransaction(sc); err != nil {
+	//		return log.OrtooErrorf(err, "fail to commit transaction")
+	//	}
+	//	return nil
+	//}); err != nil {
+	//	return nil, log.OrtooErrorf(err, "fail to work with session")
+	//}
+	//session.EndSession(ctx)
+	//
+	//return collection, nil
 }
 
 // PurgeAllCollection ...

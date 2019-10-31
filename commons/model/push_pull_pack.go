@@ -78,6 +78,7 @@ func (p *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
 
 func (p *PushPullPack) GetReturnPushPullPack() *PushPullPack {
 	return &PushPullPack{
+		Key:        p.Key,
 		DUID:       p.DUID,
 		Option:     p.Option,
 		Era:        p.Era,
