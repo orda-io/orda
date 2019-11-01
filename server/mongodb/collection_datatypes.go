@@ -8,21 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type CollectionDatatypes struct {
-	*baseCollection
-	collectionOperations *CollectionOperations
-}
-
-func NewCollectionDatatypes(client *mongo.Client, datatypes *mongo.Collection, collectionOperations *CollectionOperations) *CollectionDatatypes {
-	return &CollectionDatatypes{
-		baseCollection:       newCollection(client, datatypes),
-		collectionOperations: collectionOperations,
-	}
-}
-
-func (c *CollectionDatatypes) GetDatatype(ctx context.Context, duid string) (*schema.DatatypeDoc, error) {
+func (m *MongoCollections) GetDatatype(ctx context.Context, duid string) (*schema.DatatypeDoc, error) {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, duid)
-	result := c.collection.FindOne(ctx, f)
+	result := m.datatypes.FindOne(ctx, f)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -36,11 +24,11 @@ func (c *CollectionDatatypes) GetDatatype(ctx context.Context, duid string) (*sc
 	return &datatype, nil
 }
 
-func (c *CollectionDatatypes) GetDatatypeByKey(ctx context.Context, collectionNum uint32, key string) (*schema.DatatypeDoc, error) {
+func (m *MongoCollections) GetDatatypeByKey(ctx context.Context, collectionNum uint32, key string) (*schema.DatatypeDoc, error) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.DatatypeDocFields.Key, key)
-	result := c.collection.FindOne(ctx, f)
+	result := m.datatypes.FindOne(ctx, f)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -54,9 +42,9 @@ func (c *CollectionDatatypes) GetDatatypeByKey(ctx context.Context, collectionNu
 	return &datatype, nil
 }
 
-func (c *CollectionDatatypes) UpdateDatatype(ctx context.Context, datatype *schema.DatatypeDoc) error {
+func (m *MongoCollections) UpdateDatatype(ctx context.Context, datatype *schema.DatatypeDoc) error {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, datatype.DUID)
-	result, err := c.collection.UpdateOne(ctx, f, datatype.ToUpdateBSON(), schema.UpsertOption)
+	result, err := m.datatypes.UpdateOne(ctx, f, datatype.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -67,8 +55,8 @@ func (c *CollectionDatatypes) UpdateDatatype(ctx context.Context, datatype *sche
 	return log.OrtooError(errors.New("fail to update datatype"))
 }
 
-func (c *CollectionDatatypes) PurgeDatatype(ctx context.Context, collectionNum uint32, key string) error {
-	doc, err := c.GetDatatypeByKey(ctx, collectionNum, key)
+func (m *MongoCollections) PurgeDatatype(ctx context.Context, collectionNum uint32, key string) error {
+	doc, err := m.GetDatatypeByKey(ctx, collectionNum, key)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -76,12 +64,12 @@ func (c *CollectionDatatypes) PurgeDatatype(ctx context.Context, collectionNum u
 		log.Logger.Warnf("find no datatype to purge")
 		return nil
 	}
-	if err := c.doTransaction(ctx, func() error {
-		if err := c.collectionOperations.PurgeOperations(ctx, collectionNum, doc.DUID); err != nil {
+	if err := m.doTransaction(ctx, func() error {
+		if err := m.PurgeOperations(ctx, collectionNum, doc.DUID); err != nil {
 			return log.OrtooError(err)
 		}
 		f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, doc.DUID)
-		result, err := c.collection.DeleteOne(ctx, f)
+		result, err := m.datatypes.DeleteOne(ctx, f)
 		if err != nil {
 			return log.OrtooError(err)
 		}

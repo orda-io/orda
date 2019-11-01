@@ -28,11 +28,14 @@ func (o *OrtooServerTestSuite) SetupTest() {
 		o.T().Fatal("fail to initialize mongoDB")
 	}
 
+	o.mongo.PurgeAllCollection(context.Background(), o.collectionName)
+
 	o.server, err = server.NewOrtooServer(context.TODO(), NewTestOrtooServerConfig(dbName))
 	if err != nil {
 		_ = log.OrtooError(err)
 		o.Fail("fail to setup")
 	}
+
 	o.collectionNum, err = MakeTestCollection(o.server.Mongo, o.collectionName)
 	if err != nil {
 		o.Fail("fail to test collection")

@@ -13,22 +13,14 @@ const (
 	idForCollection = "collectionID"
 )
 
-type CollectionCounters struct {
-	*baseCollection
-}
-
-func NewCollectionCounters(client *mongo.Client, collection *mongo.Collection) *CollectionCounters {
-	return &CollectionCounters{newCollection(client, collection)}
-}
-
-func (c *CollectionCounters) GetNextCollectionNum(ctx context.Context) (uint32, error) {
+func (m *MongoCollections) GetNextCollectionNum(ctx context.Context) (uint32, error) {
 	opts := options.FindOneAndUpdate()
 	opts.SetUpsert(true)
 	var update = bson.M{
 		"$inc": bson.M{schema.CounterDocFields.Num: 1},
 	}
-	//_ = json.Unmarshal([]byte(`{ "$inc": {"num": 1}}`), &update)
-	result := c.collection.FindOneAndUpdate(ctx, schema.FilterByID(idForCollection), update, opts)
+
+	result := m.counters.FindOneAndUpdate(ctx, schema.FilterByID(idForCollection), update, opts)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return 1, nil

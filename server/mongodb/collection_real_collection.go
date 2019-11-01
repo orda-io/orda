@@ -6,14 +6,13 @@ import (
 
 //CollectionSnapshots is used for manipulating snapshot of datatypes.
 type CollectionSnapshots struct {
-	*baseCollection
+	*MongoCollections
 	name string
 }
 
 func newCollectionSnapshot(client *mongo.Client, collection *mongo.Collection, name string) *CollectionSnapshots {
-
 	return &CollectionSnapshots{
-		baseCollection: newCollection(client, collection),
-		name:           name,
+		MongoCollections: newCollection(client, collection),
+		name:             name,
 	}
 }

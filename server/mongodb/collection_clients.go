@@ -12,19 +12,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// CollectionClients is a struct for Clients
-type CollectionClients struct {
-	*baseCollection
-}
-
-// NewCollectionClients creates a new CollectionClients
-func NewCollectionClients(client *mongo.Client, collection *mongo.Collection) *CollectionClients {
-	return &CollectionClients{newCollection(client, collection)}
-}
-
 // UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
-func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.ClientDoc) error {
-	result, err := c.collection.UpdateOne(ctx, schema.FilterByID(client.CUID), client.ToUpdateBSON(), schema.UpsertOption)
+func (m *MongoCollections) UpdateClient(ctx context.Context, client *schema.ClientDoc) error {
+	result, err := m.clients.UpdateOne(ctx, schema.FilterByID(client.CUID), client.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -35,10 +25,10 @@ func (c *CollectionClients) UpdateClient(ctx context.Context, client *schema.Cli
 	return log.OrtooError(errors.New("fail to update client"))
 }
 
-func (c *CollectionClients) UpdateCheckPointInClient(ctx context.Context, cuid, duid string, checkPoint *model.CheckPoint) error {
+func (m *MongoCollections) UpdateCheckPointInClient(ctx context.Context, cuid, duid string, checkPoint *model.CheckPoint) error {
 
 	x := schema.GetFilter().AddSetCheckPoint(duid, checkPoint)
-	result, err := c.collection.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(x), schema.UpsertOption)
+	result, err := m.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(x), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -49,8 +39,8 @@ func (c *CollectionClients) UpdateCheckPointInClient(ctx context.Context, cuid, 
 	return nil
 }
 
-func (c *CollectionClients) DeleteClient(ctx context.Context, cuid string) error {
-	result, err := c.collection.DeleteOne(ctx, schema.FilterByID(cuid))
+func (m *MongoCollections) DeleteClient(ctx context.Context, cuid string) error {
+	result, err := m.clients.DeleteOne(ctx, schema.FilterByID(cuid))
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -61,11 +51,11 @@ func (c *CollectionClients) DeleteClient(ctx context.Context, cuid string) error
 	return nil
 }
 
-func (c *CollectionClients) GetCheckPointFromClient(ctx context.Context, cuid string, duid string) (*model.CheckPoint, error) {
+func (m *MongoCollections) GetCheckPointFromClient(ctx context.Context, cuid string, duid string) (*model.CheckPoint, error) {
 	opts := options.FindOne()
 	projectField := fmt.Sprintf("%s.%s", cuid, duid)
 	opts.SetProjection(bson.M{projectField: 1})
-	sr := c.collection.FindOne(ctx, schema.FilterByID(cuid), opts)
+	sr := m.clients.FindOne(ctx, schema.FilterByID(cuid), opts)
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -84,20 +74,20 @@ func (c *CollectionClients) GetCheckPointFromClient(ctx context.Context, cuid st
 }
 
 // GetClient gets a client with CUID
-func (c *CollectionClients) GetClientWithoutCheckPoints(ctx context.Context, cuid string) (*schema.ClientDoc, error) {
-	return c.getClient(ctx, cuid, false)
+func (m *MongoCollections) GetClientWithoutCheckPoints(ctx context.Context, cuid string) (*schema.ClientDoc, error) {
+	return m.getClient(ctx, cuid, false)
 }
 
-func (c *CollectionClients) GetClient(ctx context.Context, cuid string) (*schema.ClientDoc, error) {
-	return c.getClient(ctx, cuid, true)
+func (m *MongoCollections) GetClient(ctx context.Context, cuid string) (*schema.ClientDoc, error) {
+	return m.getClient(ctx, cuid, true)
 }
 
-func (c *CollectionClients) getClient(ctx context.Context, cuid string, withCheckPoint bool) (*schema.ClientDoc, error) {
+func (m *MongoCollections) getClient(ctx context.Context, cuid string, withCheckPoint bool) (*schema.ClientDoc, error) {
 	opts := options.FindOne()
 	if !withCheckPoint {
 		opts.SetProjection(bson.M{schema.ClientDocFields.CheckPoints: 0})
 	}
-	sr := c.collection.FindOne(ctx, schema.FilterByID(cuid), opts)
+	sr := m.clients.FindOne(ctx, schema.FilterByID(cuid), opts)
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil

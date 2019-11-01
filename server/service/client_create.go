@@ -30,7 +30,7 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 	if storedDoc == nil {
 		transferredDoc.CreatedAt = time.Now()
 		log.Logger.Infof("A new client is created:%+v", transferredDoc)
-		if _, err := o.mongo.GetOrCreateCollectionSnapshot(ctx, in.Client.Collection); err != nil {
+		if err := o.mongo.GetOrCreateRealCollection(ctx, in.Client.Collection); err != nil {
 			return nil, model.NewRPCError(model.RPCErrMongoDB)
 		}
 	} else {
