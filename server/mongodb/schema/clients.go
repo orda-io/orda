@@ -70,11 +70,32 @@ func (b filter) AddSetCheckPoint(key string, checkPoint *model.CheckPoint) filte
 	}})
 }
 
+func (b filter) AddUnsetCheckPoint(key string) filter {
+	return append(b, bson.E{Key: "$unset", Value: bson.D{
+		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: 1},
+	}})
+}
+
+func (b filter) AddExists(key string) filter {
+	return append(b, bson.E{Key: key, Value: bson.D{
+		{Key: "$exists", Value: true},
+	}})
+}
+
 // GetIndexModel returns the index models of ClientDoc
 func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
-	return []mongo.IndexModel{{
-		Keys: bsonx.Doc{{Key: ClientDocFields.CollectionNum, Value: bsonx.Int32(1)}},
-	}}
+	return []mongo.IndexModel{
+		{
+			Keys: bsonx.Doc{
+				{Key: ClientDocFields.CollectionNum, Value: bsonx.Int32(1)},
+			},
+		},
+		{
+			Keys: bsonx.Doc{
+				{Key: ClientDocFields.CheckPoints, Value: bsonx.String("hashed")},
+			},
+		},
+	}
 }
 
 func (c *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {

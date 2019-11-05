@@ -55,6 +55,27 @@ func (m *MongoCollections) UpdateDatatype(ctx context.Context, datatype *schema.
 	return log.OrtooError(errors.New("fail to update datatype"))
 }
 
+func (m *MongoCollections) PurgeAllCollectionDatatypes(ctx context.Context, collectionNum uint32) error {
+
+	opFilter := schema.GetFilter().AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum)
+	r1, err := m.operations.DeleteMany(ctx, opFilter)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if r1.DeletedCount > 0 {
+		log.Logger.Infof("deleted %d operations", r1.DeletedCount)
+	}
+	datatypeFilter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum)
+	r2, err := m.datatypes.DeleteMany(ctx, datatypeFilter)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if r2.DeletedCount > 0 {
+		log.Logger.Infof("deleted %d datatypes", r2.DeletedCount)
+	}
+	return nil
+}
+
 func (m *MongoCollections) PurgeDatatype(ctx context.Context, collectionNum uint32, key string) error {
 	doc, err := m.GetDatatypeByKey(ctx, collectionNum, key)
 	if err != nil {
@@ -65,11 +86,12 @@ func (m *MongoCollections) PurgeDatatype(ctx context.Context, collectionNum uint
 		return nil
 	}
 	if err := m.doTransaction(ctx, func() error {
+
 		if err := m.PurgeOperations(ctx, collectionNum, doc.DUID); err != nil {
 			return log.OrtooError(err)
 		}
-		f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, doc.DUID)
-		result, err := m.datatypes.DeleteOne(ctx, f)
+		filter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, doc.DUID)
+		result, err := m.datatypes.DeleteOne(ctx, filter)
 		if err != nil {
 			return log.OrtooError(err)
 		}

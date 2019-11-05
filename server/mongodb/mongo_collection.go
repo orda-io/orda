@@ -20,13 +20,6 @@ type MongoCollections struct {
 	realCollection *mongo.Collection
 }
 
-func newCollection(client *mongo.Client, collection *mongo.Collection) *MongoCollections {
-	return &MongoCollections{
-		mongoClient: client,
-		//collection:  collection,
-	}
-}
-
 //Create creates an empty collection by inserting a document and immediately deleting it.
 func (m *MongoCollections) create(ctx context.Context, collection *mongo.Collection, docModel schema.MongoDBDoc) error {
 	result, err := collection.InsertOne(ctx, bson.D{})

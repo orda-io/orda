@@ -27,8 +27,8 @@ func (m *MongoCollections) UpdateClient(ctx context.Context, client *schema.Clie
 
 func (m *MongoCollections) UpdateCheckPointInClient(ctx context.Context, cuid, duid string, checkPoint *model.CheckPoint) error {
 
-	x := schema.GetFilter().AddSetCheckPoint(duid, checkPoint)
-	result, err := m.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(x), schema.UpsertOption)
+	filter := schema.GetFilter().AddSetCheckPoint(duid, checkPoint)
+	result, err := m.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(filter), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -36,6 +36,34 @@ func (m *MongoCollections) UpdateCheckPointInClient(ctx context.Context, cuid, d
 		return nil
 	}
 	log.Logger.Warnf("updated no checkpoint of %s in client %s", duid, cuid)
+	return nil
+}
+
+func (m *MongoCollections) UnsubscribeDatatypeFromClient(ctx context.Context, cuid, duid string) error {
+	filter := schema.GetFilter().AddUnsetCheckPoint(duid)
+	result, err := m.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(filter))
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if result.ModifiedCount == 1 {
+		return nil
+	}
+	log.Logger.Warnf("unsubscribe no client for datatype `%s`", duid)
+	return nil
+}
+
+func (m *MongoCollections) UnsubscribeDatatypeFromAllClient(ctx context.Context, duid string) error {
+	findFilter := schema.GetFilter().AddExists(fmt.Sprintf("%s.%s", schema.ClientDocFields.CheckPoints, duid))
+	updateFilter := schema.GetFilter().AddUnsetCheckPoint(duid)
+	result, err := m.clients.UpdateMany(ctx, findFilter, bson.D(updateFilter))
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if result.ModifiedCount > 0 {
+		log.Logger.Infof("unsubscribed datatype `%s` form %d clients", duid, result.ModifiedCount)
+		return nil
+	}
+	log.Logger.Warnf("unsubscribe no client for datatype `%s`", duid)
 	return nil
 }
 
@@ -100,4 +128,18 @@ func (m *MongoCollections) getClient(ctx context.Context, cuid string, withCheck
 		return nil, log.OrtooError(err)
 	}
 	return &client, nil
+}
+
+func (m *MongoCollections) PurgeAllCollectionClients(ctx context.Context, collectionNum uint32) error {
+	filter := schema.GetFilter().AddFilterEQ(schema.ClientDocFields.CollectionNum, collectionNum)
+	r1, err := m.clients.DeleteMany(ctx, filter)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if r1.DeletedCount > 0 {
+		log.Logger.Infof("deleted %d clients", r1.DeletedCount)
+		return nil
+	}
+	log.Logger.Warnf("deleted no clients")
+	return nil
 }

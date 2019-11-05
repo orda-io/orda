@@ -61,6 +61,31 @@ func (m *MongoCollections) InsertCollection(ctx context.Context, name string) (c
 }
 
 // PurgeAllCollection ...
-func (m *MongoCollections) PurgeAllCollection(ctx context.Context, name string) {
-
+func (m *MongoCollections) PurgeAllCollection(ctx context.Context, name string) error {
+	if err := m.doTransaction(ctx, func() error {
+		collectionDoc, err := m.GetCollection(ctx, name)
+		if err != nil {
+			return log.OrtooError(err)
+		}
+		if err := m.PurgeAllCollectionDatatypes(ctx, collectionDoc.Num); err != nil {
+			return log.OrtooError(err)
+		}
+		if err := m.PurgeAllCollectionClients(ctx, collectionDoc.Num); err != nil {
+			return log.OrtooError(err)
+		}
+		filter := schema.GetFilter().AddFilterEQ(schema.CollectionDocFields.Name, name)
+		result, err := m.collections.DeleteOne(ctx, filter)
+		if err != nil {
+			return log.OrtooError(err)
+		}
+		if result.DeletedCount > 0 {
+			log.Logger.Infof("deleted collection `%s`", name)
+			return nil
+		}
+		log.Logger.Warnf("deleted no collection")
+		return nil
+	}); err != nil {
+		return log.OrtooError(err)
+	}
+	return nil
 }

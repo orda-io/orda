@@ -89,6 +89,20 @@ func TestMongo(t *testing.T) {
 		}
 		assert.Equal(t, clientWithCheckPoints.CheckPoints["test_duid1"].Sseq, uint64(2))
 
+		if err := mongo.UnsubscribeDatatypeFromAllClient(context.TODO(), "test_duid2"); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := mongo.UnsubscribeDatatypeFromClient(context.TODO(), c.CUID, "test_duid1"); err != nil {
+			t.Fatal(err)
+		}
+		clientWithCheckPoints2, err := mongo.GetClient(context.TODO(), c.CUID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, ok := clientWithCheckPoints2.CheckPoints["test_duid1"]
+		assert.Equal(t, ok, false)
+
 		if err := mongo.DeleteClient(context.TODO(), c.CUID); err != nil {
 			t.Fatal(err)
 		}

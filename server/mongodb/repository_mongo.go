@@ -29,10 +29,12 @@ func New(ctx context.Context, conf *Config) (*RepositoryMongo, error) {
 	}
 	db := client.Database(conf.OrtooDB)
 	repo := &RepositoryMongo{
-		db:               db,
-		ctx:              ctx,
-		client:           client,
-		MongoCollections: &MongoCollections{},
+		db:     db,
+		ctx:    ctx,
+		client: client,
+		MongoCollections: &MongoCollections{
+			mongoClient: client,
+		},
 	}
 	if err := repo.InitializeCollections(ctx); err != nil {
 		return nil, log.OrtooError(err)
