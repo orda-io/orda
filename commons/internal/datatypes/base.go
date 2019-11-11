@@ -2,6 +2,7 @@ package datatypes
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
@@ -9,7 +10,7 @@ import (
 
 type baseDatatype struct {
 	Key           string
-	id            model.Duid
+	id            model.DUID
 	opID          *model.OperationID
 	TypeOf        model.TypeOfDatatype
 	state         model.StateOfDatatype
@@ -23,7 +24,7 @@ type PublicBaseDatatypeInterface interface {
 }
 
 func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*baseDatatype, error) {
-	duid, err := model.NewDuid()
+	duid, err := model.NewDUID()
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to create base datatype due to duid")
 	}
@@ -35,6 +36,10 @@ func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*base
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
 		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
 	}, nil
+}
+
+func (b *baseDatatype) GetCUID() string {
+	return hex.EncodeToString(b.opID.CUID)
 }
 
 func (b *baseDatatype) GetEra() uint32 {
@@ -88,6 +93,10 @@ func (b *baseDatatype) SetOpID(opID *model.OperationID) {
 
 func (b *baseDatatype) GetKey() string {
 	return b.Key
+}
+
+func (b *baseDatatype) GetDUID() model.DUID {
+	return b.id
 }
 
 func (b *baseDatatype) SetState(state model.StateOfDatatype) {

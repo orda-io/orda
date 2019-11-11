@@ -21,14 +21,23 @@ func (suite *SimpleDatatypeSuite) SetupTest() {
 
 func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 	tw := NewTestWire()
-	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), tw)
+	cuid1, err := model.NewCUID()
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+	intCounter1, err := commons.NewIntCounter("key1", cuid1, tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}
-	intCounter2, err := commons.NewIntCounter("key2", model.NewNilCUID(), tw)
+	cuid2, err := model.NewCUID()
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+	intCounter2, err := commons.NewIntCounter("key1", cuid2, tw)
 	if err != nil {
 		suite.Fail("fail to create intCounter2")
 	}
+
 	tw.SetDatatypes(intCounter1, intCounter2)
 	if err := intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
 		_, _ = intCounter.IncreaseBy(2)
@@ -58,47 +67,47 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	tw := NewTestWire()
 	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), tw)
 	if err != nil {
-		suite.Fail("fail to create intCounter1")
+		suite.T().Fatal(err)
 	}
 	intCounter2, err := commons.NewIntCounter("key2", model.NewNilCUID(), tw)
 	if err != nil {
-		suite.Fail("fail to create intCounter2")
+		suite.T().Fatal(err)
 	}
 
 	tw.SetDatatypes(intCounter1, intCounter2)
 
 	i, err := intCounter1.Increase()
 	if err != nil {
-		suite.Fail("fail to increase")
+		suite.T().Fatal(err)
 	}
 	suite.Equal(i, int32(1))
-	//var wg = new(sync.WaitGroup)
-	//wg.Add(2)
-	intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
-		//defer wg.Done()
-		intCounter.IncreaseBy(-1)
+	suite.Equal(intCounter1.Get(), intCounter2.Get())
+
+	if err := intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
+		_, _ = intCounter.IncreaseBy(-1)
 		suite.Equal(int32(0), intCounter.Get())
-		intCounter.IncreaseBy(-2)
-		intCounter.IncreaseBy(-3)
+		_, _ = intCounter.IncreaseBy(-2)
+		_, _ = intCounter.IncreaseBy(-3)
 		suite.Equal(int32(-5), intCounter.Get())
 		return nil
-	})
+	}); err != nil {
+		suite.T().Fatal(err)
+	}
 
 	log.Logger.Printf("%#v", intCounter1.Get())
 	log.Logger.Printf("%#v", intCounter2.Get())
 	suite.Equal(intCounter1.Get(), intCounter2.Get())
 
-	intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
-		//defer wg.Done()
-		intCounter.IncreaseBy(1)
-		intCounter.IncreaseBy(2)
+	if err := intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
+		_, _ = intCounter.IncreaseBy(1)
+		_, _ = intCounter.IncreaseBy(2)
 		suite.Equal(int32(-2), intCounter.Get())
-		intCounter.IncreaseBy(3)
-		intCounter.IncreaseBy(4)
+		_, _ = intCounter.IncreaseBy(3)
+		_, _ = intCounter.IncreaseBy(4)
 		return log.OrtooErrorf(nil, "fail to do the transaction")
-	})
-	//
-	////wg.Wait()
+	}); err == nil {
+		suite.T().Fatal(err)
+	}
 	log.Logger.Printf("%#v", intCounter1.Get())
 	log.Logger.Printf("%#v", intCounter2.Get())
 	suite.Equal(intCounter1.Get(), intCounter2.Get())
@@ -111,8 +120,8 @@ func (suite *SimpleDatatypeSuite) TestPushPullPackSync() {
 	}
 	intCounter1.Increase()
 	intCounter1.Increase()
-	//ppp := intCounter1.CreatePushPullPack()
-	//log.Logger.Info(proto.MarshalTextString(ppp))
+	// ppp := intCounter1.CreatePushPullPack()
+	// log.Logger.Info(proto.MarshalTextString(ppp))
 
 }
 

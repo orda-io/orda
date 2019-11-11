@@ -51,7 +51,7 @@ func (c *intCounter) Increase() (int32, error) {
 
 func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 	op := model.NewIncreaseOperation(delta)
-	ret, err := c.ExecuteTransaction(c.TransactionCtx, op, true)
+	ret, err := c.ExecuteOperationWithTransaction(c.TransactionCtx, op, true)
 	if err != nil {
 		return 0, log.OrtooErrorf(err, "fail to execute operation")
 	}
@@ -71,22 +71,22 @@ func (c *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
 	return c.snapshot.increaseCommon(iop.Delta), nil
 }
 
-func (c *intCounter) GetWired() datatypes.WiredDatatype {
-	return c.WiredDatatypeImpl
+func (c *intCounter) GetCommon() *datatypes.CommonDatatype {
+	return c.CommonDatatype
 }
 
 func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterInTransaction) error) error {
 	transactionCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
 	defer func() {
-		if err := c.EndTransaction(transactionCtx, true); err != nil {
+		if err := c.EndTransaction(transactionCtx, true, true); err != nil {
 			_ = log.OrtooError(err)
 		}
 	}()
 	// make a clone of intCounter have nil CommonDatatype.transactionCtx, which means
 	clone := &intCounter{
 		CommonDatatype: &datatypes.CommonDatatype{
-			TransactionDatatypeImpl: c.CommonDatatype.TransactionDatatypeImpl,
-			TransactionCtx:          transactionCtx,
+			TransactionDatatype: c.CommonDatatype.TransactionDatatype,
+			TransactionCtx:      transactionCtx,
 		},
 		snapshot: c.snapshot,
 	}

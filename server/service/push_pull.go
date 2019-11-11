@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"github.com/golang/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"reflect"
@@ -11,7 +10,7 @@ import (
 
 //ProcessPushPull processes a GRPC for Push-Pull
 func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRequest) (*model.PushPullResponse, error) {
-	log.Logger.Infof("Received: %v, %s", proto.MarshalTextString(in), hex.EncodeToString(in.Header.GetCuid()))
+	log.Logger.Infof("REQUEST: %v, %s", in, hex.EncodeToString(in.Header.GetCuid()))
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Header.GetCollection())
 	if collectionDoc == nil || err != nil {
 		return nil, model.NewRPCError(model.RPCErrMongoDB)
@@ -62,6 +61,8 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 			ch := chanList[chosen]
 			msg := value.Interface()
 			log.Logger.Infof("%v %v", ch, msg)
+			ppp := msg.(*model.PushPullPack)
+			response.PushPullPacks = append(response.PushPullPacks, ppp)
 		}
 	}
 

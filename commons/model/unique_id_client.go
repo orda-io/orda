@@ -5,7 +5,7 @@ import (
 )
 
 //CUID is a uniqueID
-type CUID uniqueID
+type CUID UniqueID
 
 //NewCUID creates a new CUID
 func NewCUID() (CUID, error) {
@@ -22,10 +22,5 @@ func NewNilCUID() CUID {
 }
 
 func (c *CUID) String() string {
-	return uniqueID(*c).String()
-}
-
-//Compare makes two CUID compared
-func (c *CUID) Compare(o *CUID) {
-
+	return UniqueID(*c).String()
 }
