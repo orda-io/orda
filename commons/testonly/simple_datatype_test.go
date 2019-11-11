@@ -94,8 +94,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 		suite.T().Fatal(err)
 	}
 
-	log.Logger.Printf("%#v", intCounter1.Get())
-	log.Logger.Printf("%#v", intCounter2.Get())
+	log.Logger.Printf("%#v vs. %#v", intCounter1.Get(), intCounter2.Get())
 	suite.Equal(intCounter1.Get(), intCounter2.Get())
 
 	if err := intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
@@ -108,8 +107,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	}); err == nil {
 		suite.T().Fatal(err)
 	}
-	log.Logger.Printf("%#v", intCounter1.Get())
-	log.Logger.Printf("%#v", intCounter2.Get())
+	log.Logger.Printf("%#v vs. %#v", intCounter1.Get(), intCounter2.Get())
 	suite.Equal(intCounter1.Get(), intCounter2.Get())
 }
 

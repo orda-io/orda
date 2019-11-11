@@ -131,16 +131,20 @@ func (p *PushPullHandler) pullOperations() error {
 
 	var operations []*model.OperationOnWire
 	if p.datatypeDoc.SseqBegin <= sseqBegin && !p.gotOption.HasSnapshotBit() {
-		err := p.mongo.GetOperations(p.ctx, p.DUID, sseqBegin, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
-			var opOnWire model.OperationOnWire
-			if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
-				_ = log.OrtooError(err)
+		err := p.mongo.GetOperations(p.ctx,
+			p.DUID,
+			sseqBegin,
+			constants.InfinitySseq,
+			func(opDoc *schema.OperationDoc) error {
+				var opOnWire model.OperationOnWire
+				if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
+					_ = log.OrtooError(err)
+					return nil
+				}
+				operations = append(operations, &opOnWire)
+				p.currentCheckPoint.Sseq = opDoc.Sseq
 				return nil
-			}
-			operations = append(operations, &opOnWire)
-			p.currentCheckPoint.Sseq = opDoc.Sseq
-			return nil
-		})
+			})
 		if err != nil {
 			return log.OrtooError(err)
 		}
@@ -224,7 +228,11 @@ func (p *PushPullHandler) subscribeDatatype() error {
 	p.DUID = p.datatypeDoc.DUID
 	p.clientDoc.CheckPoints[p.CUID] = p.currentCheckPoint
 	p.gotPushPullPack.Operations = nil
-
+	duid, err := model.DUIDFromString(p.datatypeDoc.DUID)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	p.retPushPullPack.DUID = duid
 	return nil
 }
 

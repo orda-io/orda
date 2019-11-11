@@ -91,6 +91,7 @@ func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.Operat
 }
 
 func (w *WiredDatatype) applyPushPullPackExecuteOperations(operationsOnWire []*model.OperationOnWire) {
+	w.ReceiveRemoteOperationsOnWire(operationsOnWire)
 	//for i := 0; i < len(operationsOnWire); {
 	//op := model.ToOperation(operationsOnWire[i])
 	//var transaction []*model.Operation
@@ -167,13 +168,14 @@ func (w *WiredDatatype) applyPushPullPackSyncCheckPoint(newCheckPoint *model.Che
 	log.Logger.Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, w.checkPoint)
 }
 
-func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype() {
+func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPullPack) {
 	oldState := w.state
 	switch w.state {
 	case model.StateOfDatatype_DUE_TO_CREATE,
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE,
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE:
 		w.state = model.StateOfDatatype_SUBSCRIBED
+		w.id = ppp.DUID
 	case model.StateOfDatatype_SUBSCRIBED:
 	case model.StateOfDatatype_DUE_TO_UNSUBSCRIBE:
 	case model.StateOfDatatype_UNSUBSCRIBED:
@@ -186,7 +188,7 @@ func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype() {
 func (w *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	w.applyPushPullPackExcludeDuplicatedOperations(ppp)
 	w.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
-	w.applyPushPullPackUpdateStateOfDatatype()
+	w.applyPushPullPackUpdateStateOfDatatype(ppp)
 	w.applyPushPullPackExecuteOperations(ppp.Operations)
 }
 

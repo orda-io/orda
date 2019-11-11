@@ -2,6 +2,7 @@ package integration
 
 import (
 	"github.com/knowhunger/ortoo/commons"
+	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/integration_test/test_helper"
 	"github.com/stretchr/testify/suite"
 	"testing"
@@ -43,26 +44,28 @@ func (s *ClientServerTestSuite) TestClientServer() {
 		}
 	})
 
-	// s.Run("Can subscribe the datatype", func() {
-	// 	config := NewTestOrtooClientConfig(s.collectionName)
-	// 	client2, err := commons.NewOrtooClient(config, "client2")
-	// 	if err != nil {
-	// 		s.T().Fatal(err)
-	// 	}
-	// 	if err := client2.Connect(); err != nil {
-	// 		s.T().Fatal(err)
-	// 	}
-	// 	defer client2.Close()
-	//
-	// 	intCounterCh2, errCh2 := client2.SubscribeIntCounter(key)
-	// 	var intCounter2 commons.IntCounter
-	// 	select {
-	// 	case intCounter2 = <-intCounterCh2:
-	// 		log.Logger.Infof("%d", intCounter2.Get())
-	// 	case err2 := <-errCh2:
-	// 		s.T().Fatal(err2)
-	// 	}
-	// })
+	s.Run("Can subscribe the datatype", func() {
+		config := NewTestOrtooClientConfig(s.collectionName)
+		client2, err := commons.NewOrtooClient(config, "client2")
+		if err != nil {
+			s.T().Fatal(err)
+		}
+		if err := client2.Connect(); err != nil {
+			s.T().Fatal(err)
+		}
+		defer client2.Close()
+
+		intCounterCh2, errCh2 := client2.SubscribeIntCounter(key)
+		var intCounter2 commons.IntCounter
+		select {
+		case intCounter2 = <-intCounterCh2:
+			log.Logger.Infof("%d", intCounter2.Get())
+			_, _ = intCounter2.IncreaseBy(3)
+			client2.Sync()
+		case err2 := <-errCh2:
+			s.T().Fatal(err2)
+		}
+	})
 }
 
 func TestClientServerTestSuite(t *testing.T) {

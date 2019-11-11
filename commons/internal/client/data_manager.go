@@ -57,7 +57,7 @@ func (d *DataManager) Sync(key string) error {
 		return log.OrtooErrorf(err, "fail to sync")
 	}
 	for _, ppp := range pushPullResponse.PushPullPacks {
-		if model.CompareUID(ppp.DUID, model.UniqueID(data.GetDUID())) == 0 {
+		if ppp.Key == data.GetKey() {
 			data.ApplyPushPullPack(ppp)
 		}
 	}

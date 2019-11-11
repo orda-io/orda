@@ -5,9 +5,14 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func (m *MongoCollections) InsertOperations(ctx context.Context, operations []interface{}) error {
+	if operations == nil {
+		return nil
+	}
 	result, err := m.operations.InsertMany(ctx, operations)
 	if err != nil {
 		return log.OrtooError(err)
@@ -40,7 +45,9 @@ func (m *MongoCollections) GetOperations(
 	if to != constants.InfinitySseq {
 		f.AddFilterLTE(schema.OperationDocFields.Sseq, to)
 	}
-	cursor, err := m.operations.Find(ctx, f)
+	opt := options.Find()
+	opt.SetSort(bson.D{{schema.OperationDocFields.Sseq, 1}})
+	cursor, err := m.operations.Find(ctx, f, opt)
 	if err != nil {
 		return log.OrtooError(err)
 	}

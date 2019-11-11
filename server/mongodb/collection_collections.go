@@ -67,6 +67,9 @@ func (m *MongoCollections) PurgeAllCollection(ctx context.Context, name string) 
 		if err != nil {
 			return log.OrtooError(err)
 		}
+		if collectionDoc == nil {
+			return nil
+		}
 		if err := m.PurgeAllCollectionDatatypes(ctx, collectionDoc.Num); err != nil {
 			return log.OrtooError(err)
 		}
