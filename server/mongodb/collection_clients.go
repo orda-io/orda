@@ -75,7 +75,7 @@ func (m *MongoCollections) DeleteClient(ctx context.Context, cuid string) error 
 	if result.DeletedCount == 1 {
 		return nil
 	}
-	log.Logger.Warnf("fail to find a client to delete: %s", cuid)
+	log.Logger.Warnf("fail to find a client to delete: `%s`", cuid)
 	return nil
 }
 

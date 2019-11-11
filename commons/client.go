@@ -20,7 +20,7 @@ type Client interface {
 }
 
 // NewOrtooClient creates a new Ortoo client
-func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
+func NewOrtooClient(conf *OrtooClientConfig, alias string) (Client, error) {
 	ctx := context.NewOrtooContext()
 	cuid, err := model.NewCUID()
 	if err != nil {
@@ -29,7 +29,7 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 
 	clientModel := &model.Client{
 		CUID:       cuid,
-		Alias:      conf.Alias,
+		Alias:      alias,
 		Collection: conf.CollectionName,
 	}
 	msgMgr := client.NewMessageManager(ctx, clientModel, conf.getServiceHost())

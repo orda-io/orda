@@ -9,12 +9,11 @@ import (
 )
 
 // NewTestOrtooClientConfig ...
-func NewTestOrtooClientConfig(dbName string, collectionName string) *commons.OrtooClientConfig {
+func NewTestOrtooClientConfig(collectionName string) *commons.OrtooClientConfig {
 	return &commons.OrtooClientConfig{
 		Address:        "127.0.0.1",
 		Port:           19061,
 		CollectionName: collectionName,
-		Alias:          dbName,
 	}
 }
 

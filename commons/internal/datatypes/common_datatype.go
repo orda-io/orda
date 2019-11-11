@@ -40,7 +40,10 @@ func (c *CommonDatatype) Initialize(
 }
 
 func (c *CommonDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
-
+	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
+		c.state = state
+		return nil
+	}
 	subscribeOp, err := model.NewSnapshotOperation(c.TypeOf, state, c.finalDatatype.GetSnapshot())
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to subscribe")

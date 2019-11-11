@@ -114,6 +114,10 @@ func (w *WiredDatatypeImpl) ApplyPushPullPack(ppp *model.PushPullPack) {
 }
 
 func (w *WiredDatatypeImpl) getOperationOnWires(cseq uint64) []*model.OperationOnWire {
+
+	if len(w.buffer) == 0 {
+		return []*model.OperationOnWire{}
+	}
 	op := model.ToOperation(w.buffer[0])
 	startCseq := op.GetBase().ID.GetSeq()
 	var start = int(cseq - startCseq)
