@@ -7,8 +7,12 @@ import (
 
 // CommonDatatype defines common methods
 type CommonDatatype struct {
-	*TransactionDatatypeImpl
+	*TransactionDatatype
 	TransactionCtx *TransactionContext
+}
+
+type CommonDatatypeInterface interface {
+	GetCommon() *CommonDatatype
 }
 
 // Initialize is a method for initialization
@@ -32,7 +36,7 @@ func (c *CommonDatatype) Initialize(
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to create transaction manager")
 	}
-	c.TransactionDatatypeImpl = transactionDatatype
+	c.TransactionDatatype = transactionDatatype
 	c.TransactionCtx = nil
 	c.SetFinalDatatype(finalDatatype)
 
@@ -40,12 +44,15 @@ func (c *CommonDatatype) Initialize(
 }
 
 func (c *CommonDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
-
+	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
+		c.state = state
+		return nil
+	}
 	subscribeOp, err := model.NewSnapshotOperation(c.TypeOf, state, c.finalDatatype.GetSnapshot())
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to subscribe")
 	}
-	_, err = c.ExecuteTransaction(c.TransactionCtx, subscribeOp, true)
+	_, err = c.ExecuteOperationWithTransaction(c.TransactionCtx, subscribeOp, true)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to execute SubscribeOperation")
 	}
@@ -53,7 +60,7 @@ func (c *CommonDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 }
 
 // ExecuteTransactionRemote is a method to execute a transaction of remote operations
-func (c *CommonDatatype) ExecuteTransactionRemote(transaction []model.Operation) error {
+func (c CommonDatatype) ExecuteTransactionRemote(transaction []model.Operation) error {
 	var transactionCtx *TransactionContext
 	var err error
 	if len(transaction) > 1 {
@@ -66,14 +73,14 @@ func (c *CommonDatatype) ExecuteTransactionRemote(transaction []model.Operation)
 			return log.OrtooError(err)
 		}
 		defer func() {
-			if err := c.EndTransaction(transactionCtx, false); err != nil {
+			if err := c.EndTransaction(transactionCtx, false, false); err != nil {
 				_ = log.OrtooError(err)
 			}
 		}()
 		transaction = transaction[1:]
 	}
 	for _, op := range transaction {
-		c.ExecuteTransaction(transactionCtx, op, false)
+		c.ExecuteOperationWithTransaction(transactionCtx, op, false)
 	}
 	return nil
 }

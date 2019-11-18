@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-//ClientDoc defines the document related to client
+// ClientDoc defines the document related to client
 type ClientDoc struct {
 	CUID          string                       `bson:"_id"`
 	Alias         string                       `bson:"alias"`
@@ -38,12 +38,13 @@ var ClientDocFields = struct {
 	UpdatedAt:     "updatedAt",
 }
 
-//ToUpdateBSON returns a bson from a ClientDoc
+// ToUpdateBSON returns a bson from a ClientDoc
 func (c *ClientDoc) ToUpdateBSON() bson.D {
 
 	var checkPointBson map[string]bson.M
+	checkPointBson = make(map[string]bson.M)
 	if c.CheckPoints != nil {
-		checkPointBson = make(map[string]bson.M)
+
 		for k, v := range c.CheckPoints {
 			checkPointBson[k] = ToCheckPointBSON(v)
 		}
@@ -69,11 +70,32 @@ func (b filter) AddSetCheckPoint(key string, checkPoint *model.CheckPoint) filte
 	}})
 }
 
-//GetIndexModel returns the index models of ClientDoc
+func (b filter) AddUnsetCheckPoint(key string) filter {
+	return append(b, bson.E{Key: "$unset", Value: bson.D{
+		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: 1},
+	}})
+}
+
+func (b filter) AddExists(key string) filter {
+	return append(b, bson.E{Key: key, Value: bson.D{
+		{Key: "$exists", Value: true},
+	}})
+}
+
+// GetIndexModel returns the index models of ClientDoc
 func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
-	return []mongo.IndexModel{{
-		Keys: bsonx.Doc{{Key: ClientDocFields.CollectionNum, Value: bsonx.Int32(1)}},
-	}}
+	return []mongo.IndexModel{
+		{
+			Keys: bsonx.Doc{
+				{Key: ClientDocFields.CollectionNum, Value: bsonx.Int32(1)},
+			},
+		},
+		{
+			Keys: bsonx.Doc{
+				{Key: ClientDocFields.CheckPoints, Value: bsonx.String("hashed")},
+			},
+		},
+	}
 }
 
 func (c *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
@@ -83,7 +105,7 @@ func (c *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
 	return nil
 }
 
-//ClientModelToBson returns a ClientDoc from a model.Client
+// ClientModelToBson returns a ClientDoc from a model.Client
 func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	return &ClientDoc{
 		CUID:          model.GetCUIDString(),

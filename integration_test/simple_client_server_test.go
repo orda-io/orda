@@ -1,71 +1,69 @@
 package integration
 
 import (
-	"context"
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/log"
-	"github.com/knowhunger/ortoo/server"
+	"github.com/knowhunger/ortoo/integration_test/test_helper"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
-const (
-	dbName         = "ortoo_test_db"
-	collectionName = "ortoo_test_collection"
-)
-
 type ClientServerTestSuite struct {
-	suite.Suite
-	server *server.OrtooServer
+	OrtooServerTestSuite
 }
 
 func (s *ClientServerTestSuite) SetupTest() {
-	s.T().Log("SetupTest")
-	var err error
-	s.server, err = server.NewOrtooServer(context.TODO(), NewTestOrtooServerConfig(dbName))
-	if err != nil {
-		_ = log.OrtooError(err)
-		s.Fail("fail to setup")
-	}
-	if err := MakeTestCollection(s.server.Mongo, collectionName); err != nil {
-		s.Fail("fail to test collection")
-	}
-	go s.server.Start()
-
+	s.OrtooServerTestSuite.SetupTest()
 }
 
 func (s *ClientServerTestSuite) TestClientServer() {
-	s.Run("Can create a client with server", func() {
-		config := NewTestOrtooClientConfig(dbName, collectionName)
-		client1, err := commons.NewOrtooClient(config)
+
+	key := test_helper.GetFunctionName()
+
+	s.Run("Can create a client and a datatype with server", func() {
+		config := NewTestOrtooClientConfig(s.collectionName)
+		client1, err := commons.NewOrtooClient(config, "client1")
 		if err != nil {
-			s.T().Fail()
-			return
+			s.T().Fatal(err)
 		}
 		if err := client1.Connect(); err != nil {
-			s.Suite.Fail("fail to connect server")
+			s.T().Fatal(err)
 		}
 		defer client1.Close()
-		//intCounter1, err := commons.newIntCounter("key", client1)
-		intCounterCh1, err1Ch := client1.CreateIntCounter("key")
+
+		intCounterCh1, errCh1 := client1.CreateIntCounter(key)
 		var intCounter1 commons.IntCounter
 		select {
 		case intCounter1 = <-intCounterCh1:
-		case err1 := <-err1Ch:
-			s.Suite.Fail("fail to :", err1)
-		}
-		if intCounter1 != nil {
 			_, _ = intCounter1.Increase()
 			_, _ = intCounter1.Increase()
 			_, _ = intCounter1.Increase()
 			client1.Sync()
+		case err1 := <-errCh1:
+			s.T().Fatal(err1)
 		}
 	})
-}
 
-func (s *ClientServerTestSuite) TearDownTest() {
-	s.server.Close()
-	s.T().Log("TearDownTest")
+	s.Run("Can subscribe the datatype", func() {
+		config := NewTestOrtooClientConfig(s.collectionName)
+		client2, err := commons.NewOrtooClient(config, "client2")
+		if err != nil {
+			s.T().Fatal(err)
+		}
+		if err := client2.Connect(); err != nil {
+			s.T().Fatal(err)
+		}
+		defer client2.Close()
+
+		intCounterCh2, errCh2 := client2.SubscribeIntCounter(key)
+		var intCounter2 commons.IntCounter
+		select {
+		case intCounter2 = <-intCounterCh2:
+			log.Logger.Infof("%d", intCounter2.Get())
+		case err2 := <-errCh2:
+			s.T().Fatal(err2)
+		}
+	})
 }
 
 func TestClientServerTestSuite(t *testing.T) {

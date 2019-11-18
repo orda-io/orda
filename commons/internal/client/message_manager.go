@@ -70,5 +70,6 @@ func (r *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullRe
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to sync push pull")
 	}
+	log.Logger.Infof("RESPONSE:%v", pushPullResponse)
 	return pushPullResponse, nil
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-//CollectionDoc defines the document of Collections collection
+// CollectionDoc defines the document of Collections collection
 type CollectionDoc struct {
 	Name      string    `bson:"_id"`
 	Num       uint32    `bson:"num"`
@@ -23,7 +23,7 @@ var CollectionDocFields = struct {
 	CreatedAt: "createdAt",
 }
 
-//GetIndexModel returns the index models of CollectionDoc
+// GetIndexModel returns the index models of CollectionDoc
 func (c *CollectionDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
 		Keys: bsonx.Doc{{Key: CollectionDocFields.Num, Value: bsonx.Int32(1)}},

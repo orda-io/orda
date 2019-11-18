@@ -5,19 +5,10 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type CollectionOperations struct {
-	*baseCollection
-}
-
-func NewCollectionOperations(client *mongo.Client, operations *mongo.Collection) *CollectionOperations {
-	return &CollectionOperations{newCollection(client, operations)}
-}
-
-func (c *CollectionOperations) InsertOperations(ctx context.Context, operations []interface{}) error {
-	result, err := c.collection.InsertMany(ctx, operations)
+func (m *MongoCollections) InsertOperations(ctx context.Context, operations []interface{}) error {
+	result, err := m.operations.InsertMany(ctx, operations)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -27,18 +18,18 @@ func (c *CollectionOperations) InsertOperations(ctx context.Context, operations 
 	return nil
 }
 
-func (c *CollectionOperations) DeleteOperation(ctx context.Context, duid string, sseq uint32) (int64, error) {
+func (m *MongoCollections) DeleteOperation(ctx context.Context, duid string, sseq uint32) (int64, error) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterEQ(schema.OperationDocFields.Sseq, sseq)
-	result, err := c.collection.DeleteOne(ctx, f)
+	result, err := m.operations.DeleteOne(ctx, f)
 	if err != nil {
 		return 0, log.OrtooError(err)
 	}
 	return result.DeletedCount, nil
 }
 
-func (c *CollectionOperations) GetOperations(
+func (m *MongoCollections) GetOperations(
 	ctx context.Context,
 	duid string,
 	from, to uint64,
@@ -49,7 +40,7 @@ func (c *CollectionOperations) GetOperations(
 	if to != constants.InfinitySseq {
 		f.AddFilterLTE(schema.OperationDocFields.Sseq, to)
 	}
-	cursor, err := c.collection.Find(ctx, f)
+	cursor, err := m.operations.Find(ctx, f)
 	if err != nil {
 		return log.OrtooError(err)
 	}
@@ -65,5 +56,21 @@ func (c *CollectionOperations) GetOperations(
 			}
 		}
 	}
+	return nil
+}
+
+func (m *MongoCollections) PurgeOperations(ctx context.Context, collectionNum uint32, duid string) error {
+	f := schema.GetFilter().
+		AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum).
+		AddFilterEQ(schema.OperationDocFields.DUID, duid)
+	result, err := m.operations.DeleteMany(ctx, f)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if result.DeletedCount > 0 {
+		log.Logger.Infof("deleted %d operations of %s(%d)", result.DeletedCount, duid, collectionNum)
+		return nil
+	}
+	log.Logger.Warnf("deleted no operations")
 	return nil
 }

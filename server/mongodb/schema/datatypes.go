@@ -28,6 +28,7 @@ var DatatypeDocFields = struct {
 	Type          string
 	SseqBegin     string
 	SseqEnd       string
+	Visible       string
 	CreatedAt     string
 	UpdatedAt     string
 }{
@@ -37,11 +38,12 @@ var DatatypeDocFields = struct {
 	Type:          "type",
 	SseqBegin:     "sseqBegin",
 	SseqEnd:       "sseqEnd",
+	Visible:       "visible",
 	CreatedAt:     "createdAt",
 	UpdatedAt:     "updatedAt",
 }
 
-//GetIndexModel returns the index models of ClientDoc
+// GetIndexModel returns the index models of ClientDoc
 func (c *DatatypeDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
 		Keys: bsonx.Doc{
@@ -57,6 +59,8 @@ func (c *DatatypeDoc) ToUpdateBSON() bson.D {
 			{DatatypeDocFields.Key, c.Key},
 			{DatatypeDocFields.CollectionNum, c.CollectionNum},
 			{DatatypeDocFields.Type, c.Type},
+			{DatatypeDocFields.SseqBegin, c.SseqBegin},
+			{DatatypeDocFields.Visible, c.Visible},
 			{DatatypeDocFields.SseqEnd, c.SseqEnd},
 			{DatatypeDocFields.CreatedAt, c.CreatedAt},
 		}},

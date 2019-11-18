@@ -7,7 +7,7 @@ type OrtooClientConfig struct {
 	Address        string
 	Port           int
 	CollectionName string
-	Alias          string
+	//Alias          string
 }
 
 func (o *OrtooClientConfig) getServiceHost() string {

@@ -8,18 +8,17 @@ import (
 
 //DataManager manages Ortoo datatypes regarding operations
 type DataManager struct {
-	//cuid model.CUID
 	reqResMgr *MessageManager
 	dataMap   map[string]model.FinalDatatype
 }
 
-//DeliverOperation delivers an operation
-func (d *DataManager) DeliverOperation(wired datatypes.WiredDatatype, op model.Operation) {
-	//panic("implement me")
-}
+////DeliverOperation delivers an operation. It works differently according to delivery policy
+//func (d *DataManager) DeliverOperation(wired datatypes.WiredDatatypeInterface, op model.Operation) {
+//	//panic("implement me")
+//}
 
 //DeliverTransaction delivers a transaction
-func (d *DataManager) DeliverTransaction(wired datatypes.WiredDatatype, transaction []model.Operation) {
+func (d *DataManager) DeliverTransaction(wired *datatypes.WiredDatatype) { //, transaction []model.Operation) {
 	//panic("implement me")
 }
 
@@ -57,20 +56,30 @@ func (d *DataManager) Sync(key string) error {
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to sync")
 	}
-	log.Logger.Infof("%+v", pushPullResponse)
+	for _, ppp := range pushPullResponse.PushPullPacks {
+		if model.CompareUID(ppp.DUID, model.UniqueID(data.GetDUID())) == 0 {
+			data.ApplyPushPullPack(ppp)
+		}
+	}
+
+	//log.Logger.Infof("%+v", pushPullResponse)
 	return nil
 }
 
 func (d *DataManager) SyncAll() error {
 	var pushPullPacks []*model.PushPullPack
-	for _, v := range d.dataMap {
-		ppp := v.CreatePushPullPack()
+	for _, data := range d.dataMap {
+		ppp := data.CreatePushPullPack()
 		pushPullPacks = append(pushPullPacks, ppp)
 	}
 	pushPullResponse, err := d.reqResMgr.Sync(pushPullPacks...)
 	if err != nil {
 		return log.OrtooError(err)
 	}
-	log.Logger.Infof("%+v", pushPullResponse)
+	for _, ppp := range pushPullResponse.PushPullPacks {
+		if data, ok := d.dataMap[ppp.GetKey()]; ok {
+			data.ApplyPushPullPack(ppp)
+		}
+	}
 	return nil
 }

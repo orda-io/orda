@@ -8,7 +8,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-//Client is a client of Ortoo which manages connections and data
+// Client is a client of Ortoo which manages connections and data
 type Client interface {
 	Connect() error
 	createDatatype()
@@ -19,8 +19,8 @@ type Client interface {
 	CreateIntCounter(key string) (chan IntCounter, chan error)
 }
 
-//NewOrtooClient creates a new Ortoo client
-func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
+// NewOrtooClient creates a new Ortoo client
+func NewOrtooClient(conf *OrtooClientConfig, alias string) (Client, error) {
 	ctx := context.NewOrtooContext()
 	cuid, err := model.NewCUID()
 	if err != nil {
@@ -29,7 +29,7 @@ func NewOrtooClient(conf *OrtooClientConfig) (Client, error) {
 
 	clientModel := &model.Client{
 		CUID:       cuid,
-		Alias:      conf.Alias,
+		Alias:      alias,
 		Collection: conf.CollectionName,
 	}
 	msgMgr := client.NewMessageManager(ctx, clientModel, conf.getServiceHost())

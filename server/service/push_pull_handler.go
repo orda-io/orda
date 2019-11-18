@@ -16,9 +16,9 @@ type pushPullCase uint32
 
 const (
 	caseError pushPullCase = iota
-	caseMatchKey
+	//caseMatchKey
 	caseMatchNothing
-	caseMatchDUID
+	caseUsedDUID
 	caseMatchKeyNotType
 	caseAllMatchedSubscribed
 	caseAllMatchedNotSubscribed
@@ -90,6 +90,7 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
 	if err != nil {
 		return log.OrtooError(err)
 	}
+	log.Logger.Infof("PushPullCase: %d", casePushPull)
 	if err := p.processSubscribeOrCreate(casePushPull); err != nil {
 		return log.OrtooError(err)
 	}
@@ -108,9 +109,17 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
 }
 
 func (p *PushPullHandler) commitToMongoDB() error {
+	p.datatypeDoc.SseqEnd = p.currentCheckPoint.Sseq
+	p.retPushPullPack.CheckPoint = p.currentCheckPoint
+	if err := p.mongo.InsertOperations(p.ctx, p.pushingOperations); err != nil {
+		return log.OrtooError(err)
+	}
 
-	err := p.mongo.InsertOperations(p.ctx, p.pushingOperations)
-	if err != nil {
+	if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
+		return log.OrtooError(err)
+	}
+
+	if err := p.mongo.UpdateCheckPointInClient(p.ctx, p.CUID, p.DUID, p.currentCheckPoint); err != nil {
 		return log.OrtooError(err)
 	}
 
@@ -129,13 +138,14 @@ func (p *PushPullHandler) pullOperations() error {
 				return nil
 			}
 			operations = append(operations, &opOnWire)
-			p.retPushPullPack.CheckPoint.Sseq = opDoc.Sseq
+			p.currentCheckPoint.Sseq = opDoc.Sseq
 			return nil
 		})
 		if err != nil {
 			return log.OrtooError(err)
 		}
 		p.retPushPullPack.Operations = operations
+
 	}
 	return nil
 }
@@ -145,7 +155,7 @@ func (p *PushPullHandler) pushOperations() error {
 	sseq := p.initialCheckPoint.Sseq
 	for _, opOnWire := range p.gotPushPullPack.Operations {
 		op := model.ToOperation(opOnWire)
-		if p.initialCheckPoint.Cseq+1 == op.GetBase().ID.GetSeq() {
+		if p.currentCheckPoint.Cseq+1 == op.GetBase().ID.GetSeq() {
 			sseq++
 			marshaledOp, err := proto.Marshal(opOnWire)
 			if err != nil {
@@ -162,8 +172,10 @@ func (p *PushPullHandler) pushOperations() error {
 			}
 			p.pushingOperations = append(p.pushingOperations, opDoc)
 			p.retPushPullPack.Operations = append(p.retPushPullPack.Operations, opOnWire)
-			p.retPushPullPack.CheckPoint.SyncCseq(op.GetBase().ID.GetSeq())
-		} else if p.initialCheckPoint.Cseq > op.GetBase().ID.GetSeq() {
+			p.currentCheckPoint.SyncCseq(op.GetBase().ID.GetSeq())
+			p.currentCheckPoint.Sseq++
+
+		} else if p.currentCheckPoint.Cseq >= op.GetBase().ID.GetSeq() {
 			log.Logger.Infof("reject operation due to duplicate: %v", op)
 		} else {
 			return log.OrtooError(
@@ -178,16 +190,26 @@ func (p *PushPullHandler) processSubscribeOrCreate(code pushPullCase) error {
 	if p.gotOption.HasSubscribeBit() && p.gotOption.HasCreateBit() {
 
 	} else if p.gotOption.HasSubscribeBit() {
-
+		switch code {
+		case caseMatchNothing:
+		case caseUsedDUID:
+		case caseMatchKeyNotType:
+		case caseAllMatchedSubscribed:
+		case caseAllMatchedNotSubscribed:
+			if err := p.subscribeDatatype(); err != nil {
+				return log.OrtooError(err)
+			}
+		case caseAllMatchedNotVisible:
+		}
 	} else if p.gotOption.HasCreateBit() {
 		switch code {
 		case caseMatchNothing: // can create with key and duid
 			if err := p.createDatatype(); err != nil {
 				return log.OrtooError(err)
 			}
-		case caseMatchDUID: // duplicate DUID; can create with key but with another DUID
+		case caseUsedDUID: // duplicate DUID; can create with key but with another DUID
 		case caseMatchKeyNotType: // key is already used;
-		case caseAllMatchedSubscribed: // error: already created and subscribed; might duplicate creation
+		case caseAllMatchedSubscribed: // already created and subscribed; might duplicate creation; do nothing
 		case caseAllMatchedNotSubscribed: // error: already created but not subscribed;
 		case caseAllMatchedNotVisible: //
 
@@ -198,19 +220,28 @@ func (p *PushPullHandler) processSubscribeOrCreate(code pushPullCase) error {
 	return nil
 }
 
+func (p *PushPullHandler) subscribeDatatype() error {
+	p.DUID = p.datatypeDoc.DUID
+	p.clientDoc.CheckPoints[p.CUID] = p.currentCheckPoint
+	p.gotPushPullPack.Operations = nil
+
+	return nil
+}
+
 func (p *PushPullHandler) createDatatype() error {
 	p.datatypeDoc = &schema.DatatypeDoc{
 		DUID:          p.DUID,
 		Key:           p.Key,
 		CollectionNum: p.collectionDoc.Num,
 		Type:          model.TypeOfDatatype_name[p.gotPushPullPack.Type],
+		SseqBegin:     1,
 		SseqEnd:       0,
 		Visible:       true,
 		CreatedAt:     time.Now(),
 	}
-	if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
-		return log.OrtooError(err)
-	}
+	//if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
+	//	return log.OrtooError(err)
+	//}
 	return nil
 }
 
@@ -229,13 +260,15 @@ func (p *PushPullHandler) evaluatePushPullCase() (pushPullCase, error) {
 		if p.datatypeDoc == nil {
 			return caseMatchNothing, nil
 		} else {
-			return caseMatchDUID, nil
+			return caseUsedDUID, nil
 		}
 	} else {
 		if p.datatypeDoc.Type == model.TypeOfDatatype_name[p.gotPushPullPack.Type] {
 			if p.datatypeDoc.Visible {
 				checkPoint := p.clientDoc.GetCheckPoint(p.DUID)
 				if checkPoint != nil {
+					p.initialCheckPoint = checkPoint
+					p.currentCheckPoint = checkPoint.Clone()
 					return caseAllMatchedSubscribed, nil
 				} else {
 					return caseAllMatchedNotSubscribed, nil

@@ -9,12 +9,11 @@ import (
 )
 
 // NewTestOrtooClientConfig ...
-func NewTestOrtooClientConfig(dbName string, collectionName string) *commons.OrtooClientConfig {
+func NewTestOrtooClientConfig(collectionName string) *commons.OrtooClientConfig {
 	return &commons.OrtooClientConfig{
 		Address:        "127.0.0.1",
 		Port:           19061,
 		CollectionName: collectionName,
-		Alias:          dbName,
 	}
 }
 
@@ -27,18 +26,18 @@ func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	}
 }
 
-func MakeTestCollection(mongo *mongodb.RepositoryMongo, collectionName string) error {
+func MakeTestCollection(mongo *mongodb.RepositoryMongo, collectionName string) (uint32, error) {
 	collectionDoc, err := mongo.GetCollection(context.TODO(), collectionName)
 	if err != nil {
-		return log.OrtooError(err)
+		return 0, log.OrtooError(err)
 	}
 	if collectionDoc != nil {
-		return nil
+		return collectionDoc.Num, nil
 	}
 	collectionDoc, err = mongo.InsertCollection(context.TODO(), collectionName)
 	if err != nil {
-		return log.OrtooError(err)
+		return 0, log.OrtooError(err)
 	}
 	log.Logger.Infof("a new collection is created:%+v", collectionDoc)
-	return nil
+	return collectionDoc.Num, nil
 }
