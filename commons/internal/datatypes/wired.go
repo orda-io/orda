@@ -164,10 +164,11 @@ func (w *WiredDatatype) applyPushPullPackSyncCheckPoint(newCheckPoint *model.Che
 	if w.checkPoint.Sseq < newCheckPoint.Sseq {
 		w.checkPoint.Sseq = newCheckPoint.Sseq
 	}
-	log.Logger.Infof("sync CheckPoint: %v -> %v", oldCheckPoint, w.checkPoint)
+	log.Logger.Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, w.checkPoint)
 }
 
 func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype() {
+	oldState := w.state
 	switch w.state {
 	case model.StateOfDatatype_DUE_TO_CREATE,
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE,
@@ -178,6 +179,7 @@ func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype() {
 	case model.StateOfDatatype_UNSUBSCRIBED:
 	case model.StateOfDatatype_DELETED:
 	}
+	log.Logger.Infof("update state: %v -> %v", oldState, w.state)
 }
 
 // ApplyPushPullPack ...
