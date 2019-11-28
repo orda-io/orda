@@ -4,6 +4,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/context"
 	"github.com/knowhunger/ortoo/commons/errors"
 	"github.com/knowhunger/ortoo/commons/internal/client"
+	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 )
@@ -104,7 +105,7 @@ func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOf
 		errCh <- log.OrtooErrorf(err, "fail to create intCounter")
 		return
 	}
-	icImpl := ic.(*intCounter)
+	icImpl := ic.(*datatypes.IntCounter)
 	if err := c.dataMgr.SubscribeOrCreate(icImpl, state); err != nil {
 		errCh <- log.OrtooErrorf(err, "fail to subscribe intCounter")
 	}

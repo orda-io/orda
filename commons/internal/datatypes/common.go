@@ -43,6 +43,20 @@ func (c *CommonDatatype) Initialize(
 	return nil
 }
 
+func (c *CommonDatatype) GetMeta() []byte {
+	model.DatatypeMeta{
+		Key:                  "",
+		DUID:                 nil,
+		OpID:                 nil,
+		TypeOf:               0,
+		State:                0,
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     nil,
+		XXX_sizecache:        0,
+	}
+	return nil
+}
+
 func (c *CommonDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
 		c.state = state

@@ -6,6 +6,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/commons/serverside"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -16,7 +17,6 @@ type pushPullCase uint32
 
 const (
 	caseError pushPullCase = iota
-	//caseMatchKey
 	caseMatchNothing
 	caseUsedDUID
 	caseMatchKeyNotType
@@ -104,6 +104,33 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
 	if err := p.commitToMongoDB(); err != nil {
 		return log.OrtooError(err)
 	}
+
+	p.reserveUpdateSnapshot()
+
+	return nil
+}
+
+func (p *PushPullHandler) reserveUpdateSnapshot() error {
+	var sseq uint64 = 0
+	datatype := serverside.NewFinalDatatype(p.datatypeDoc.Key, 0) // model.TypeOfDatatype_value[p.datatypeDoc.Type])
+	snapshotDoc, err := p.mongo.GetLatestSnapshot(p.ctx, p.collectionDoc.Num, p.datatypeDoc.DUID)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if snapshotDoc != nil {
+		sseq = snapshotDoc.Sseq
+	}
+	p.mongo.GetOperations(p.ctx, p.datatypeDoc.DUID, sseq+1, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
+		opDoc.Operation
+		datatype.ExecuteTransactionRemote([])
+		return nil
+	})
+	// datatype.ExecuteTransactionRemote()
+	// data, err := commons.NewIntCounter(p.datatypeDoc.Key, model.NewNilCUID(), nil)
+	// if err != nil {
+	// 	return log.OrtooError(err)
+	// }
+	//
 
 	return nil
 }
@@ -247,9 +274,6 @@ func (p *PushPullHandler) createDatatype() error {
 		Visible:       true,
 		CreatedAt:     time.Now(),
 	}
-	//if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
-	//	return log.OrtooError(err)
-	//}
 	return nil
 }
 

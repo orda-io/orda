@@ -47,6 +47,7 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 
 	r.clients = r.db.Collection(schema.CollectionNameClients)
 	r.counters = r.db.Collection(schema.CollectionNameCounters)
+	r.snapshots = r.db.Collection(schema.CollectionNameSnapshot)
 	r.datatypes = r.db.Collection(schema.CollectionNameDatatypes)
 	r.operations = r.db.Collection(schema.CollectionNameOperations)
 	r.collections = r.db.Collection(schema.CollectionNameCollections)
@@ -73,6 +74,11 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 	if _, ok := realCollections[schema.CollectionNameOperations]; !ok {
 		if err := r.create(ctx, r.operations, &schema.OperationDoc{}); err != nil {
 			return log.OrtooErrorf(err, "fail to create the operations collection")
+		}
+	}
+	if _, ok := realCollections[schema.CollectionNameSnapshot]; !ok {
+		if err := r.create(ctx, r.snapshots, &schema.SnapshotDoc{}); err != nil {
+			return log.OrtooErrorf(err, "fail to create snapshots collection")
 		}
 	}
 	if _, ok := realCollections[schema.CollectionNameCollections]; !ok {

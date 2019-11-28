@@ -8,7 +8,7 @@ import (
 
 // Wire defines the interfaces related to delivering operations. This is called when a dataType needs to send messages
 type Wire interface {
-	//DeliverOperation(wired WiredDatatypeInterface, op model.Operation)
+	// DeliverOperation(wired WiredDatatypeInterface, op model.Operation)
 	DeliverTransaction(wired *WiredDatatype)
 }
 
@@ -19,11 +19,6 @@ type WiredDatatype struct {
 	checkPoint *model.CheckPoint
 	buffer     []*model.OperationOnWire
 }
-
-//// WiredDatatyper defines the interface used in Wire
-//type WiredDatatyper interface {
-//	GetWired() WiredDatatypeInterface
-//}
 
 // PublicWiredDatatypeInterface defines the interface related to the synchronization with Ortoo server
 type PublicWiredDatatypeInterface interface {
@@ -92,23 +87,23 @@ func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.Operat
 
 func (w *WiredDatatype) applyPushPullPackExecuteOperations(operationsOnWire []*model.OperationOnWire) {
 	w.ReceiveRemoteOperationsOnWire(operationsOnWire)
-	//for i := 0; i < len(operationsOnWire); {
-	//op := model.ToOperation(operationsOnWire[i])
-	//var transaction []*model.Operation
-	//switch cast := op.(type) {
-	//case *model.TransactionOperation:
+	// for i := 0; i < len(operationsOnWire); {
+	// op := model.ToOperation(operationsOnWire[i])
+	// var transaction []*model.Operation
+	// switch cast := op.(type) {
+	// case *model.TransactionOperation:
 
-	//transaction = append(transaction, operationsOnWire[i : i+int(cast.NumOfOps)])
+	// transaction = append(transaction, operationsOnWire[i : i+int(cast.NumOfOps)])
 
-	//transaction = operationsOnWire[i : i+int(cast.NumOfOps)]
-	//for j := i; j < i+int(cast.NumOfOps); j++ {
+	// transaction = operationsOnWire[i : i+int(cast.NumOfOps)]
+	// for j := i; j < i+int(cast.NumOfOps); j++ {
 	//	//transaction = append(transaction, &model.ToOperation(operationsOnWire[j]))
-	//}
-	//i += int(cast.NumOfOps)
+	// }
+	// i += int(cast.NumOfOps)
 	//	default:
 	//		//transaction = []*
 	//	}
-	//}
+	// }
 }
 
 // CreatePushPullPack ...

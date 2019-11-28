@@ -6,17 +6,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-//CollectionNameXXXX  is the name of the collection for XXXX
+// CollectionNameXXXX  is the name of the collection for XXXX
 const (
 	CollectionNameCounters    = "-_-Counters"
 	CollectionNameClients     = "-_-Clients"
 	CollectionNameCollections = "-_-Collections"
 	CollectionNameDatatypes   = "-_-Datatypes"
 	CollectionNameOperations  = "-_-Operations"
+	CollectionNameSnapshot    = "-_-Snapshots"
 )
 
 const (
-	//ID is an identifier of MongoDB
+	// ID is an identifier of MongoDB
 	ID = "_id"
 )
 
