@@ -96,9 +96,9 @@ func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.Context, name st
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to list collections")
 	}
-	r.realCollection = r.db.Collection(name)
+	collection := r.db.Collection(name)
 	if len(names) == 0 {
-		if err := r.create(ctx, r.realCollection, nil); err != nil {
+		if err := r.create(ctx, collection, nil); err != nil {
 			return log.OrtooErrorf(err, "fail to create collection")
 		}
 	}

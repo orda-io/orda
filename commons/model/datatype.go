@@ -16,5 +16,6 @@ type FinalDatatype interface {
 	ApplyPushPullPack(*PushPullPack)   // @WiredDatatype
 	SetState(state StateOfDatatype)    // @baseDatatype
 	GetCUID() string                   // @baseDatatype
-	GetMetaAndSnapshot() ([]byte, string)
+	GetMetaAndSnapshot() ([]byte, string, error)
+	SetMetaAndSnapshot(meta []byte, snapshot string) error
 }

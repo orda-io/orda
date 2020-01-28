@@ -64,6 +64,10 @@ func (c *ClientDoc) ToUpdateBSON() bson.D {
 
 }
 
+func (b filter) AddSnapshot(data bson.M, version uint64) filter {
+	return append(b, bson.E{Key: "$set", Value: data})
+}
+
 func (b filter) AddSetCheckPoint(key string, checkPoint *model.CheckPoint) filter {
 	return append(b, bson.E{Key: "$set", Value: bson.D{
 		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: ToCheckPointBSON(checkPoint)},

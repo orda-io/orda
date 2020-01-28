@@ -1,6 +1,7 @@
 package datatypes
 
 import (
+	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 )
@@ -43,17 +44,31 @@ func (c *CommonDatatype) Initialize(
 	return nil
 }
 
-func (c *CommonDatatype) GetMeta() []byte {
-	model.DatatypeMeta{
-		Key:                  "",
-		DUID:                 nil,
-		OpID:                 nil,
-		TypeOf:               0,
-		State:                0,
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
+func (c *CommonDatatype) GetMeta() ([]byte, error) {
+	meta := model.DatatypeMeta{
+		Key:    c.Key,
+		DUID:   c.id,
+		OpID:   c.opID,
+		TypeOf: c.TypeOf,
+		State:  c.state,
 	}
+	metab, err := proto.Marshal(&meta)
+	if err != nil {
+		return nil, log.OrtooError(err)
+	}
+	return metab, nil
+}
+
+func (c *CommonDatatype) SetMeta(meta []byte) error {
+	m := model.DatatypeMeta{}
+	if err := proto.Unmarshal(meta, &m); err != nil {
+		return log.OrtooError(err)
+	}
+	c.Key = m.Key
+	c.id = m.DUID
+	c.opID = m.OpID
+	c.TypeOf = m.TypeOf
+	c.state = m.State
 	return nil
 }
 

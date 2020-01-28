@@ -2,11 +2,13 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 func (m *MongoCollections) GetLatestSnapshot(ctx context.Context, collectionNum uint32, duid string) (*schema.SnapshotDoc, error) {
@@ -29,4 +31,22 @@ func (m *MongoCollections) GetLatestSnapshot(ctx context.Context, collectionNum 
 	return &snapshot, nil
 }
 
-// func (m *MongoCollections) InsertSnapshot(ctx context.Context, collectionNum uint32, duid stri)
+func (m *MongoCollections) InsertSnapshot(ctx context.Context, collectionNum uint32, duid string, sseq uint64, meta []byte, snapshot string) error {
+	snap := schema.SnapshotDoc{
+		ID:            fmt.Sprintf("%s:%d", duid, sseq),
+		CollectionNum: collectionNum,
+		DUID:          duid,
+		Sseq:          sseq,
+		Meta:          meta,
+		Snapshot:      snapshot,
+		CreatedAt:     time.Now(),
+	}
+	result, err := m.snapshots.InsertOne(ctx, snap.ToInsertBSON())
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if result.InsertedID == snap.ID {
+		log.Logger.Infof("Snapshot %s is inserted", result.InsertedID)
+	}
+	return nil
+}

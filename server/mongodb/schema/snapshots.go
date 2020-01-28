@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"time"
@@ -42,4 +43,16 @@ func (c *SnapshotDoc) GetIndexModel() []mongo.IndexModel {
 			{SnapshotDocFields.Sseq, bsonx.Int64(1)},
 		},
 	}}
+}
+
+func (c *SnapshotDoc) ToInsertBSON() bson.M {
+	return bson.M{
+		SnapshotDocFields.ID:            c.ID,
+		SnapshotDocFields.CollectionNum: c.CollectionNum,
+		SnapshotDocFields.DUID:          c.DUID,
+		SnapshotDocFields.Sseq:          c.Sseq,
+		SnapshotDocFields.Meta:          c.Meta,
+		SnapshotDocFields.Snapshot:      c.Snapshot,
+		SnapshotDocFields.CreatedAt:     c.CreatedAt,
+	}
 }

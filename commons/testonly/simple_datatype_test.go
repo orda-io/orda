@@ -39,7 +39,7 @@ func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 	}
 
 	tw.SetDatatypes(intCounter1, intCounter2)
-	if err := intCounter1.DoTransaction("transaction1", func(intCounter datatypes.IntCounterInTransaction) error {
+	if err := intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
 		_, _ = intCounter.IncreaseBy(2)
 		suite.Equal(int32(2), intCounter.Get())
 		_, _ = intCounter.IncreaseBy(4)
@@ -51,7 +51,7 @@ func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 
 	suite.Equal(int32(6), intCounter1.Get())
 
-	if err := intCounter1.DoTransaction("transaction2", func(intCounter datatypes.IntCounterInTransaction) error {
+	if err := intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
 		_, _ = intCounter.IncreaseBy(3)
 		suite.Equal(int32(9), intCounter.Get())
 		_, _ = intCounter.IncreaseBy(5)
@@ -83,7 +83,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	suite.Equal(i, int32(1))
 	suite.Equal(intCounter1.Get(), intCounter2.Get())
 
-	if err := intCounter1.DoTransaction("transaction1", func(intCounter datatypes.IntCounterInTransaction) error {
+	if err := intCounter1.DoTransaction("transaction1", func(intCounter commons.IntCounterInTransaction) error {
 		_, _ = intCounter.IncreaseBy(-1)
 		suite.Equal(int32(0), intCounter.Get())
 		_, _ = intCounter.IncreaseBy(-2)
@@ -97,7 +97,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	log.Logger.Printf("%#v vs. %#v", intCounter1.Get(), intCounter2.Get())
 	suite.Equal(intCounter1.Get(), intCounter2.Get())
 
-	if err := intCounter1.DoTransaction("transaction2", func(intCounter datatypes.IntCounterInTransaction) error {
+	if err := intCounter1.DoTransaction("transaction2", func(intCounter commons.IntCounterInTransaction) error {
 		_, _ = intCounter.IncreaseBy(1)
 		_, _ = intCounter.IncreaseBy(2)
 		suite.Equal(int32(-2), intCounter.Get())

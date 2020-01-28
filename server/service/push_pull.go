@@ -48,7 +48,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	}
 	response := &model.PushPullResponse{
 		Header: in.Header,
-		Id:     in.Id,
+		ID:     in.ID,
 	}
 
 	for remainingChan > 0 && chanList != nil {

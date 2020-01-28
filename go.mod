@@ -5,7 +5,7 @@ require (
 	github.com/amsokol/protoc-gen-gotag v0.2.1 // indirect
 	github.com/axw/gocov v1.0.0 // indirect
 	github.com/fatih/structtag v1.1.0 // indirect
-	github.com/favadi/protoc-go-inject-tag v0.0.0-20181008023834-c2c1884c833d // indirect
+	github.com/favadi/protoc-go-inject-tag v1.0.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.1
@@ -22,7 +22,7 @@ require (
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.1.1
-	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
+	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	google.golang.org/grpc v1.21.1
 	gotest.tools v2.2.0+incompatible
 )

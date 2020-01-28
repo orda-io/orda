@@ -1,9 +1,6 @@
 package model
 
 import (
-	// "github.com/knowhunger/ortoo/commons/internal/datatypes"
-	"encoding/json"
-	"github.com/gogo/protobuf/types"
 	"github.com/knowhunger/ortoo/commons/log"
 )
 
@@ -55,18 +52,15 @@ func (t *TransactionOperation) ExecuteRemote(datatype FinalDatatype) (interface{
 
 // ////////////////// SubscribeOperation ////////////////////
 func NewSnapshotOperation(datatype TypeOfDatatype, state StateOfDatatype, snapshot Snapshot) (*SnapshotOperation, error) {
-	snapshotBinary, err := json.Marshal(snapshot)
+	any, err := snapshot.GetTypeAny()
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to create subscribe operation")
 	}
 	return &SnapshotOperation{
-		Base:  NewOperation(TypeOfOperation_SNAPSHOT),
-		Type:  datatype,
-		State: state,
-		Snapshot: &types.Any{
-			TypeUrl: snapshot.GetTypeUrl(),
-			Value:   snapshotBinary,
-		},
+		Base:     NewOperation(TypeOfOperation_SNAPSHOT),
+		Type:     datatype,
+		State:    state,
+		Snapshot: any,
 	}, nil
 }
 
@@ -78,8 +72,8 @@ func (s *SnapshotOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, e
 
 // ExecuteRemote ...
 func (s *SnapshotOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
-	// datatype.BeginTransaction(t.Tag)
-	return nil, nil
+
+	return datatype.ExecuteRemote(s)
 }
 
 // ////////////////// IncreaseOperation ////////////////////

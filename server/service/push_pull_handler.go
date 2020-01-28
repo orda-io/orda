@@ -105,41 +105,86 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
 		return log.OrtooError(err)
 	}
 
-	p.reserveUpdateSnapshot()
-
+	if len(p.pushingOperations) > 0 {
+		if err := p.reserveUpdateSnapshot(); err != nil {
+			return log.OrtooError(err)
+		}
+	}
 	return nil
 }
 
 func (p *PushPullHandler) reserveUpdateSnapshot() error {
 	var sseq uint64 = 0
-	datatype := serverside.NewFinalDatatype(p.datatypeDoc.Key, 0) // model.TypeOfDatatype_value[p.datatypeDoc.Type])
+	datatype, err := serverside.NewFinalDatatype(p.datatypeDoc.Key, model.TypeOfDatatype_INT_COUNTER)
+	if err != nil {
+		return log.OrtooError(err)
+	}
 	snapshotDoc, err := p.mongo.GetLatestSnapshot(p.ctx, p.collectionDoc.Num, p.datatypeDoc.DUID)
 	if err != nil {
 		return log.OrtooError(err)
 	}
 	if snapshotDoc != nil {
 		sseq = snapshotDoc.Sseq
+		serverside.SetSnapshot(datatype, snapshotDoc.Meta, snapshotDoc.Snapshot)
 	}
-	p.mongo.GetOperations(p.ctx, p.datatypeDoc.DUID, sseq+1, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
-		opDoc.Operation
-		datatype.ExecuteTransactionRemote([])
+	var transaction []model.Operation
+	var remainOfTransaction uint32 = 0
+	if err := p.mongo.GetOperations(p.ctx, p.datatypeDoc.DUID, sseq+1, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
+		// opOnWire := opDoc.Operation
+		var opOnWire model.OperationOnWire
+		if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
+			return err
+		}
+		op := model.ToOperation(&opOnWire)
+		log.Logger.Infof("%s", op)
+		if op.GetBase().OpType == model.TypeOfOperation_TRANSACTION {
+			trxOp := op.(*model.TransactionOperation)
+			remainOfTransaction = trxOp.NumOfOps
+		}
+		if remainOfTransaction > 0 {
+			transaction = append(transaction, op)
+			remainOfTransaction--
+			if remainOfTransaction == 0 {
+				if err := datatype.ExecuteTransactionRemote(transaction); err != nil {
+					return log.OrtooError(err)
+				}
+				transaction = nil
+			}
+		} else {
+			_, err := op.ExecuteRemote(datatype)
+			if err != nil {
+				return log.OrtooError(err)
+			}
+		}
+		sseq = opDoc.Sseq
 		return nil
-	})
-	// datatype.ExecuteTransactionRemote()
-	// data, err := commons.NewIntCounter(p.datatypeDoc.Key, model.NewNilCUID(), nil)
-	// if err != nil {
-	// 	return log.OrtooError(err)
-	// }
-	//
+	}); err != nil {
+		return log.OrtooError(err)
+	}
 
+	meta, data, err := datatype.GetMetaAndSnapshot()
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if err := p.mongo.InsertSnapshot(p.ctx, p.collectionDoc.Num, p.datatypeDoc.DUID, sseq, meta, data); err != nil {
+		return log.OrtooError(err)
+	}
+
+	if err := p.mongo.InsertRealSnapshot(p.ctx, p.collectionDoc.Name, p.datatypeDoc.Key, data, sseq); err != nil {
+		return log.OrtooError(err)
+	}
 	return nil
 }
 
 func (p *PushPullHandler) commitToMongoDB() error {
 	p.datatypeDoc.SseqEnd = p.currentCheckPoint.Sseq
 	p.retPushPullPack.CheckPoint = p.currentCheckPoint
-	if err := p.mongo.InsertOperations(p.ctx, p.pushingOperations); err != nil {
-		return log.OrtooError(err)
+
+	if len(p.pushingOperations) > 0 {
+		log.Logger.Infof("pushing %d operations", len(p.pushingOperations))
+		if err := p.mongo.InsertOperations(p.ctx, p.pushingOperations); err != nil {
+			return log.OrtooError(err)
+		}
 	}
 
 	if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {

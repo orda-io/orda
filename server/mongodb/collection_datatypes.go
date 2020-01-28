@@ -65,13 +65,23 @@ func (m *MongoCollections) PurgeAllCollectionDatatypes(ctx context.Context, coll
 	if r1.DeletedCount > 0 {
 		log.Logger.Infof("deleted %d operations", r1.DeletedCount)
 	}
-	datatypeFilter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum)
-	r2, err := m.datatypes.DeleteMany(ctx, datatypeFilter)
+
+	snapFilter := schema.GetFilter().AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum)
+	r2, err := m.snapshots.DeleteMany(ctx, snapFilter)
 	if err != nil {
 		return log.OrtooError(err)
 	}
 	if r2.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d datatypes", r2.DeletedCount)
+		log.Logger.Infof("deleted %d snapshots", r2.DeletedCount)
+	}
+
+	datatypeFilter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum)
+	r3, err := m.datatypes.DeleteMany(ctx, datatypeFilter)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if r3.DeletedCount > 0 {
+		log.Logger.Infof("deleted %d datatypes", r3.DeletedCount)
 	}
 	return nil
 }

@@ -99,6 +99,10 @@ func (b *baseDatatype) GetDUID() model.DUID {
 	return b.id
 }
 
+func (b *baseDatatype) SetDUID(duid model.DUID) {
+	b.id = duid
+}
+
 func (b *baseDatatype) SetState(state model.StateOfDatatype) {
 	b.state = state
 }

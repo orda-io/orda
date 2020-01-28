@@ -42,6 +42,11 @@ func (s *ClientServerTestSuite) TestClientServer() {
 		case err1 := <-errCh1:
 			s.T().Fatal(err1)
 		}
+
+		// intCounter1.DoTransaction("transaction1", func(counter commons.IntCounterInTransaction) error {
+		//	return nil
+		// })
+
 	})
 
 	s.Run("Can subscribe the datatype", func() {
