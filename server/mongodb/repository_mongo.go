@@ -47,6 +47,7 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 
 	r.clients = r.db.Collection(schema.CollectionNameClients)
 	r.counters = r.db.Collection(schema.CollectionNameCounters)
+	r.snapshots = r.db.Collection(schema.CollectionNameSnapshot)
 	r.datatypes = r.db.Collection(schema.CollectionNameDatatypes)
 	r.operations = r.db.Collection(schema.CollectionNameOperations)
 	r.collections = r.db.Collection(schema.CollectionNameCollections)
@@ -75,6 +76,11 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 			return log.OrtooErrorf(err, "fail to create the operations collection")
 		}
 	}
+	if _, ok := realCollections[schema.CollectionNameSnapshot]; !ok {
+		if err := r.create(ctx, r.snapshots, &schema.SnapshotDoc{}); err != nil {
+			return log.OrtooErrorf(err, "fail to create snapshots collection")
+		}
+	}
 	if _, ok := realCollections[schema.CollectionNameCollections]; !ok {
 		if err := r.create(ctx, r.collections, &schema.CollectionDoc{}); err != nil {
 			return log.OrtooErrorf(err, "fail to create the collections collection")
@@ -90,9 +96,9 @@ func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.Context, name st
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to list collections")
 	}
-	r.realCollection = r.db.Collection(name)
+	collection := r.db.Collection(name)
 	if len(names) == 0 {
-		if err := r.create(ctx, r.realCollection, nil); err != nil {
+		if err := r.create(ctx, collection, nil); err != nil {
 			return log.OrtooErrorf(err, "fail to create collection")
 		}
 	}

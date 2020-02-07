@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/integration_test/test_helper"
@@ -11,7 +12,7 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"gotest.tools/assert"
 
-	//"log"
+	// "log"
 	"sync"
 	"testing"
 	"time"
@@ -204,4 +205,8 @@ func (i *testSnapshot) CloneSnapshot() model.Snapshot {
 
 func (i *testSnapshot) GetTypeUrl() string {
 	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
+}
+
+func (i *testSnapshot) GetTypeAny() (*types.Any, error) {
+	return nil, nil
 }

@@ -8,7 +8,7 @@ import (
 
 // Wire defines the interfaces related to delivering operations. This is called when a dataType needs to send messages
 type Wire interface {
-	//DeliverOperation(wired WiredDatatypeInterface, op model.Operation)
+	// DeliverOperation(wired WiredDatatypeInterface, op model.Operation)
 	DeliverTransaction(wired *WiredDatatype)
 }
 
@@ -19,11 +19,6 @@ type WiredDatatype struct {
 	checkPoint *model.CheckPoint
 	buffer     []*model.OperationOnWire
 }
-
-//// WiredDatatyper defines the interface used in Wire
-//type WiredDatatyper interface {
-//	GetWired() WiredDatatypeInterface
-//}
 
 // PublicWiredDatatypeInterface defines the interface related to the synchronization with Ortoo server
 type PublicWiredDatatypeInterface interface {
@@ -91,23 +86,24 @@ func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.Operat
 }
 
 func (w *WiredDatatype) applyPushPullPackExecuteOperations(operationsOnWire []*model.OperationOnWire) {
-	//for i := 0; i < len(operationsOnWire); {
-	//op := model.ToOperation(operationsOnWire[i])
-	//var transaction []*model.Operation
-	//switch cast := op.(type) {
-	//case *model.TransactionOperation:
+	w.ReceiveRemoteOperationsOnWire(operationsOnWire)
+	// for i := 0; i < len(operationsOnWire); {
+	// op := model.ToOperation(operationsOnWire[i])
+	// var transaction []*model.Operation
+	// switch cast := op.(type) {
+	// case *model.TransactionOperation:
 
-	//transaction = append(transaction, operationsOnWire[i : i+int(cast.NumOfOps)])
+	// transaction = append(transaction, operationsOnWire[i : i+int(cast.NumOfOps)])
 
-	//transaction = operationsOnWire[i : i+int(cast.NumOfOps)]
-	//for j := i; j < i+int(cast.NumOfOps); j++ {
+	// transaction = operationsOnWire[i : i+int(cast.NumOfOps)]
+	// for j := i; j < i+int(cast.NumOfOps); j++ {
 	//	//transaction = append(transaction, &model.ToOperation(operationsOnWire[j]))
-	//}
-	//i += int(cast.NumOfOps)
+	// }
+	// i += int(cast.NumOfOps)
 	//	default:
 	//		//transaction = []*
 	//	}
-	//}
+	// }
 }
 
 // CreatePushPullPack ...
@@ -164,27 +160,30 @@ func (w *WiredDatatype) applyPushPullPackSyncCheckPoint(newCheckPoint *model.Che
 	if w.checkPoint.Sseq < newCheckPoint.Sseq {
 		w.checkPoint.Sseq = newCheckPoint.Sseq
 	}
-	log.Logger.Infof("sync CheckPoint: %v -> %v", oldCheckPoint, w.checkPoint)
+	log.Logger.Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, w.checkPoint)
 }
 
-func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype() {
+func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPullPack) {
+	oldState := w.state
 	switch w.state {
 	case model.StateOfDatatype_DUE_TO_CREATE,
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE,
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE:
 		w.state = model.StateOfDatatype_SUBSCRIBED
+		w.id = ppp.DUID
 	case model.StateOfDatatype_SUBSCRIBED:
 	case model.StateOfDatatype_DUE_TO_UNSUBSCRIBE:
 	case model.StateOfDatatype_UNSUBSCRIBED:
 	case model.StateOfDatatype_DELETED:
 	}
+	log.Logger.Infof("update state: %v -> %v", oldState, w.state)
 }
 
 // ApplyPushPullPack ...
 func (w *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	w.applyPushPullPackExcludeDuplicatedOperations(ppp)
 	w.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
-	w.applyPushPullPackUpdateStateOfDatatype()
+	w.applyPushPullPackUpdateStateOfDatatype(ppp)
 	w.applyPushPullPackExecuteOperations(ppp.Operations)
 }
 

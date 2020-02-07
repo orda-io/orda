@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"github.com/google/uuid"
 	"github.com/knowhunger/ortoo/commons/log"
 )
 
@@ -15,6 +16,18 @@ func NewDUID() (DUID, error) {
 		return nil, log.OrtooErrorf(err, "fail to generate datatype UID")
 	}
 	return DUID(u), nil
+}
+
+func DUIDFromString(duidString string) (DUID, error) {
+	uuid, err := uuid.Parse(duidString)
+	if err != nil {
+		return nil, log.OrtooError(err)
+	}
+	b, err := uuid.MarshalBinary()
+	if err != nil {
+		return nil, log.OrtooError(err)
+	}
+	return b, nil
 }
 
 func (d DUID) String() string {

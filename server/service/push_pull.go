@@ -8,7 +8,7 @@ import (
 	"reflect"
 )
 
-//ProcessPushPull processes a GRPC for Push-Pull
+// ProcessPushPull processes a GRPC for Push-Pull
 func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRequest) (*model.PushPullResponse, error) {
 	log.Logger.Infof("REQUEST: %v, %s", in, hex.EncodeToString(in.Header.GetCuid()))
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Header.GetCollection())
@@ -48,7 +48,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	}
 	response := &model.PushPullResponse{
 		Header: in.Header,
-		Id:     in.Id,
+		ID:     in.ID,
 	}
 
 	for remainingChan > 0 && chanList != nil {

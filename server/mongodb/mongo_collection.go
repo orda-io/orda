@@ -10,17 +10,16 @@ import (
 )
 
 type MongoCollections struct {
-	//name           string
-	mongoClient    *mongo.Client
-	clients        *mongo.Collection
-	counters       *mongo.Collection
-	datatypes      *mongo.Collection
-	operations     *mongo.Collection
-	collections    *mongo.Collection
-	realCollection *mongo.Collection
+	mongoClient *mongo.Client
+	clients     *mongo.Collection
+	counters    *mongo.Collection
+	snapshots   *mongo.Collection
+	datatypes   *mongo.Collection
+	operations  *mongo.Collection
+	collections *mongo.Collection
 }
 
-//Create creates an empty collection by inserting a document and immediately deleting it.
+// Create creates an empty collection by inserting a document and immediately deleting it.
 func (m *MongoCollections) create(ctx context.Context, collection *mongo.Collection, docModel schema.MongoDBDoc) error {
 	result, err := collection.InsertOne(ctx, bson.D{})
 	if err != nil {

@@ -23,5 +23,5 @@ func (c *CheckPoint) SyncCseq(cseq uint64) *CheckPoint {
 }
 
 func (c *CheckPoint) Clone() *CheckPoint {
-	return NewCheckPoint().Set(c.Cseq, c.Sseq)
+	return NewCheckPoint().Set(c.Sseq, c.Cseq)
 }

@@ -6,20 +6,15 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-//DataManager manages Ortoo datatypes regarding operations
+// DataManager manages Ortoo datatypes regarding operations
 type DataManager struct {
 	reqResMgr *MessageManager
 	dataMap   map[string]model.FinalDatatype
 }
 
-////DeliverOperation delivers an operation. It works differently according to delivery policy
-//func (d *DataManager) DeliverOperation(wired datatypes.WiredDatatypeInterface, op model.Operation) {
-//	//panic("implement me")
-//}
-
-//DeliverTransaction delivers a transaction
-func (d *DataManager) DeliverTransaction(wired *datatypes.WiredDatatype) { //, transaction []model.Operation) {
-	//panic("implement me")
+// DeliverTransaction delivers a transaction
+func (d *DataManager) DeliverTransaction(wired *datatypes.WiredDatatype) { // , transaction []model.Operation) {
+	// panic("implement me")
 }
 
 func NewDataManager(manager *MessageManager) *DataManager {
@@ -29,7 +24,7 @@ func NewDataManager(manager *MessageManager) *DataManager {
 	}
 }
 
-//Get returns a datatype
+// Get returns a datatype
 func (d *DataManager) Get(key string) model.FinalDatatype {
 	dt, ok := d.dataMap[key]
 	if ok {
@@ -38,7 +33,7 @@ func (d *DataManager) Get(key string) model.FinalDatatype {
 	return nil
 }
 
-//SubscribeOrCreate links a datatype with the datatype
+// SubscribeOrCreate links a datatype with the datatype
 func (d *DataManager) SubscribeOrCreate(dt model.FinalDatatype, state model.StateOfDatatype) error {
 	if _, ok := d.dataMap[dt.GetKey()]; !ok {
 		d.dataMap[dt.GetKey()] = dt
@@ -57,12 +52,10 @@ func (d *DataManager) Sync(key string) error {
 		return log.OrtooErrorf(err, "fail to sync")
 	}
 	for _, ppp := range pushPullResponse.PushPullPacks {
-		if model.CompareUID(ppp.DUID, model.UniqueID(data.GetDUID())) == 0 {
+		if ppp.Key == data.GetKey() {
 			data.ApplyPushPullPack(ppp)
 		}
 	}
-
-	//log.Logger.Infof("%+v", pushPullResponse)
 	return nil
 }
 

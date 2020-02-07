@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-//ProcessClient processes ClientRequest and returns ClientResponse
+// ProcessClient processes ClientRequest and returns ClientResponse
 func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
 
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Client.Collection)

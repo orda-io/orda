@@ -94,3 +94,11 @@ message CheckPoint {
     // @inject_tag: bson:"c"
     uint64 cseq = 2 [json_name = "c"];
 }
+
+message DatatypeMeta {
+    string key = 1;
+    bytes DUID = 2;
+    OperationID opID = 3;
+    TypeOfDatatype typeOf = 4;
+    StateOfDatatype state = 5;
+}

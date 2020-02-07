@@ -81,7 +81,7 @@ func (m *MongoCollections) DeleteClient(ctx context.Context, cuid string) error 
 
 func (m *MongoCollections) GetCheckPointFromClient(ctx context.Context, cuid string, duid string) (*model.CheckPoint, error) {
 	opts := options.FindOne()
-	projectField := fmt.Sprintf("%s.%s", cuid, duid)
+	projectField := fmt.Sprintf("checkpoints.%s", duid)
 	opts.SetProjection(bson.M{projectField: 1})
 	sr := m.clients.FindOne(ctx, schema.FilterByID(cuid), opts)
 	if err := sr.Err(); err != nil {

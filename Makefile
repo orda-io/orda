@@ -3,8 +3,8 @@
 protoc-gen:
 	protoc commons/model/*.proto \
 			-I=./commons/model/ \
-			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,:./commons/model/ \
-			--gotag_out=xxx="bson+\"-\"",output_path=./commons/model:.
+			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,:./commons/model/
+#			--gotag_out=xxx="bson+\"-\"",output_path=./commons/model/:.
 	protoc-go-inject-tag -input=./commons/model/model.pb.go
 
 dependency:

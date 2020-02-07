@@ -92,7 +92,7 @@ func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOf
 	if fromDataMgr != nil {
 		if fromDataMgr.GetType() == model.TypeOfDatatype_INT_COUNTER {
 			log.Logger.Info("Already subscribed datatype")
-			intCounterCh <- fromDataMgr.(IntCounter)
+			intCounterCh <- *fromDataMgr.(*IntCounter)
 			return
 		}
 		errCh <- &errors.ErrSubscribeDatatype{}
@@ -104,16 +104,16 @@ func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOf
 		errCh <- log.OrtooErrorf(err, "fail to create intCounter")
 		return
 	}
-	icImpl := ic.(*intCounter)
-	if err := c.dataMgr.SubscribeOrCreate(icImpl, state); err != nil {
+
+	if err := c.dataMgr.SubscribeOrCreate(ic, state); err != nil {
 		errCh <- log.OrtooErrorf(err, "fail to subscribe intCounter")
 	}
 
 	go func() {
-		if err := c.dataMgr.Sync(icImpl.GetKey()); err != nil {
+		if err := c.dataMgr.Sync(ic.GetKey()); err != nil {
 			errCh <- err
 		}
-		intCounterCh <- icImpl
+		intCounterCh <- *ic
 	}()
 
 	return

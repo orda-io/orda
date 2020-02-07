@@ -6,6 +6,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/commons/serverside"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -16,7 +17,6 @@ type pushPullCase uint32
 
 const (
 	caseError pushPullCase = iota
-	//caseMatchKey
 	caseMatchNothing
 	caseUsedDUID
 	caseMatchKeyNotType
@@ -105,14 +105,86 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) (err error) {
 		return log.OrtooError(err)
 	}
 
+	if len(p.pushingOperations) > 0 {
+		if err := p.reserveUpdateSnapshot(); err != nil {
+			return log.OrtooError(err)
+		}
+	}
+	return nil
+}
+
+func (p *PushPullHandler) reserveUpdateSnapshot() error {
+	var sseq uint64 = 0
+	datatype, err := serverside.NewFinalDatatype(p.datatypeDoc.Key, model.TypeOfDatatype_INT_COUNTER)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	snapshotDoc, err := p.mongo.GetLatestSnapshot(p.ctx, p.collectionDoc.Num, p.datatypeDoc.DUID)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if snapshotDoc != nil {
+		sseq = snapshotDoc.Sseq
+		serverside.SetSnapshot(datatype, snapshotDoc.Meta, snapshotDoc.Snapshot)
+	}
+	var transaction []model.Operation
+	var remainOfTransaction uint32 = 0
+	if err := p.mongo.GetOperations(p.ctx, p.datatypeDoc.DUID, sseq+1, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
+		// opOnWire := opDoc.Operation
+		var opOnWire model.OperationOnWire
+		if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
+			return err
+		}
+		op := model.ToOperation(&opOnWire)
+		log.Logger.Infof("%s", op)
+		if op.GetBase().OpType == model.TypeOfOperation_TRANSACTION {
+			trxOp := op.(*model.TransactionOperation)
+			remainOfTransaction = trxOp.NumOfOps
+		}
+		if remainOfTransaction > 0 {
+			transaction = append(transaction, op)
+			remainOfTransaction--
+			if remainOfTransaction == 0 {
+				if err := datatype.ExecuteTransactionRemote(transaction); err != nil {
+					return log.OrtooError(err)
+				}
+				transaction = nil
+			}
+		} else {
+			_, err := op.ExecuteRemote(datatype)
+			if err != nil {
+				return log.OrtooError(err)
+			}
+		}
+		sseq = opDoc.Sseq
+		return nil
+	}); err != nil {
+		return log.OrtooError(err)
+	}
+
+	meta, data, err := datatype.GetMetaAndSnapshot()
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	if err := p.mongo.InsertSnapshot(p.ctx, p.collectionDoc.Num, p.datatypeDoc.DUID, sseq, meta, data); err != nil {
+		return log.OrtooError(err)
+	}
+
+	if err := p.mongo.InsertRealSnapshot(p.ctx, p.collectionDoc.Name, p.datatypeDoc.Key, data, sseq); err != nil {
+		return log.OrtooError(err)
+	}
 	return nil
 }
 
 func (p *PushPullHandler) commitToMongoDB() error {
 	p.datatypeDoc.SseqEnd = p.currentCheckPoint.Sseq
 	p.retPushPullPack.CheckPoint = p.currentCheckPoint
-	if err := p.mongo.InsertOperations(p.ctx, p.pushingOperations); err != nil {
-		return log.OrtooError(err)
+
+	if len(p.pushingOperations) > 0 {
+		log.Logger.Infof("pushing %d operations", len(p.pushingOperations))
+		if err := p.mongo.InsertOperations(p.ctx, p.pushingOperations); err != nil {
+			return log.OrtooError(err)
+		}
 	}
 
 	if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
@@ -131,16 +203,20 @@ func (p *PushPullHandler) pullOperations() error {
 
 	var operations []*model.OperationOnWire
 	if p.datatypeDoc.SseqBegin <= sseqBegin && !p.gotOption.HasSnapshotBit() {
-		err := p.mongo.GetOperations(p.ctx, p.DUID, sseqBegin, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
-			var opOnWire model.OperationOnWire
-			if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
-				_ = log.OrtooError(err)
+		err := p.mongo.GetOperations(p.ctx,
+			p.DUID,
+			sseqBegin,
+			constants.InfinitySseq,
+			func(opDoc *schema.OperationDoc) error {
+				var opOnWire model.OperationOnWire
+				if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
+					_ = log.OrtooError(err)
+					return nil
+				}
+				operations = append(operations, &opOnWire)
+				p.currentCheckPoint.Sseq = opDoc.Sseq
 				return nil
-			}
-			operations = append(operations, &opOnWire)
-			p.currentCheckPoint.Sseq = opDoc.Sseq
-			return nil
-		})
+			})
 		if err != nil {
 			return log.OrtooError(err)
 		}
@@ -224,7 +300,11 @@ func (p *PushPullHandler) subscribeDatatype() error {
 	p.DUID = p.datatypeDoc.DUID
 	p.clientDoc.CheckPoints[p.CUID] = p.currentCheckPoint
 	p.gotPushPullPack.Operations = nil
-
+	duid, err := model.DUIDFromString(p.datatypeDoc.DUID)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	p.retPushPullPack.DUID = duid
 	return nil
 }
 
@@ -239,9 +319,6 @@ func (p *PushPullHandler) createDatatype() error {
 		Visible:       true,
 		CreatedAt:     time.Now(),
 	}
-	//if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
-	//	return log.OrtooError(err)
-	//}
 	return nil
 }
 
