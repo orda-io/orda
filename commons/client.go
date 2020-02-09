@@ -11,12 +11,27 @@ import (
 // Client is a client of Ortoo which manages connections and data
 type Client interface {
 	Connect() error
-	createDatatype()
 	Close() error
 	Sync() error
-	SubscribeOrCreateIntCounter(key string) (chan IntCounter, chan error)
-	SubscribeIntCounter(key string) (chan IntCounter, chan error)
-	CreateIntCounter(key string) (chan IntCounter, chan error)
+	SubscribeOrCreateIntCounter(key string, handlers *IntCounterHandlers) IntCounter
+	SubscribeIntCounter(key string, handlers *IntCounterHandlers) IntCounter
+	CreateIntCounter(key string, handlers *IntCounterHandlers) IntCounter
+}
+
+type clientState uint8
+
+const (
+	notConnected clientState = iota
+	connected
+)
+
+type clientImpl struct {
+	state   clientState
+	conf    *OrtooClientConfig
+	model   *model.Client
+	ctx     *context.OrtooContext
+	msgMgr  *client.MessageManager
+	dataMgr *client.DataManager
 }
 
 // NewOrtooClient creates a new Ortoo client
@@ -32,93 +47,95 @@ func NewOrtooClient(conf *OrtooClientConfig, alias string) (Client, error) {
 		Alias:      alias,
 		Collection: conf.CollectionName,
 	}
-	msgMgr := client.NewMessageManager(ctx, clientModel, conf.getServiceHost())
-	dataMgr := client.NewDataManager(msgMgr)
+	msgMgr := client.NewMessageManager(ctx, clientModel, conf.Address, conf.PubSubAddr)
+	dataMgr := client.NewDataManager(msgMgr, clientModel.Collection, clientModel.CUID)
+
 	return &clientImpl{
-		conf:     conf,
-		ctx:      ctx,
-		model:    clientModel,
-		clientID: cuid,
-		msgMgr:   msgMgr,
-		dataMgr:  dataMgr,
+		conf:    conf,
+		ctx:     ctx,
+		model:   clientModel,
+		state:   notConnected,
+		msgMgr:  msgMgr,
+		dataMgr: dataMgr,
 	}, nil
 }
 
-type clientImpl struct {
-	conf     *OrtooClientConfig
-	clientID model.CUID
-	model    *model.Client
-	ctx      *context.OrtooContext
-	msgMgr   *client.MessageManager
-	dataMgr  *client.DataManager
-}
-
-func (c *clientImpl) Connect() error {
-	if err := c.msgMgr.Connect(); err != nil {
-		return log.OrtooErrorf(err, "fail to connect")
+func (c *clientImpl) Connect() (err error) {
+	defer func() {
+		if err != nil {
+			c.state = connected
+		}
+	}()
+	if err = c.msgMgr.Connect(); err != nil {
+		return errors.NewClientError(errors.ErrClientConnect, err.Error())
 	}
 
-	return c.msgMgr.ExchangeClientRequestResponse()
-}
-
-func (c *clientImpl) createDatatype() {
-
+	err = c.msgMgr.ExchangeClientRequestResponse()
+	return
 }
 
 func (c *clientImpl) Close() error {
+	c.state = notConnected
+	log.Logger.Infof("close client: %s", c.model.ToString())
+
 	if err := c.msgMgr.Close(); err != nil {
 		return log.OrtooErrorf(err, "fail to close grpc connection")
 	}
 	return nil
 }
 
-func (c *clientImpl) CreateIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
-	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE)
+func (c *clientImpl) CreateIntCounter(key string, handlers *IntCounterHandlers) IntCounter {
+	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (c *clientImpl) SubscribeIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
-	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE)
+func (c *clientImpl) SubscribeIntCounter(key string, handlers *IntCounterHandlers) IntCounter {
+	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (c *clientImpl) SubscribeOrCreateIntCounter(key string) (intCounterCh chan IntCounter, errCh chan error) {
-	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE)
+func (c *clientImpl) SubscribeOrCreateIntCounter(key string, handlers *IntCounterHandlers) IntCounter {
+	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype) (intCounterCh chan IntCounter, errCh chan error) {
-	errCh = make(chan error)
-	intCounterCh = make(chan IntCounter)
+func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype, handlers *IntCounterHandlers) IntCounter {
 
 	fromDataMgr := c.dataMgr.Get(key)
 	if fromDataMgr != nil {
 		if fromDataMgr.GetType() == model.TypeOfDatatype_INT_COUNTER {
-			log.Logger.Info("Already subscribed datatype")
-			intCounterCh <- *fromDataMgr.(*IntCounter)
-			return
+			log.Logger.Warn("Already subscribed datatype")
+			fromDataMgr.HandleSubscription()
+			return nil
+		} else {
+			handlers.errorHandler(
+				errors.NewDatatypeError(errors.ErrDatatypeSubscribe,
+					"not matched type"))
+			return nil
 		}
-		errCh <- &errors.ErrSubscribeDatatype{}
-		return
 	}
 
-	ic, err := NewIntCounter(key, c.model.CUID, c.dataMgr)
+	ic, err := NewIntCounter(key, c.model.CUID, c.dataMgr, handlers)
 	if err != nil {
-		errCh <- log.OrtooErrorf(err, "fail to create intCounter")
-		return
+		handlers.errorHandler(errors.NewDatatypeError(errors.ErrDatatypeCreate, err.Error()))
+		return nil
+	}
+	icImpl := ic.(*intCounter)
+	if err := c.dataMgr.SubscribeOrCreate(icImpl, state); err != nil {
+		handlers.errorHandler(errors.NewDatatypeError(errors.ErrDatatypeSubscribe, err.Error()))
 	}
 
-	if err := c.dataMgr.SubscribeOrCreate(ic, state); err != nil {
-		errCh <- log.OrtooErrorf(err, "fail to subscribe intCounter")
-	}
-
-	go func() {
-		if err := c.dataMgr.Sync(ic.GetKey()); err != nil {
-			errCh <- err
-		}
-		intCounterCh <- *ic
-	}()
-
-	return
+	// go func() {
+	// 	if c.state == connected {
+	// 		if err := c.dataMgr.Sync(icImpl.GetKey()); err != nil {
+	// 			icImpl.HandleError(errors.NewDatatypeError(errors.ErrDatatypeSubscribe, err.Error()))
+	// 			return
+	// 		}
+	// 	}
+	// }()
+	return ic
 }
 
 func (c *clientImpl) Sync() error {
-	return c.dataMgr.SyncAll()
+	if c.state == notConnected {
+		return c.dataMgr.SyncAll()
+	}
+	return errors.NewClientError(errors.ErrClientNotConnected, "fail to sync")
 }

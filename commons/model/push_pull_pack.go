@@ -1,5 +1,11 @@
 package model
 
+import (
+	"encoding/hex"
+	"fmt"
+	"strings"
+)
+
 const (
 	PushPullBitNormal      PushPullPackOption = 0x00
 	PushPullBitCreate      PushPullPackOption = 0x01
@@ -10,7 +16,25 @@ const (
 	PushPullBitError       PushPullPackOption = 0x20
 )
 
+var pushPullBitString = []string{"cr", "sb", "un", "de", "sn", "er"}
+
 type PushPullPackOption uint32
+
+func (p *PushPullPackOption) String() string {
+	var bit = uint32(*p)
+	var ret = "[ "
+	for i := 0; i < len(pushPullBitString); i++ {
+		b := bit & 0x01
+		if b == 0 {
+			ret +=
+				pushPullBitString[i] + " "
+		} else {
+			ret += strings.ToUpper(pushPullBitString[i]) + " "
+		}
+		bit = bit >> 1
+	}
+	return ret + "]"
+}
 
 func (p *PushPullPackOption) SetNormalBit() *PushPullPackOption {
 	*p |= PushPullBitNormal
@@ -85,4 +109,15 @@ func (p *PushPullPack) GetReturnPushPullPack() *PushPullPack {
 		Type:       p.Type,
 		CheckPoint: p.CheckPoint.Clone(),
 	}
+}
+
+func (p *PushPullPack) ToString() string {
+	var b strings.Builder
+	_, _ = fmt.Fprintf(&b, "%s(%s) OP(%d){", p.Key, hex.EncodeToString(p.DUID), len(p.Operations))
+	for _, op := range p.Operations {
+		b.WriteString(op.ToString())
+		b.WriteString(" =>")
+	}
+	b.WriteString("}")
+	return b.String()
 }

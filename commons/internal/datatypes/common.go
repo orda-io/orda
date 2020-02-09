@@ -20,15 +20,17 @@ type CommonDatatypeInterface interface {
 func (c *CommonDatatype) Initialize(
 	key string,
 	typeOf model.TypeOfDatatype,
-	cuid model.CUID, w Wire,
+	cuid model.CUID,
+	w Wire,
 	snapshot model.Snapshot,
 	finalDatatype model.FinalDatatype) error {
+
 	baseDatatype, err := newBaseDatatype(key, typeOf, cuid)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to create baseDatatype")
 	}
 
-	wiredDatatype, err := newWiredDataType(baseDatatype, w)
+	wiredDatatype, err := newWiredDatatype(baseDatatype, w)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to create wiredDatatype")
 	}

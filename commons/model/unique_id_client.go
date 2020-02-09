@@ -4,10 +4,10 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 )
 
-//CUID is a uniqueID
+// CUID is a uniqueID
 type CUID UniqueID
 
-//NewCUID creates a new CUID
+// NewCUID creates a new CUID
 func NewCUID() (CUID, error) {
 	u, err := newUniqueID()
 	if err != nil {

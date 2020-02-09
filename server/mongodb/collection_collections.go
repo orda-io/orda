@@ -52,7 +52,7 @@ func (m *MongoCollections) InsertCollection(ctx context.Context, name string) (c
 		if err != nil {
 			return log.OrtooErrorf(err, "fail to insert collection")
 		}
-		log.Logger.Infof("Collection is inserted: %+v", collection)
+		log.Logger.Infof("insert collection: %+v", collection)
 		return nil
 	}); err != nil {
 		return nil, log.OrtooError(err)
@@ -70,6 +70,7 @@ func (m *MongoCollections) PurgeAllCollection(ctx context.Context, name string) 
 		if collectionDoc == nil {
 			return nil
 		}
+		log.Logger.Infof("purge collection '%s' (%d)", name, collectionDoc.Num)
 		if err := m.PurgeAllCollectionDatatypes(ctx, collectionDoc.Num); err != nil {
 			return log.OrtooError(err)
 		}
@@ -82,10 +83,10 @@ func (m *MongoCollections) PurgeAllCollection(ctx context.Context, name string) 
 			return log.OrtooError(err)
 		}
 		if result.DeletedCount > 0 {
-			log.Logger.Infof("deleted collection `%s`", name)
+			log.Logger.Infof("delete collection `%s`", name)
 			return nil
 		}
-		log.Logger.Warnf("deleted no collection")
+		log.Logger.Warnf("delete no collection")
 		return nil
 	}); err != nil {
 		return log.OrtooError(err)

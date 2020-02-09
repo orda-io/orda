@@ -9,15 +9,15 @@ import (
 	"time"
 )
 
-//OrtooLog defines the log of OrtooLog
+// OrtooLog defines the log of OrtooLog
 type OrtooLog struct {
 	*logrus.Entry
 }
 
-//Logger is a global instance of OrtooLog
+// Logger is a global instance of OrtooLog
 var Logger = NewOrtooLog()
 
-//NewOrtooLog creates a new OrtooLog.
+// NewOrtooLog creates a new OrtooLog.
 func NewOrtooLog() *OrtooLog {
 	logger := logrus.New()
 	logger.SetFormatter(&ortooFormatter{})
@@ -25,7 +25,7 @@ func NewOrtooLog() *OrtooLog {
 	return &OrtooLog{logrus.NewEntry(logger)}
 }
 
-//NewOrtooLogWithTag creates a new OrtooLog with a tag.
+// NewOrtooLogWithTag creates a new OrtooLog with a tag.
 func NewOrtooLogWithTag(tag string) *OrtooLog {
 	return &OrtooLog{NewOrtooLog().WithFields(logrus.Fields{tagField: tag})}
 }
@@ -64,7 +64,7 @@ func getColorByLevel(level logrus.Level) int {
 type ortooFormatter struct {
 }
 
-//Format implements format of the OrtooLog.
+// Format implements format of the OrtooLog.
 func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestampFormat := time.StampMilli
 	b := &bytes.Buffer{}
@@ -74,29 +74,35 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	_, _ = fmt.Fprintf(b, "\x1b[%dm", getColorByLevel(entry.Level))
 
 	b.WriteString(" [" + level[:4] + "]")
-	b.WriteString("\x1b[0m")
+	b.WriteString("\x1b[0m ")
+
+	if strings.Contains(entry.Caller.File, "server/") {
+		b.WriteString("[SERVER] ")
+	} else if strings.Contains(entry.Caller.File, "commons/") {
+		b.WriteString("[SDK] ")
+	}
+
+	b.WriteString(entry.Message)
 
 	if entry.Data[fieldErrorAt] != nil {
+		b.WriteString("\t\t")
 		if entry.Data[fieldError] != nil {
 			b.WriteString("[" + entry.Data[fieldError].(string) + "]")
 		}
 		b.WriteString("[ " + entry.Data[fieldErrorAt].(string) + " ] ")
 	} else {
 		relativeCallFile := strings.Replace(entry.Caller.File, basepath, "", 1)
-		fileLine := fmt.Sprintf("[ %s:%d ] ", relativeCallFile, entry.Caller.Line)
-		b.WriteString(fileLine)
+		_, _ = fmt.Fprintf(b, "\t\t[ %s:%d ] ", relativeCallFile, entry.Caller.Line)
 	}
 
 	if entry.Data[tagField] != nil {
 		b.WriteString("[" + entry.Data[tagField].(string) + "] ")
 	}
-
-	b.WriteString(entry.Message)
 	b.WriteByte('\n')
 	return b.Bytes(), nil
 }
 
-//OrtooErrorf is a method to present a error log.
+// OrtooErrorf is a method to present a error log.
 func (o *OrtooLog) OrtooErrorf(err error, format string, args ...interface{}) error {
 	return o.ortooErrorf(err, 3, format, args...)
 }
@@ -118,7 +124,7 @@ func (o *OrtooLog) ortooErrorf(err error, skip int, format string, args ...inter
 	return err
 }
 
-//OrtooErrorf is a method wrapping Logger.OrtooErrorf()
+// OrtooErrorf is a method wrapping Logger.OrtooErrorf()
 func OrtooErrorf(err error, format string, args ...interface{}) error {
 	return Logger.ortooErrorf(err, 2, format, args...)
 }
@@ -141,7 +147,7 @@ func OrtooError(err error) error {
 	return err
 }
 
-//OrtooErrorWithSkip is a method wrapping Logger.OrtooErrorf()
+// OrtooErrorWithSkip is a method wrapping Logger.OrtooErrorf()
 func OrtooErrorWithSkip(err error, skip int, format string, args ...interface{}) error {
 	return Logger.ortooErrorf(err, skip, format, args...)
 }

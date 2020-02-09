@@ -7,6 +7,7 @@ import (
 	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/stretchr/testify/suite"
+	"time"
 )
 
 const dbName = "integration_test"
@@ -41,9 +42,10 @@ func (o *OrtooServerTestSuite) SetupTest() {
 		o.Fail("fail to test collection")
 	}
 	go o.server.Start()
+	time.Sleep(1 * time.Second)
 }
 
 func (o *OrtooServerTestSuite) TearDownTest() {
-	o.server.Close()
 	o.T().Log("TearDown OrtooServerTestSuite")
+	o.server.Close()
 }

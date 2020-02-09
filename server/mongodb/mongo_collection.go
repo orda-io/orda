@@ -28,7 +28,7 @@ func (m *MongoCollections) create(ctx context.Context, collection *mongo.Collect
 	if _, err = collection.DeleteOne(ctx, schema.FilterByID(result.InsertedID)); err != nil {
 		return log.OrtooErrorf(err, "fail to delete inserted one")
 	}
-	log.Logger.Infof("Create collection:%s", collection.Name())
+	log.Logger.Infof("create collection:%s", collection.Name())
 	if docModel != nil {
 		if err := m.createIndex(ctx, collection, docModel); err != nil {
 			return log.OrtooErrorf(err, "fail to create indexes")

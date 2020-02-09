@@ -137,9 +137,9 @@ func (m *MongoCollections) PurgeAllCollectionClients(ctx context.Context, collec
 		return log.OrtooError(err)
 	}
 	if r1.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d clients", r1.DeletedCount)
+		log.Logger.Infof("delete %d clients in collection %d", r1.DeletedCount, collectionNum)
 		return nil
 	}
-	log.Logger.Warnf("deleted no clients")
+	log.Logger.Warnf("delete no clients")
 	return nil
 }

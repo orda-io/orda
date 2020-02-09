@@ -2,10 +2,9 @@ version: "3"
 services:
   mongodb:
     container_name: ortoo_mongodb_testing
-    image: mongo:4.2.0-bionic
+    image: mongo:latest
     volumes:
-      - ./docker:/data
-      - mongodb_volume:/data/db
+      - ./docker_volumes/mongodb:/data
     ports:
       - 27017:27017
     environment:
@@ -25,5 +24,13 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: ortoo-test
     depends_on:
       - mongodb
-volumes:
-  mongodb_volume:
+  mqtt-mosquitto:
+    container_name: mqtt-mosquitto
+    image: eclipse-mosquitto:latest
+    restart: always
+    ports:
+      - 1883:1883
+      - 9001:9001
+    volumes:
+      - ./docker_volumes/mosquitto:/mosquitto
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf

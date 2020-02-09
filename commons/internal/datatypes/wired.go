@@ -1,6 +1,8 @@
 package datatypes
 
 import (
+	"fmt"
+	"github.com/knowhunger/ortoo/commons/errors"
 	"github.com/knowhunger/ortoo/commons/internal/constants"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
@@ -10,6 +12,7 @@ import (
 type Wire interface {
 	// DeliverOperation(wired WiredDatatypeInterface, op model.Operation)
 	DeliverTransaction(wired *WiredDatatype)
+	OnChangeDatatypeState(dt model.FinalDatatype, state model.StateOfDatatype)
 }
 
 // WiredDatatype implements the datatype features related to the synchronization with Ortoo server
@@ -34,8 +37,8 @@ type WiredDatatypeInterface interface {
 	CreatePushPullPack() *model.PushPullPack
 }
 
-// newWiredDataType creates a new wiredDatatype
-func newWiredDataType(b *baseDatatype, w Wire) (*WiredDatatype, error) {
+// newWiredDatatype creates a new wiredDatatype
+func newWiredDatatype(b *baseDatatype, w Wire) (*WiredDatatype, error) {
 	return &WiredDatatype{
 		baseDatatype: b,
 		checkPoint:   model.NewCheckPoint(),
@@ -140,6 +143,30 @@ func (w *WiredDatatype) calculatePullingOperations(newCheckPoint *model.CheckPoi
 	return int((newCheckPoint.Sseq - w.checkPoint.Sseq) - (newCheckPoint.Cseq - w.checkPoint.Cseq))
 }
 
+func (w *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error {
+	if ppp.GetPushPullPackOption().HasErrorBit() {
+		opOnWire := ppp.GetOperations()[0]
+		errOp, ok := model.ToOperation(opOnWire).(*model.ErrorOperation)
+		if ok {
+			switch errOp.GetPushPullErr().Code {
+			case model.PushPullErrQueryToDB:
+			case model.PushPullErrIllegalFormat:
+			case model.PushPullErrDuplicateDatatypeKey:
+				err := errors.NewDatatypeError(errors.ErrDatatypeCreate, fmt.Sprintf("duplicated key:'%s'", w.Key))
+				w.finalDatatype.HandleError(err)
+				return err
+			case model.PushPullErrPullOperations:
+			case model.PushPullErrPushOperations:
+			case model.PushPullErrMissingOperations:
+			}
+		} else {
+
+		}
+
+	}
+	return nil
+}
+
 func (w *WiredDatatype) applyPushPullPackExcludeDuplicatedOperations(ppp *model.PushPullPack) {
 	pulled := w.calculatePullingOperations(ppp.CheckPoint)
 	if len(ppp.Operations) > pulled {
@@ -171,16 +198,22 @@ func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPu
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE:
 		w.state = model.StateOfDatatype_SUBSCRIBED
 		w.id = ppp.DUID
+		w.wire.OnChangeDatatypeState(w.finalDatatype, w.state)
 	case model.StateOfDatatype_SUBSCRIBED:
 	case model.StateOfDatatype_DUE_TO_UNSUBSCRIBE:
 	case model.StateOfDatatype_UNSUBSCRIBED:
 	case model.StateOfDatatype_DELETED:
 	}
-	log.Logger.Infof("update state: %v -> %v", oldState, w.state)
+	if oldState != w.state {
+		log.Logger.Infof("update state: %v -> %v", oldState, w.state)
+	}
 }
 
 // ApplyPushPullPack ...
 func (w *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
+	if err := w.checkPushPullPackOption(ppp); err != nil {
+		return
+	}
 	w.applyPushPullPackExcludeDuplicatedOperations(ppp)
 	w.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
 	w.applyPushPullPackUpdateStateOfDatatype(ppp)
@@ -206,4 +239,8 @@ func (w *WiredDatatype) deliverTransaction(transaction []model.Operation) {
 		w.buffer = append(w.buffer, model.ToOperationOnWire(op))
 	}
 	w.wire.DeliverTransaction(w)
+}
+
+func (w *WiredDatatype) NeedSync(sseq uint64) bool {
+	return w.checkPoint.Sseq < sseq
 }

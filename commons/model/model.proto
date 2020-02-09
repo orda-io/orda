@@ -47,11 +47,17 @@ message TransactionOperation {
     uint32 numOfOps = 4;
 }
 
+message ErrorOperation {
+    BaseOperation base = 1;
+    uint32 code = 2;
+    string msg = 3;
+}
+
 enum TypeOfOperation {
     SNAPSHOT = 0;
-    DELETE = 1;
-    ERROR = 2;
-    TRANSACTION = 3;
+    DELETE = 2;
+    ERROR = 3;
+    TRANSACTION = 5;
     INT_COUNTER_INCREASE = 11;
 }
 
@@ -73,6 +79,7 @@ enum StateOfDatatype {
 message OperationOnWire {
     oneof body {
         SnapshotOperation snapshot = 1;
+        ErrorOperation error = 2;
         TransactionOperation transaction = 5;
         IncreaseOperation increase = 11;
     }
@@ -93,6 +100,12 @@ message CheckPoint {
     uint64 sseq = 1 [json_name = "s"];
     // @inject_tag: bson:"c"
     uint64 cseq = 2 [json_name = "c"];
+}
+
+message NotificationPushPull {
+    string CUID = 1;
+    string DUID = 2;
+    uint64 sseq = 3;
 }
 
 message DatatypeMeta {

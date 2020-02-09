@@ -56,14 +56,13 @@ func (m *MongoCollections) UpdateDatatype(ctx context.Context, datatype *schema.
 }
 
 func (m *MongoCollections) PurgeAllCollectionDatatypes(ctx context.Context, collectionNum uint32) error {
-
 	opFilter := schema.GetFilter().AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum)
 	r1, err := m.operations.DeleteMany(ctx, opFilter)
 	if err != nil {
 		return log.OrtooError(err)
 	}
 	if r1.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d operations", r1.DeletedCount)
+		log.Logger.Infof("delete %d operations in collection %d", r1.DeletedCount, collectionNum)
 	}
 
 	snapFilter := schema.GetFilter().AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum)
@@ -72,7 +71,7 @@ func (m *MongoCollections) PurgeAllCollectionDatatypes(ctx context.Context, coll
 		return log.OrtooError(err)
 	}
 	if r2.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d snapshots", r2.DeletedCount)
+		log.Logger.Infof("delete %d snapshots in collection %d", r2.DeletedCount, collectionNum)
 	}
 
 	datatypeFilter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum)
@@ -81,7 +80,7 @@ func (m *MongoCollections) PurgeAllCollectionDatatypes(ctx context.Context, coll
 		return log.OrtooError(err)
 	}
 	if r3.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d datatypes", r3.DeletedCount)
+		log.Logger.Infof("delete %d datatypes in collection %d", r3.DeletedCount, collectionNum)
 	}
 	return nil
 }

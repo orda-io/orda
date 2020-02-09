@@ -21,13 +21,12 @@ func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName
 	}
 	bsonM[VER] = sseq
 	filter := schema.GetFilter().AddSnapshot(bsonM, sseq)
-	log.Logger.Infof("%v", filter)
 	res, err := collection.UpdateOne(ctx, schema.FilterByID(id), bson.D(filter), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)
 	}
 	if res.ModifiedCount == 1 {
-		log.Logger.Infof("snapshot is updated for key: %s in %s", id, collectionName)
+		log.Logger.Infof("update snapshot for key: %s in %s", id, collectionName)
 	}
 	return nil
 }

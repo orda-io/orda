@@ -10,7 +10,7 @@ import (
 
 // ProcessPushPull processes a GRPC for Push-Pull
 func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRequest) (*model.PushPullResponse, error) {
-	log.Logger.Infof("REQUEST: %v, %s", in, hex.EncodeToString(in.Header.GetCuid()))
+	log.Logger.Infof("receive PushPull REQUEST: %v", in.ToString())
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Header.GetCollection())
 	if collectionDoc == nil || err != nil {
 		return nil, model.NewRPCError(model.RPCErrMongoDB)
@@ -34,6 +34,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 			CUID:            clientDoc.CUID,
 			ctx:             ctx,
 			mongo:           o.mongo,
+			notifier:        o.notifier,
 			clientDoc:       clientDoc,
 			collectionDoc:   collectionDoc,
 			gotPushPullPack: ppp,
@@ -52,15 +53,15 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	}
 
 	for remainingChan > 0 && chanList != nil {
-		chosen, value, ok := reflect.Select(cases)
+		_, value, ok := reflect.Select(cases)
 		remainingChan--
 		if !ok {
 			_ = log.OrtooErrorf(nil, "fail to run")
 			continue
 		} else {
-			ch := chanList[chosen]
+			// ch := chanList[chosen]
 			msg := value.Interface()
-			log.Logger.Infof("%v %v", ch, msg)
+			// log.Logger.Infof("%v %v", ch, msg)
 			ppp := msg.(*model.PushPullPack)
 			response.PushPullPacks = append(response.PushPullPacks, ppp)
 		}

@@ -7,20 +7,17 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-type ServerSideDatatype struct {
-	*datatypes.CommonDatatype
-	model.FinalDatatype
-}
-
 func NewFinalDatatype(key string, typeOf model.TypeOfDatatype) (model.FinalDatatype, error) {
 	var internal model.FinalDatatype
 	switch typeOf {
 	case model.TypeOfDatatype_INT_COUNTER:
-		data, err := commons.NewIntCounter(key, model.NewNilCUID(), nil)
+		ic, err := commons.NewIntCounter(key, model.NewNilCUID(), nil, nil)
+		icImpl := ic.(datatypes.CommonDatatypeInterface)
+
 		if err != nil {
 			return nil, log.OrtooError(err)
 		}
-		internal = data.GetFinalDatatype()
+		internal = icImpl.GetCommon().GetFinalDatatype()
 	}
 	return internal, nil
 }

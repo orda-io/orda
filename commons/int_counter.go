@@ -3,6 +3,7 @@ package commons
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gogo/protobuf/types"
 	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
@@ -10,35 +11,42 @@ import (
 )
 
 // IntCounter is an Ortoo datatype which provides int counter interfaces.
-type IntCounter struct {
+type IntCounter interface {
 	datatypes.PublicWiredDatatypeInterface
-	*datatypes.CommonDatatype
-	Snapshot *IntCounterSnapshot
+	IntCounterInTxn
+	DoTransaction(tag string, transFunc func(intCounter IntCounterInTxn) error) error
 }
 
-// IntCounterInTransaction is an Ortoo datatype which provides int counter interfaces in a transaction.
-type IntCounterInTransaction interface {
+// IntCounterInTxn is an Ortoo datatype which provides int counter interfaces in a transaction.
+type IntCounterInTxn interface {
 	Get() int32
 	Increase() (int32, error)
 	IncreaseBy(delta int32) (int32, error)
 }
 
+type intCounter struct {
+	*datatypes.CommonDatatype
+	snapshot *intCounterSnapshot
+	handler  *IntCounterHandlers
+}
+
 // NewIntCounter creates a new int counter
-func NewIntCounter(key string, cuid model.CUID, wire datatypes.Wire) (*IntCounter, error) {
-	intCounter := &IntCounter{
+func NewIntCounter(key string, cuid model.CUID, wire datatypes.Wire, handler *IntCounterHandlers) (IntCounter, error) {
+
+	intCounter := &intCounter{
 		CommonDatatype: &datatypes.CommonDatatype{},
-		Snapshot: &IntCounterSnapshot{
+		snapshot: &intCounterSnapshot{
 			Value: 0,
 		},
+		handler: handler,
 	}
-	err := intCounter.Initialize(key, model.TypeOfDatatype_INT_COUNTER, cuid, wire, intCounter.Snapshot, intCounter)
-	if err != nil {
+	if err := intCounter.Initialize(key, model.TypeOfDatatype_INT_COUNTER, cuid, wire, intCounter.snapshot, intCounter); err != nil {
 		return nil, log.OrtooErrorf(err, "fail to initialize intCounter")
 	}
 	return intCounter, nil
 }
 
-func (c *IntCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterInTransaction) error) error {
+func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterInTxn) error) error {
 	transactionCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
 	defer func() {
 		if err := c.EndTransaction(transactionCtx, true, true); err != nil {
@@ -46,12 +54,12 @@ func (c *IntCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 		}
 	}()
 	// make a clone of intCounter have nil CommonDatatype.transactionCtx, which means
-	clone := &IntCounter{
+	clone := &intCounter{
 		CommonDatatype: &datatypes.CommonDatatype{
 			TransactionDatatype: c.CommonDatatype.TransactionDatatype,
 			TransactionCtx:      transactionCtx,
 		},
-		Snapshot: c.Snapshot,
+		snapshot: c.snapshot,
 	}
 	err = transFunc(clone)
 	if err != nil {
@@ -61,44 +69,59 @@ func (c *IntCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 	return nil
 }
 
-func (c *IntCounter) GetCommon() *datatypes.CommonDatatype {
+func (c *intCounter) GetCommon() *datatypes.CommonDatatype {
 	return c.CommonDatatype
 }
 
 // ExecuteLocal is the
-func (c *IntCounter) ExecuteLocal(op interface{}) (interface{}, error) {
+func (c *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
 	iop := op.(*model.IncreaseOperation)
-	// c.Logger.Info("delta:", proto.MarshalTextString(iop))
-	return c.Snapshot.increaseCommon(iop.Delta), nil
-	// return nil, nil
+	return c.snapshot.increaseCommon(iop.Delta), nil
 }
 
 // ExecuteRemote is called by operation.ExecuteRemote()
-func (c *IntCounter) ExecuteRemote(op interface{}) (interface{}, error) {
+func (c *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
 	switch o := op.(type) {
 	case *model.SnapshotOperation:
-		newSnap := IntCounterSnapshot{}
+		newSnap := intCounterSnapshot{}
 		if err := json.Unmarshal(o.Snapshot.Value, &newSnap); err != nil {
 			return nil, log.OrtooError(err)
 		}
-		c.Snapshot = &newSnap
+		c.snapshot = &newSnap
 		return nil, nil
 	case *model.IncreaseOperation:
-		return c.Snapshot.increaseCommon(o.Delta), nil
+		return c.snapshot.increaseCommon(o.Delta), nil
 	}
 
 	return nil, log.OrtooError(errors.New("invalid operation"))
 }
 
-func (c *IntCounter) Get() int32 {
-	return c.Snapshot.Value
+func (c *intCounter) HandleSubscription() {
+	if c.handler != nil && c.handler.subscribeHandler != nil {
+		go c.handler.subscribeHandler(c)
+	}
+
 }
 
-func (c *IntCounter) Increase() (int32, error) {
+func (c *intCounter) HandleError(err error) {
+	if c.handler != nil && c.handler.errorHandler != nil {
+		go c.handler.errorHandler(err)
+	}
+}
+
+func (c *intCounter) HandleRemoteChange() {
+
+}
+
+func (c *intCounter) Get() int32 {
+	return c.snapshot.Value
+}
+
+func (c *intCounter) Increase() (int32, error) {
 	return c.IncreaseBy(1)
 }
 
-func (c *IntCounter) IncreaseBy(delta int32) (int32, error) {
+func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
 	op := model.NewIncreaseOperation(delta)
 	ret, err := c.ExecuteOperationWithTransaction(c.TransactionCtx, op, true)
 	if err != nil {
@@ -107,20 +130,20 @@ func (c *IntCounter) IncreaseBy(delta int32) (int32, error) {
 	return ret.(int32), nil
 }
 
-func (c *IntCounter) GetSnapshot() model.Snapshot {
-	return c.Snapshot
+func (c *intCounter) GetSnapshot() model.Snapshot {
+	return c.snapshot
 }
 
-func (c *IntCounter) SetSnapshot(snapshot model.Snapshot) {
-	c.Snapshot = snapshot.(*IntCounterSnapshot)
+func (c *intCounter) SetSnapshot(snapshot model.Snapshot) {
+	c.snapshot = snapshot.(*intCounterSnapshot)
 }
 
-func (c *IntCounter) GetMetaAndSnapshot() ([]byte, string, error) {
+func (c *intCounter) GetMetaAndSnapshot() ([]byte, string, error) {
 	meta, err := c.CommonDatatype.GetMeta()
 	if err != nil {
 		return nil, "", log.OrtooError(err)
 	}
-	jsonb, err := json.Marshal(c.Snapshot)
+	jsonb, err := json.Marshal(c.snapshot)
 	if err != nil {
 		return nil, "", log.OrtooError(err)
 	}
@@ -128,33 +151,59 @@ func (c *IntCounter) GetMetaAndSnapshot() ([]byte, string, error) {
 	return meta, string(jsonb), nil
 }
 
-func (c *IntCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
+func (c *intCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := c.CommonDatatype.SetMeta(meta); err != nil {
 		return log.OrtooError(err)
 	}
-	snap := &IntCounterSnapshot{}
+	snap := &intCounterSnapshot{}
 	if err := json.Unmarshal([]byte(snapshot), snap); err != nil {
 		return log.OrtooError(err)
 	}
-	c.Snapshot = snap
+	c.snapshot = snap
 	return nil
 }
 
-//////////////////////////////////////////////////////////////////
-//  IntCounterSnapshot
-//////////////////////////////////////////////////////////////////
+type IntCounterHandlers struct {
+	subscribeHandler    func(intCounter IntCounter)
+	remoteChangeHandler func(intCount IntCounter, opList []model.Operation)
+	errorHandler        func(err error)
+}
 
-type IntCounterSnapshot struct {
+func NewIntCounterHandlers(
+	subscribeHandler func(intCounter IntCounter),
+	remoteChangeHandler func(intCounter IntCounter, opList []model.Operation),
+	errorHandler func(err error)) *IntCounterHandlers {
+	return &IntCounterHandlers{
+		subscribeHandler:    subscribeHandler,
+		remoteChangeHandler: remoteChangeHandler,
+		errorHandler:        errorHandler,
+	}
+}
+
+func (i *IntCounterHandlers) SetHandlers(
+	subscribeHandler func(intCounter IntCounter),
+	remoteChangeHandler func(intCounter IntCounter, opList []model.Operation),
+	errHandler func(err error)) {
+	i.subscribeHandler = subscribeHandler
+	i.errorHandler = errHandler
+	i.remoteChangeHandler = remoteChangeHandler
+}
+
+// ////////////////////////////////////////////////////////////////
+//  intCounterSnapshot
+// ////////////////////////////////////////////////////////////////
+
+type intCounterSnapshot struct {
 	Value int32 `json:"value"`
 }
 
-func (i *IntCounterSnapshot) CloneSnapshot() model.Snapshot {
-	return &IntCounterSnapshot{
+func (i *intCounterSnapshot) CloneSnapshot() model.Snapshot {
+	return &intCounterSnapshot{
 		Value: i.Value,
 	}
 }
 
-func (i *IntCounterSnapshot) GetTypeAny() (*types.Any, error) {
+func (i *intCounterSnapshot) GetTypeAny() (*types.Any, error) {
 	bin, err := json.Marshal(i)
 	if err != nil {
 		return nil, log.OrtooError(err)
@@ -165,13 +214,17 @@ func (i *IntCounterSnapshot) GetTypeAny() (*types.Any, error) {
 	}, nil
 }
 
-func (i *IntCounterSnapshot) GetTypeUrl() string {
+func (i *intCounterSnapshot) GetTypeUrl() string {
 	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
 }
 
-func (i *IntCounterSnapshot) increaseCommon(delta int32) int32 {
+func (i *intCounterSnapshot) increaseCommon(delta int32) int32 {
 	temp := i.Value
 	i.Value = i.Value + delta
 	log.Logger.Infof("increaseCommon: %d + %d = %d", temp, delta, i.Value)
 	return i.Value
+}
+
+func (i *intCounterSnapshot) String() string {
+	return fmt.Sprintf("Value: %d", i.Value)
 }

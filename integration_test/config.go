@@ -11,18 +11,18 @@ import (
 // NewTestOrtooClientConfig ...
 func NewTestOrtooClientConfig(collectionName string) *commons.OrtooClientConfig {
 	return &commons.OrtooClientConfig{
-		Address:        "127.0.0.1",
-		Port:           19061,
+		Address:        "127.0.0.1:19061",
 		CollectionName: collectionName,
+		PubSubAddr:     "127.0.0.1:1883",
 	}
 }
 
 // NewTestOrtooServerConfig ...
 func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
-		Host:  "127.0.0.1",
-		Port:  19061,
-		Mongo: mongodb.NewTestMongoDBConfig(dbName),
+		Host:       "127.0.0.1:19061",
+		PubSubAddr: "127.0.0.1:1883",
+		Mongo:      mongodb.NewTestMongoDBConfig(dbName),
 	}
 }
 
@@ -38,6 +38,6 @@ func MakeTestCollection(mongo *mongodb.RepositoryMongo, collectionName string) (
 	if err != nil {
 		return 0, log.OrtooError(err)
 	}
-	log.Logger.Infof("a new collection is created:%+v", collectionDoc)
+	log.Logger.Infof("create a new collection:%+v", collectionDoc)
 	return collectionDoc.Num, nil
 }

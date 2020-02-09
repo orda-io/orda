@@ -152,7 +152,7 @@ func (t *TransactionDatatype) EndTransaction(trxCtxOfCommonDatatype *Transaction
 			if withOp {
 				beginOp, ok := t.currentTrxCtx.opBuffer[0].(*model.TransactionOperation)
 				if !ok {
-					return t.Logger.OrtooErrorf(&errors.ErrTransaction{}, "invalidate transaction: no begin operation")
+					return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
 				}
 				beginOp.NumOfOps = uint32(len(t.currentTrxCtx.opBuffer))
 
@@ -183,10 +183,10 @@ func (t *TransactionDatatype) unlock() {
 func validateTransaction(transaction []model.Operation) error {
 	beginOp, ok := transaction[0].(*model.TransactionOperation)
 	if !ok {
-		return log.OrtooErrorf(&errors.ErrTransaction{}, "invalidate transaction: no begin transaction")
+		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
 	}
 	if int(beginOp.NumOfOps) != len(transaction) {
-		return log.OrtooErrorf(&errors.ErrTransaction{}, "invalidate transaction: incorrect number of operations")
+		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
 	}
 	return nil
 }

@@ -12,7 +12,7 @@ import (
 
 // ProcessClient processes ClientRequest and returns ClientResponse
 func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
-
+	log.Logger.Infof("receive Client REQUEST: %s", in.ToString())
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Client.Collection)
 	if err != nil {
 		return nil, model.NewRPCError(model.RPCErrMongoDB)
@@ -29,7 +29,7 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 	}
 	if storedDoc == nil {
 		transferredDoc.CreatedAt = time.Now()
-		log.Logger.Infof("A new client is created:%+v", transferredDoc)
+		log.Logger.Infof("create a new client:%+v", transferredDoc)
 		if err := o.mongo.GetOrCreateRealCollection(ctx, in.Client.Collection); err != nil {
 			return nil, model.NewRPCError(model.RPCErrMongoDB)
 		}

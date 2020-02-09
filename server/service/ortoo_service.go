@@ -1,24 +1,26 @@
 package service
 
 import (
-	"context"
 	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/knowhunger/ortoo/server/notification"
 )
 
-//OrtooService is a rpc service of Ortoo
+// OrtooService is a rpc service of Ortoo
 type OrtooService struct {
-	mongo *mongodb.RepositoryMongo
+	mongo    *mongodb.RepositoryMongo
+	notifier *notification.Notifier
 }
 
-//NewOrtooService creates a new OrtooService
-func NewOrtooService(mongo *mongodb.RepositoryMongo) (*OrtooService, error) {
+// NewOrtooService creates a new OrtooService
+func NewOrtooService(mongo *mongodb.RepositoryMongo, notifier *notification.Notifier) (*OrtooService, error) {
 	return &OrtooService{
-		mongo: mongo,
+		mongo:    mongo,
+		notifier: notifier,
 	}, nil
 }
 
-//Initialize initializes mongoDB and something else
-func (o *OrtooService) Initialize(ctx context.Context) error {
-
-	return nil
-}
+// // Initialize initializes mongoDB and something else
+// func (o *OrtooService) Initialize(ctx context.Context) error {
+//
+// 	return nil
+// }
