@@ -38,6 +38,7 @@ var (
 	}
 )
 
+// PushPullHandler is a struct that handles a push-pull for a datatype
 type PushPullHandler struct {
 	Key  string
 	DUID string
@@ -58,13 +59,14 @@ type PushPullHandler struct {
 	gotPushPullPack *model.PushPullPack
 	gotOption       *model.PushPullPackOption
 
-	retPushPullPack *model.PushPullPack
-	retCh           chan *model.PushPullPack
+	responsePushPullPack *model.PushPullPack
+	retCh                chan *model.PushPullPack
 
 	pushingOperations []interface{}
 	pulledOperations  []model.Operation
 }
 
+// Start begins the push pull for a datatype and returns the result with the channel 'retCh'
 func (p *PushPullHandler) Start() <-chan *model.PushPullPack {
 	retCh := make(chan *model.PushPullPack)
 	go p.process(retCh)
@@ -81,7 +83,7 @@ func (p *PushPullHandler) getPushPullTag() model.PushPullTag {
 
 func (p *PushPullHandler) initialize(retCh chan *model.PushPullPack) *model.PushPullError {
 	p.retCh = retCh
-	p.retPushPullPack = p.gotPushPullPack.GetReturnPushPullPack()
+	p.responsePushPullPack = p.gotPushPullPack.GetResponsePushPullPack()
 
 	checkPoint, err := p.mongo.GetCheckPointFromClient(p.ctx, p.CUID, p.DUID)
 	if err != nil {
@@ -99,19 +101,27 @@ func (p *PushPullHandler) initialize(retCh chan *model.PushPullPack) *model.Push
 func (p *PushPullHandler) finalize() {
 	if p.err == nil {
 		log.Logger.Infof("finish push-pull for key %s:%s (%v) -> (%v)", p.Key, p.DUID, p.initialCheckPoint, p.currentCheckPoint)
+		if len(p.pushingOperations) > 0 {
+			if err := p.sendNotification(); err == nil {
+				// continue
+			}
+			if err := p.reserveUpdateSnapshot(); err != nil {
+				// continue
+			}
+		}
 	} else {
-		p.retPushPullPack.GetPushPullPackOption().SetErrorBit()
+		p.responsePushPullPack.GetPushPullPackOption().SetErrorBit()
 
 		errOp := model.NewErrorOperation(p.err)
-		p.retPushPullPack.Operations = append(p.retPushPullPack.Operations, model.ToOperationOnWire(errOp))
+		p.responsePushPullPack.Operations = append(p.responsePushPullPack.Operations, model.ToOperationOnWire(errOp))
 
 	}
-	log.Logger.Infof("send back %s", p.retPushPullPack.ToString())
-	p.retCh <- p.retPushPullPack
+	log.Logger.Infof("send back to %s %s", p.clientDoc.Alias, p.responsePushPullPack.ToString())
+	p.retCh <- p.responsePushPullPack
 }
 
 func (p *PushPullHandler) logInitialConditions(casePushPull string) {
-	log.Logger.Infof("show initial condition| case: %s, opt: %s, cp:%v, ops:%d",
+	log.Logger.Infof("show initial condition| case: %s, opt: %s, cp(%v), ops:%d",
 		casePushPull, p.gotOption.String(), p.initialCheckPoint, len(p.gotPushPullPack.Operations))
 }
 
@@ -141,15 +151,6 @@ func (p *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	if p.err = p.commitToMongoDB(); p.err != nil {
 		return
 	}
-
-	if len(p.pushingOperations) > 0 {
-		if err := p.sendNotification(); err == nil {
-			// continue
-		}
-		if err := p.reserveUpdateSnapshot(); err != nil {
-			// continue
-		}
-	}
 	return
 }
 
@@ -162,6 +163,7 @@ func (p *PushPullHandler) sendNotification() error {
 		p.currentCheckPoint.Sseq); err != nil {
 		return log.OrtooError(err)
 	}
+
 	return nil
 }
 
@@ -175,23 +177,24 @@ func (p *PushPullHandler) reserveUpdateSnapshot() error {
 
 func (p *PushPullHandler) commitToMongoDB() *model.PushPullError {
 	p.datatypeDoc.SseqEnd = p.currentCheckPoint.Sseq
-	p.retPushPullPack.CheckPoint = p.currentCheckPoint
+	p.responsePushPullPack.CheckPoint = p.currentCheckPoint
 
 	if len(p.pushingOperations) > 0 {
-		log.Logger.Infof("push %d operations finally", len(p.pushingOperations))
 		if err := p.mongo.InsertOperations(p.ctx, p.pushingOperations); err != nil {
 			return model.NewPushPullError(model.PushPullErrQueryToDB, p.getPushPullTag(), err)
 		}
+		log.Logger.Infof("[MONGO] push %d operations finally", len(p.pushingOperations))
 	}
 
 	if err := p.mongo.UpdateDatatype(p.ctx, p.datatypeDoc); err != nil {
 		return model.NewPushPullError(model.PushPullErrQueryToDB, p.getPushPullTag(), err)
 	}
+	log.Logger.Infof("[MONGO] update datatype with %+v", p.datatypeDoc)
 
 	if err := p.mongo.UpdateCheckPointInClient(p.ctx, p.CUID, p.DUID, p.currentCheckPoint); err != nil {
 		return model.NewPushPullError(model.PushPullErrQueryToDB, p.getPushPullTag(), err)
 	}
-
+	log.Logger.Infof("[MONGO] update '%s' with CP(%s)", p.clientDoc.Alias, p.currentCheckPoint.String())
 	return nil
 }
 
@@ -216,7 +219,7 @@ func (p *PushPullHandler) pullOperations() *model.PushPullError {
 			}); err != nil {
 			return model.NewPushPullError(model.PushPullErrPullOperations, p.getPushPullTag(), err)
 		}
-		p.retPushPullPack.Operations = operations
+		p.responsePushPullPack.Operations = operations
 
 	}
 	return nil
@@ -243,7 +246,7 @@ func (p *PushPullHandler) pushOperations() *model.PushPullError {
 				CreatedAt:     time.Now(),
 			}
 			p.pushingOperations = append(p.pushingOperations, opDoc)
-			p.retPushPullPack.Operations = append(p.retPushPullPack.Operations, opOnWire)
+			p.responsePushPullPack.Operations = append(p.responsePushPullPack.Operations, opOnWire)
 			p.currentCheckPoint.SyncCseq(op.GetBase().ID.GetSeq())
 			p.currentCheckPoint.Sseq++
 
@@ -298,7 +301,7 @@ func (p *PushPullHandler) subscribeDatatype() *model.PushPullError {
 	if err != nil {
 		return model.NewPushPullError(model.PushPullErrIllegalFormat, p.getPushPullTag(), "DUID", p.datatypeDoc.DUID)
 	}
-	p.retPushPullPack.DUID = duid
+	p.responsePushPullPack.DUID = duid
 	return nil
 }
 
@@ -329,26 +332,21 @@ func (p *PushPullHandler) evaluatePushPullCase() (pushPullCase, *model.PushPullE
 		}
 		if p.datatypeDoc == nil {
 			return caseMatchNothing, nil
-		} else {
-			return caseUsedDUID, nil
 		}
-	} else {
-		if p.datatypeDoc.Type == model.TypeOfDatatype_name[p.gotPushPullPack.Type] {
-			if p.datatypeDoc.Visible {
-				checkPoint := p.clientDoc.GetCheckPoint(p.DUID)
-				if checkPoint != nil {
-					p.initialCheckPoint = checkPoint
-					p.currentCheckPoint = checkPoint.Clone()
-					return caseAllMatchedSubscribed, nil
-				} else {
-					return caseAllMatchedNotSubscribed, nil
-				}
-			} else {
-				return caseAllMatchedNotVisible, nil
-			}
-		} else {
-			return caseMatchKeyNotType, nil
-		}
+		return caseUsedDUID, nil
 	}
+	if p.datatypeDoc.Type == model.TypeOfDatatype_name[p.gotPushPullPack.Type] {
+		if p.datatypeDoc.Visible {
+			checkPoint := p.clientDoc.GetCheckPoint(p.DUID)
+			if checkPoint != nil {
+				p.initialCheckPoint = checkPoint
+				p.currentCheckPoint = checkPoint.Clone()
+				return caseAllMatchedSubscribed, nil
+			}
+			return caseAllMatchedNotSubscribed, nil
+		}
+		return caseAllMatchedNotVisible, nil
+	}
+	return caseMatchKeyNotType, nil
 
 }

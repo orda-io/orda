@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
 )
@@ -11,9 +12,10 @@ import (
 // NewTestOrtooClientConfig ...
 func NewTestOrtooClientConfig(collectionName string) *commons.OrtooClientConfig {
 	return &commons.OrtooClientConfig{
-		Address:        "127.0.0.1:19061",
-		CollectionName: collectionName,
-		PubSubAddr:     "127.0.0.1:1883",
+		Address:          "127.0.0.1:19061",
+		CollectionName:   collectionName,
+		NotificationAddr: "127.0.0.1:1883",
+		SyncType:         model.SyncType_NOTIFIABLE,
 	}
 }
 

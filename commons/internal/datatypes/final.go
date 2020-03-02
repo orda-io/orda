@@ -6,24 +6,25 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-// CommonDatatype defines common methods
-type CommonDatatype struct {
+// FinalDatatype implements the datatype features finally used.
+type FinalDatatype struct {
 	*TransactionDatatype
 	TransactionCtx *TransactionContext
 }
 
-type CommonDatatypeInterface interface {
-	GetCommon() *CommonDatatype
+// FinalDatatypeInterface defines the interface to obtain FinalDatatype which provide final interfaces.
+type FinalDatatypeInterface interface {
+	GetFinal() *FinalDatatype
 }
 
 // Initialize is a method for initialization
-func (c *CommonDatatype) Initialize(
+func (c *FinalDatatype) Initialize(
 	key string,
 	typeOf model.TypeOfDatatype,
 	cuid model.CUID,
 	w Wire,
 	snapshot model.Snapshot,
-	finalDatatype model.FinalDatatype) error {
+	finalDatatype model.CommonDatatype) error {
 
 	baseDatatype, err := newBaseDatatype(key, typeOf, cuid)
 	if err != nil {
@@ -46,7 +47,8 @@ func (c *CommonDatatype) Initialize(
 	return nil
 }
 
-func (c *CommonDatatype) GetMeta() ([]byte, error) {
+// GetMeta returns the binary of metadata of the datatype.
+func (c *FinalDatatype) GetMeta() ([]byte, error) {
 	meta := model.DatatypeMeta{
 		Key:    c.Key,
 		DUID:   c.id,
@@ -61,7 +63,8 @@ func (c *CommonDatatype) GetMeta() ([]byte, error) {
 	return metab, nil
 }
 
-func (c *CommonDatatype) SetMeta(meta []byte) error {
+// SetMeta sets the metadata with binary metadata.
+func (c *FinalDatatype) SetMeta(meta []byte) error {
 	m := model.DatatypeMeta{}
 	if err := proto.Unmarshal(meta, &m); err != nil {
 		return log.OrtooError(err)
@@ -74,7 +77,8 @@ func (c *CommonDatatype) SetMeta(meta []byte) error {
 	return nil
 }
 
-func (c *CommonDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
+// SubscribeOrCreate enables a datatype to subscribe and create itself.
+func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
 		c.state = state
 		return nil
@@ -91,7 +95,7 @@ func (c *CommonDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 }
 
 // ExecuteTransactionRemote is a method to execute a transaction of remote operations
-func (c CommonDatatype) ExecuteTransactionRemote(transaction []model.Operation) error {
+func (c FinalDatatype) ExecuteTransactionRemote(transaction []model.Operation) error {
 	var transactionCtx *TransactionContext
 	var err error
 	if len(transaction) > 1 {

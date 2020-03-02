@@ -3,6 +3,7 @@ package integration
 import (
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/integration_test/test_helper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -31,14 +32,14 @@ func (s *ClientServerTestSuite) TestClientServer() {
 
 		// intCounterCh1, errCh1 :=
 		client1.CreateIntCounter(key, commons.NewIntCounterHandlers(
-			func(intCounter commons.IntCounter) {
+			func(intCounter commons.IntCounter, oldState, newState model.StateOfDatatype) {
 				_, _ = intCounter.Increase()
 				_, _ = intCounter.Increase()
 				_, _ = intCounter.Increase()
 				require.NoError(s.T(), client1.Sync())
 			}, nil,
-			func(err error) {
-				s.T().Fatal(err)
+			func(errs ...error) {
+				s.T().Fatal(errs[0])
 			}))
 
 		// intCounter1.DoTransaction("transaction1", func(counter commons.IntCounterInTxn) error {
@@ -59,13 +60,13 @@ func (s *ClientServerTestSuite) TestClientServer() {
 		defer client2.Close()
 
 		client2.SubscribeIntCounter(key, commons.NewIntCounterHandlers(
-			func(intCounter commons.IntCounter) {
+			func(intCounter commons.IntCounter, oldState, newState model.StateOfDatatype) {
 				log.Logger.Infof("%d", intCounter.Get())
 				_, _ = intCounter.IncreaseBy(3)
 				require.NoError(s.T(), client2.Sync())
 			}, nil,
-			func(err error) {
-				s.T().Fatal(err)
+			func(errs ...error) {
+				s.T().Fatal(errs[0])
 			}))
 	})
 }

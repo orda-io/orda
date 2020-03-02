@@ -8,11 +8,10 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-// Wire defines the interfaces related to delivering operations. This is called when a dataType needs to send messages
+// Wire defines the interfaces related to delivering operations. This is called when a datatype needs to send messages
 type Wire interface {
-	// DeliverOperation(wired WiredDatatypeInterface, op model.Operation)
 	DeliverTransaction(wired *WiredDatatype)
-	OnChangeDatatypeState(dt model.FinalDatatype, state model.StateOfDatatype)
+	OnChangeDatatypeState(dt model.CommonDatatype, state model.StateOfDatatype) error
 }
 
 // WiredDatatype implements the datatype features related to the synchronization with Ortoo server
@@ -47,6 +46,7 @@ func newWiredDatatype(b *baseDatatype, w Wire) (*WiredDatatype, error) {
 	}, nil
 }
 
+// GetBase returns baseDatatype
 func (w *WiredDatatype) GetBase() *baseDatatype {
 	return w.baseDatatype
 }
@@ -62,12 +62,13 @@ func (w *WiredDatatype) ExecuteRemote(op model.Operation) {
 }
 
 // ReceiveRemoteOperationsOnWire ...
-func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.OperationOnWire) error {
+func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.OperationOnWire) ([]interface{}, error) {
 
 	finalDatatype := w.finalDatatype
-
+	var opList []interface{}
 	for i := 0; i < len(operations); {
 		op := model.ToOperation(operations[i])
+		opList = append(opList, op.GetAsJSON())
 		var transaction []model.Operation
 		switch cast := op.(type) {
 		case *model.TransactionOperation:
@@ -82,31 +83,19 @@ func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.Operat
 		}
 		err := finalDatatype.ExecuteTransactionRemote(transaction)
 		if err != nil {
-			return w.Logger.OrtooErrorf(err, "fail to execute Transaction")
+			return nil, w.Logger.OrtooErrorf(err, "fail to execute Transaction")
 		}
 	}
-	return nil
+	return opList, nil
 }
 
-func (w *WiredDatatype) applyPushPullPackExecuteOperations(operationsOnWire []*model.OperationOnWire) {
-	w.ReceiveRemoteOperationsOnWire(operationsOnWire)
-	// for i := 0; i < len(operationsOnWire); {
-	// op := model.ToOperation(operationsOnWire[i])
-	// var transaction []*model.Operation
-	// switch cast := op.(type) {
-	// case *model.TransactionOperation:
-
-	// transaction = append(transaction, operationsOnWire[i : i+int(cast.NumOfOps)])
-
-	// transaction = operationsOnWire[i : i+int(cast.NumOfOps)]
-	// for j := i; j < i+int(cast.NumOfOps); j++ {
-	//	//transaction = append(transaction, &model.ToOperation(operationsOnWire[j]))
+func (w *WiredDatatype) applyPushPullPackExecuteOperations(operationsOnWire []*model.OperationOnWire) ([]interface{}, error) {
+	return w.ReceiveRemoteOperationsOnWire(operationsOnWire)
+	// if err != nil {
+	// 	return err
 	// }
-	// i += int(cast.NumOfOps)
-	//	default:
-	//		//transaction = []*
-	//	}
-	// }
+	// w.finalDatatype.HandleRemoteOperations(opList)
+	// return nil
 }
 
 // CreatePushPullPack ...
@@ -148,12 +137,12 @@ func (w *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error {
 		opOnWire := ppp.GetOperations()[0]
 		errOp, ok := model.ToOperation(opOnWire).(*model.ErrorOperation)
 		if ok {
-			switch errOp.GetPushPullErr().Code {
+			switch errOp.GetPushPullError().Code {
 			case model.PushPullErrQueryToDB:
 			case model.PushPullErrIllegalFormat:
 			case model.PushPullErrDuplicateDatatypeKey:
 				err := errors.NewDatatypeError(errors.ErrDatatypeCreate, fmt.Sprintf("duplicated key:'%s'", w.Key))
-				w.finalDatatype.HandleError(err)
+				// w.finalDatatype.HandleError(err)
 				return err
 			case model.PushPullErrPullOperations:
 			case model.PushPullErrPushOperations:
@@ -175,7 +164,7 @@ func (w *WiredDatatype) applyPushPullPackExcludeDuplicatedOperations(ppp *model.
 		// o_1 and o_2 should be skipped
 		skip := len(ppp.Operations) - pulled
 		ppp.Operations = ppp.Operations[skip:]
-		log.Logger.Infof("skip %s operations", skip)
+		log.Logger.Infof("skip %d operations", skip)
 	}
 }
 
@@ -190,7 +179,8 @@ func (w *WiredDatatype) applyPushPullPackSyncCheckPoint(newCheckPoint *model.Che
 	log.Logger.Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, w.checkPoint)
 }
 
-func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPullPack) {
+func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPullPack) (model.StateOfDatatype, model.StateOfDatatype, error) {
+	var err error = nil
 	oldState := w.state
 	switch w.state {
 	case model.StateOfDatatype_DUE_TO_CREATE,
@@ -198,7 +188,7 @@ func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPu
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE:
 		w.state = model.StateOfDatatype_SUBSCRIBED
 		w.id = ppp.DUID
-		w.wire.OnChangeDatatypeState(w.finalDatatype, w.state)
+		err = w.wire.OnChangeDatatypeState(w.finalDatatype, w.state)
 	case model.StateOfDatatype_SUBSCRIBED:
 	case model.StateOfDatatype_DUE_TO_UNSUBSCRIBE:
 	case model.StateOfDatatype_UNSUBSCRIBED:
@@ -207,17 +197,42 @@ func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPu
 	if oldState != w.state {
 		log.Logger.Infof("update state: %v -> %v", oldState, w.state)
 	}
+	return oldState, w.state, err
 }
 
 // ApplyPushPullPack ...
 func (w *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
-	if err := w.checkPushPullPackOption(ppp); err != nil {
-		return
+	var oldState, newState model.StateOfDatatype
+	var errs []error
+	var opList []interface{}
+	err := w.checkPushPullPackOption(ppp)
+	if err == nil {
+		w.applyPushPullPackExcludeDuplicatedOperations(ppp)
+		w.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
+		oldState, newState, err = w.applyPushPullPackUpdateStateOfDatatype(ppp)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		opList, err = w.applyPushPullPackExecuteOperations(ppp.Operations)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	} else {
+		errs = append(errs, err)
 	}
-	w.applyPushPullPackExcludeDuplicatedOperations(ppp)
-	w.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
-	w.applyPushPullPackUpdateStateOfDatatype(ppp)
-	w.applyPushPullPackExecuteOperations(ppp.Operations)
+	w.applyPushPullPackCallHandler(errs, oldState, newState, opList)
+}
+
+func (w *WiredDatatype) applyPushPullPackCallHandler(errs []error, oldState, newState model.StateOfDatatype, opList []interface{}) {
+	if oldState != newState {
+		w.finalDatatype.HandleStateChange(oldState, newState)
+	}
+	if len(errs) > 0 {
+		w.finalDatatype.HandleError(errs)
+	}
+	if len(opList) > 0 {
+		w.finalDatatype.HandleRemoteOperations(opList)
+	}
 }
 
 func (w *WiredDatatype) getOperationOnWires(cseq uint64) []*model.OperationOnWire {
@@ -241,6 +256,7 @@ func (w *WiredDatatype) deliverTransaction(transaction []model.Operation) {
 	w.wire.DeliverTransaction(w)
 }
 
+// NeedSync verifies if the datatype needs to sync
 func (w *WiredDatatype) NeedSync(sseq uint64) bool {
 	return w.checkPoint.Sseq < sseq
 }

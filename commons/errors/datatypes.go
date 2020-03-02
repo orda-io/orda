@@ -8,6 +8,8 @@ import (
 type errorCodeDatatype uint32
 
 const baseDatatypeCode errorCodeDatatype = 200
+
+// ErrDatatypeXXX defines an error related to Datatype
 const (
 	ErrDatatypeCreate = baseDatatypeCode + iota
 	ErrDatatypeSubscribe
@@ -20,6 +22,7 @@ var datatypeErrFormats = map[errorCodeDatatype]string{
 	ErrDatatypeTransaction: "fail to proceed transaction: %s",
 }
 
+// DatatypeError is an error related to Datatype
 type DatatypeError struct {
 	code errorCodeDatatype
 	msg  string
@@ -29,6 +32,7 @@ func (d *DatatypeError) Error() string {
 	return d.msg
 }
 
+// NewDatatypeError creates an error related to the datatype
 func NewDatatypeError(code errorCodeDatatype, args ...interface{}) *DatatypeError {
 	format := fmt.Sprintf("[DatatypeError: %d] %s", code, datatypeErrFormats[code])
 	err := &DatatypeError{

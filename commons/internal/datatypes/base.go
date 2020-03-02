@@ -14,13 +14,14 @@ type baseDatatype struct {
 	opID          *model.OperationID
 	TypeOf        model.TypeOfDatatype
 	state         model.StateOfDatatype
-	finalDatatype model.FinalDatatype
+	finalDatatype model.CommonDatatype
 	Logger        *log.OrtooLog
 }
 
 // PublicBaseDatatypeInterface is a public interface for a datatype.
 type PublicBaseDatatypeInterface interface {
 	GetType() model.TypeOfDatatype
+	GetState() model.StateOfDatatype
 }
 
 func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*baseDatatype, error) {
@@ -79,11 +80,19 @@ func (b *baseDatatype) GetType() model.TypeOfDatatype {
 	return b.TypeOf
 }
 
-func (b *baseDatatype) SetFinalDatatype(finalDatatype model.FinalDatatype) {
+func (b *baseDatatype) GetState() model.StateOfDatatype {
+	return b.state
+}
+
+func (b *baseDatatype) GetDatatype() model.StateOfDatatype {
+	return b.state
+}
+
+func (b *baseDatatype) SetFinalDatatype(finalDatatype model.CommonDatatype) {
 	b.finalDatatype = finalDatatype
 }
 
-func (b *baseDatatype) GetFinalDatatype() model.FinalDatatype {
+func (b *baseDatatype) GetFinalDatatype() model.CommonDatatype {
 	return b.finalDatatype
 }
 

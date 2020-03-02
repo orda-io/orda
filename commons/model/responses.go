@@ -28,6 +28,7 @@ func NewClientResponse(header *MessageHeader, state StateOfResponse, args ...int
 	}
 }
 
+// ToString returns customized string
 func (c *ClientResponse) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, clientHeadFormat, c.Header.ToString())
@@ -37,6 +38,7 @@ func (c *ClientResponse) ToString() string {
 	return b.String()
 }
 
+// ToString returns customized string
 func (p *PushPullResponse) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, pushPullHeadFormat, p.Header.ToString(), p.ID, len(p.PushPullPacks))

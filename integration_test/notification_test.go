@@ -1,10 +1,14 @@
 package integration
 
 import (
+	"fmt"
 	"github.com/knowhunger/ortoo/commons"
+	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/integration_test/test_helper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"sync"
 	"testing"
 )
 
@@ -45,18 +49,29 @@ func (n *NotificationTestSuite) TestNotificationTest() {
 		_, _ = intCounter1.Increase()
 		require.NoError(n.T(), client1.Sync())
 
-		// _ = client2.SubscribeIntCounter(key, commons.NewIntCounterHandlers(
-		// 	func(intCounter commons.IntCounter) {
-		// 		require.Equal(n.T(), int32(0), intCounter.Get())
-		// 	},
-		// 	func(intCounter commons.IntCounter, opList []model.Operation) {
-		//
-		// 	},
-		// 	func(err error) {
-		// 		require.NoError(n.T(), err)
-		// 	}))
-		// require.NoError(n.T(), client2.Sync())
+		fmt.Printf("Subscribed by client2\n")
+		wg := sync.WaitGroup{}
+		wg.Add(3)
+		intCounter2 := client2.SubscribeIntCounter(key, commons.NewIntCounterHandlers(
+			func(intCounter commons.IntCounter, old model.StateOfDatatype, new model.StateOfDatatype) {
+				log.Logger.Infof("STATE: %s -> %s %d", old, new, intCounter.Get())
+				require.Equal(n.T(), int32(1), intCounter.Get())
+				wg.Done() // one time
+			},
+			func(intCounter commons.IntCounter, opList []interface{}) {
+				for _, op := range opList {
+					log.Logger.Infof("OPERATION: %+v", op)
+				}
+				wg.Done() // two times
+			},
+			func(err ...error) {
+				require.NoError(n.T(), err[0])
+			}))
+		require.NoError(n.T(), client2.Sync())
 
-		// require.NoError(n.T(), client1.Sync())
+		_, _ = intCounter1.IncreaseBy(10)
+		require.NoError(n.T(), client1.Sync())
+		wg.Wait()
+		require.Equal(n.T(), intCounter1.Get(), intCounter2.Get())
 	})
 }

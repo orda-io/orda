@@ -10,7 +10,7 @@ import (
 
 // ProcessPushPull processes a GRPC for Push-Pull
 func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRequest) (*model.PushPullResponse, error) {
-	log.Logger.Infof("receive PushPull REQUEST: %v", in.ToString())
+	log.Logger.Infof("receive PUSHPULL REQUEST: %v", in.ToString())
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Header.GetCollection())
 	if collectionDoc == nil || err != nil {
 		return nil, model.NewRPCError(model.RPCErrMongoDB)

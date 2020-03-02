@@ -72,6 +72,7 @@ func (o *OperationID) Clone() *OperationID {
 	}
 }
 
+// ToString returns customized string
 func (o *OperationID) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]", o.Era, o.Lamport, hex.EncodeToString(o.CUID), o.Seq)

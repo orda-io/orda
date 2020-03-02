@@ -9,6 +9,7 @@ import (
 	"reflect"
 )
 
+// MongoCollections is a bunch of collections used to provide
 type MongoCollections struct {
 	mongoClient *mongo.Client
 	clients     *mongo.Collection

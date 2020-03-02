@@ -3,6 +3,7 @@ package integration
 import (
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
 	"github.com/knowhunger/ortoo/integration_test/test_helper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -38,12 +39,12 @@ func (n *ProtocolTestSuite) TestProtocol() {
 		var wg1 = sync.WaitGroup{}
 		wg1.Add(1)
 		intCounter1 := client1.CreateIntCounter(key, commons.NewIntCounterHandlers(
-			func(intCounter commons.IntCounter) {
+			func(intCounter commons.IntCounter, oldState, newState model.StateOfDatatype) {
 				wg1.Done()
 			},
 			nil,
-			func(err error) {
-				require.NoError(n.T(), err)
+			func(errs ...error) {
+				require.NoError(n.T(), errs[0])
 			}))
 		wg1.Wait()
 		_, _ = intCounter1.IncreaseBy(1)
@@ -62,11 +63,11 @@ func (n *ProtocolTestSuite) TestProtocol() {
 		wg2 := sync.WaitGroup{}
 		wg2.Add(1)
 		_ = client2.CreateIntCounter(key, commons.NewIntCounterHandlers(
-			func(intCounter commons.IntCounter) {
+			func(intCounter commons.IntCounter, oldState, newState model.StateOfDatatype) {
 			}, nil,
-			func(err error) {
-				log.Logger.Errorf("should be duplicate error:%v", err)
-				require.Error(n.T(), err)
+			func(errs ...error) {
+				log.Logger.Errorf("should be duplicate error:%v", errs[0])
+				require.Error(n.T(), errs[0])
 				wg2.Done()
 			}))
 		wg2.Wait()

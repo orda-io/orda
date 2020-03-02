@@ -76,7 +76,9 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	b.WriteString(" [" + level[:4] + "]")
 	b.WriteString("\x1b[0m ")
 
-	if strings.Contains(entry.Caller.File, "server/") {
+	if entry.Data[tagField] != nil {
+		b.WriteString("[" + entry.Data[tagField].(string) + "] ")
+	} else if strings.Contains(entry.Caller.File, "server/") {
 		b.WriteString("[SERVER] ")
 	} else if strings.Contains(entry.Caller.File, "commons/") {
 		b.WriteString("[SDK] ")
@@ -95,9 +97,6 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		_, _ = fmt.Fprintf(b, "\t\t[ %s:%d ] ", relativeCallFile, entry.Caller.Line)
 	}
 
-	if entry.Data[tagField] != nil {
-		b.WriteString("[" + entry.Data[tagField].(string) + "] ")
-	}
 	b.WriteByte('\n')
 	return b.Bytes(), nil
 }

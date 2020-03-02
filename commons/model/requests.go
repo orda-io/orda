@@ -28,6 +28,7 @@ func NewPushPullRequest(seq uint32, client *Client, pushPullPackList ...*PushPul
 	}
 }
 
+// ToString returns customized string
 func (p *PushPullRequest) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, pushPullHeadFormat, p.Header.ToString(), p.ID, len(p.PushPullPacks))
@@ -46,6 +47,7 @@ func NewClientRequest(seq uint32, client *Client) *ClientRequest {
 	}
 }
 
+// ToString returns customized string
 func (c *ClientRequest) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, clientHeadFormat, c.Header.ToString())

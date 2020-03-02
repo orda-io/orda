@@ -9,11 +9,11 @@ import (
 
 // Operation defines the interfaces of Operation
 type Operation interface {
-	ExecuteLocal(datatype FinalDatatype) (interface{}, error)
-	ExecuteRemote(datatype FinalDatatype) (interface{}, error)
+	ExecuteLocal(datatype CommonDatatype) (interface{}, error)
+	ExecuteRemote(datatype CommonDatatype) (interface{}, error)
 	GetBase() *BaseOperation
 	ToString() string
-	GetAsJson() interface{}
+	GetAsJSON() interface{}
 }
 
 // NewOperation creates a new operation.
@@ -29,12 +29,14 @@ func (o *BaseOperation) SetOperationID(opID *OperationID) {
 	o.ID = opID
 }
 
+// ToBaseString returns the string for BaseOperation
 func (o *BaseOperation) ToBaseString() string {
 	return fmt.Sprintf("%s|%s", o.OpType.String(), o.ID.ToString())
 }
 
-func (o *BaseOperation) GetAsJson() interface{} {
-	return &struct {
+// GetAsJSON returns the operation as interface{} for JSON
+func (o *BaseOperation) GetAsJSON() interface{} {
+	return struct {
 		Era     uint32
 		Lamport uint64
 		CUID    string
@@ -62,22 +64,39 @@ func NewTransactionOperation(tag string) (*TransactionOperation, error) {
 	}, nil
 }
 
+// GetAsJSON returns the operation as interface{} for JSON
+func (t *TransactionOperation) GetAsJSON() interface{} {
+	return &struct {
+		ID   interface{}
+		Type string
+		Tag  string
+	}{
+		ID:   t.Base.GetAsJSON(),
+		Type: t.Base.OpType.String(),
+		Tag:  t.Tag,
+	}
+}
+
 // ExecuteLocal ...
-func (t *TransactionOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, error) {
+func (t *TransactionOperation) ExecuteLocal(datatype CommonDatatype) (interface{}, error) {
 	return nil, nil
 }
 
 // ExecuteRemote ...
-func (t *TransactionOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
-	// datatype.BeginTransaction(t.Tag)
+func (t *TransactionOperation) ExecuteRemote(datatype CommonDatatype) (interface{}, error) {
 	return nil, nil
 }
 
+// ToString returns customized string
 func (t *TransactionOperation) ToString() string {
-	return fmt.Sprintf("%s %s(%s) len:%d", t.Base.ToBaseString(), t.Tag, hex.EncodeToString(t.Uuid), t.NumOfOps)
+	j := t.GetAsJSON()
+	str, _ := json.Marshal(j)
+	return string(str)
 }
 
 // ////////////////// SubscribeOperation ////////////////////
+
+// NewSnapshotOperation generates a new SnapshotOperation
 func NewSnapshotOperation(datatype TypeOfDatatype, state StateOfDatatype, snapshot Snapshot) (*SnapshotOperation, error) {
 	any, err := snapshot.GetTypeAny()
 	if err != nil {
@@ -92,35 +111,39 @@ func NewSnapshotOperation(datatype TypeOfDatatype, state StateOfDatatype, snapsh
 }
 
 // ExecuteLocal ...
-func (s *SnapshotOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, error) {
+func (s *SnapshotOperation) ExecuteLocal(datatype CommonDatatype) (interface{}, error) {
 	datatype.SetState(s.State)
 	return nil, nil
 }
 
 // ExecuteRemote ...
-func (s *SnapshotOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
-
+func (s *SnapshotOperation) ExecuteRemote(datatype CommonDatatype) (interface{}, error) {
 	return datatype.ExecuteRemote(s)
 }
 
+// ToString returns customized string
 func (s *SnapshotOperation) ToString() string {
-	return fmt.Sprintf("%s:%v", s.Base.ToBaseString(), s.Snapshot.Value)
+	d, _ := json.Marshal(s.GetAsJSON())
+	return string(d)
 }
 
-func (i *SnapshotOperation) GetAsJson() interface{} {
-	val =
+// GetAsJSON returns the operation as interface{} for JSON
+func (s *SnapshotOperation) GetAsJSON() interface{} {
+
 	return &struct {
 		ID    interface{}
 		Type  string
-		Value int32
+		Value interface{}
 	}{
-		ID:    i.Base.GetAsJson(),
-		Type:  i.Base.OpType.String(),
-		Value: i.Snapshot.Value,
+		ID:    s.Base.GetAsJSON(),
+		Type:  s.Base.OpType.String(),
+		Value: s.Snapshot.Value,
 	}
 }
 
 // ////////////////// ErrorOperation ////////////////////
+
+// NewErrorOperation generates a new ErrorOperation
 func NewErrorOperation(err *PushPullError) *ErrorOperation {
 	return &ErrorOperation{
 		Base: NewOperation(TypeOfOperation_ERROR),
@@ -130,20 +153,36 @@ func NewErrorOperation(err *PushPullError) *ErrorOperation {
 }
 
 // ExecuteLocal ...
-func (e *ErrorOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, error) {
+func (e *ErrorOperation) ExecuteLocal(datatype CommonDatatype) (interface{}, error) {
 	return nil, nil
 }
 
 // ExecuteRemote ...
-func (e *ErrorOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
+func (e *ErrorOperation) ExecuteRemote(datatype CommonDatatype) (interface{}, error) {
 	return datatype.ExecuteRemote(e)
 }
 
-func (e *ErrorOperation) ToString() string {
-	return fmt.Sprintf("%s:PushPullErr(%d): %s", e.Base.ToBaseString(), e.Code, e.Msg)
+// GetAsJSON returns the operation as interface{} for JSON
+func (e *ErrorOperation) GetAsJSON() interface{} {
+	return &struct {
+		ID   interface{}
+		Code uint32
+		Msg  string
+	}{
+		ID:   e.Base.GetAsJSON(),
+		Code: e.Code,
+		Msg:  e.Msg,
+	}
 }
 
-func (e *ErrorOperation) GetPushPullErr() *PushPullError {
+// ToString returns customized string
+func (e *ErrorOperation) ToString() string {
+	data, _ := json.Marshal(e.GetAsJSON())
+	return string(data)
+}
+
+// GetPushPullError returns PushPullError from ErrorOperation
+func (e *ErrorOperation) GetPushPullError() *PushPullError {
 	return &PushPullError{
 		Code: errorCodePushPull(e.Code),
 		Msg:  e.Msg,
@@ -161,29 +200,31 @@ func NewIncreaseOperation(delta int32) *IncreaseOperation {
 }
 
 // ExecuteLocal ...
-func (i *IncreaseOperation) ExecuteLocal(datatype FinalDatatype) (interface{}, error) {
+func (i *IncreaseOperation) ExecuteLocal(datatype CommonDatatype) (interface{}, error) {
 	return datatype.ExecuteLocal(i)
 }
 
 // ExecuteRemote ...
-func (i *IncreaseOperation) ExecuteRemote(datatype FinalDatatype) (interface{}, error) {
+func (i *IncreaseOperation) ExecuteRemote(datatype CommonDatatype) (interface{}, error) {
 	return datatype.ExecuteRemote(i)
 }
 
-func (i *IncreaseOperation) GetAsJson() interface{} {
+// GetAsJSON returns the operation as interface{} for JSON
+func (i *IncreaseOperation) GetAsJSON() interface{} {
 	return &struct {
 		ID    interface{}
 		Type  string
 		Value int32
 	}{
-		ID:    i.Base.GetAsJson(),
+		ID:    i.Base.GetAsJSON(),
 		Type:  i.Base.OpType.String(),
 		Value: i.Delta,
 	}
 }
 
+// ToString returns customized string
 func (i *IncreaseOperation) ToString() string {
-	j := i.GetAsJson()
+	j := i.GetAsJSON()
 	str, _ := json.Marshal(j)
 	return string(str) // fmt.Sprintf("%s delta:%d", i.Base.ToBaseString(), i.Delta)
 }
@@ -218,6 +259,7 @@ func ToOperation(op *OperationOnWire) Operation {
 	return nil
 }
 
+// ToString returns customized string
 func (o *OperationOnWire) ToString() string {
 	return ToOperation(o).ToString()
 }

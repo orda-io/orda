@@ -20,7 +20,7 @@ func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName
 		return log.OrtooError(err)
 	}
 	bsonM[VER] = sseq
-	filter := schema.GetFilter().AddSnapshot(bsonM, sseq)
+	filter := schema.GetFilter().AddSnapshot(bsonM)
 	res, err := collection.UpdateOne(ctx, schema.FilterByID(id), bson.D(filter), schema.UpsertOption)
 	if err != nil {
 		return log.OrtooError(err)

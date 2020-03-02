@@ -37,8 +37,8 @@ func (c *TestWire) DeliverTransaction(wired *datatypes.WiredDatatype) {
 func (c *TestWire) SetDatatypes(datatypeList ...interface{}) {
 
 	for _, v := range datatypeList {
-		if cv, ok := v.(datatypes.CommonDatatypeInterface); ok {
-			common := cv.GetCommon()
+		if cv, ok := v.(datatypes.FinalDatatypeInterface); ok {
+			common := cv.GetFinal()
 			c.wiredList = append(c.wiredList, common.GetWired())
 			c.sseqMap[common.GetCUID()] = 0
 		}

@@ -2,7 +2,6 @@ package context
 
 import (
 	"context"
-	"fmt"
 	"github.com/knowhunger/ortoo/commons/log"
 )
 
@@ -13,9 +12,9 @@ type OrtooContext struct {
 }
 
 // NewOrtooContext creates a new Ortoo context.
-func NewOrtooContext() *OrtooContext {
+func NewOrtooContext(alias string) *OrtooContext {
 	context := context.TODO()
-	logger := log.NewOrtooLogWithTag(fmt.Sprintf("%p", context))
+	logger := log.NewOrtooLogWithTag(alias)
 	return &OrtooContext{
 		Context: context,
 		Logger:  logger,

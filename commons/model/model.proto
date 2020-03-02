@@ -8,12 +8,12 @@ message Client {
     bytes CUID = 1;
     string alias = 2;
     string collection = 3;
-    TypeOfSync syncType = 4;
+    SyncType syncType = 4;
 }
 
-enum TypeOfSync {
+enum SyncType {
     MANUALLY = 0;
-    INSTANTLY_WS = 1;
+    NOTIFIABLE = 1;
 }
 
 message OperationID {

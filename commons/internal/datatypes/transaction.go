@@ -50,6 +50,7 @@ func newTransactionDatatype(w *WiredDatatype, snapshot model.Snapshot) (*Transac
 	}, nil
 }
 
+// GetWired returns WiredDatatype
 func (t *TransactionDatatype) GetWired() *WiredDatatype {
 	return t.WiredDatatype
 }
@@ -74,10 +75,9 @@ func (t *TransactionDatatype) ExecuteOperationWithTransaction(ctx *TransactionCo
 		}
 		t.currentTrxCtx.appendOperation(op)
 		return ret, nil
-	} else {
-		t.executeRemoteBase(op)
-		return nil, nil
 	}
+	t.executeRemoteBase(op)
+	return nil, nil
 }
 
 // make a transaction and lock

@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// SnapshotDoc defines the document for snapshot, stored in MongoDB
 type SnapshotDoc struct {
 	ID            string    `bson:"_id"`
 	CollectionNum uint32    `bson:"colNum"`
@@ -17,6 +18,7 @@ type SnapshotDoc struct {
 	CreatedAt     time.Time `bson:"createdAt"`
 }
 
+// SnapshotDocFields defines the fields of SnapshotDoc
 var SnapshotDocFields = struct {
 	ID            string
 	CollectionNum string
@@ -35,6 +37,7 @@ var SnapshotDocFields = struct {
 	CreatedAt:     "createdAt",
 }
 
+// GetIndexModel returns the index models of the collection of SnapshotDoc
 func (c *SnapshotDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
 		Keys: bsonx.Doc{
@@ -45,6 +48,7 @@ func (c *SnapshotDoc) GetIndexModel() []mongo.IndexModel {
 	}}
 }
 
+// ToInsertBSON transforms SnapshotDoc to BSON type
 func (c *SnapshotDoc) ToInsertBSON() bson.M {
 	return bson.M{
 		SnapshotDocFields.ID:            c.ID,

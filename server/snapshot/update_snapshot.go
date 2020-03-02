@@ -11,6 +11,7 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 )
 
+// Manager is a struct that updates snapshot of a datatype in Ortoo server
 type Manager struct {
 	ctx           context.Context
 	mongo         *mongodb.RepositoryMongo
@@ -18,6 +19,7 @@ type Manager struct {
 	collectionDoc *schema.CollectionDoc
 }
 
+// NewManager returns an instance of Snapshot Manager
 func NewManager(
 	ctx context.Context,
 	mongo *mongodb.RepositoryMongo,
@@ -31,6 +33,7 @@ func NewManager(
 	}
 }
 
+// UpdateSnapshot updates snapshot for given datatype
 func (m *Manager) UpdateSnapshot() error {
 	var sseq uint64 = 0
 	datatype, err := serverside.NewFinalDatatype(m.datatypeDoc.Key, model.TypeOfDatatype_INT_COUNTER)

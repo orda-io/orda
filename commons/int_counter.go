@@ -25,7 +25,7 @@ type IntCounterInTxn interface {
 }
 
 type intCounter struct {
-	*datatypes.CommonDatatype
+	*datatypes.FinalDatatype
 	snapshot *intCounterSnapshot
 	handler  *IntCounterHandlers
 }
@@ -34,7 +34,7 @@ type intCounter struct {
 func NewIntCounter(key string, cuid model.CUID, wire datatypes.Wire, handler *IntCounterHandlers) (IntCounter, error) {
 
 	intCounter := &intCounter{
-		CommonDatatype: &datatypes.CommonDatatype{},
+		FinalDatatype: &datatypes.FinalDatatype{},
 		snapshot: &intCounterSnapshot{
 			Value: 0,
 		},
@@ -53,10 +53,10 @@ func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 			_ = log.OrtooError(err)
 		}
 	}()
-	// make a clone of intCounter have nil CommonDatatype.transactionCtx, which means
+	// make a clone of intCounter have nil FinalDatatype.transactionCtx, which means
 	clone := &intCounter{
-		CommonDatatype: &datatypes.CommonDatatype{
-			TransactionDatatype: c.CommonDatatype.TransactionDatatype,
+		FinalDatatype: &datatypes.FinalDatatype{
+			TransactionDatatype: c.FinalDatatype.TransactionDatatype,
 			TransactionCtx:      transactionCtx,
 		},
 		snapshot: c.snapshot,
@@ -69,8 +69,8 @@ func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCoun
 	return nil
 }
 
-func (c *intCounter) GetCommon() *datatypes.CommonDatatype {
-	return c.CommonDatatype
+func (c *intCounter) GetFinal() *datatypes.FinalDatatype {
+	return c.FinalDatatype
 }
 
 // ExecuteLocal is the
@@ -96,21 +96,23 @@ func (c *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
 	return nil, log.OrtooError(errors.New("invalid operation"))
 }
 
-func (c *intCounter) HandleSubscription() {
-	if c.handler != nil && c.handler.subscribeHandler != nil {
-		go c.handler.subscribeHandler(c)
+func (c *intCounter) HandleStateChange(old, new model.StateOfDatatype) {
+	if c.handler != nil && c.handler.stateChangeHandler != nil {
+		go c.handler.stateChangeHandler(c, old, new)
 	}
 
 }
 
-func (c *intCounter) HandleError(err error) {
+func (c *intCounter) HandleError(errs []error) {
 	if c.handler != nil && c.handler.errorHandler != nil {
-		go c.handler.errorHandler(err)
+		go c.handler.errorHandler(errs...)
 	}
 }
 
-func (c *intCounter) HandleRemoteChange() {
-
+func (c *intCounter) HandleRemoteOperations(operations []interface{}) {
+	if c.handler != nil && c.handler.remoteOperationHandler != nil {
+		go c.handler.remoteOperationHandler(c, operations)
+	}
 }
 
 func (c *intCounter) Get() int32 {
@@ -139,7 +141,7 @@ func (c *intCounter) SetSnapshot(snapshot model.Snapshot) {
 }
 
 func (c *intCounter) GetMetaAndSnapshot() ([]byte, string, error) {
-	meta, err := c.CommonDatatype.GetMeta()
+	meta, err := c.FinalDatatype.GetMeta()
 	if err != nil {
 		return nil, "", log.OrtooError(err)
 	}
@@ -152,7 +154,7 @@ func (c *intCounter) GetMetaAndSnapshot() ([]byte, string, error) {
 }
 
 func (c *intCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
-	if err := c.CommonDatatype.SetMeta(meta); err != nil {
+	if err := c.FinalDatatype.SetMeta(meta); err != nil {
 		return log.OrtooError(err)
 	}
 	snap := &intCounterSnapshot{}
@@ -163,30 +165,39 @@ func (c *intCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	return nil
 }
 
+// IntCounterHandlers defines a set of handlers which can handles the events related to IntCounter
 type IntCounterHandlers struct {
-	subscribeHandler    func(intCounter IntCounter)
-	remoteChangeHandler func(intCount IntCounter, opList []model.Operation)
-	errorHandler        func(err error)
+	stateChangeHandler     func(intCounter IntCounter, old model.StateOfDatatype, new model.StateOfDatatype)
+	remoteOperationHandler func(intCount IntCounter, opList []interface{})
+	errorHandler           func(errs ...error)
 }
 
+// NewIntCounterHandlers creates a new IntCounterHandlers
 func NewIntCounterHandlers(
-	subscribeHandler func(intCounter IntCounter),
-	remoteChangeHandler func(intCounter IntCounter, opList []model.Operation),
-	errorHandler func(err error)) *IntCounterHandlers {
+	stateChangeHandler func(intCounter IntCounter, old model.StateOfDatatype, new model.StateOfDatatype),
+	remoteOperationHandler func(intCounter IntCounter, opList []interface{}),
+	errorHandler func(errs ...error)) *IntCounterHandlers {
 	return &IntCounterHandlers{
-		subscribeHandler:    subscribeHandler,
-		remoteChangeHandler: remoteChangeHandler,
-		errorHandler:        errorHandler,
+		stateChangeHandler:     stateChangeHandler,
+		remoteOperationHandler: remoteOperationHandler,
+		errorHandler:           errorHandler,
 	}
 }
 
+// SetHandlers sets the handlers if a given handler is not nil.
 func (i *IntCounterHandlers) SetHandlers(
-	subscribeHandler func(intCounter IntCounter),
-	remoteChangeHandler func(intCounter IntCounter, opList []model.Operation),
-	errHandler func(err error)) {
-	i.subscribeHandler = subscribeHandler
-	i.errorHandler = errHandler
-	i.remoteChangeHandler = remoteChangeHandler
+	stateChangeHandler func(intCounter IntCounter, old model.StateOfDatatype, new model.StateOfDatatype),
+	remoteOperationHandler func(intCounter IntCounter, opList []interface{}),
+	errorHandler func(errs ...error)) {
+	if stateChangeHandler != nil {
+		i.stateChangeHandler = stateChangeHandler
+	}
+	if remoteOperationHandler != nil {
+		i.remoteOperationHandler = remoteOperationHandler
+	}
+	if errorHandler != nil {
+		i.errorHandler = errorHandler
+	}
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -209,12 +220,12 @@ func (i *intCounterSnapshot) GetTypeAny() (*types.Any, error) {
 		return nil, log.OrtooError(err)
 	}
 	return &types.Any{
-		TypeUrl: i.GetTypeUrl(),
+		TypeUrl: i.GetTypeURL(),
 		Value:   bin,
 	}, nil
 }
 
-func (i *intCounterSnapshot) GetTypeUrl() string {
+func (i *intCounterSnapshot) GetTypeURL() string {
 	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
 }
 

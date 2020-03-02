@@ -203,7 +203,7 @@ func (i *testSnapshot) CloneSnapshot() model.Snapshot {
 	}
 }
 
-func (i *testSnapshot) GetTypeUrl() string {
+func (i *testSnapshot) GetTypeURL() string {
 	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
 }
 
