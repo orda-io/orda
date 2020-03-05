@@ -9,6 +9,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
+// NotificationManager manages notifications from Ortoo Server
 type NotificationManager struct {
 	client   mqtt.Client
 	ctx      *context.OrtooContext
@@ -28,6 +29,7 @@ const (
 	notificationPushPull
 )
 
+// NewNotificationManager creates an instance of NotificationManager
 func NewNotificationManager(ctx *context.OrtooContext, pubSubAddr string) *NotificationManager {
 	pubSubOpts := mqtt.NewClientOptions().AddBroker(pubSubAddr)
 	client := mqtt.NewClient(pubSubOpts)
@@ -45,6 +47,7 @@ type notificationMsg struct {
 	msg    interface{}
 }
 
+// SubscribeNotification subscribes notification for a topic.
 func (n *NotificationManager) SubscribeNotification(topic string) error {
 	if token := n.client.Subscribe(topic, 0, n.notificationSubscribeFunc); token.Wait() && token.Error() != nil {
 		return token.Error()
@@ -70,6 +73,7 @@ func (n *NotificationManager) notificationSubscribeFunc(client mqtt.Client, msg 
 	n.channel <- notificationPushPull
 }
 
+// Connect make a connection with Ortoo notification server.
 func (n *NotificationManager) Connect() error {
 	if token := n.client.Connect(); token.Wait() && token.Error() != nil {
 		return errors.NewClientError(errors.ErrClientConnect, "notification server")
@@ -79,6 +83,7 @@ func (n *NotificationManager) Connect() error {
 	return nil
 }
 
+// Close closes a connection with Ortoo notification server.
 func (n *NotificationManager) Close() {
 	n.client.Disconnect(0)
 	n.channel <- &notificationMsg{
@@ -86,6 +91,7 @@ func (n *NotificationManager) Close() {
 	}
 }
 
+// SetReceiver sets receiver which is going to receive notifications, i.e., DatatypeManager
 func (n *NotificationManager) SetReceiver(receiver notificationReceiver) {
 	n.receiver = receiver
 }

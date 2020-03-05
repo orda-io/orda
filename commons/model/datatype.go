@@ -1,14 +1,13 @@
 package model
 
-// CommonDatatype defines the interface of executing operations, which is implemented by every datatype.
-type CommonDatatype interface {
-	GetType() TypeOfDatatype          // @baseDatatype
-	GetFinalDatatype() CommonDatatype // @baseDatatype
-	GetKey() string                   // @baseDatatype
-	GetDUID() DUID                    // @baseDatatype
-	SetState(state StateOfDatatype)   // @baseDatatype
-	GetCUID() string                  // @baseDatatype
-	// GetState() StateOfDatatype		 // @baseDatatype
+// Datatype defines the interface of executing operations, which is implemented by every datatype.
+type Datatype interface {
+	GetType() TypeOfDatatype        // @baseDatatype
+	GetDatatype() Datatype          // @baseDatatype
+	GetKey() string                 // @baseDatatype
+	GetDUID() DUID                  // @baseDatatype
+	SetState(state StateOfDatatype) // @baseDatatype
+	GetCUID() string                // @baseDatatype
 
 	Rollback() error // @TransactionDatatype
 

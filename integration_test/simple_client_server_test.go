@@ -4,7 +4,6 @@ import (
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
-	"github.com/knowhunger/ortoo/integration_test/test_helper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"testing"
@@ -20,7 +19,7 @@ func (s *ClientServerTestSuite) SetupTest() {
 
 func (s *ClientServerTestSuite) TestClientServer() {
 
-	key := test_helper.GetFunctionName()
+	key := GetFunctionName()
 
 	s.Run("Can create a client and a datatype with server", func() {
 		config := NewTestOrtooClientConfig(s.collectionName)

@@ -33,10 +33,10 @@ func NewManager(
 	}
 }
 
-// UpdateSnapshot updates snapshot for given datatype
+// UpdateSnapshot updates snapshot for specified datatype
 func (m *Manager) UpdateSnapshot() error {
 	var sseq uint64 = 0
-	datatype, err := serverside.NewFinalDatatype(m.datatypeDoc.Key, model.TypeOfDatatype_INT_COUNTER)
+	datatype, err := serverside.NewDatatype(m.datatypeDoc.Key, model.TypeOfDatatype_INT_COUNTER)
 	if err != nil {
 		return log.OrtooError(err)
 	}

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// GetCollection gets a collectionDoc by the name
+// GetCollection gets a collectionDoc with the specified name.
 func (m *MongoCollections) GetCollection(ctx context.Context, name string) (*schema.CollectionDoc, error) {
 	sr := m.collections.FindOne(ctx, schema.FilterByID(name))
 	if err := sr.Err(); err != nil {
@@ -24,6 +24,7 @@ func (m *MongoCollections) GetCollection(ctx context.Context, name string) (*sch
 	return &collection, nil
 }
 
+// DeleteCollection deletes collections with the specified name.
 func (m *MongoCollections) DeleteCollection(ctx context.Context, name string) error {
 	result, err := m.collections.DeleteOne(ctx, schema.FilterByID(name))
 	if err != nil {
@@ -35,7 +36,7 @@ func (m *MongoCollections) DeleteCollection(ctx context.Context, name string) er
 	return nil
 }
 
-// InsertCollection inserts a collection document
+// InsertCollection inserts a document for the specified collection.
 func (m *MongoCollections) InsertCollection(ctx context.Context, name string) (collection *schema.CollectionDoc, err error) {
 
 	if err := m.doTransaction(ctx, func() error {
@@ -60,8 +61,8 @@ func (m *MongoCollections) InsertCollection(ctx context.Context, name string) (c
 	return collection, nil
 }
 
-// PurgeAllCollection ...
-func (m *MongoCollections) PurgeAllCollection(ctx context.Context, name string) error {
+// PurgeAllDocumentsOfCollection purges all data for the specified collection.
+func (m *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.Context, name string) error {
 	if err := m.doTransaction(ctx, func() error {
 		collectionDoc, err := m.GetCollection(ctx, name)
 		if err != nil {
@@ -71,10 +72,10 @@ func (m *MongoCollections) PurgeAllCollection(ctx context.Context, name string) 
 			return nil
 		}
 		log.Logger.Infof("purge collection '%s' (%d)", name, collectionDoc.Num)
-		if err := m.PurgeAllCollectionDatatypes(ctx, collectionDoc.Num); err != nil {
+		if err := m.purgeAllCollectionDatatypes(ctx, collectionDoc.Num); err != nil {
 			return log.OrtooError(err)
 		}
-		if err := m.PurgeAllCollectionClients(ctx, collectionDoc.Num); err != nil {
+		if err := m.purgeAllCollectionClients(ctx, collectionDoc.Num); err != nil {
 			return log.OrtooError(err)
 		}
 		filter := schema.GetFilter().AddFilterEQ(schema.CollectionDocFields.Name, name)

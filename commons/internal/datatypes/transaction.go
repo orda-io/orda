@@ -99,8 +99,8 @@ func (t *TransactionDatatype) setTransactionContextAndLock(tag string) *Transact
 // This sets TransactionDatatype.currentTrxCtx, lock, and generates a transaction operation
 // This is called in either DoTransaction() or ExecuteOperationWithTransaction().
 // Note that TransactionDatatype.currentTrxCtx is currently working transaction context.
-func (t *TransactionDatatype) BeginTransaction(tag string, trxCtxOfCommonDatatype *TransactionContext, withOp bool) (*TransactionContext, error) {
-	if t.isLocked && t.currentTrxCtx == trxCtxOfCommonDatatype {
+func (t *TransactionDatatype) BeginTransaction(tag string, trxCtx *TransactionContext, withOp bool) (*TransactionContext, error) {
+	if t.isLocked && t.currentTrxCtx == trxCtx {
 		return nil, nil // called after DoTransaction() succeeds.
 	}
 	t.currentTrxCtx = t.setTransactionContextAndLock(tag)
@@ -119,7 +119,7 @@ func (t *TransactionDatatype) BeginTransaction(tag string, trxCtxOfCommonDatatyp
 // Rollback is called to rollback a transaction
 func (t *TransactionDatatype) Rollback() error {
 	t.Logger.Infof("Begin the rollback: '%s'", t.currentTrxCtx.tag)
-	snapshotDatatype, _ := t.finalDatatype.(SnapshotDatatype)
+	snapshotDatatype, _ := t.datatype.(SnapshotDatatype)
 	redoOpID := t.opID
 	redoSnapshot := snapshotDatatype.GetSnapshot().CloneSnapshot()
 	t.SetOpID(t.currentTrxCtx.rollbackOpID)
@@ -145,8 +145,8 @@ func (t *TransactionDatatype) SetTransactionFail() {
 }
 
 // EndTransaction is called when a transaction ends
-func (t *TransactionDatatype) EndTransaction(trxCtxOfCommonDatatype *TransactionContext, withOp, isLocal bool) error {
-	if trxCtxOfCommonDatatype == t.currentTrxCtx {
+func (t *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp, isLocal bool) error {
+	if trxCtx == t.currentTrxCtx {
 		defer t.unlock()
 		if t.success {
 			if withOp {

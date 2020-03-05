@@ -13,6 +13,7 @@ const (
 	idForCollection = "collectionID"
 )
 
+// GetNextCollectionNum gets a collection number that is assigned to a collection.
 func (m *MongoCollections) GetNextCollectionNum(ctx context.Context) (uint32, error) {
 	opts := options.FindOneAndUpdate()
 	opts.SetUpsert(true)

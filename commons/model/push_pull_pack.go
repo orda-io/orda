@@ -19,6 +19,7 @@ const (
 
 var pushPullBitString = []string{"cr", "sb", "un", "de", "sn", "er"}
 
+// PushPullPackOption denotes an option implied in a PushPullPack.
 type PushPullPackOption uint32
 
 func (p *PushPullPackOption) String() string {
@@ -37,73 +38,73 @@ func (p *PushPullPackOption) String() string {
 	return ret + "]"
 }
 
-// SetCreateBit sets CreateBit
+// SetCreateBit sets CreateBit.
 func (p *PushPullPackOption) SetCreateBit() *PushPullPackOption {
 	*p |= PushPullBitCreate
 	return p
 }
 
-// SetSubscribeBit sets SubscribeBit
+// SetSubscribeBit sets SubscribeBit.
 func (p *PushPullPackOption) SetSubscribeBit() *PushPullPackOption {
 	*p |= PushPullBitSubscribe
 	return p
 }
 
-// SetUnsubscribeBit sets UnsubscribeBit
+// SetUnsubscribeBit sets UnsubscribeBit.
 func (p *PushPullPackOption) SetUnsubscribeBit() *PushPullPackOption {
 	*p |= PushPullBitUnsubscribe
 	return p
 }
 
-// SetDeleteBit sets DeleteBit
+// SetDeleteBit sets DeleteBit.
 func (p *PushPullPackOption) SetDeleteBit() *PushPullPackOption {
 	*p |= PushPullBitDelete
 	return p
 }
 
-// SetSnapshotBit sets SnapshotBit
+// SetSnapshotBit sets SnapshotBit.
 func (p *PushPullPackOption) SetSnapshotBit() *PushPullPackOption {
 	*p |= PushPullBitSnapshot
 	return p
 }
 
-// SetErrorBit sets ErrorBit
+// SetErrorBit sets ErrorBit.
 func (p *PushPullPackOption) SetErrorBit() *PushPullPackOption {
 	*p |= PushPullBitError
 	return p
 }
 
-// HasCreateBit examines CreateBit
+// HasCreateBit examines CreateBit.
 func (p *PushPullPackOption) HasCreateBit() bool {
 	return (*p & PushPullBitCreate) == PushPullBitCreate
 }
 
-// HasSubscribeBit examines SubscribeBit
+// HasSubscribeBit examines SubscribeBit.
 func (p *PushPullPackOption) HasSubscribeBit() bool {
 	return (*p & PushPullBitSubscribe) == PushPullBitSubscribe
 }
 
-// HasUnsubscribeBit examines UnsubscribeBit
+// HasUnsubscribeBit examines UnsubscribeBit.
 func (p *PushPullPackOption) HasUnsubscribeBit() bool {
 	return (*p & PushPullBitUnsubscribe) == PushPullBitUnsubscribe
 }
 
-// HasDeleteBit examines DeleteBit
+// HasDeleteBit examines DeleteBit.
 func (p *PushPullPackOption) HasDeleteBit() bool {
 	return (*p & PushPullBitDelete) == PushPullBitDelete
 }
 
-// HasSnapshotBit examines SnapshotBit
+// HasSnapshotBit examines SnapshotBit.
 func (p *PushPullPackOption) HasSnapshotBit() bool {
 	return (*p & PushPullBitSnapshot) == PushPullBitSnapshot
 }
 
-// HasErrorBit examines ErrorBit
+// HasErrorBit examines ErrorBit.
 func (p *PushPullPackOption) HasErrorBit() bool {
 	return (*p & PushPullBitError) == PushPullBitError
 }
 
-// GetPushPullPackOption returns PushPullOption
+// GetPushPullPackOption returns PushPullOption.
 func (p *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
 	var option = (*PushPullPackOption)(&p.Option)
 	return option
@@ -121,7 +122,7 @@ func (p *PushPullPack) GetResponsePushPullPack() *PushPullPack {
 	}
 }
 
-// ToString returns customized string
+// ToString returns customized string.
 func (p *PushPullPack) ToString() string {
 	var b strings.Builder
 	var option = PushPullPackOption(p.Option)

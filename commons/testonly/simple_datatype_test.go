@@ -25,7 +25,7 @@ func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 	if err != nil {
 		suite.T().Fatal(err)
 	}
-	intCounter1, err := commons.NewIntCounter("key1", cuid1, tw)
+	intCounter1, err := commons.NewIntCounter("key1", cuid1, tw, nil)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}
@@ -33,7 +33,7 @@ func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 	if err != nil {
 		suite.T().Fatal(err)
 	}
-	intCounter2, err := commons.NewIntCounter("key1", cuid2, tw)
+	intCounter2, err := commons.NewIntCounter("key1", cuid2, tw, nil)
 	if err != nil {
 		suite.Fail("fail to create intCounter2")
 	}
@@ -65,11 +65,11 @@ func (suite *SimpleDatatypeSuite) TestTransactionFail() {
 
 func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 	tw := NewTestWire()
-	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), tw)
+	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), tw, nil)
 	if err != nil {
 		suite.T().Fatal(err)
 	}
-	intCounter2, err := commons.NewIntCounter("key2", model.NewNilCUID(), tw)
+	intCounter2, err := commons.NewIntCounter("key2", model.NewNilCUID(), tw, nil)
 	if err != nil {
 		suite.T().Fatal(err)
 	}
@@ -112,7 +112,7 @@ func (suite *SimpleDatatypeSuite) TestOneOperationSyncWithTestWire() {
 }
 
 func (suite *SimpleDatatypeSuite) TestPushPullPackSync() {
-	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), datatypes.NewDummyWire())
+	intCounter1, err := commons.NewIntCounter("key1", model.NewNilCUID(), datatypes.NewDummyWire(), nil)
 	if err != nil {
 		suite.Fail("fail to create intCounter1")
 	}

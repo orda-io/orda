@@ -8,14 +8,15 @@ import (
 	"github.com/knowhunger/ortoo/commons/model"
 )
 
-type baseDatatype struct {
-	Key           string
-	id            model.DUID
-	opID          *model.OperationID
-	TypeOf        model.TypeOfDatatype
-	state         model.StateOfDatatype
-	finalDatatype model.CommonDatatype
-	Logger        *log.OrtooLog
+// BaseDatatype is the base datatype which contains
+type BaseDatatype struct {
+	Key      string
+	id       model.DUID
+	opID     *model.OperationID
+	TypeOf   model.TypeOfDatatype
+	state    model.StateOfDatatype
+	datatype model.Datatype
+	Logger   *log.OrtooLog
 }
 
 // PublicBaseDatatypeInterface is a public interface for a datatype.
@@ -24,12 +25,12 @@ type PublicBaseDatatypeInterface interface {
 	GetState() model.StateOfDatatype
 }
 
-func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*baseDatatype, error) {
+func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*BaseDatatype, error) {
 	duid, err := model.NewDUID()
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to create base datatype due to duid")
 	}
-	return &baseDatatype{
+	return &BaseDatatype{
 		Key:    key,
 		id:     duid,
 		TypeOf: t,
@@ -39,24 +40,27 @@ func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*base
 	}, nil
 }
 
-func (b *baseDatatype) GetCUID() string {
+// GetCUID returns CUID of the client which this datatype subecribes to.
+func (b *BaseDatatype) GetCUID() string {
 	return hex.EncodeToString(b.opID.CUID)
 }
 
-func (b *baseDatatype) GetEra() uint32 {
+// GetEra returns the era of operation ID.
+func (b *BaseDatatype) GetEra() uint32 {
 	return b.opID.GetEra()
 }
 
-func (b *baseDatatype) String() string {
+func (b *BaseDatatype) String() string {
 	return fmt.Sprintf("%s", b.id)
 }
 
-func (b *baseDatatype) executeLocalBase(op model.Operation) (interface{}, error) {
+func (b *BaseDatatype) executeLocalBase(op model.Operation) (interface{}, error) {
 	b.SetNextOpID(op)
-	return op.ExecuteLocal(b.finalDatatype)
+	return op.ExecuteLocal(b.datatype)
 }
 
-func (b *baseDatatype) Replay(op model.Operation) error {
+// Replay replays an already executed operation.
+func (b *BaseDatatype) Replay(op model.Operation) error {
 	if bytes.Compare(b.opID.CUID, op.GetBase().ID.CUID) == 0 {
 		_, err := b.executeLocalBase(op)
 		if err != nil {
@@ -68,50 +72,56 @@ func (b *baseDatatype) Replay(op model.Operation) error {
 	return nil
 }
 
-func (b *baseDatatype) SetNextOpID(op model.Operation) {
+// SetNextOpID proceeds the operation ID next.
+func (b *BaseDatatype) SetNextOpID(op model.Operation) {
 	op.GetBase().SetOperationID(b.opID.Next())
 }
 
-func (b *baseDatatype) executeRemoteBase(op model.Operation) {
-	op.ExecuteRemote(b.finalDatatype)
+func (b *BaseDatatype) executeRemoteBase(op model.Operation) {
+	op.ExecuteRemote(b.datatype)
 }
 
-func (b *baseDatatype) GetType() model.TypeOfDatatype {
+// GetType returns the type of this datatype.
+func (b *BaseDatatype) GetType() model.TypeOfDatatype {
 	return b.TypeOf
 }
 
-func (b *baseDatatype) GetState() model.StateOfDatatype {
+// GetState returns the state of this datatype.
+func (b *BaseDatatype) GetState() model.StateOfDatatype {
 	return b.state
 }
 
-func (b *baseDatatype) GetDatatype() model.StateOfDatatype {
-	return b.state
+// SetDatatype sets the Datatype which implements this BaseDatatype.
+func (b *BaseDatatype) SetDatatype(finalDatatype model.Datatype) {
+	b.datatype = finalDatatype
 }
 
-func (b *baseDatatype) SetFinalDatatype(finalDatatype model.CommonDatatype) {
-	b.finalDatatype = finalDatatype
+// GetDatatype returns the Datatype which implements this BaseDatatype.
+func (b *BaseDatatype) GetDatatype() model.Datatype {
+	return b.datatype
 }
 
-func (b *baseDatatype) GetFinalDatatype() model.CommonDatatype {
-	return b.finalDatatype
-}
-
-func (b *baseDatatype) SetOpID(opID *model.OperationID) {
+// SetOpID sets the operation ID.
+func (b *BaseDatatype) SetOpID(opID *model.OperationID) {
 	b.opID = opID
 }
 
-func (b *baseDatatype) GetKey() string {
+// GetKey returns the key.
+func (b *BaseDatatype) GetKey() string {
 	return b.Key
 }
 
-func (b *baseDatatype) GetDUID() model.DUID {
+// GetDUID returns DUID.
+func (b *BaseDatatype) GetDUID() model.DUID {
 	return b.id
 }
 
-func (b *baseDatatype) SetDUID(duid model.DUID) {
+// SetDUID sets the DUID.
+func (b *BaseDatatype) SetDUID(duid model.DUID) {
 	b.id = duid
 }
 
-func (b *baseDatatype) SetState(state model.StateOfDatatype) {
+// SetState sets the state of this datatype.
+func (b *BaseDatatype) SetState(state model.StateOfDatatype) {
 	b.state = state
 }

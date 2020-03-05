@@ -3,6 +3,7 @@ package testonly
 import (
 	"github.com/knowhunger/ortoo/commons/internal/datatypes"
 	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/commons/model"
 )
 
 // TestWire ...
@@ -31,6 +32,11 @@ func (c *TestWire) DeliverTransaction(wired *datatypes.WiredDatatype) {
 			w.ReceiveRemoteOperationsOnWire(operations)
 		}
 	}
+}
+
+// OnChangeDatatypeState ...
+func (c *TestWire) OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error {
+	return nil
 }
 
 // SetDatatypes ...

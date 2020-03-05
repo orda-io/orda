@@ -10,6 +10,7 @@ const (
 	clientHeadFormat   = "|HEAD:[%s]|"
 )
 
+// NewMessageHeader generates a message header.
 func NewMessageHeader(seq uint32, typeOf TypeOfMessage, collection string, cuid []byte) *MessageHeader {
 	return &MessageHeader{
 		Version:    ProtocolVersion,

@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 )
 
+// UniqueID is unique ID in the format of UUID.
 type UniqueID []byte
 
 func newUniqueID() (UniqueID, error) {
@@ -28,6 +29,7 @@ func (u UniqueID) String() string {
 	return uid.String()
 }
 
+// CompareUID compares two UIDs.
 func CompareUID(a, b UniqueID) int {
 	return bytes.Compare(a, b)
 }

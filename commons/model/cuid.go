@@ -4,7 +4,7 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 )
 
-// CUID is a uniqueID
+// CUID is a uniqueID for a client.
 type CUID UniqueID
 
 // NewCUID creates a new CUID
@@ -16,6 +16,7 @@ func NewCUID() (CUID, error) {
 	return CUID(u), nil
 }
 
+// NewNilCUID creates an instance of Nil CUID.
 func NewNilCUID() CUID {
 	bin := make([]byte, 16)
 	return bin

@@ -128,6 +128,7 @@ func OrtooErrorf(err error, format string, args ...interface{}) error {
 	return Logger.ortooErrorf(err, 2, format, args...)
 }
 
+// OrtooError prints out the error message with the location where an error occur.
 func OrtooError(err error) error {
 	_, file, line, _ := runtime.Caller(1)
 	relativeCallFile := strings.Replace(file, basepath, "", 1)

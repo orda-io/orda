@@ -9,12 +9,12 @@ import (
 
 // CollectionNameXXXX  is the name of the collection for XXXX
 const (
-	CollectionNameCounters    = "-_-Counters"
-	CollectionNameClients     = "-_-Clients"
-	CollectionNameCollections = "-_-Collections"
-	CollectionNameDatatypes   = "-_-Datatypes"
-	CollectionNameOperations  = "-_-Operations"
-	CollectionNameSnapshot    = "-_-Snapshots"
+	CollectionNameColNumGenerator = "-_-ColNumGenerator"
+	CollectionNameClients         = "-_-Clients"
+	CollectionNameCollections     = "-_-Collections"
+	CollectionNameDatatypes       = "-_-Datatypes"
+	CollectionNameOperations      = "-_-Operations"
+	CollectionNameSnapshot        = "-_-Snapshots"
 )
 
 const (

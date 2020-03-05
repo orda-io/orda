@@ -1,18 +1,21 @@
 package datatypes
 
-//DummyWire ...
+import "github.com/knowhunger/ortoo/commons/model"
+
+// DummyWire ...
 type DummyWire struct {
 }
 
-//NewDummyWire ...
+// NewDummyWire ...
 func NewDummyWire() *DummyWire {
 	return &DummyWire{}
 }
 
-////DeliverOperation ...
-//func (d *DummyWire) DeliverOperation(wired WiredDatatypeInterface, ops model.Operation) {
-//}
+// DeliverTransaction ...
+func (d *DummyWire) DeliverTransaction(wired *WiredDatatype) {
+}
 
-//DeliverTransaction ...
-func (d *DummyWire) DeliverTransaction(wired *WiredDatatype) { //, transaction []model.Operation) {
+// OnChangeDatatypeState ...
+func (d *DummyWire) OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error {
+	return nil
 }

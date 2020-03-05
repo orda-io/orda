@@ -34,5 +34,5 @@ docker-down:
 
 clear: docker-down
 
-lint: #dependency
+lint: dependency
 	golint ./...

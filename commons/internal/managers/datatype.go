@@ -18,7 +18,7 @@ type DatatypeManager struct {
 	collectionName      string
 	messageManager      *MessageManager
 	notificationManager *NotificationManager
-	dataMap             map[string]model.CommonDatatype
+	dataMap             map[string]model.Datatype
 }
 
 // DeliverTransaction delivers a transaction
@@ -40,7 +40,7 @@ func (d *DatatypeManager) ReceiveNotification(topic string, notification model.N
 }
 
 // OnChangeDatatypeState deals with what datatypeManager has to do when the state of datatype changes.
-func (d *DatatypeManager) OnChangeDatatypeState(dt model.CommonDatatype, state model.StateOfDatatype) error {
+func (d *DatatypeManager) OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error {
 	switch state {
 	case model.StateOfDatatype_SUBSCRIBED:
 		topic := fmt.Sprintf("%s/%s", d.collectionName, dt.GetKey())
@@ -60,25 +60,27 @@ func NewDatatypeManager(ctx *context.OrtooContext, mm *MessageManager, nm *Notif
 		ctx:                 ctx,
 		cuid:                hex.EncodeToString(cuid),
 		collectionName:      collectionName,
-		dataMap:             make(map[string]model.CommonDatatype),
+		dataMap:             make(map[string]model.Datatype),
 		messageManager:      mm,
 		notificationManager: nm,
 	}
-	mm.SetNotificationReceiver(dm)
+	if nm != nil {
+		nm.SetReceiver(dm)
+	}
 	return dm
 }
 
-// Get returns a datatype for the given key
-func (d *DatatypeManager) Get(key string) model.CommonDatatype {
+// Get returns a datatype for the specified key
+func (d *DatatypeManager) Get(key string) model.Datatype {
 	dt, ok := d.dataMap[key]
 	if ok {
-		return dt.GetFinalDatatype()
+		return dt.GetDatatype()
 	}
 	return nil
 }
 
 // SubscribeOrCreate links a datatype with the datatype
-func (d *DatatypeManager) SubscribeOrCreate(dt model.CommonDatatype, state model.StateOfDatatype) error {
+func (d *DatatypeManager) SubscribeOrCreate(dt model.Datatype, state model.StateOfDatatype) error {
 	if _, ok := d.dataMap[dt.GetKey()]; !ok {
 		d.dataMap[dt.GetKey()] = dt
 		if err := dt.SubscribeOrCreate(state); err != nil {
@@ -88,7 +90,7 @@ func (d *DatatypeManager) SubscribeOrCreate(dt model.CommonDatatype, state model
 	return nil
 }
 
-// Sync enables a datatype of the given key to be synchronized.
+// Sync enables a datatype of the specified key to be synchronized.
 func (d *DatatypeManager) Sync(key string) error {
 	data := d.dataMap[key]
 	ppp := data.CreatePushPullPack()
@@ -104,7 +106,7 @@ func (d *DatatypeManager) Sync(key string) error {
 	return nil
 }
 
-// SyncIfNeeded enables a datatype of the given key and sseq to be synchronized if needed.
+// SyncIfNeeded enables the datatype of the specified key and sseq to be synchronized if needed.
 func (d *DatatypeManager) SyncIfNeeded(key, duid string, sseq uint64) error {
 	data, ok := d.dataMap[key]
 	if ok {

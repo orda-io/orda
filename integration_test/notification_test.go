@@ -5,7 +5,6 @@ import (
 	"github.com/knowhunger/ortoo/commons"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
-	"github.com/knowhunger/ortoo/integration_test/test_helper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"sync"
@@ -25,7 +24,7 @@ func Test1(t *testing.T) {
 }
 
 func (n *NotificationTestSuite) TestNotificationTest() {
-	key := test_helper.GetFunctionName()
+	key := GetFunctionName()
 	n.Run("Can notify remote change", func() {
 		config := NewTestOrtooClientConfig(n.collectionName)
 		client1, err := commons.NewOrtooClient(config, "client1")

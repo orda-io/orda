@@ -6,10 +6,10 @@ import (
 	"github.com/knowhunger/ortoo/commons/log"
 )
 
-// DUID is the unique ID of datatype
+// DUID is the unique ID of a datatype.
 type DUID UniqueID
 
-// NewDUID creates a new DUID
+// NewDUID creates a new DUID.
 func NewDUID() (DUID, error) {
 	u, err := newUniqueID()
 	if err != nil {
@@ -18,7 +18,7 @@ func NewDUID() (DUID, error) {
 	return DUID(u), nil
 }
 
-// DUIDFromString creates DUID from string
+// DUIDFromString creates DUID from string.
 func DUIDFromString(duidString string) (DUID, error) {
 	uid, err := uuid.Parse(duidString)
 	if err != nil {
@@ -35,6 +35,7 @@ func (d DUID) String() string {
 	return UniqueID(d).String()
 }
 
+// Compare compares a DUID with another.
 func (d DUID) Compare(o []byte) int {
 	return bytes.Compare(UniqueID(d), o)
 }

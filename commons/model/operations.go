@@ -9,8 +9,8 @@ import (
 
 // Operation defines the interfaces of Operation
 type Operation interface {
-	ExecuteLocal(datatype CommonDatatype) (interface{}, error)
-	ExecuteRemote(datatype CommonDatatype) (interface{}, error)
+	ExecuteLocal(datatype Datatype) (interface{}, error)
+	ExecuteRemote(datatype Datatype) (interface{}, error)
 	GetBase() *BaseOperation
 	ToString() string
 	GetAsJSON() interface{}
@@ -78,12 +78,12 @@ func (t *TransactionOperation) GetAsJSON() interface{} {
 }
 
 // ExecuteLocal ...
-func (t *TransactionOperation) ExecuteLocal(datatype CommonDatatype) (interface{}, error) {
+func (t *TransactionOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
 	return nil, nil
 }
 
 // ExecuteRemote ...
-func (t *TransactionOperation) ExecuteRemote(datatype CommonDatatype) (interface{}, error) {
+func (t *TransactionOperation) ExecuteRemote(datatype Datatype) (interface{}, error) {
 	return nil, nil
 }
 
@@ -111,13 +111,13 @@ func NewSnapshotOperation(datatype TypeOfDatatype, state StateOfDatatype, snapsh
 }
 
 // ExecuteLocal ...
-func (s *SnapshotOperation) ExecuteLocal(datatype CommonDatatype) (interface{}, error) {
+func (s *SnapshotOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
 	datatype.SetState(s.State)
 	return nil, nil
 }
 
 // ExecuteRemote ...
-func (s *SnapshotOperation) ExecuteRemote(datatype CommonDatatype) (interface{}, error) {
+func (s *SnapshotOperation) ExecuteRemote(datatype Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(s)
 }
 
@@ -153,12 +153,12 @@ func NewErrorOperation(err *PushPullError) *ErrorOperation {
 }
 
 // ExecuteLocal ...
-func (e *ErrorOperation) ExecuteLocal(datatype CommonDatatype) (interface{}, error) {
+func (e *ErrorOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
 	return nil, nil
 }
 
 // ExecuteRemote ...
-func (e *ErrorOperation) ExecuteRemote(datatype CommonDatatype) (interface{}, error) {
+func (e *ErrorOperation) ExecuteRemote(datatype Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(e)
 }
 
@@ -200,12 +200,12 @@ func NewIncreaseOperation(delta int32) *IncreaseOperation {
 }
 
 // ExecuteLocal ...
-func (i *IncreaseOperation) ExecuteLocal(datatype CommonDatatype) (interface{}, error) {
+func (i *IncreaseOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(i)
 }
 
 // ExecuteRemote ...
-func (i *IncreaseOperation) ExecuteRemote(datatype CommonDatatype) (interface{}, error) {
+func (i *IncreaseOperation) ExecuteRemote(datatype Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(i)
 }
 

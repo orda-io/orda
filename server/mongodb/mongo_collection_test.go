@@ -7,7 +7,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/knowhunger/ortoo/commons/log"
 	"github.com/knowhunger/ortoo/commons/model"
-	"github.com/knowhunger/ortoo/integration_test/test_helper"
+	"github.com/knowhunger/ortoo/integration_test"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"gotest.tools/assert"
@@ -19,7 +19,7 @@ import (
 )
 
 func TestMongo(t *testing.T) {
-	mongo, err := test_helper.GetMongo("ortoo_unit_test")
+	mongo, err := integration.GetMongo("ortoo_unit_test")
 	if err != nil {
 		t.Fatal("fail to initialize mongoDB")
 	}

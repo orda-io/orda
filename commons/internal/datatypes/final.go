@@ -24,11 +24,11 @@ func (c *FinalDatatype) Initialize(
 	cuid model.CUID,
 	w Wire,
 	snapshot model.Snapshot,
-	finalDatatype model.CommonDatatype) error {
+	datatype model.Datatype) error {
 
 	baseDatatype, err := newBaseDatatype(key, typeOf, cuid)
 	if err != nil {
-		return log.OrtooErrorf(err, "fail to create baseDatatype")
+		return log.OrtooErrorf(err, "fail to create BaseDatatype")
 	}
 
 	wiredDatatype, err := newWiredDatatype(baseDatatype, w)
@@ -42,7 +42,7 @@ func (c *FinalDatatype) Initialize(
 	}
 	c.TransactionDatatype = transactionDatatype
 	c.TransactionCtx = nil
-	c.SetFinalDatatype(finalDatatype)
+	c.SetDatatype(datatype)
 
 	return nil
 }
@@ -83,7 +83,7 @@ func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 		c.state = state
 		return nil
 	}
-	subscribeOp, err := model.NewSnapshotOperation(c.TypeOf, state, c.finalDatatype.GetSnapshot())
+	subscribeOp, err := model.NewSnapshotOperation(c.TypeOf, state, c.datatype.GetSnapshot())
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to subscribe")
 	}

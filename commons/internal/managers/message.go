@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// MessageManager is a manager exchanging request and response.
+// MessageManager is a manager exchanging request and response with Ortoo server.
 type MessageManager struct {
 	seq                 uint32
 	host                string
@@ -19,7 +19,7 @@ type MessageManager struct {
 	notificationManager *NotificationManager
 }
 
-// NewMessageManager ...
+// NewMessageManager creates an instance of MessageManager.
 func NewMessageManager(ctx *context.OrtooContext, client *model.Client, host string, notifyManager *NotificationManager) *MessageManager {
 
 	return &MessageManager{
@@ -31,19 +31,13 @@ func NewMessageManager(ctx *context.OrtooContext, client *model.Client, host str
 	}
 }
 
-func (m *MessageManager) SetNotificationReceiver(receiver notificationReceiver) {
-	if m.notificationManager != nil {
-		m.notificationManager.SetReceiver(receiver)
-	}
-}
-
-func (m *MessageManager) NextSeq() uint32 {
+func (m *MessageManager) nextSeq() uint32 {
 	currentSeq := m.seq
 	m.seq++
 	return currentSeq
 }
 
-// Connect ...
+// Connect makes connections with Ortoo GRPC and notification servers.
 func (m *MessageManager) Connect() error {
 	conn, err := grpc.Dial(m.host, grpc.WithInsecure())
 	if err != nil {
@@ -60,7 +54,7 @@ func (m *MessageManager) Connect() error {
 	return nil
 }
 
-// Close ...
+// Close closes connections with Ortoo GRPC and notification servers.
 func (m *MessageManager) Close() error {
 	if err := m.conn.Close(); err != nil {
 		return errors.NewClientError(errors.ErrClientClose, err.Error())
@@ -71,8 +65,9 @@ func (m *MessageManager) Close() error {
 	return nil
 }
 
+// Sync exchanges PUSHPULL_REQUEST and PUSHPULL_RESPONSE
 func (m *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, error) {
-	request := model.NewPushPullRequest(m.NextSeq(), m.client, pppList...)
+	request := model.NewPushPullRequest(m.nextSeq(), m.client, pppList...)
 	m.ctx.Logger.Infof("send PUSHPULL REQUEST:%s", request.ToString())
 	response, err := m.serviceClient.ProcessPushPull(m.ctx, request)
 	if err != nil {
@@ -82,9 +77,9 @@ func (m *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullRe
 	return response, nil
 }
 
-// ExchangeClientRequestResponse ...
+// ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
 func (m *MessageManager) ExchangeClientRequestResponse() error {
-	request := model.NewClientRequest(m.NextSeq(), m.client)
+	request := model.NewClientRequest(m.nextSeq(), m.client)
 	m.ctx.Logger.Infof("send CLIENT REQUEST:%s", request.ToString())
 	response, err := m.serviceClient.ProcessClient(m.ctx, request)
 	if err != nil {

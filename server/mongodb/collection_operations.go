@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// InsertOperations inserts operations into MongoDB
 func (m *MongoCollections) InsertOperations(ctx context.Context, operations []interface{}) error {
 	if operations == nil {
 		return nil
@@ -23,6 +24,7 @@ func (m *MongoCollections) InsertOperations(ctx context.Context, operations []in
 	return nil
 }
 
+// DeleteOperation deletes operations for the specified sseq
 func (m *MongoCollections) DeleteOperation(ctx context.Context, duid string, sseq uint32) (int64, error) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
@@ -34,6 +36,7 @@ func (m *MongoCollections) DeleteOperation(ctx context.Context, duid string, sse
 	return result.DeletedCount, nil
 }
 
+// GetOperations gets operations of the specified range. For each operation, a given handler is called.
 func (m *MongoCollections) GetOperations(
 	ctx context.Context,
 	duid string,
@@ -66,6 +69,7 @@ func (m *MongoCollections) GetOperations(
 	return nil
 }
 
+// PurgeOperations purges operations for the specified datatype.
 func (m *MongoCollections) PurgeOperations(ctx context.Context, collectionNum uint32, duid string) error {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum).

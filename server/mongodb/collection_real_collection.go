@@ -9,9 +9,11 @@ import (
 )
 
 const (
-	VER = "_ver"
+	// ver is the field name that notes the version.
+	ver = "_ver"
 )
 
+// InsertRealSnapshot inserts a snapshot for real collection.
 func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName, id, data string, sseq uint64) error {
 
 	collection := r.db.Collection(collectionName)
@@ -19,7 +21,7 @@ func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName
 	if err := json.Unmarshal([]byte(data), &bsonM); err != nil {
 		return log.OrtooError(err)
 	}
-	bsonM[VER] = sseq
+	bsonM[ver] = sseq
 	filter := schema.GetFilter().AddSnapshot(bsonM)
 	res, err := collection.UpdateOne(ctx, schema.FilterByID(id), bson.D(filter), schema.UpsertOption)
 	if err != nil {

@@ -11,12 +11,12 @@ import (
 // Wire defines the interfaces related to delivering operations. This is called when a datatype needs to send messages
 type Wire interface {
 	DeliverTransaction(wired *WiredDatatype)
-	OnChangeDatatypeState(dt model.CommonDatatype, state model.StateOfDatatype) error
+	OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error
 }
 
 // WiredDatatype implements the datatype features related to the synchronization with Ortoo server
 type WiredDatatype struct {
-	*baseDatatype
+	*BaseDatatype
 	wire       Wire
 	checkPoint *model.CheckPoint
 	buffer     []*model.OperationOnWire
@@ -29,7 +29,7 @@ type PublicWiredDatatypeInterface interface {
 
 // WiredDatatypeInterface defines the internal interface related to the synchronization with Ortoo server
 type WiredDatatypeInterface interface {
-	GetBase() *baseDatatype
+	GetBase() *BaseDatatype
 	ExecuteRemote(op model.Operation)
 	ReceiveRemoteOperationsOnWire(operations []*model.OperationOnWire) error
 	ApplyPushPullPack(*model.PushPullPack)
@@ -37,22 +37,22 @@ type WiredDatatypeInterface interface {
 }
 
 // newWiredDatatype creates a new wiredDatatype
-func newWiredDatatype(b *baseDatatype, w Wire) (*WiredDatatype, error) {
+func newWiredDatatype(b *BaseDatatype, w Wire) (*WiredDatatype, error) {
 	return &WiredDatatype{
-		baseDatatype: b,
+		BaseDatatype: b,
 		checkPoint:   model.NewCheckPoint(),
 		buffer:       make([]*model.OperationOnWire, 0, constants.OperationBufferSize),
 		wire:         w,
 	}, nil
 }
 
-// GetBase returns baseDatatype
-func (w *WiredDatatype) GetBase() *baseDatatype {
-	return w.baseDatatype
+// GetBase returns BaseDatatype
+func (w *WiredDatatype) GetBase() *BaseDatatype {
+	return w.BaseDatatype
 }
 
 func (w *WiredDatatype) String() string {
-	return w.baseDatatype.String()
+	return w.BaseDatatype.String()
 }
 
 // ExecuteRemote ...
@@ -64,7 +64,7 @@ func (w *WiredDatatype) ExecuteRemote(op model.Operation) {
 // ReceiveRemoteOperationsOnWire ...
 func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.OperationOnWire) ([]interface{}, error) {
 
-	finalDatatype := w.finalDatatype
+	finalDatatype := w.datatype
 	var opList []interface{}
 	for i := 0; i < len(operations); {
 		op := model.ToOperation(operations[i])
@@ -91,11 +91,6 @@ func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.Operat
 
 func (w *WiredDatatype) applyPushPullPackExecuteOperations(operationsOnWire []*model.OperationOnWire) ([]interface{}, error) {
 	return w.ReceiveRemoteOperationsOnWire(operationsOnWire)
-	// if err != nil {
-	// 	return err
-	// }
-	// w.finalDatatype.HandleRemoteOperations(opList)
-	// return nil
 }
 
 // CreatePushPullPack ...
@@ -142,7 +137,6 @@ func (w *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error {
 			case model.PushPullErrIllegalFormat:
 			case model.PushPullErrDuplicateDatatypeKey:
 				err := errors.NewDatatypeError(errors.ErrDatatypeCreate, fmt.Sprintf("duplicated key:'%s'", w.Key))
-				// w.finalDatatype.HandleError(err)
 				return err
 			case model.PushPullErrPullOperations:
 			case model.PushPullErrPushOperations:
@@ -188,7 +182,7 @@ func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPu
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE:
 		w.state = model.StateOfDatatype_SUBSCRIBED
 		w.id = ppp.DUID
-		err = w.wire.OnChangeDatatypeState(w.finalDatatype, w.state)
+		err = w.wire.OnChangeDatatypeState(w.datatype, w.state)
 	case model.StateOfDatatype_SUBSCRIBED:
 	case model.StateOfDatatype_DUE_TO_UNSUBSCRIBE:
 	case model.StateOfDatatype_UNSUBSCRIBED:
@@ -225,13 +219,13 @@ func (w *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 
 func (w *WiredDatatype) applyPushPullPackCallHandler(errs []error, oldState, newState model.StateOfDatatype, opList []interface{}) {
 	if oldState != newState {
-		w.finalDatatype.HandleStateChange(oldState, newState)
+		w.datatype.HandleStateChange(oldState, newState)
 	}
 	if len(errs) > 0 {
-		w.finalDatatype.HandleError(errs)
+		w.datatype.HandleError(errs)
 	}
 	if len(opList) > 0 {
-		w.finalDatatype.HandleRemoteOperations(opList)
+		w.datatype.HandleRemoteOperations(opList)
 	}
 }
 
