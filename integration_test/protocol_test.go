@@ -1,9 +1,9 @@
 package integration
 
 import (
-	"github.com/knowhunger/ortoo/commons"
-	"github.com/knowhunger/ortoo/commons/log"
-	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"testing"
@@ -27,7 +27,7 @@ func (n *ProtocolTestSuite) TestProtocol() {
 	n.Run("Can return duplicate key error for datatype", func() {
 		config := NewTestOrtooClientConfig(n.collectionName)
 
-		client1, err := commons.NewOrtooClient(config, "client1")
+		client1, err := ortoo.NewOrtooClient(config, "client1")
 		require.NoError(n.T(), err)
 		err = client1.Connect()
 		require.NoError(n.T(), err)
@@ -35,7 +35,7 @@ func (n *ProtocolTestSuite) TestProtocol() {
 			_ = client1.Close()
 		}()
 
-		client2, err := commons.NewOrtooClient(config, "client2")
+		client2, err := ortoo.NewOrtooClient(config, "client2")
 		require.NoError(n.T(), err)
 		err = client2.Connect()
 		require.NoError(n.T(), err)
@@ -43,8 +43,8 @@ func (n *ProtocolTestSuite) TestProtocol() {
 			_ = client2.Close()
 		}()
 
-		_ = client1.CreateIntCounter(key, commons.NewIntCounterHandlers(
-			func(intCounter commons.IntCounter, old model.StateOfDatatype, new model.StateOfDatatype) {
+		_ = client1.CreateIntCounter(key, ortoo.NewIntCounterHandlers(
+			func(intCounter ortoo.IntCounter, old model.StateOfDatatype, new model.StateOfDatatype) {
 				require.Equal(n.T(), model.StateOfDatatype_DUE_TO_CREATE, old)
 				require.Equal(n.T(), model.StateOfDatatype_SUBSCRIBED, new)
 			}, nil,
@@ -53,7 +53,7 @@ func (n *ProtocolTestSuite) TestProtocol() {
 			}))
 		require.NoError(n.T(), client1.Sync())
 
-		_ = client2.CreateIntCounter(key, commons.NewIntCounterHandlers(
+		_ = client2.CreateIntCounter(key, ortoo.NewIntCounterHandlers(
 			nil, nil,
 			func(errs ...error) {
 				log.Logger.Errorf("should be duplicate error:%v", errs[0])

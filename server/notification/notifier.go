@@ -4,8 +4,8 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
-	"github.com/knowhunger/ortoo/commons/log"
-	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/ortoo/model"
 )
 
 // Notifier is a struct that takes responsibility for notification

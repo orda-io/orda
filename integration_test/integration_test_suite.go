@@ -2,7 +2,7 @@ package integration
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/stretchr/testify/suite"

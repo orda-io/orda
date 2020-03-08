@@ -3,9 +3,9 @@ package snapshot
 import (
 	"context"
 	"github.com/gogo/protobuf/proto"
-	"github.com/knowhunger/ortoo/commons/log"
-	"github.com/knowhunger/ortoo/commons/model"
-	"github.com/knowhunger/ortoo/commons/serverside"
+	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/serverside"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"

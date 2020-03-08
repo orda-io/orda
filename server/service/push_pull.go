@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"github.com/knowhunger/ortoo/commons/log"
-	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/ortoo/model"
 	"reflect"
 )
 

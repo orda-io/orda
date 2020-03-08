@@ -3,7 +3,7 @@ package mongodb
 import (
 	"context"
 	"encoding/json"
-	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 )

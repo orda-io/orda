@@ -2,9 +2,9 @@ package integration
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/commons"
-	"github.com/knowhunger/ortoo/commons/log"
-	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"path/filepath"
@@ -43,8 +43,8 @@ func GetMongo(dbName string) (*mongodb.RepositoryMongo, error) {
 }
 
 // NewTestOrtooClientConfig generates an OrtooClientConfig for testing.
-func NewTestOrtooClientConfig(collectionName string) *commons.OrtooClientConfig {
-	return &commons.OrtooClientConfig{
+func NewTestOrtooClientConfig(collectionName string) *ortoo.OrtooClientConfig {
+	return &ortoo.OrtooClientConfig{
 		Address:          "127.0.0.1:19061",
 		CollectionName:   collectionName,
 		NotificationAddr: "127.0.0.1:1883",
