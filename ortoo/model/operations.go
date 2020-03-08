@@ -29,6 +29,10 @@ func (o *BaseOperation) SetOperationID(opID *OperationID) {
 	o.ID = opID
 }
 
+func (o *BaseOperation) GetTimestamp() *Timestamp {
+	return o.ID.GetTimestamp()
+}
+
 // ToBaseString returns the string for BaseOperation
 func (o *BaseOperation) ToBaseString() string {
 	return fmt.Sprintf("%s|%s", o.OpType.String(), o.ID.ToString())
@@ -189,6 +193,79 @@ func (e *ErrorOperation) GetPushPullError() *PushPullError {
 	}
 }
 
+// ////////////////// PutOperation ////////////////////
+func NewPutOperation(key string, value OrtooType) *PutOperation {
+	return &PutOperation{
+		Base:  NewOperation(TypeOfOperation_HASH_MAP_PUT),
+		Key:   key,
+		Value: value.(string),
+	}
+}
+
+func (p *PutOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
+	return datatype.ExecuteLocal(p)
+}
+
+func (p *PutOperation) ExecuteRemote(datatype Datatype) (interface{}, error) {
+	return datatype.ExecuteRemote(p)
+}
+
+// GetAsJSON returns the operation as interface{} for JSON
+func (p *PutOperation) GetAsJSON() interface{} {
+	return &struct {
+		ID    interface{}
+		Type  string
+		Key   string
+		Value interface{}
+	}{
+		ID:    p.Base.GetAsJSON(),
+		Type:  p.Base.OpType.String(),
+		Key:   p.Key,
+		Value: p.Value,
+	}
+}
+
+// ToString returns customized string
+func (p *PutOperation) ToString() string {
+	j := p.GetAsJSON()
+	str, _ := json.Marshal(j)
+	return string(str)
+}
+
+// ////////////////// RemoveOperation ////////////////////
+func NewRemoveOperation(key string) *RemoveOperation {
+	return &RemoveOperation{
+		Base: NewOperation(TypeOfOperation_HASH_MAP_REMOVE),
+		Key:  key,
+	}
+}
+
+func (r *RemoveOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
+	return datatype.ExecuteLocal(r)
+}
+
+func (r *RemoveOperation) ExecuteRemote(datatype Datatype) (interface{}, error) {
+	return datatype.ExecuteRemote(r)
+}
+
+func (r *RemoveOperation) GetAsJSON() interface{} {
+	return &struct {
+		ID   interface{}
+		Type string
+		Key  string
+	}{
+		ID:   r.Base.GetAsJSON(),
+		Type: r.Base.OpType.String(),
+		Key:  r.Key,
+	}
+}
+
+func (r *RemoveOperation) ToString() string {
+	j := r.GetAsJSON()
+	str, _ := json.Marshal(j)
+	return string(str)
+}
+
 // ////////////////// IncreaseOperation ////////////////////
 
 // NewIncreaseOperation creates a new IncreaseOperation of IntCounter
@@ -238,6 +315,8 @@ func ToOperationOnWire(op Operation) *OperationOnWire {
 		return &OperationOnWire{Body: &OperationOnWire_Error{o}}
 	case *IncreaseOperation:
 		return &OperationOnWire{Body: &OperationOnWire_Increase{o}}
+	case *PutOperation:
+		return &OperationOnWire{Body: &OperationOnWire_Put{o}}
 	case *TransactionOperation:
 		return &OperationOnWire{Body: &OperationOnWire_Transaction{o}}
 	}

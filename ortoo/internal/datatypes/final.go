@@ -2,6 +2,7 @@ package datatypes
 
 import (
 	"github.com/gogo/protobuf/proto"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 )
@@ -74,6 +75,23 @@ func (c *FinalDatatype) SetMeta(meta []byte) error {
 	c.opID = m.OpID
 	c.TypeOf = m.TypeOf
 	c.state = m.State
+	return nil
+}
+
+func (c *FinalDatatype) DoTransaction(tag string, fn func(txnCtx *TransactionContext) error) error {
+	txnCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := c.EndTransaction(txnCtx, true, true); err != nil {
+			_ = log.OrtooError(err)
+		}
+	}()
+	if err := fn(txnCtx); err != nil {
+		c.SetTransactionFail()
+		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, err.Error())
+	}
 	return nil
 }
 

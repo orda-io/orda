@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gogo/protobuf/types"
+	errors2 "github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -14,7 +15,7 @@ import (
 type IntCounter interface {
 	datatypes.PublicWiredDatatypeInterface
 	IntCounterInTxn
-	DoTransaction(tag string, transFunc func(intCounter IntCounterInTxn) error) error
+	DoTransaction(tag string, txnFunc func(intCounter IntCounterInTxn) error) error
 }
 
 // IntCounterInTxn is an Ortoo datatype which provides int counter interfaces in a transaction.
@@ -30,8 +31,8 @@ type intCounter struct {
 	handler  *IntCounterHandlers
 }
 
-// NewIntCounter creates a new int counter
-func NewIntCounter(key string, cuid model.CUID, wire datatypes.Wire, handler *IntCounterHandlers) (IntCounter, error) {
+// newIntCounter creates a new int counter
+func newIntCounter(key string, cuid model.CUID, wire datatypes.Wire, handler *IntCounterHandlers) (IntCounter, error) {
 
 	intCounter := &intCounter{
 		FinalDatatype: &datatypes.FinalDatatype{},
@@ -46,27 +47,17 @@ func NewIntCounter(key string, cuid model.CUID, wire datatypes.Wire, handler *In
 	return intCounter, nil
 }
 
-func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterInTxn) error) error {
-	transactionCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
-	defer func() {
-		if err := c.EndTransaction(transactionCtx, true, true); err != nil {
-			_ = log.OrtooError(err)
+func (c *intCounter) DoTransaction(tag string, txnFunc func(intCounter IntCounterInTxn) error) error {
+	return c.FinalDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+		clone := &intCounter{
+			FinalDatatype: &datatypes.FinalDatatype{
+				TransactionDatatype: c.FinalDatatype.TransactionDatatype,
+				TransactionCtx:      txnCtx,
+			},
+			snapshot: c.snapshot,
 		}
-	}()
-	// make a clone of intCounter have nil FinalDatatype.transactionCtx, which means
-	clone := &intCounter{
-		FinalDatatype: &datatypes.FinalDatatype{
-			TransactionDatatype: c.FinalDatatype.TransactionDatatype,
-			TransactionCtx:      transactionCtx,
-		},
-		snapshot: c.snapshot,
-	}
-	err = transFunc(clone)
-	if err != nil {
-		c.SetTransactionFail()
-		return log.OrtooErrorf(err, "fail to do the transaction: '%s'", tag)
-	}
-	return nil
+		return txnFunc(clone)
+	})
 }
 
 func (c *intCounter) GetFinal() *datatypes.FinalDatatype {
@@ -165,6 +156,10 @@ func (c *intCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	return nil
 }
 
+// ////////////////////////////////////////////////////////////////
+//  IntCounterHandlers
+// ////////////////////////////////////////////////////////////////
+
 // IntCounterHandlers defines a set of handlers which can handles the events related to IntCounter
 type IntCounterHandlers struct {
 	stateChangeHandler     func(intCounter IntCounter, old model.StateOfDatatype, new model.StateOfDatatype)
@@ -217,7 +212,7 @@ func (i *intCounterSnapshot) CloneSnapshot() model.Snapshot {
 func (i *intCounterSnapshot) GetTypeAny() (*types.Any, error) {
 	bin, err := json.Marshal(i)
 	if err != nil {
-		return nil, log.OrtooError(err)
+		return nil, errors2.NewDatatypeError(errors2.ErrDatatypeSnapshot, err.Error())
 	}
 	return &types.Any{
 		TypeUrl: i.GetTypeURL(),
@@ -226,7 +221,7 @@ func (i *intCounterSnapshot) GetTypeAny() (*types.Any, error) {
 }
 
 func (i *intCounterSnapshot) GetTypeURL() string {
-	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
+	return "github.com/knowhunger/ortoo/ortoo/intCounterSnapshot"
 }
 
 func (i *intCounterSnapshot) increaseCommon(delta int32) int32 {
@@ -237,5 +232,5 @@ func (i *intCounterSnapshot) increaseCommon(delta int32) int32 {
 }
 
 func (i *intCounterSnapshot) String() string {
-	return fmt.Sprintf("Value: %d", i.Value)
+	return fmt.Sprintf("Map: %d", i.Value)
 }

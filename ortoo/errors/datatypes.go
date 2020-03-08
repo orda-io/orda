@@ -14,12 +14,16 @@ const (
 	ErrDatatypeCreate = baseDatatypeCode + iota
 	ErrDatatypeSubscribe
 	ErrDatatypeTransaction
+	ErrDatatypeSnapshot
+	ErrDatatypeInvalidType
 )
 
 var datatypeErrFormats = map[errorCodeDatatype]string{
 	ErrDatatypeCreate:      "fail to create datatype: %s",
 	ErrDatatypeSubscribe:   "fail to subscribe datatype: %s",
 	ErrDatatypeTransaction: "fail to proceed transaction: %s",
+	ErrDatatypeSnapshot:    "fail to make a snapshot: %s",
+	ErrDatatypeInvalidType: "fail to make an operation due to invalid value type: %s",
 }
 
 // DatatypeError is an error related to Datatype

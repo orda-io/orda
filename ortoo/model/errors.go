@@ -26,6 +26,7 @@ const (
 	PushPullErrPullOperations
 	PushPullErrPushOperations
 	PushPullErrMissingOperations
+	PushPullErrUpdateSnapshot
 )
 
 var pushPullMap = map[errorCodePushPull]string{
@@ -35,6 +36,7 @@ var pushPullMap = map[errorCodePushPull]string{
 	PushPullErrPullOperations:       "fail to pull operations: %v",
 	PushPullErrPushOperations:       "fail to push operations: %v",
 	PushPullErrMissingOperations:    "fail to push due to missing operations: %v",
+	PushPullErrUpdateSnapshot:       "fail to update snapshot: %v",
 }
 
 var formatMap = map[errorCodeRPC]string{

@@ -12,8 +12,16 @@ message Client {
 }
 
 enum SyncType {
-    MANUALLY = 0;
-    NOTIFIABLE = 1;
+    LOCAL_ONLY = 0;
+    MANUALLY = 1;
+    NOTIFIABLE = 2;
+}
+
+message Timestamp {
+    uint32 era = 1;
+    uint64 lamport = 2;
+    bytes CUID = 3;
+    uint32 delimiter = 4;
 }
 
 message OperationID {
@@ -53,17 +61,31 @@ message ErrorOperation {
     string msg = 3;
 }
 
+message PutOperation {
+    BaseOperation base = 1;
+    string key = 2;
+    string value = 3;
+}
+
+message RemoveOperation {
+    BaseOperation base = 1;
+    string key = 2;
+}
+
 enum TypeOfOperation {
     SNAPSHOT = 0;
     DELETE = 2;
     ERROR = 3;
     TRANSACTION = 5;
     INT_COUNTER_INCREASE = 11;
+    HASH_MAP_PUT = 21;
+    HASH_MAP_REMOVE = 22;
 }
 
 enum TypeOfDatatype {
     INT_COUNTER = 0;
-    JSON = 1;
+    HASH_MAP = 1;
+    JSON = 2;
 }
 
 enum StateOfDatatype {
@@ -82,6 +104,8 @@ message OperationOnWire {
         ErrorOperation error = 2;
         TransactionOperation transaction = 5;
         IncreaseOperation increase = 11;
+        PutOperation put = 21;
+        RemoveOperation remove = 22;
     }
 }
 

@@ -3,9 +3,9 @@ package snapshot
 import (
 	"context"
 	"github.com/gogo/protobuf/proto"
+	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
-	"github.com/knowhunger/ortoo/ortoo/serverside"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -33,20 +33,31 @@ func NewManager(
 	}
 }
 
+func (m *Manager) getPushPullTag() model.PushPullTag {
+	return model.PushPullTag{
+		CollectionName: m.collectionDoc.Name,
+		Key:            m.datatypeDoc.Key,
+		DUID:           m.datatypeDoc.DUID,
+	}
+}
+
 // UpdateSnapshot updates snapshot for specified datatype
 func (m *Manager) UpdateSnapshot() error {
 	var sseq uint64 = 0
-	datatype, err := serverside.NewDatatype(m.datatypeDoc.Key, model.TypeOfDatatype_INT_COUNTER)
+	client, err := ortoo.NewClient(ortoo.NewLocalClientConfig(m.collectionDoc.Name), "server")
 	if err != nil {
-		return log.OrtooError(err)
+		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
+	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType())
 	snapshotDoc, err := m.mongo.GetLatestSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID)
 	if err != nil {
-		return log.OrtooError(err)
+		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 	if snapshotDoc != nil {
 		sseq = snapshotDoc.Sseq
-		serverside.SetSnapshot(datatype, snapshotDoc.Meta, snapshotDoc.Snapshot)
+		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot); err != nil {
+			return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		}
 	}
 	var transaction []model.Operation
 	var remainOfTransaction uint32 = 0
@@ -73,25 +84,25 @@ func (m *Manager) UpdateSnapshot() error {
 		} else {
 			_, err := op.ExecuteRemote(datatype)
 			if err != nil {
-				return log.OrtooError(err)
+				return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 			}
 		}
 		sseq = opDoc.Sseq
 		return nil
 	}); err != nil {
-		return log.OrtooError(err)
+		return err
 	}
 
 	meta, data, err := datatype.GetMetaAndSnapshot()
 	if err != nil {
-		return log.OrtooError(err)
+		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 	if err := m.mongo.InsertSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID, sseq, meta, data); err != nil {
-		return log.OrtooError(err)
+		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 
 	if err := m.mongo.InsertRealSnapshot(m.ctx, m.collectionDoc.Name, m.datatypeDoc.Key, data, sseq); err != nil {
-		return log.OrtooError(err)
+		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 	return nil
 }

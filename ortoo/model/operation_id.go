@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -23,6 +24,16 @@ func NewOperationIDWithCuid(cuid CUID) *OperationID {
 		Lamport: 0,
 		CUID:    cuid,
 		Seq:     0,
+	}
+}
+
+// GetTimestamp returns Timestamp from OperationID
+func (o *OperationID) GetTimestamp() *Timestamp {
+	return &Timestamp{
+		Era:       o.Era,
+		Lamport:   o.Lamport,
+		CUID:      o.CUID,
+		Delimiter: 0,
 	}
 }
 
@@ -79,19 +90,19 @@ func (o *OperationID) ToString() string {
 	return b.String()
 }
 
-// Compare compares two operationIDs.
-func Compare(a, b *OperationID) int {
-	retEra := a.Era - b.Era
+// CompareOperationID compares two operationIDs.
+func (o *OperationID) Compare(other *OperationID) int {
+	retEra := int32(o.Era - other.Era)
 	if retEra > 0 {
 		return 1
 	} else if retEra < 0 {
 		return -1
 	}
-	diff := a.Lamport - b.Lamport
+	var diff = int64(o.Lamport - other.Lamport)
 	if diff > 0 {
 		return 1
 	} else if diff < 0 {
 		return -1
 	}
-	return 0
+	return bytes.Compare(o.CUID, other.CUID)
 }

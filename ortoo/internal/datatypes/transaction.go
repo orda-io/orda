@@ -99,15 +99,15 @@ func (t *TransactionDatatype) setTransactionContextAndLock(tag string) *Transact
 // This sets TransactionDatatype.currentTrxCtx, lock, and generates a transaction operation
 // This is called in either DoTransaction() or ExecuteOperationWithTransaction().
 // Note that TransactionDatatype.currentTrxCtx is currently working transaction context.
-func (t *TransactionDatatype) BeginTransaction(tag string, trxCtx *TransactionContext, withOp bool) (*TransactionContext, error) {
-	if t.isLocked && t.currentTrxCtx == trxCtx {
+func (t *TransactionDatatype) BeginTransaction(tag string, tnxCtx *TransactionContext, withOp bool) (*TransactionContext, error) {
+	if t.isLocked && t.currentTrxCtx == tnxCtx {
 		return nil, nil // called after DoTransaction() succeeds.
 	}
 	t.currentTrxCtx = t.setTransactionContextAndLock(tag)
 	if withOp {
 		op, err := model.NewTransactionOperation(tag)
 		if err != nil {
-			return nil, t.Logger.OrtooErrorf(err, "fail to generate TransactionBeginOperation")
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, err.Error())
 		}
 		t.currentTrxCtx.uuid = op.Uuid
 		t.SetNextOpID(op)
@@ -165,7 +165,7 @@ func (t *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp,
 				t.Logger.Infof("End the transaction: `%s`", t.currentTrxCtx.tag)
 			}
 		} else {
-			t.Rollback()
+			t.Rollback() // todo: error handling
 		}
 	}
 	return nil

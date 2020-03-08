@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"github.com/knowhunger/ortoo/ortoo/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
@@ -69,4 +70,8 @@ func (c *DatatypeDoc) ToUpdateBSON() bson.D {
 			{ClientDocFields.UpdatedAt, true},
 		}},
 	}
+}
+
+func (c *DatatypeDoc) GetType() model.TypeOfDatatype {
+	return model.TypeOfDatatype(model.TypeOfDatatype_value[c.Type])
 }

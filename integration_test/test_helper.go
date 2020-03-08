@@ -43,8 +43,8 @@ func GetMongo(dbName string) (*mongodb.RepositoryMongo, error) {
 }
 
 // NewTestOrtooClientConfig generates an OrtooClientConfig for testing.
-func NewTestOrtooClientConfig(collectionName string) *ortoo.OrtooClientConfig {
-	return &ortoo.OrtooClientConfig{
+func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
+	return &ortoo.ClientConfig{
 		Address:          "127.0.0.1:19061",
 		CollectionName:   collectionName,
 		NotificationAddr: "127.0.0.1:1883",

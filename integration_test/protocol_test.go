@@ -27,7 +27,7 @@ func (n *ProtocolTestSuite) TestProtocol() {
 	n.Run("Can return duplicate key error for datatype", func() {
 		config := NewTestOrtooClientConfig(n.collectionName)
 
-		client1, err := ortoo.NewOrtooClient(config, "client1")
+		client1, err := ortoo.NewClient(config, "client1")
 		require.NoError(n.T(), err)
 		err = client1.Connect()
 		require.NoError(n.T(), err)
@@ -35,7 +35,7 @@ func (n *ProtocolTestSuite) TestProtocol() {
 			_ = client1.Close()
 		}()
 
-		client2, err := ortoo.NewOrtooClient(config, "client2")
+		client2, err := ortoo.NewClient(config, "client2")
 		require.NoError(n.T(), err)
 		err = client2.Connect()
 		require.NoError(n.T(), err)

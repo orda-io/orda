@@ -23,7 +23,7 @@ func (s *ClientServerTestSuite) TestClientServer() {
 
 	s.Run("Can create a client and a datatype with server", func() {
 		config := NewTestOrtooClientConfig(s.collectionName)
-		client1, err := ortoo.NewOrtooClient(config, "client1")
+		client1, err := ortoo.NewClient(config, "client1")
 		require.NoError(s.T(), err)
 		err = client1.Connect()
 		require.NoError(s.T(), err)
@@ -49,7 +49,7 @@ func (s *ClientServerTestSuite) TestClientServer() {
 
 	s.Run("Can subscribe the datatype", func() {
 		config := NewTestOrtooClientConfig(s.collectionName)
-		client2, err := ortoo.NewOrtooClient(config, "client2")
+		client2, err := ortoo.NewClient(config, "client2")
 		if err != nil {
 			s.T().Fatal(err)
 		}
