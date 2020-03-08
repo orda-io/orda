@@ -1,15 +1,14 @@
 package schema
 
 import (
-	"fmt"
-	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/ortoo/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"time"
 )
 
-// ClientDoc defines the document related to client
+// ClientDoc defines the document for client, stored in MongoDB.
 type ClientDoc struct {
 	CUID          string                       `bson:"_id"`
 	Alias         string                       `bson:"alias"`
@@ -20,6 +19,7 @@ type ClientDoc struct {
 	UpdatedAt     time.Time                    `bson:"updatedAt"`
 }
 
+// ClientDocFields defines the fields of ClientDoc
 var ClientDocFields = struct {
 	CUID          string
 	Alias         string
@@ -64,28 +64,6 @@ func (c *ClientDoc) ToUpdateBSON() bson.D {
 
 }
 
-func (b filter) AddSnapshot(data bson.M, version uint64) filter {
-	return append(b, bson.E{Key: "$set", Value: data})
-}
-
-func (b filter) AddSetCheckPoint(key string, checkPoint *model.CheckPoint) filter {
-	return append(b, bson.E{Key: "$set", Value: bson.D{
-		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: ToCheckPointBSON(checkPoint)},
-	}})
-}
-
-func (b filter) AddUnsetCheckPoint(key string) filter {
-	return append(b, bson.E{Key: "$unset", Value: bson.D{
-		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: 1},
-	}})
-}
-
-func (b filter) AddExists(key string) filter {
-	return append(b, bson.E{Key: key, Value: bson.D{
-		{Key: "$exists", Value: true},
-	}})
-}
-
 // GetIndexModel returns the index models of ClientDoc
 func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{
@@ -102,6 +80,7 @@ func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
 	}
 }
 
+// GetCheckPoint returns a CheckPoint of a datatype
 func (c *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
 	if checkPoint, ok := c.CheckPoints[duid]; ok {
 		return checkPoint

@@ -2,15 +2,16 @@ package integration
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/commons/log"
-	"github.com/knowhunger/ortoo/integration_test/test_helper"
+	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/stretchr/testify/suite"
+	"time"
 )
 
 const dbName = "integration_test"
 
+// OrtooServerTestSuite is the base test suite for integration test.
 type OrtooServerTestSuite struct {
 	suite.Suite
 	collectionName string
@@ -19,16 +20,17 @@ type OrtooServerTestSuite struct {
 	mongo          *mongodb.RepositoryMongo
 }
 
+// SetupTest builds some prerequisite for testing.
 func (o *OrtooServerTestSuite) SetupTest() {
-	o.T().Logf("Setup OrtooServerTestSuite:%s", test_helper.GetFileName())
-	o.collectionName = test_helper.GetFileName()
+	o.T().Logf("Setup OrtooServerTestSuite:%s", GetFileName())
+	o.collectionName = GetFileName()
 	var err error
-	o.mongo, err = test_helper.GetMongo(dbName)
+	o.mongo, err = GetMongo(dbName)
 	if err != nil {
 		o.T().Fatal("fail to initialize mongoDB")
 	}
 
-	o.mongo.PurgeAllCollection(context.Background(), o.collectionName)
+	o.mongo.PurgeAllDocumentsOfCollection(context.Background(), o.collectionName)
 
 	o.server, err = server.NewOrtooServer(context.TODO(), NewTestOrtooServerConfig(dbName))
 	if err != nil {
@@ -41,9 +43,11 @@ func (o *OrtooServerTestSuite) SetupTest() {
 		o.Fail("fail to test collection")
 	}
 	go o.server.Start()
+	time.Sleep(1 * time.Second)
 }
 
+// TearDownTest tears down OrtooServerTestSuite.
 func (o *OrtooServerTestSuite) TearDownTest() {
-	o.server.Close()
 	o.T().Log("TearDown OrtooServerTestSuite")
+	o.server.Close()
 }

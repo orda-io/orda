@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package model;
+
+import "google/protobuf/any.proto";
+
+message Client {
+    bytes CUID = 1;
+    string alias = 2;
+    string collection = 3;
+    SyncType syncType = 4;
+}
+
+enum SyncType {
+    MANUALLY = 0;
+    NOTIFIABLE = 1;
+}
+
+message OperationID {
+    uint32 era = 1;
+    uint64 lamport = 2;
+    bytes CUID = 3;
+    uint64 seq = 4;
+}
+
+message BaseOperation {
+    OperationID ID = 1;
+    TypeOfOperation opType = 2;
+}
+
+message SnapshotOperation {
+    BaseOperation base = 1;
+    TypeOfDatatype type = 2;
+    StateOfDatatype state = 3;
+    google.protobuf.Any snapshot = 4;
+}
+
+message IncreaseOperation {
+    BaseOperation base = 1;
+    int32 delta = 2;
+}
+
+message TransactionOperation {
+    BaseOperation base = 1;
+    bytes uuid = 2;
+    string tag = 3;
+    uint32 numOfOps = 4;
+}
+
+message ErrorOperation {
+    BaseOperation base = 1;
+    uint32 code = 2;
+    string msg = 3;
+}
+
+enum TypeOfOperation {
+    SNAPSHOT = 0;
+    DELETE = 2;
+    ERROR = 3;
+    TRANSACTION = 5;
+    INT_COUNTER_INCREASE = 11;
+}
+
+enum TypeOfDatatype {
+    INT_COUNTER = 0;
+    JSON = 1;
+}
+
+enum StateOfDatatype {
+    DUE_TO_CREATE = 0;
+    DUE_TO_SUBSCRIBE = 1;
+    DUE_TO_SUBSCRIBE_CREATE = 2;
+    SUBSCRIBED = 4;
+    DUE_TO_UNSUBSCRIBE = 5;
+    UNSUBSCRIBED = 6;
+    DELETED = 7;
+}
+
+message OperationOnWire {
+    oneof body {
+        SnapshotOperation snapshot = 1;
+        ErrorOperation error = 2;
+        TransactionOperation transaction = 5;
+        IncreaseOperation increase = 11;
+    }
+}
+
+message PushPullPack {
+    bytes DUID = 1;
+    string key = 2;
+    fixed32 option = 3;
+    CheckPoint checkPoint = 4;
+    uint32 era = 5;
+    int32 type = 6;
+    repeated OperationOnWire operations = 7;
+}
+
+message CheckPoint {
+    // @inject_tag: bson:"s"
+    uint64 sseq = 1 [json_name = "s"];
+    // @inject_tag: bson:"c"
+    uint64 cseq = 2 [json_name = "c"];
+}
+
+message NotificationPushPull {
+    string CUID = 1;
+    string DUID = 2;
+    uint64 sseq = 3;
+}
+
+message DatatypeMeta {
+    string key = 1;
+    bytes DUID = 2;
+    OperationID opID = 3;
+    TypeOfDatatype typeOf = 4;
+    StateOfDatatype state = 5;
+}

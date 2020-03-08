@@ -3,11 +3,12 @@ package mongodb
 import (
 	"context"
 	"errors"
-	log "github.com/knowhunger/ortoo/commons/log"
+	log "github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// GetDatatype retrieves a datatypeDoc from MongoDB
 func (m *MongoCollections) GetDatatype(ctx context.Context, duid string) (*schema.DatatypeDoc, error) {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, duid)
 	result := m.datatypes.FindOne(ctx, f)
@@ -24,6 +25,7 @@ func (m *MongoCollections) GetDatatype(ctx context.Context, duid string) (*schem
 	return &datatype, nil
 }
 
+// GetDatatypeByKey gets a datatype with the specified key.
 func (m *MongoCollections) GetDatatypeByKey(ctx context.Context, collectionNum uint32, key string) (*schema.DatatypeDoc, error) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum).
@@ -42,6 +44,7 @@ func (m *MongoCollections) GetDatatypeByKey(ctx context.Context, collectionNum u
 	return &datatype, nil
 }
 
+// UpdateDatatype updates the datatypeDoc.
 func (m *MongoCollections) UpdateDatatype(ctx context.Context, datatype *schema.DatatypeDoc) error {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, datatype.DUID)
 	result, err := m.datatypes.UpdateOne(ctx, f, datatype.ToUpdateBSON(), schema.UpsertOption)
@@ -55,15 +58,14 @@ func (m *MongoCollections) UpdateDatatype(ctx context.Context, datatype *schema.
 	return log.OrtooError(errors.New("fail to update datatype"))
 }
 
-func (m *MongoCollections) PurgeAllCollectionDatatypes(ctx context.Context, collectionNum uint32) error {
-
+func (m *MongoCollections) purgeAllCollectionDatatypes(ctx context.Context, collectionNum uint32) error {
 	opFilter := schema.GetFilter().AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum)
 	r1, err := m.operations.DeleteMany(ctx, opFilter)
 	if err != nil {
 		return log.OrtooError(err)
 	}
 	if r1.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d operations", r1.DeletedCount)
+		log.Logger.Infof("delete %d operations in collection %d", r1.DeletedCount, collectionNum)
 	}
 
 	snapFilter := schema.GetFilter().AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum)
@@ -72,7 +74,7 @@ func (m *MongoCollections) PurgeAllCollectionDatatypes(ctx context.Context, coll
 		return log.OrtooError(err)
 	}
 	if r2.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d snapshots", r2.DeletedCount)
+		log.Logger.Infof("delete %d snapshots in collection %d", r2.DeletedCount, collectionNum)
 	}
 
 	datatypeFilter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum)
@@ -81,11 +83,12 @@ func (m *MongoCollections) PurgeAllCollectionDatatypes(ctx context.Context, coll
 		return log.OrtooError(err)
 	}
 	if r3.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d datatypes", r3.DeletedCount)
+		log.Logger.Infof("delete %d datatypes in collection %d", r3.DeletedCount, collectionNum)
 	}
 	return nil
 }
 
+// PurgeDatatype purges a datatype from MongoDB.
 func (m *MongoCollections) PurgeDatatype(ctx context.Context, collectionNum uint32, key string) error {
 	doc, err := m.GetDatatypeByKey(ctx, collectionNum, key)
 	if err != nil {

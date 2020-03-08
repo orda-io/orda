@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -46,7 +46,7 @@ func New(ctx context.Context, conf *Config) (*RepositoryMongo, error) {
 func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 
 	r.clients = r.db.Collection(schema.CollectionNameClients)
-	r.counters = r.db.Collection(schema.CollectionNameCounters)
+	r.counters = r.db.Collection(schema.CollectionNameColNumGenerator)
 	r.snapshots = r.db.Collection(schema.CollectionNameSnapshot)
 	r.datatypes = r.db.Collection(schema.CollectionNameDatatypes)
 	r.operations = r.db.Collection(schema.CollectionNameOperations)

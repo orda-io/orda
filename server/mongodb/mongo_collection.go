@@ -2,13 +2,14 @@ package mongodb
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"reflect"
 )
 
+// MongoCollections is a bunch of collections used to provide
 type MongoCollections struct {
 	mongoClient *mongo.Client
 	clients     *mongo.Collection
@@ -28,7 +29,7 @@ func (m *MongoCollections) create(ctx context.Context, collection *mongo.Collect
 	if _, err = collection.DeleteOne(ctx, schema.FilterByID(result.InsertedID)); err != nil {
 		return log.OrtooErrorf(err, "fail to delete inserted one")
 	}
-	log.Logger.Infof("Create collection:%s", collection.Name())
+	log.Logger.Infof("create collection:%s", collection.Name())
 	if docModel != nil {
 		if err := m.createIndex(ctx, collection, docModel); err != nil {
 			return log.OrtooErrorf(err, "fail to create indexes")

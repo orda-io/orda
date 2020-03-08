@@ -7,8 +7,7 @@ import (
 	"time"
 )
 
-type DatatypeDocState string
-
+// DatatypeDoc defines a document for datatype, stored in MongoDB
 type DatatypeDoc struct {
 	DUID          string    `bson:"_id"`
 	Key           string    `bson:"key"`
@@ -21,6 +20,7 @@ type DatatypeDoc struct {
 	UpdatedAt     time.Time `bson:"updatedAt"`
 }
 
+// DatatypeDocFields defines the fields of DatatypeDoc
 var DatatypeDocFields = struct {
 	DUID          string
 	Key           string
@@ -43,7 +43,7 @@ var DatatypeDocFields = struct {
 	UpdatedAt:     "updatedAt",
 }
 
-// GetIndexModel returns the index models of ClientDoc
+// GetIndexModel returns the index models of the collection of ClientDoc
 func (c *DatatypeDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
 		Keys: bsonx.Doc{
@@ -53,6 +53,7 @@ func (c *DatatypeDoc) GetIndexModel() []mongo.IndexModel {
 	}}
 }
 
+// ToUpdateBSON transforms DatatypeDoc to BSON type
 func (c *DatatypeDoc) ToUpdateBSON() bson.D {
 	return bson.D{
 		{"$set", bson.D{

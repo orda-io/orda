@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/knowhunger/ortoo/commons/log"
-	"github.com/knowhunger/ortoo/commons/model"
+	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,6 +25,7 @@ func (m *MongoCollections) UpdateClient(ctx context.Context, client *schema.Clie
 	return log.OrtooError(errors.New("fail to update client"))
 }
 
+// UpdateCheckPointInClient updates a CheckPoint for the given datatype in a client.
 func (m *MongoCollections) UpdateCheckPointInClient(ctx context.Context, cuid, duid string, checkPoint *model.CheckPoint) error {
 
 	filter := schema.GetFilter().AddSetCheckPoint(duid, checkPoint)
@@ -39,6 +40,7 @@ func (m *MongoCollections) UpdateCheckPointInClient(ctx context.Context, cuid, d
 	return nil
 }
 
+// UnsubscribeDatatypeFromClient makes the specified client unsubscribe the specified datatype.
 func (m *MongoCollections) UnsubscribeDatatypeFromClient(ctx context.Context, cuid, duid string) error {
 	filter := schema.GetFilter().AddUnsetCheckPoint(duid)
 	result, err := m.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(filter))
@@ -52,6 +54,7 @@ func (m *MongoCollections) UnsubscribeDatatypeFromClient(ctx context.Context, cu
 	return nil
 }
 
+// UnsubscribeDatatypeFromAllClient makes the specified datatype unsubscribed from all the clients.
 func (m *MongoCollections) UnsubscribeDatatypeFromAllClient(ctx context.Context, duid string) error {
 	findFilter := schema.GetFilter().AddExists(fmt.Sprintf("%s.%s", schema.ClientDocFields.CheckPoints, duid))
 	updateFilter := schema.GetFilter().AddUnsetCheckPoint(duid)
@@ -67,6 +70,7 @@ func (m *MongoCollections) UnsubscribeDatatypeFromAllClient(ctx context.Context,
 	return nil
 }
 
+// DeleteClient deletes the specified client.
 func (m *MongoCollections) DeleteClient(ctx context.Context, cuid string) error {
 	result, err := m.clients.DeleteOne(ctx, schema.FilterByID(cuid))
 	if err != nil {
@@ -79,6 +83,7 @@ func (m *MongoCollections) DeleteClient(ctx context.Context, cuid string) error 
 	return nil
 }
 
+// GetCheckPointFromClient returns a checkpoint for the specified datatype from the specified client.
 func (m *MongoCollections) GetCheckPointFromClient(ctx context.Context, cuid string, duid string) (*model.CheckPoint, error) {
 	opts := options.FindOne()
 	projectField := fmt.Sprintf("checkpoints.%s", duid)
@@ -101,11 +106,12 @@ func (m *MongoCollections) GetCheckPointFromClient(ctx context.Context, cuid str
 	return checkPoint, nil
 }
 
-// GetClient gets a client with CUID
+// GetClientWithoutCheckPoints returns a ClientDoc without CheckPoints for the specified CUID
 func (m *MongoCollections) GetClientWithoutCheckPoints(ctx context.Context, cuid string) (*schema.ClientDoc, error) {
 	return m.getClient(ctx, cuid, false)
 }
 
+// GetClient returns a ClientDoc for the specified CUID.
 func (m *MongoCollections) GetClient(ctx context.Context, cuid string) (*schema.ClientDoc, error) {
 	return m.getClient(ctx, cuid, true)
 }
@@ -130,16 +136,16 @@ func (m *MongoCollections) getClient(ctx context.Context, cuid string, withCheck
 	return &client, nil
 }
 
-func (m *MongoCollections) PurgeAllCollectionClients(ctx context.Context, collectionNum uint32) error {
+func (m *MongoCollections) purgeAllCollectionClients(ctx context.Context, collectionNum uint32) error {
 	filter := schema.GetFilter().AddFilterEQ(schema.ClientDocFields.CollectionNum, collectionNum)
 	r1, err := m.clients.DeleteMany(ctx, filter)
 	if err != nil {
 		return log.OrtooError(err)
 	}
 	if r1.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d clients", r1.DeletedCount)
+		log.Logger.Infof("delete %d clients in collection %d", r1.DeletedCount, collectionNum)
 		return nil
 	}
-	log.Logger.Warnf("deleted no clients")
+	log.Logger.Warnf("delete no clients")
 	return nil
 }

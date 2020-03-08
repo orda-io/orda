@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// OperationDoc defines a document for operation, stored in MongoDB
 type OperationDoc struct {
 	ID            string    `bson:"_id"`
 	DUID          string    `bson:"duid"`
@@ -16,6 +17,7 @@ type OperationDoc struct {
 	CreatedAt     time.Time `bson:"createdAt"`
 }
 
+// OperationDocFields defines the fields of OperationDoc
 var OperationDocFields = struct {
 	ID            string
 	DUID          string
@@ -34,6 +36,7 @@ var OperationDocFields = struct {
 	CreatedAt:     "createdAt",
 }
 
+// GetIndexModel returns the index models of the collection of OperationDoc
 func (c *OperationDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
 		Keys: bsonx.Doc{

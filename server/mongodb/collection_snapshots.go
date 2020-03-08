@@ -3,7 +3,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"github.com/knowhunger/ortoo/commons/log"
+	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// GetLatestSnapshot gets the latest snapshot for the specified datatype.
 func (m *MongoCollections) GetLatestSnapshot(ctx context.Context, collectionNum uint32, duid string) (*schema.SnapshotDoc, error) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum).
@@ -31,6 +32,7 @@ func (m *MongoCollections) GetLatestSnapshot(ctx context.Context, collectionNum 
 	return &snapshot, nil
 }
 
+// InsertSnapshot inserts a snapshot for the specified datatype.
 func (m *MongoCollections) InsertSnapshot(ctx context.Context, collectionNum uint32, duid string, sseq uint64, meta []byte, snapshot string) error {
 	snap := schema.SnapshotDoc{
 		ID:            fmt.Sprintf("%s:%d", duid, sseq),
@@ -46,7 +48,7 @@ func (m *MongoCollections) InsertSnapshot(ctx context.Context, collectionNum uin
 		return log.OrtooError(err)
 	}
 	if result.InsertedID == snap.ID {
-		log.Logger.Infof("Snapshot %s is inserted", result.InsertedID)
+		log.Logger.Infof("insert snapshot: %s", result.InsertedID)
 	}
 	return nil
 }

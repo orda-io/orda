@@ -1,19 +1,20 @@
 package schema
 
 import (
-	"github.com/knowhunger/ortoo/commons/model"
+	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // CollectionNameXXXX  is the name of the collection for XXXX
 const (
-	CollectionNameCounters    = "-_-Counters"
-	CollectionNameClients     = "-_-Clients"
-	CollectionNameCollections = "-_-Collections"
-	CollectionNameDatatypes   = "-_-Datatypes"
-	CollectionNameOperations  = "-_-Operations"
-	CollectionNameSnapshot    = "-_-Snapshots"
+	CollectionNameColNumGenerator = "-_-ColNumGenerator"
+	CollectionNameClients         = "-_-Clients"
+	CollectionNameCollections     = "-_-Collections"
+	CollectionNameDatatypes       = "-_-Datatypes"
+	CollectionNameOperations      = "-_-Operations"
+	CollectionNameSnapshot        = "-_-Snapshots"
 )
 
 const (
@@ -21,34 +22,68 @@ const (
 	ID = "_id"
 )
 
-type filter bson.D
+// Filter is the type used to filter
+type Filter bson.D
 
-func (b filter) AddFilterEQ(key string, value interface{}) filter {
+// AddFilterEQ is a function to add EQ to Filter
+func (b Filter) AddFilterEQ(key string, value interface{}) Filter {
 	return append(b, bson.E{Key: key, Value: value})
 }
 
-func (b filter) AddFilterGTE(key string, from interface{}) filter {
+// AddFilterGTE is a function to add GTE to Filter
+func (b Filter) AddFilterGTE(key string, from interface{}) Filter {
 	return append(b, bson.E{Key: key, Value: bson.D{{Key: "$gte", Value: from}}})
 }
 
-func (b filter) AddFilterLTE(key string, to interface{}) filter {
+// AddFilterLTE is a function to add LTE to Filter
+func (b Filter) AddFilterLTE(key string, to interface{}) Filter {
 	return append(b, bson.E{Key: key, Value: bson.D{{Key: "$lte", Value: to}}})
 }
 
+// ToCheckPointBSON is a function to change a checkpoint to BSON
 func ToCheckPointBSON(checkPoint *model.CheckPoint) bson.M {
 	return bson.M{"s": checkPoint.Sseq, "c": checkPoint.Cseq}
 }
 
-func GetFilter() filter {
-	return filter{}
+// GetFilter returns an instance of Filter
+func GetFilter() Filter {
+	return Filter{}
 }
 
-func FilterByID(id interface{}) filter {
-	return filter{bson.E{Key: ID, Value: id}}
+// FilterByID returns an instance of Filter of ID
+func FilterByID(id interface{}) Filter {
+	return Filter{bson.E{Key: ID, Value: id}}
 }
 
-func FilterByName(name string) filter {
-	return filter{bson.E{Key: "name", Value: name}}
+// FilterByName returns an instance of Filter of Name
+func FilterByName(name string) Filter {
+	return Filter{bson.E{Key: "name", Value: name}}
+}
+
+// AddSnapshot adds a snapshot value
+func (b Filter) AddSnapshot(data bson.M) Filter {
+	return append(b, bson.E{Key: "$set", Value: data})
+}
+
+// AddSetCheckPoint adds the Filter that updates checkpoint
+func (b Filter) AddSetCheckPoint(key string, checkPoint *model.CheckPoint) Filter {
+	return append(b, bson.E{Key: "$set", Value: bson.D{
+		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: ToCheckPointBSON(checkPoint)},
+	}})
+}
+
+// AddUnsetCheckPoint adds the Filter that unsets the checkpoint
+func (b Filter) AddUnsetCheckPoint(key string) Filter {
+	return append(b, bson.E{Key: "$unset", Value: bson.D{
+		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: 1},
+	}})
+}
+
+// AddExists adds the Filter which examines the existence of the key
+func (b Filter) AddExists(key string) Filter {
+	return append(b, bson.E{Key: key, Value: bson.D{
+		{Key: "$exists", Value: true},
+	}})
 }
 
 // options
