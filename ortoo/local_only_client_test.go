@@ -1,16 +1,15 @@
-package integration
+package ortoo
 
 import (
-	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestLocalOnlyClientTest(t *testing.T) {
-	client1, err := ortoo.NewClient(ortoo.NewLocalClientConfig("testCollection"), "localOnly1")
+	client1, err := NewClient(NewLocalClientConfig("testCollection"), "localOnly1")
 	require.NoError(t, err)
-	client2, err := ortoo.NewClient(ortoo.NewLocalClientConfig("testCollection"), "localOnly2")
+	client2, err := NewClient(NewLocalClientConfig("testCollection"), "localOnly2")
 	require.NoError(t, err)
 	intCounter1 := client1.CreateIntCounter("key", nil)
 	_, _ = intCounter1.IncreaseBy(2)

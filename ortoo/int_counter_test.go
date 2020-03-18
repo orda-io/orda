@@ -37,7 +37,7 @@ func TestIntCounterTransactions(t *testing.T) {
 	require.Equal(t, int32(6), intCounter1.Get())
 }
 
-func TestOnOperationSyncWithTestWire(t *testing.T) {
+func TestIntCounterOperationSyncWithTestWire(t *testing.T) {
 	tw := testonly.NewTestWire()
 	intCounter1, err := newIntCounter("key1", model.NewNilCUID(), tw, nil)
 	require.NoError(t, err)

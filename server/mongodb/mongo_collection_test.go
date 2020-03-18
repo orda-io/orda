@@ -24,7 +24,7 @@ func TestMongo(t *testing.T) {
 		t.Fatal("fail to initialize mongoDB")
 	}
 
-	t.Run("Make collections simultaneously", func(t *testing.T) {
+	t.Run("Can make collections simultaneously", func(t *testing.T) {
 		madeCollections := make(map[uint32]*schema.CollectionDoc)
 
 		for i := 0; i < 10; i++ {
