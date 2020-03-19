@@ -23,13 +23,11 @@ type BaseDatatype struct {
 type PublicBaseDatatypeInterface interface {
 	GetType() model.TypeOfDatatype
 	GetState() model.StateOfDatatype
+	GetAsJSON() (string, error)
 }
 
-func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*BaseDatatype, error) {
-	duid, err := model.NewDUID()
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to create base datatype due to duid")
-	}
+func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) *BaseDatatype {
+	duid := model.NewDUID()
 	return &BaseDatatype{
 		Key:    key,
 		id:     duid,
@@ -37,7 +35,7 @@ func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*Base
 		opID:   model.NewOperationIDWithCuid(cuid),
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
 		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
-	}, nil
+	}
 }
 
 // GetCUID returns CUID of the client which this datatype subecribes to.
@@ -92,8 +90,8 @@ func (b *BaseDatatype) GetState() model.StateOfDatatype {
 }
 
 // SetDatatype sets the Datatype which implements this BaseDatatype.
-func (b *BaseDatatype) SetDatatype(finalDatatype model.Datatype) {
-	b.datatype = finalDatatype
+func (b *BaseDatatype) SetDatatype(datatype model.Datatype) {
+	b.datatype = datatype
 }
 
 // GetDatatype returns the Datatype which implements this BaseDatatype.

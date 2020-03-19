@@ -37,13 +37,13 @@ type WiredDatatypeInterface interface {
 }
 
 // newWiredDatatype creates a new wiredDatatype
-func newWiredDatatype(b *BaseDatatype, w Wire) (*WiredDatatype, error) {
+func newWiredDatatype(b *BaseDatatype, w Wire) *WiredDatatype {
 	return &WiredDatatype{
 		BaseDatatype: b,
 		checkPoint:   model.NewCheckPoint(),
 		buffer:       make([]*model.OperationOnWire, 0, constants.OperationBufferSize),
 		wire:         w,
-	}, nil
+	}
 }
 
 // GetBase returns BaseDatatype
@@ -222,7 +222,7 @@ func (w *WiredDatatype) applyPushPullPackCallHandler(errs []error, oldState, new
 		w.datatype.HandleStateChange(oldState, newState)
 	}
 	if len(errs) > 0 {
-		w.datatype.HandleError(errs)
+		w.datatype.HandleErrors(errs...)
 	}
 	if len(opList) > 0 {
 		w.datatype.HandleRemoteOperations(opList)
@@ -244,6 +244,9 @@ func (w *WiredDatatype) getOperationOnWires(cseq uint64) []*model.OperationOnWir
 }
 
 func (w *WiredDatatype) deliverTransaction(transaction []model.Operation) {
+	if w.wire == nil {
+		return
+	}
 	for _, op := range transaction {
 		w.buffer = append(w.buffer, model.ToOperationOnWire(op))
 	}

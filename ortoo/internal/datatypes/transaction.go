@@ -36,8 +36,7 @@ func (t *TransactionContext) appendOperation(op model.Operation) {
 }
 
 // newTransactionDatatype creates a new TransactionDatatype
-func newTransactionDatatype(w *WiredDatatype, snapshot model.Snapshot) (*TransactionDatatype, error) {
-
+func newTransactionDatatype(w *WiredDatatype, snapshot model.Snapshot) *TransactionDatatype {
 	return &TransactionDatatype{
 		WiredDatatype:    w,
 		mutex:            new(sync.RWMutex),
@@ -47,7 +46,7 @@ func newTransactionDatatype(w *WiredDatatype, snapshot model.Snapshot) (*Transac
 		rollbackSnapshot: snapshot.CloneSnapshot(),
 		rollbackOps:      nil,
 		rollbackOpID:     w.opID.Clone(),
-	}, nil
+	}
 }
 
 // GetWired returns WiredDatatype
@@ -105,10 +104,7 @@ func (t *TransactionDatatype) BeginTransaction(tag string, tnxCtx *TransactionCo
 	}
 	t.currentTrxCtx = t.setTransactionContextAndLock(tag)
 	if withOp {
-		op, err := model.NewTransactionOperation(tag)
-		if err != nil {
-			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, err.Error())
-		}
+		op := model.NewTransactionOperation(tag)
 		t.currentTrxCtx.uuid = op.Uuid
 		t.SetNextOpID(op)
 		t.currentTrxCtx.appendOperation(op)

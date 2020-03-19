@@ -18,12 +18,13 @@ type Datatype interface {
 	ApplyPushPullPack(*PushPullPack)   // @WiredDatatype
 	NeedSync(sseq uint64) bool         // @WiredDatatype
 
-	ExecuteLocal(op interface{}) (interface{}, error)      // @Real datatype
-	ExecuteRemote(op interface{}) (interface{}, error)     // @Real datatype
-	GetSnapshot() Snapshot                                 // @Real datatype
-	GetMetaAndSnapshot() ([]byte, string, error)           // @Real datatype
-	SetMetaAndSnapshot(meta []byte, snapshot string) error // @Real datatype
-	HandleStateChange(old, new StateOfDatatype)            // @Real datatype
-	HandleError(errs []error)                              // @Real datatype
-	HandleRemoteOperations(operations []interface{})       // @Real datatype
+	ExecuteLocal(op interface{}) (interface{}, error)        // @Real datatype
+	ExecuteRemote(op interface{}) (interface{}, error)       // @Real datatype
+	GetSnapshot() Snapshot                                   // @Real datatype
+	GetMetaAndSnapshot() ([]byte, Snapshot, error)           // @Real datatype
+	SetMetaAndSnapshot(meta []byte, snapshot Snapshot) error // @Real datatype
+
+	HandleStateChange(old, new StateOfDatatype)      // @ortoo.Datatype
+	HandleErrors(errs ...error)                      // @ortoo.Datatype
+	HandleRemoteOperations(operations []interface{}) // @ortoo.Datatype
 }

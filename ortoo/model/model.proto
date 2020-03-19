@@ -61,6 +61,12 @@ message ErrorOperation {
     string msg = 3;
 }
 
+message PayloadOperation {
+    BaseOperation base = 1;
+    int32 typeOf = 2;
+    bytes payload = 3;
+}
+
 message PutOperation {
     BaseOperation base = 1;
     string key = 2;
@@ -80,6 +86,7 @@ enum TypeOfOperation {
     INT_COUNTER_INCREASE = 11;
     HASH_MAP_PUT = 21;
     HASH_MAP_REMOVE = 22;
+    PAYLOAD = 31;
 }
 
 enum TypeOfDatatype {
@@ -106,6 +113,7 @@ message OperationOnWire {
         IncreaseOperation increase = 11;
         PutOperation put = 21;
         RemoveOperation remove = 22;
+        PayloadOperation payload = 31;
     }
 }
 

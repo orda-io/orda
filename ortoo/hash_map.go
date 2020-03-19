@@ -12,7 +12,7 @@ import (
 
 // HashMap is an Ortoo datatype which provides hash map interfaces.
 type HashMap interface {
-	datatypes.PublicWiredDatatypeInterface
+	Datatype
 	HashMapInTxn
 	DoTransaction(tag string, txnFunc func(hashMap HashMapInTxn) error) error
 }
@@ -24,103 +24,119 @@ type HashMapInTxn interface {
 	Remove(key string) (interface{}, error)
 }
 
-func newHashMap(key string, cuid model.CUID, wire datatypes.Wire) (HashMap, error) {
+func newHashMap(key string, cuid model.CUID, wire datatypes.Wire, handlers *Handlers) HashMap {
 	hashMap := &hashMap{
-		FinalDatatype: &datatypes.FinalDatatype{},
-		snapshot:      newHashMapSnapshot(),
+		datatype: &datatype{
+			FinalDatatype: &datatypes.FinalDatatype{},
+			handlers:      handlers,
+		},
+		snapshot: newHashMapSnapshot(),
 	}
-	if err := hashMap.Initialize(key, model.TypeOfDatatype_HASH_MAP, cuid, wire, hashMap.snapshot, hashMap); err != nil {
-		return nil, err
-	}
-	return hashMap, nil
+	hashMap.Initialize(key, model.TypeOfDatatype_HASH_MAP, cuid, wire, hashMap.snapshot, hashMap)
+	return hashMap
 }
 
 type hashMap struct {
-	*datatypes.FinalDatatype
+	*datatype
+	// *datatypes.FinalDatatype
 	snapshot *hashMapSnapshot
+	// handler  *HashMapHandlers
 }
 
-func (h *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) error) error {
-	return h.FinalDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) error) error {
+	return its.FinalDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
 		clone := &hashMap{
-			FinalDatatype: &datatypes.FinalDatatype{
-				TransactionDatatype: h.FinalDatatype.TransactionDatatype,
-				TransactionCtx:      txnCtx,
+			datatype: &datatype{
+				FinalDatatype: &datatypes.FinalDatatype{
+					TransactionDatatype: its.FinalDatatype.TransactionDatatype,
+					TransactionCtx:      txnCtx,
+				},
+				handlers: its.handlers,
 			},
-			snapshot: h.snapshot,
+
+			snapshot: its.snapshot,
 		}
 		return txnFunc(clone)
 	})
 }
 
-func (h *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
+func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch op.(type) {
 	case *model.PutOperation:
 		put := op.(*model.PutOperation)
-		return h.snapshot.putCommon(put.Key, put.Value, put.Base.GetTimestamp())
+		return its.snapshot.putCommon(put.Key, put.Value, put.Base.GetTimestamp())
 	case *model.RemoveOperation:
 		remove := op.(*model.RemoveOperation)
-		return h.snapshot.remove(remove.Key, remove.Base.GetTimestamp()), nil
+		return its.snapshot.removeCommon(remove.Key, remove.Base.GetTimestamp()), nil
 	}
 	return nil, nil
 }
 
-func (h *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
-	panic("implement me")
-}
-
-func (h *hashMap) GetSnapshot() model.Snapshot {
-	return h.snapshot
-}
-
-func (h *hashMap) SetSnapshot(snapshot model.Snapshot) {
-	h.snapshot = snapshot.(*hashMapSnapshot)
-}
-
-func (h *hashMap) GetMetaAndSnapshot() ([]byte, string, error) {
-	panic("implement me")
-}
-
-func (h *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
-	panic("implement me")
-}
-
-func (h *hashMap) HandleStateChange(old, new model.StateOfDatatype) {
-	panic("implement me")
-}
-
-func (h *hashMap) HandleError(errs []error) {
-	panic("implement me")
-}
-
-func (h *hashMap) HandleRemoteOperations(operations []interface{}) {
-	panic("implement me")
-}
-
-func (h *hashMap) Put(key string, value interface{}) (interface{}, error) {
-	val, err := model.ConvertType(value)
-	if err != nil {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidType, err.Error())
+func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
+	switch o := op.(type) {
+	case *model.SnapshotOperation:
+		var newSnap hashMapSnapshot
+		if err := json.Unmarshal(o.Snapshot.Value, &newSnap); err != nil {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		}
+		its.snapshot = &newSnap
+		return nil, nil
+	case *model.PPutOperation:
+		return its.snapshot.putCommon(o.Key, o.Value, o.Base.GetTimestamp())
+	case *model.RemoveOperation:
+		return its.snapshot.removeCommon(o.Key, o.Base.GetTimestamp()), nil
 	}
-	op := model.NewPutOperation(key, val)
-	return h.ExecuteOperationWithTransaction(h.TransactionCtx, op, true)
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
-func (h *hashMap) Get(key string) interface{} {
-	if obj, ok := h.snapshot.Map[key]; ok {
+func (its *hashMap) GetSnapshot() model.Snapshot {
+	return its.snapshot
+}
+
+func (its *hashMap) SetSnapshot(snapshot model.Snapshot) {
+	its.snapshot = snapshot.(*hashMapSnapshot)
+}
+
+func (its *hashMap) GetAsJSON() (string, error) {
+	return its.snapshot.GetAsJSON()
+}
+
+func (its *hashMap) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
+	meta, err := its.FinalDatatype.GetMeta()
+	if err != nil {
+		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	return meta, its.snapshot, nil
+}
+
+func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot model.Snapshot) error {
+	if err := its.FinalDatatype.SetMeta(meta); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	its.snapshot = snapshot.(*hashMapSnapshot)
+	return nil
+}
+
+func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
+	// val, err := model.ConvertType(value)
+	// if err != nil {
+	// 	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidType, err.Error())
+	// }
+	op := model.NewPPutOperation(key, value)
+	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+}
+
+func (its *hashMap) Get(key string) interface{} {
+	if obj, ok := its.snapshot.Map[key]; ok {
 		return obj.V
 	}
 	return nil
 }
 
-func (h *hashMap) Remove(key string) (interface{}, error) {
+func (its *hashMap) Remove(key string) (interface{}, error) {
 	op := model.NewRemoveOperation(key)
-	return h.ExecuteOperationWithTransaction(h.TransactionCtx, op, true)
+	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 }
-
-// ////////////////////////////////////////////////////////////////
-//  HashMapHandlers
-// ////////////////////////////////////////////////////////////////
 
 // ////////////////////////////////////////////////////////////////
 //  hashMapSnapshot
@@ -131,8 +147,8 @@ type obj struct {
 	T *model.Timestamp
 }
 
-func (o *obj) String() string {
-	return fmt.Sprintf("{V:%v,T:%s}", o.V, o.T.ToString())
+func (its *obj) String() string {
+	return fmt.Sprintf("{V:%v,T:%s}", its.V, its.T.ToString())
 }
 
 type hashMapSnapshot struct {
@@ -145,9 +161,9 @@ func newHashMapSnapshot() *hashMapSnapshot {
 	}
 }
 
-func (h *hashMapSnapshot) CloneSnapshot() model.Snapshot {
+func (its *hashMapSnapshot) CloneSnapshot() model.Snapshot {
 	var cloneMap = make(map[string]*obj)
-	for k, v := range h.Map {
+	for k, v := range its.Map {
 		cloneMap[k] = v
 	}
 	return &hashMapSnapshot{
@@ -155,33 +171,33 @@ func (h *hashMapSnapshot) CloneSnapshot() model.Snapshot {
 	}
 }
 
-func (h *hashMapSnapshot) GetTypeAny() (*types.Any, error) {
-	bin, err := json.Marshal(h)
+func (its *hashMapSnapshot) GetTypeAny() (*types.Any, error) {
+	bin, err := json.Marshal(its)
 	if err != nil {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
-	log.Logger.Infof("%s", h)
+	log.Logger.Infof("%s", its)
 	return &types.Any{
-		TypeUrl: h.GetTypeURL(),
+		TypeUrl: its.GetTypeURL(),
 		Value:   bin,
 	}, nil
 }
 
-func (h *hashMapSnapshot) GetTypeURL() string {
+func (its *hashMapSnapshot) GetTypeURL() string {
 	return "github.com/knowhunger/ortoo/ortoo/hashMapSnapshot"
 }
 
-func (h *hashMapSnapshot) get(key string) interface{} {
-	return h.Map[key]
+func (its *hashMapSnapshot) get(key string) interface{} {
+	return its.Map[key]
 }
 
-func (h *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
-	oldObj, ok := h.Map[key]
+func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
+	oldObj, ok := its.Map[key]
 	defer func() {
-		log.Logger.Infof("putCommon value: %v => %v for key: %s", oldObj, h.Map[key], key)
+		log.Logger.Infof("putCommon value: %v => %v for key: %s", oldObj, its.Map[key], key)
 	}()
 	if !ok {
-		h.Map[key] = &obj{
+		its.Map[key] = &obj{
 			V: value,
 			T: ts,
 		}
@@ -189,7 +205,7 @@ func (h *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Tim
 	}
 
 	if oldObj.T.Compare(ts) <= 0 {
-		h.Map[key] = &obj{
+		its.Map[key] = &obj{
 			V: value,
 			T: ts,
 		}
@@ -198,10 +214,25 @@ func (h *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Tim
 	return oldObj.V, nil
 }
 
-func (h *hashMapSnapshot) remove(key string, ts *model.Timestamp) interface{} {
-	if oldObj, ok := h.Map[key]; ok {
+func (its *hashMapSnapshot) GetAsJSON() (string, error) {
+	m := make(map[string]interface{})
+	for k, v := range its.Map {
+		if v.V != nil {
+			m[k] = v.V
+		}
+	}
+	data, err := json.Marshal(m)
+	if err != nil {
+		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	return string(data), nil
+
+}
+
+func (its *hashMapSnapshot) removeCommon(key string, ts *model.Timestamp) interface{} {
+	if oldObj, ok := its.Map[key]; ok {
 		if oldObj.T.Compare(ts) <= 0 {
-			h.Map[key] = &obj{
+			its.Map[key] = &obj{
 				V: nil,
 				T: ts,
 			}

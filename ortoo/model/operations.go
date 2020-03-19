@@ -56,16 +56,12 @@ func (o *BaseOperation) GetAsJSON() interface{} {
 // ////////////////// TransactionOperation ////////////////////
 
 // NewTransactionOperation creates a transaction operation
-func NewTransactionOperation(tag string) (*TransactionOperation, error) {
-	uuid, err := newUniqueID()
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to create uuid")
-	}
+func NewTransactionOperation(tag string) *TransactionOperation {
 	return &TransactionOperation{
 		Base: NewOperation(TypeOfOperation_TRANSACTION),
-		Uuid: uuid,
+		Uuid: newUniqueID(),
 		Tag:  tag,
-	}, nil
+	}
 }
 
 // GetAsJSON returns the operation as interface{} for JSON
@@ -194,13 +190,6 @@ func (e *ErrorOperation) GetPushPullError() *PushPullError {
 }
 
 // ////////////////// PutOperation ////////////////////
-func NewPutOperation(key string, value OrtooType) *PutOperation {
-	return &PutOperation{
-		Base:  NewOperation(TypeOfOperation_HASH_MAP_PUT),
-		Key:   key,
-		Value: value.(string),
-	}
-}
 
 func (p *PutOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(p)
@@ -306,6 +295,101 @@ func (i *IncreaseOperation) ToString() string {
 	return string(str) // fmt.Sprintf("%s delta:%d", i.Base.ToBaseString(), i.Delta)
 }
 
+func NewPayloadOperation(payload []byte, typeOf int32) *PayloadOperation {
+	return &PayloadOperation{
+		Base:    NewOperation(TypeOfOperation_PAYLOAD),
+		TypeOf:  typeOf,
+		Payload: payload,
+	}
+}
+
+// ExecuteLocal ...
+func (its *PayloadOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
+	return datatype.ExecuteLocal(its)
+}
+
+// ExecuteRemote ...
+func (its *PayloadOperation) ExecuteRemote(datatype Datatype) (interface{}, error) {
+	return datatype.ExecuteRemote(its)
+}
+
+// GetAsJSON returns the operation as interface{} for JSON
+func (its *PayloadOperation) GetAsJSON() interface{} {
+	return &struct {
+		ID      interface{}
+		Type    string
+		Payload string
+	}{
+		ID:      its.Base.GetAsJSON(),
+		Type:    its.Base.OpType.String(),
+		Payload: string(its.Payload),
+	}
+}
+
+func (its *PayloadOperation) ToString() string {
+	j := its.GetAsJSON()
+	str, _ := json.Marshal(j)
+	return string(str)
+}
+
+func NewPPutOperation(key string, value interface{}) *PPutOperation {
+	payload := &PPutPayload{
+		Key:   key,
+		Value: value,
+	}
+	payloadData, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+	return &PPutOperation{
+		PayloadOperation: NewPayloadOperation(payloadData, 1),
+		PPutPayload:      payload,
+	}
+}
+
+type PPutOperation struct {
+	*PayloadOperation
+	*PPutPayload
+}
+type PPutPayload struct {
+	Key   string
+	Value interface{}
+}
+
+func (its *PPutOperation) ExecuteLocal(datatype Datatype) (interface{}, error) {
+	return datatype.ExecuteLocal(its)
+}
+
+func (its *PPutOperation) ExecuteRemote(datatype Datatype) (interface{}, error) {
+	return datatype.ExecuteRemote(its)
+}
+
+func (its *PPutOperation) ToString() string {
+	return "PPutOperation"
+}
+
+func (its *PPutOperation) GetAsJSON() interface{} {
+	return &struct {
+		ID    interface{}
+		Type  string
+		Key   string
+		Value interface{}
+	}{
+		ID:   its.Base.GetAsJSON(),
+		Type: its.Base.OpType.String(),
+	}
+}
+
+// func (its *PPutOperation) GetPayloadOperation() (*PayloadOperation, error) {
+// 	its.TypeOf = 1
+// 	payload, err := json.Marshal(&its.Payload)
+// 	if err != nil {
+// 		return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+// 	}
+// 	its.Payload = string(payload)
+// 	return &its.PayloadOperation, nil
+// }
+
 // ToOperationOnWire transforms an Operation to OperationOnWire.
 func ToOperationOnWire(op Operation) *OperationOnWire {
 	switch o := op.(type) {
@@ -317,6 +401,11 @@ func ToOperationOnWire(op Operation) *OperationOnWire {
 		return &OperationOnWire{Body: &OperationOnWire_Increase{o}}
 	case *PutOperation:
 		return &OperationOnWire{Body: &OperationOnWire_Put{o}}
+	case *PPutOperation:
+
+		return &OperationOnWire{Body: &OperationOnWire_Payload{o.PayloadOperation}}
+	case *RemoveOperation:
+		return &OperationOnWire{Body: &OperationOnWire_Remove{o}}
 	case *TransactionOperation:
 		return &OperationOnWire{Body: &OperationOnWire_Transaction{o}}
 	}
@@ -332,6 +421,23 @@ func ToOperation(op *OperationOnWire) Operation {
 		return o.Error
 	case *OperationOnWire_Increase:
 		return o.Increase
+	case *OperationOnWire_Put:
+		return o.Put
+	case *OperationOnWire_Remove:
+		return o.Remove
+	case *OperationOnWire_Payload:
+		op := o.Payload
+		if op.TypeOf == 1 {
+			var payload PPutPayload
+			if err := json.Unmarshal(op.Payload, &payload); err != nil {
+				panic(err)
+			}
+			return &PPutOperation{
+				PayloadOperation: op,
+				PPutPayload:      &payload,
+			}
+		}
+
 	case *OperationOnWire_Transaction:
 		return o.Transaction
 	}

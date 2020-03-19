@@ -25,27 +25,15 @@ func (c *FinalDatatype) Initialize(
 	cuid model.CUID,
 	w Wire,
 	snapshot model.Snapshot,
-	datatype model.Datatype) error {
+	datatype model.Datatype) {
 
-	baseDatatype, err := newBaseDatatype(key, typeOf, cuid)
-	if err != nil {
-		return log.OrtooErrorf(err, "fail to create BaseDatatype")
-	}
+	baseDatatype := newBaseDatatype(key, typeOf, cuid)
+	wiredDatatype := newWiredDatatype(baseDatatype, w)
+	transactionDatatype := newTransactionDatatype(wiredDatatype, snapshot)
 
-	wiredDatatype, err := newWiredDatatype(baseDatatype, w)
-	if err != nil {
-		return log.OrtooErrorf(err, "fail to create wiredDatatype")
-	}
-
-	transactionDatatype, err := newTransactionDatatype(wiredDatatype, snapshot)
-	if err != nil {
-		return log.OrtooErrorf(err, "fail to create transaction manager")
-	}
 	c.TransactionDatatype = transactionDatatype
 	c.TransactionCtx = nil
 	c.SetDatatype(datatype)
-
-	return nil
 }
 
 // GetMeta returns the binary of metadata of the datatype.

@@ -7,4 +7,5 @@ type Snapshot interface {
 	CloneSnapshot() Snapshot
 	GetTypeURL() string
 	GetTypeAny() (*types.Any, error)
+	GetAsJSON() (string, error)
 }

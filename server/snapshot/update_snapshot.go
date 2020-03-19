@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/log"
@@ -44,10 +45,7 @@ func (m *Manager) getPushPullTag() model.PushPullTag {
 // UpdateSnapshot updates snapshot for specified datatype
 func (m *Manager) UpdateSnapshot() error {
 	var sseq uint64 = 0
-	client, err := ortoo.NewClient(ortoo.NewLocalClientConfig(m.collectionDoc.Name), "server")
-	if err != nil {
-		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
-	}
+	client := ortoo.NewClient(ortoo.NewLocalClientConfig(m.collectionDoc.Name), "server")
 	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType())
 	snapshotDoc, err := m.mongo.GetLatestSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID)
 	if err != nil {
@@ -55,7 +53,7 @@ func (m *Manager) UpdateSnapshot() error {
 	}
 	if snapshotDoc != nil {
 		sseq = snapshotDoc.Sseq
-		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot); err != nil {
+		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot.(model.Snapshot)); err != nil {
 			return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 		}
 	}
@@ -93,14 +91,22 @@ func (m *Manager) UpdateSnapshot() error {
 		return err
 	}
 
-	meta, data, err := datatype.GetMetaAndSnapshot()
+	meta, snap, err := datatype.GetMetaAndSnapshot()
 	if err != nil {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
-	if err := m.mongo.InsertSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID, sseq, meta, data); err != nil {
+	snapStr, err := json.Marshal(snap)
+	if err != nil {
+		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+	}
+	if err := m.mongo.InsertSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID, sseq, meta, string(snapStr)); err != nil {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 
+	data, err := snap.GetAsJSON()
+	if err != nil {
+		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+	}
 	if err := m.mongo.InsertRealSnapshot(m.ctx, m.collectionDoc.Name, m.datatypeDoc.Key, data, sseq); err != nil {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}

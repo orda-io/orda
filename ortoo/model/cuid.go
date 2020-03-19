@@ -1,19 +1,11 @@
 package model
 
-import (
-	"github.com/knowhunger/ortoo/ortoo/log"
-)
-
 // CUID is a uniqueID for a client.
 type CUID UniqueID
 
 // NewCUID creates a new CUID
-func NewCUID() (CUID, error) {
-	u, err := newUniqueID()
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to generate client UID")
-	}
-	return CUID(u), nil
+func NewCUID() CUID {
+	return CUID(newUniqueID())
 }
 
 // NewNilCUID creates an instance of Nil CUID.

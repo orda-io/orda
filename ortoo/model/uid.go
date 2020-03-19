@@ -3,22 +3,21 @@ package model
 import (
 	"bytes"
 	"github.com/google/uuid"
-	"github.com/knowhunger/ortoo/ortoo/log"
 )
 
 // UniqueID is unique ID in the format of UUID.
 type UniqueID []byte
 
-func newUniqueID() (UniqueID, error) {
+func newUniqueID() UniqueID {
 	u, err := uuid.NewUUID()
 	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to generate unique ID")
+		panic(err) // panic because it cannot happen
 	}
 	b, err := u.MarshalBinary()
 	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to generate unique ID")
+		panic(err) // panic because it cannot happen
 	}
-	return b, nil
+	return b
 }
 
 func (u UniqueID) String() string {

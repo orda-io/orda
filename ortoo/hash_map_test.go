@@ -11,12 +11,8 @@ import (
 
 func TestHashMapTransactions(t *testing.T) {
 	tw := testonly.NewTestWire()
-	cuid1, err := model.NewCUID()
-	require.NoError(t, err)
-
-	hashMap1, err := newHashMap("key1", cuid1, tw)
-	require.NoError(t, err)
-
+	cuid1 := model.NewCUID()
+	hashMap1 := newHashMap("key1", cuid1, tw, nil)
 	key1 := "k1"
 	key2 := "k2"
 
@@ -42,24 +38,38 @@ func TestHashMapTransactions(t *testing.T) {
 	require.Equal(t, nil, hashMap1.Get(key2))
 }
 
-func TestHashMapSnapshot(t *testing.T) {
+func TestHashMapSetSnapshot(t *testing.T) {
+	hashMap1 := newHashMap("key1", model.NewCUID(), nil, nil)
+	hashMap1.Put("k1", 1)
+	hashMap1.Put("k2", "2")
+	hashMap1.Put("k3", 3.141592)
+	hashMap1.Remove("k2")
+
+	clone := newHashMap("key2", model.NewCUID(), nil, nil)
+	meta, snap, err := hashMap1.(model.Datatype).GetMetaAndSnapshot()
+	require.NoError(t, err)
+	err = clone.(model.Datatype).SetMetaAndSnapshot(meta, snap)
+	require.NoError(t, err)
+}
+
+func TestHashMapSnapshotOperation(t *testing.T) {
 	snap := newHashMapSnapshot()
 	opID1 := model.NewOperationID()
 	opID2 := model.NewOperationID()
 	opID3 := model.NewOperationID()
 	opID2.Lamport++
 	opID3.Era++
-	snap.putCommon("key1", "value1-1", opID1.GetTimestamp())
-	snap.putCommon("key1", "value1-2", opID2.GetTimestamp())
+	_, _ = snap.putCommon("key1", "value1-1", opID1.GetTimestamp())
+	_, _ = snap.putCommon("key1", "value1-2", opID2.GetTimestamp())
 
-	snap.putCommon("key2", "value2-1", opID2.GetTimestamp())
-	snap.putCommon("key2", "value2-2", opID1.GetTimestamp())
+	_, _ = snap.putCommon("key2", "value2-1", opID2.GetTimestamp())
+	_, _ = snap.putCommon("key2", "value2-2", opID1.GetTimestamp())
 	snap1, err := snap.GetTypeAny()
 	require.NoError(t, err)
 	log.Logger.Infof("%+v", string(snap1.Value))
 
-	removed1 := snap.remove("key1", opID3.GetTimestamp())
-	removed2 := snap.remove("key2", opID1.GetTimestamp())
+	removed1 := snap.removeCommon("key1", opID3.GetTimestamp())
+	removed2 := snap.removeCommon("key2", opID1.GetTimestamp())
 	require.Equal(t, "value1-2", removed1)
 	require.Nil(t, removed2)
 	snap2, err := snap.GetTypeAny()

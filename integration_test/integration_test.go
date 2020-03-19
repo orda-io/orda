@@ -48,7 +48,7 @@ func (its *OrtooIntegrationTestSuite) SetupTest() {
 	its.collectionName = strings.Split(its.T().Name(), "/")[1]
 	log.Logger.Infof("Setup OrtooIntegrationTest:%s", its.collectionName)
 	var err error
-	require.NoError(its.T(), its.mongo.PurgeAllDocumentsOfCollection(context.Background(), its.collectionName))
+	require.NoError(its.T(), its.mongo.ResetCollections(context.Background(), its.collectionName))
 	its.collectionNum, err = MakeTestCollection(its.server.Mongo, its.collectionName)
 	require.NoError(its.T(), err)
 }

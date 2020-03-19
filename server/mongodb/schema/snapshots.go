@@ -9,13 +9,13 @@ import (
 
 // SnapshotDoc defines the document for snapshot, stored in MongoDB
 type SnapshotDoc struct {
-	ID            string    `bson:"_id"`
-	CollectionNum uint32    `bson:"colNum"`
-	DUID          string    `bson:"duid"`
-	Sseq          uint64    `bson:"sseq"`
-	Meta          []byte    `bson:"meta"`
-	Snapshot      string    `bson:"snapshot"`
-	CreatedAt     time.Time `bson:"createdAt"`
+	ID            string      `bson:"_id"`
+	CollectionNum uint32      `bson:"colNum"`
+	DUID          string      `bson:"duid"`
+	Sseq          uint64      `bson:"sseq"`
+	Meta          []byte      `bson:"meta"`
+	Snapshot      interface{} `bson:"snapshot"`
+	CreatedAt     time.Time   `bson:"createdAt"`
 }
 
 // SnapshotDocFields defines the fields of SnapshotDoc

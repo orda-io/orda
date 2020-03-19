@@ -16,14 +16,16 @@ const (
 	ErrDatatypeTransaction
 	ErrDatatypeSnapshot
 	ErrDatatypeInvalidType
+	ErrDatatypeIllegalOperation
 )
 
 var datatypeErrFormats = map[errorCodeDatatype]string{
-	ErrDatatypeCreate:      "fail to create datatype: %s",
-	ErrDatatypeSubscribe:   "fail to subscribe datatype: %s",
-	ErrDatatypeTransaction: "fail to proceed transaction: %s",
-	ErrDatatypeSnapshot:    "fail to make a snapshot: %s",
-	ErrDatatypeInvalidType: "fail to make an operation due to invalid value type: %s",
+	ErrDatatypeCreate:           "fail to create datatype: %s",
+	ErrDatatypeSubscribe:        "fail to subscribe datatype: %s",
+	ErrDatatypeTransaction:      "fail to proceed transaction: %s",
+	ErrDatatypeSnapshot:         "fail to make a snapshot: %s",
+	ErrDatatypeInvalidType:      "fail to make an operation due to invalid value type: %s",
+	ErrDatatypeIllegalOperation: "fail to execute operation due to illegal operation: %v",
 }
 
 // DatatypeError is an error related to Datatype

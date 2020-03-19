@@ -11,11 +11,9 @@ import (
 
 func TestIntCounterTransactions(t *testing.T) {
 	tw := testonly.NewTestWire()
-	cuid1, err := model.NewCUID()
-	require.NoError(t, err)
+	cuid1 := model.NewCUID()
 
-	intCounter1, err := newIntCounter("key1", cuid1, tw, nil)
-	require.NoError(t, err)
+	intCounter1 := newIntCounter("key1", cuid1, tw, nil)
 
 	require.NoError(t, intCounter1.DoTransaction("transaction1", func(intCounter IntCounterInTxn) error {
 		_, _ = intCounter.IncreaseBy(2)
@@ -39,11 +37,8 @@ func TestIntCounterTransactions(t *testing.T) {
 
 func TestIntCounterOperationSyncWithTestWire(t *testing.T) {
 	tw := testonly.NewTestWire()
-	intCounter1, err := newIntCounter("key1", model.NewNilCUID(), tw, nil)
-	require.NoError(t, err)
-
-	intCounter2, err := newIntCounter("key2", model.NewNilCUID(), tw, nil)
-	require.NoError(t, err)
+	intCounter1 := newIntCounter("key1", model.NewNilCUID(), tw, nil)
+	intCounter2 := newIntCounter("key2", model.NewNilCUID(), tw, nil)
 
 	tw.SetDatatypes(intCounter1, intCounter2)
 

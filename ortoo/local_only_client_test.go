@@ -7,10 +7,9 @@ import (
 )
 
 func TestLocalOnlyClientTest(t *testing.T) {
-	client1, err := NewClient(NewLocalClientConfig("testCollection"), "localOnly1")
-	require.NoError(t, err)
-	client2, err := NewClient(NewLocalClientConfig("testCollection"), "localOnly2")
-	require.NoError(t, err)
+	client1 := NewClient(NewLocalClientConfig("testCollection"), "localOnly1")
+	client2 := NewClient(NewLocalClientConfig("testCollection"), "localOnly2")
+
 	intCounter1 := client1.CreateIntCounter("key", nil)
 	_, _ = intCounter1.IncreaseBy(2)
 	_, _ = intCounter1.IncreaseBy(3)

@@ -8,11 +8,7 @@ import (
 
 func TestOperationID(t *testing.T) {
 	t.Run("DUID string to DUID", func(t *testing.T) {
-		duid, err := NewDUID()
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		duid := NewDUID()
 		str := hex.EncodeToString(duid)
 		log.Logger.Infof("%s", str)
 		toDUID, err := DUIDFromString(str)

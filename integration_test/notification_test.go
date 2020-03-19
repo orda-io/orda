@@ -13,16 +13,15 @@ func (its *OrtooIntegrationTestSuite) TestNotification() {
 	key := GetFunctionName()
 	its.Run("Can notify remote change", func() {
 		config := NewTestOrtooClientConfig(its.collectionName)
-		client1, err := ortoo.NewClient(config, "client1")
-		require.NoError(its.T(), err)
+		client1 := ortoo.NewClient(config, "client1")
 
-		err = client1.Connect()
+		err := client1.Connect()
 		require.NoError(its.T(), err)
 		defer func() {
 			_ = client1.Close()
 		}()
 
-		client2, err := ortoo.NewClient(config, "client2")
+		client2 := ortoo.NewClient(config, "client2")
 		require.NoError(its.T(), err)
 		err = client2.Connect()
 		require.NoError(its.T(), err)
@@ -37,19 +36,20 @@ func (its *OrtooIntegrationTestSuite) TestNotification() {
 		fmt.Printf("Subscribed by client2\n")
 		wg := sync.WaitGroup{}
 		wg.Add(3)
-		intCounter2 := client2.SubscribeIntCounter(key, ortoo.NewIntCounterHandlers(
-			func(intCounter ortoo.IntCounter, old model.StateOfDatatype, new model.StateOfDatatype) {
+		intCounter2 := client2.SubscribeIntCounter(key, ortoo.NewHandlers(
+			func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+				intCounter := dt.(ortoo.IntCounter)
 				log.Logger.Infof("STATE: %s -> %s %d", old, new, intCounter.Get())
 				require.Equal(its.T(), int32(1), intCounter.Get())
 				wg.Done() // one time
 			},
-			func(intCounter ortoo.IntCounter, opList []interface{}) {
+			func(dt ortoo.Datatype, opList []interface{}) {
 				for _, op := range opList {
 					log.Logger.Infof("OPERATION: %+v", op)
 				}
 				wg.Done() // two times
 			},
-			func(err ...error) {
+			func(dt ortoo.Datatype, err ...error) {
 				require.NoError(its.T(), err[0])
 			}))
 		require.NoError(its.T(), client2.Sync())
