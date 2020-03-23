@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	operations2 "github.com/knowhunger/ortoo/ortoo/operations"
 )
 
 // BaseDatatype is the base datatype which contains
@@ -52,14 +53,14 @@ func (b *BaseDatatype) String() string {
 	return fmt.Sprintf("%s", b.id)
 }
 
-func (b *BaseDatatype) executeLocalBase(op model.Operation) (interface{}, error) {
+func (b *BaseDatatype) executeLocalBase(op operations2.Operation) (interface{}, error) {
 	b.SetNextOpID(op)
 	return op.ExecuteLocal(b.datatype)
 }
 
 // Replay replays an already executed operation.
-func (b *BaseDatatype) Replay(op model.Operation) error {
-	if bytes.Compare(b.opID.CUID, op.GetBase().ID.CUID) == 0 {
+func (b *BaseDatatype) Replay(op operations2.Operation) error {
+	if bytes.Compare(b.opID.CUID, op.GetID().CUID) == 0 {
 		_, err := b.executeLocalBase(op)
 		if err != nil {
 			return log.OrtooErrorf(err, "fail to replay local operation")
@@ -71,11 +72,11 @@ func (b *BaseDatatype) Replay(op model.Operation) error {
 }
 
 // SetNextOpID proceeds the operation ID next.
-func (b *BaseDatatype) SetNextOpID(op model.Operation) {
-	op.GetBase().SetOperationID(b.opID.Next())
+func (b *BaseDatatype) SetNextOpID(op operations2.Operation) {
+	op.SetOperationID(b.opID.Next())
 }
 
-func (b *BaseDatatype) executeRemoteBase(op model.Operation) {
+func (b *BaseDatatype) executeRemoteBase(op operations2.Operation) {
 	op.ExecuteRemote(b.datatype)
 }
 

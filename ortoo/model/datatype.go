@@ -11,8 +11,8 @@ type Datatype interface {
 
 	Rollback() error // @TransactionDatatype
 
-	SubscribeOrCreate(state StateOfDatatype) error          // @FinalDatatype
-	ExecuteTransactionRemote(transaction []Operation) error // @FinalDatatype
+	SubscribeOrCreate(state StateOfDatatype) error                                 // @FinalDatatype
+	ExecuteTransactionRemote(transaction []*Operation, opList []interface{}) error // @FinalDatatype
 
 	CreatePushPullPack() *PushPullPack // @WiredDatatype
 	ApplyPushPullPack(*PushPullPack)   // @WiredDatatype

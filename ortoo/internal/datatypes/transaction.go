@@ -2,7 +2,8 @@ package datatypes
 
 import (
 	"github.com/knowhunger/ortoo/ortoo/errors"
-	// "github.com/knowhunger/ortoo/ortoo"
+	operations2 "github.com/knowhunger/ortoo/ortoo/operations"
+
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"sync"
@@ -18,7 +19,7 @@ type TransactionDatatype struct {
 	isLocked         bool
 	success          bool
 	rollbackSnapshot model.Snapshot
-	rollbackOps      []model.Operation
+	rollbackOps      []operations2.Operation
 	rollbackOpID     *model.OperationID
 	currentTrxCtx    *TransactionContext
 }
@@ -26,12 +27,11 @@ type TransactionDatatype struct {
 // TransactionContext is a context used for transactions
 type TransactionContext struct {
 	tag          string
-	opBuffer     []model.Operation
-	uuid         []byte
+	opBuffer     []operations2.Operation
 	rollbackOpID *model.OperationID
 }
 
-func (t *TransactionContext) appendOperation(op model.Operation) {
+func (t *TransactionContext) appendOperation(op operations2.Operation) {
 	t.opBuffer = append(t.opBuffer, op)
 }
 
@@ -56,7 +56,7 @@ func (t *TransactionDatatype) GetWired() *WiredDatatype {
 
 // ExecuteOperationWithTransaction is a method to execute an operation with a transaction.
 // an operation can be either local or remote
-func (t *TransactionDatatype) ExecuteOperationWithTransaction(ctx *TransactionContext, op model.Operation, isLocal bool) (interface{}, error) {
+func (t *TransactionDatatype) ExecuteOperationWithTransaction(ctx *TransactionContext, op operations2.Operation, isLocal bool) (interface{}, error) {
 	transactionCtx, err := t.BeginTransaction(NotUserTransactionTag, ctx, false)
 	if err != nil {
 		return 0, t.Logger.OrtooErrorf(err, "fail to execute transaction")
@@ -104,8 +104,7 @@ func (t *TransactionDatatype) BeginTransaction(tag string, tnxCtx *TransactionCo
 	}
 	t.currentTrxCtx = t.setTransactionContextAndLock(tag)
 	if withOp {
-		op := model.NewTransactionOperation(tag)
-		t.currentTrxCtx.uuid = op.Uuid
+		op := operations2.NewTransactionOperation(tag)
 		t.SetNextOpID(op)
 		t.currentTrxCtx.appendOperation(op)
 	}
@@ -146,12 +145,11 @@ func (t *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp,
 		defer t.unlock()
 		if t.success {
 			if withOp {
-				beginOp, ok := t.currentTrxCtx.opBuffer[0].(*model.TransactionOperation)
+				beginOp, ok := t.currentTrxCtx.opBuffer[0].(*operations2.TransactionOperation)
 				if !ok {
 					return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
 				}
-				beginOp.NumOfOps = uint32(len(t.currentTrxCtx.opBuffer))
-
+				beginOp.SetNumOfOps(len(t.currentTrxCtx.opBuffer))
 			}
 			t.rollbackOps = append(t.rollbackOps, t.currentTrxCtx.opBuffer...)
 			if isLocal {
@@ -174,15 +172,4 @@ func (t *TransactionDatatype) unlock() {
 		t.mutex.Unlock()
 		t.isLocked = false
 	}
-}
-
-func validateTransaction(transaction []model.Operation) error {
-	beginOp, ok := transaction[0].(*model.TransactionOperation)
-	if !ok {
-		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
-	}
-	if int(beginOp.NumOfOps) != len(transaction) {
-		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
-	}
-	return nil
 }

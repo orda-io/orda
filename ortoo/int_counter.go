@@ -2,6 +2,8 @@ package ortoo
 
 import (
 	"encoding/json"
+	operations2 "github.com/knowhunger/ortoo/ortoo/operations"
+
 	// "errors"
 	"fmt"
 	"github.com/gogo/protobuf/types"
@@ -68,22 +70,22 @@ func (its *intCounter) GetFinal() *datatypes.FinalDatatype {
 
 // ExecuteLocal is the
 func (its *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
-	iop := op.(*model.IncreaseOperation)
-	return its.snapshot.increaseCommon(iop.Delta), nil
+	iop := op.(*operations2.IncreaseOperation)
+	return its.snapshot.increaseCommon(iop.C.Delta), nil
 }
 
 // ExecuteRemote is called by operation.ExecuteRemote()
 func (its *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
-	switch o := op.(type) {
-	case *model.SnapshotOperation:
+	switch cast := op.(type) {
+	case *operations2.SnapshotOperation:
 		newSnap := intCounterSnapshot{}
-		if err := json.Unmarshal(o.Snapshot.Value, &newSnap); err != nil {
+		if err := json.Unmarshal([]byte(cast.C.Snapshot), &newSnap); err != nil {
 			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 		}
 		its.snapshot = &newSnap
 		return nil, nil
-	case *model.IncreaseOperation:
-		return its.snapshot.increaseCommon(o.Delta), nil
+	case *operations2.IncreaseOperation:
+		return its.snapshot.increaseCommon(cast.C.Delta), nil
 	}
 
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
@@ -98,7 +100,7 @@ func (its *intCounter) Increase() (int32, error) {
 }
 
 func (its *intCounter) IncreaseBy(delta int32) (int32, error) {
-	op := model.NewIncreaseOperation(delta)
+	op := operations2.NewIncreaseOperation(delta)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return 0, log.OrtooErrorf(err, "fail to execute operation")

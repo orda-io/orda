@@ -7,17 +7,20 @@ import (
 )
 
 func TestLocalOnlyClientTest(t *testing.T) {
-	client1 := NewClient(NewLocalClientConfig("testCollection"), "localOnly1")
-	client2 := NewClient(NewLocalClientConfig("testCollection"), "localOnly2")
+	t.Run("Can make local client", func(t *testing.T) {
+		client1 := NewClient(NewLocalClientConfig("testCollection"), "localOnly1")
+		client2 := NewClient(NewLocalClientConfig("testCollection"), "localOnly2")
 
-	intCounter1 := client1.CreateIntCounter("key", nil)
-	_, _ = intCounter1.IncreaseBy(2)
-	_, _ = intCounter1.IncreaseBy(3)
-	meta, snapshot, err := intCounter1.(model.Datatype).GetMetaAndSnapshot()
+		intCounter1 := client1.CreateIntCounter("key", nil)
+		_, _ = intCounter1.IncreaseBy(2)
+		_, _ = intCounter1.IncreaseBy(3)
+		meta, snapshot, err := intCounter1.(model.Datatype).GetMetaAndSnapshot()
 
-	intCounter2 := client2.CreateIntCounter("key", nil)
+		intCounter2 := client2.CreateIntCounter("key", nil)
 
-	err = intCounter2.(model.Datatype).SetMetaAndSnapshot(meta, snapshot)
-	require.NoError(t, err)
-	require.Equal(t, intCounter1.Get(), intCounter2.Get())
+		err = intCounter2.(model.Datatype).SetMetaAndSnapshot(meta, snapshot)
+		require.NoError(t, err)
+		require.Equal(t, intCounter1.Get(), intCounter2.Get())
+	})
+
 }

@@ -129,7 +129,7 @@ func (p *PushPullPack) ToString() string {
 
 	_, _ = fmt.Fprintf(&b, "%s(%s) %s CP(%v) OP(%d){", p.Key, hex.EncodeToString(p.DUID), option.String(), p.CheckPoint.String(), len(p.Operations))
 	for _, op := range p.Operations {
-		b.WriteString(op.ToString())
+		b.WriteString(op.String())
 		b.WriteString(" =>")
 	}
 	b.WriteString("}")

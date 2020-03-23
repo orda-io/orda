@@ -16,11 +16,11 @@ const (
 	RPCErrNoClient
 )
 
-type errorCodePushPull uint32
+type ErrorCodePushPull uint32
 
 // PushPullErrXXX denotes the error when PushPull is processed.
 const (
-	PushPullErrQueryToDB errorCodePushPull = iota
+	PushPullErrQueryToDB ErrorCodePushPull = iota
 	PushPullErrIllegalFormat
 	PushPullErrDuplicateDatatypeKey
 	PushPullErrPullOperations
@@ -29,7 +29,7 @@ const (
 	PushPullErrUpdateSnapshot
 )
 
-var pushPullMap = map[errorCodePushPull]string{
+var pushPullMap = map[ErrorCodePushPull]string{
 	PushPullErrQueryToDB:            "fail to query to DB: %v",
 	PushPullErrIllegalFormat:        "illegal format: %s - %s",
 	PushPullErrDuplicateDatatypeKey: "duplicate datatype key",
@@ -68,7 +68,7 @@ func NewRPCError(code errorCodeRPC, args ...interface{}) *RPCError {
 
 // PushPullError defines PushPullError.
 type PushPullError struct {
-	Code errorCodePushPull
+	Code ErrorCodePushPull
 	Msg  string
 }
 
@@ -84,7 +84,7 @@ type PushPullTag struct {
 }
 
 // NewPushPullError generates a PushPullError.
-func NewPushPullError(code errorCodePushPull, tag PushPullTag, args ...interface{}) *PushPullError {
+func NewPushPullError(code ErrorCodePushPull, tag PushPullTag, args ...interface{}) *PushPullError {
 	format := fmt.Sprintf("[%s][%s][%s] ", tag.CollectionName, tag.Key, tag.DUID) + pushPullMap[code]
 	err := &PushPullError{
 		Code: code,

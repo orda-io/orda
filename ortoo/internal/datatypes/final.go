@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 )
 
 // FinalDatatype implements the datatype features finally used.
@@ -89,7 +90,7 @@ func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 		c.state = state
 		return nil
 	}
-	subscribeOp, err := model.NewSnapshotOperation(c.TypeOf, state, c.datatype.GetSnapshot())
+	subscribeOp, err := operations.NewSnapshotOperation(c.TypeOf, state, c.datatype.GetSnapshot())
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to subscribe")
 	}
@@ -101,27 +102,45 @@ func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 }
 
 // ExecuteTransactionRemote is a method to execute a transaction of remote operations
-func (c FinalDatatype) ExecuteTransactionRemote(transaction []model.Operation) error {
-	var transactionCtx *TransactionContext
+func (c FinalDatatype) ExecuteTransactionRemote(transaction []*model.Operation, opList []interface{}) error {
+	var trxCtx *TransactionContext
 	var err error
 	if len(transaction) > 1 {
-		if err := validateTransaction(transaction); err != nil {
-			return log.OrtooErrorf(err, "fail to validate transaction")
+		trxOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
+		if !ok {
+			return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
 		}
-		transactionOp := transaction[0].(*model.TransactionOperation)
-		transactionCtx, err = c.BeginTransaction(transactionOp.Tag, c.TransactionCtx, false)
+		if int(trxOp.GetNumOfOps()) != len(transaction) {
+			return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
+		}
+		trxCtx, err = c.BeginTransaction(trxOp.C.Tag, c.TransactionCtx, false)
 		if err != nil {
 			return log.OrtooError(err)
 		}
 		defer func() {
-			if err := c.EndTransaction(transactionCtx, false, false); err != nil {
+			if err := c.EndTransaction(trxCtx, false, false); err != nil {
 				_ = log.OrtooError(err)
 			}
 		}()
 		transaction = transaction[1:]
 	}
-	for _, op := range transaction {
-		c.ExecuteOperationWithTransaction(transactionCtx, op, false)
+	for _, modelOp := range transaction {
+		op := operations.ModelToOperation(modelOp)
+		if opList != nil {
+			opList = append(opList, op.GetAsJSON())
+		}
+		c.ExecuteOperationWithTransaction(trxCtx, op, false)
+	}
+	return nil
+}
+
+func validateTransaction(transaction []operations.Operation) error {
+	beginOp, ok := transaction[0].(*operations.TransactionOperation)
+	if !ok {
+		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
+	}
+	if int(beginOp.GetNumOfOps()) != len(transaction) {
+		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
 	}
 	return nil
 }

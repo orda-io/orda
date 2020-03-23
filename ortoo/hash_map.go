@@ -8,6 +8,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	operations2 "github.com/knowhunger/ortoo/ortoo/operations"
 )
 
 // HashMap is an Ortoo datatype which provides hash map interfaces.
@@ -61,30 +62,29 @@ func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) erro
 }
 
 func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
-	switch op.(type) {
-	case *model.PutOperation:
-		put := op.(*model.PutOperation)
-		return its.snapshot.putCommon(put.Key, put.Value, put.Base.GetTimestamp())
-	case *model.RemoveOperation:
-		remove := op.(*model.RemoveOperation)
-		return its.snapshot.removeCommon(remove.Key, remove.Base.GetTimestamp()), nil
+	switch cast := op.(type) {
+	case *operations2.PutOperation:
+
+		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.ID.GetTimestamp())
+		// case *model.RemoveOperation:
+		// 	return its.snapshot.removeCommon(remove.Key, remove.Base.GetTimestamp()), nil
 	}
 	return nil, nil
 }
 
 func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
-	switch o := op.(type) {
-	case *model.SnapshotOperation:
+	switch cast := op.(type) {
+	case *operations2.SnapshotOperation:
 		var newSnap hashMapSnapshot
-		if err := json.Unmarshal(o.Snapshot.Value, &newSnap); err != nil {
-			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-		}
+		// if err := json.Unmarshal(cast.C.Snapshot.Value, &newSnap); err != nil {
+		// 	return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		// }
 		its.snapshot = &newSnap
 		return nil, nil
-	case *model.PPutOperation:
-		return its.snapshot.putCommon(o.Key, o.Value, o.Base.GetTimestamp())
-	case *model.RemoveOperation:
-		return its.snapshot.removeCommon(o.Key, o.Base.GetTimestamp()), nil
+	case *operations2.PutOperation:
+		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.ID.GetTimestamp())
+		// case *model.RemoveOperation:
+		// 	return its.snapshot.removeCommon(o.Key, o.Base.GetTimestamp()), nil
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
@@ -122,7 +122,7 @@ func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
 	// if err != nil {
 	// 	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidType, err.Error())
 	// }
-	op := model.NewPPutOperation(key, value)
+	op := operations2.NewPutOperation(key, value)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 }
 
@@ -134,8 +134,9 @@ func (its *hashMap) Get(key string) interface{} {
 }
 
 func (its *hashMap) Remove(key string) (interface{}, error) {
-	op := model.NewRemoveOperation(key)
-	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	// op := model.NewRemoveOperation(key)
+	// return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	return nil, nil
 }
 
 // ////////////////////////////////////////////////////////////////

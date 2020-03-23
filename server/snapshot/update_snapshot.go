@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/ortoo"
-	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -57,29 +57,31 @@ func (m *Manager) UpdateSnapshot() error {
 			return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 		}
 	}
-	var transaction []model.Operation
-	var remainOfTransaction uint32 = 0
+	var transaction []*model.Operation
+	var remainOfTransaction int32 = 0
 	if err := m.mongo.GetOperations(m.ctx, m.datatypeDoc.DUID, sseq+1, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
 		// opOnWire := opDoc.Operation
-		var opOnWire model.OperationOnWire
-		if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
+		var modelOp model.Operation
+		if err := proto.Unmarshal(opDoc.Operation, &modelOp); err != nil {
 			return err
 		}
-		op := model.ToOperation(&opOnWire)
-		if op.GetBase().OpType == model.TypeOfOperation_TRANSACTION {
-			trxOp := op.(*model.TransactionOperation)
-			remainOfTransaction = trxOp.NumOfOps
+		// op := model.ToOperation(&opOnWire)
+		if modelOp.OpType == model.TypeOfOperation_TRANSACTION {
+			trxOp := operations.ModelToOperation(&modelOp).(*operations.TransactionOperation)
+			remainOfTransaction = trxOp.GetNumOfOps()
 		}
 		if remainOfTransaction > 0 {
-			transaction = append(transaction, op)
+			transaction = append(transaction, &modelOp)
 			remainOfTransaction--
 			if remainOfTransaction == 0 {
-				if err := datatype.ExecuteTransactionRemote(transaction); err != nil {
-					return log.OrtooError(err)
+				err := datatype.ExecuteTransactionRemote(transaction, nil)
+				if err != nil {
+					return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 				}
 				transaction = nil
 			}
 		} else {
+			op := operations.ModelToOperation(&modelOp)
 			_, err := op.ExecuteRemote(datatype)
 			if err != nil {
 				return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
