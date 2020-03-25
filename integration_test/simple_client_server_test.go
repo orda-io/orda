@@ -19,11 +19,11 @@ func (its *OrtooIntegrationTestSuite) TestClientServer() {
 
 		client1.CreateIntCounter(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, oldState, newState model.StateOfDatatype) {
-				// intCounter := dt.(ortoo.IntCounter)
-				// _, _ = intCounter.Increase()
-				// _, _ = intCounter.Increase()
-				// _, _ = intCounter.Increase()
-				// require.NoError(its.T(), client1.Sync())
+				intCounter := dt.(ortoo.IntCounter)
+				_, _ = intCounter.Increase()
+				_, _ = intCounter.Increase()
+				_, _ = intCounter.Increase()
+				require.NoError(its.T(), client1.Sync())
 			}, nil,
 			func(dt ortoo.Datatype, errs ...error) {
 				its.T().Fatal(errs[0])

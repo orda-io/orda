@@ -655,7 +655,7 @@ type DatatypeMeta struct {
 	Key                  string          `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	DUID                 []byte          `protobuf:"bytes,2,opt,name=DUID,proto3" json:"DUID,omitempty"`
 	OpID                 *OperationID    `protobuf:"bytes,3,opt,name=opID,proto3" json:"opID,omitempty"`
-	TypeOf               TypeOfDatatype  `protobuf:"varint,4,opt,name=typeOf,proto3,enum=model.TypeOfDatatype" json:"typeOf,omitempty"`
+	TypeOf               TypeOfDatatype  `protobuf:"varint,4,opt,name=typeOf,proto3,enum=model.Type" json:"typeOf,omitempty"`
 	State                StateOfDatatype `protobuf:"varint,5,opt,name=state,proto3,enum=model.StateOfDatatype" json:"state,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
@@ -733,7 +733,7 @@ func (m *DatatypeMeta) GetState() StateOfDatatype {
 func init() {
 	proto.RegisterEnum("model.SyncType", SyncType_name, SyncType_value)
 	proto.RegisterEnum("model.TypeOfOperation", TypeOfOperation_name, TypeOfOperation_value)
-	proto.RegisterEnum("model.TypeOfDatatype", TypeOfDatatype_name, TypeOfDatatype_value)
+	proto.RegisterEnum("model.Type", TypeOfDatatype_name, TypeOfDatatype_value)
 	proto.RegisterEnum("model.StateOfDatatype", StateOfDatatype_name, StateOfDatatype_value)
 	proto.RegisterType((*Client)(nil), "model.Client")
 	proto.RegisterType((*Timestamp)(nil), "model.Timestamp")

@@ -39,8 +39,8 @@ func (its *OrtooIntegrationTestSuite) TestHashMap() {
 			ID:  "hello",
 			Age: 10,
 		})
-		// _, _ = hashMap1.Put("Removed", "deleted")
-		// _, _ = hashMap1.Remove("Removed")
+		_, _ = hashMap1.Put("Removed", "deleted")
+		_, _ = hashMap1.Remove("Removed")
 		require.NoError(its.T(), client1.Sync())
 	})
 }

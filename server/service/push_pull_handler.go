@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
@@ -209,12 +208,8 @@ func (p *PushPullHandler) pullOperations() *model.PushPullError {
 			sseqBegin,
 			constants.InfinitySseq,
 			func(opDoc *schema.OperationDoc) error {
-				var modelOp model.Operation
-				if err := proto.Unmarshal(opDoc.Operation, &modelOp); err != nil {
-					_ = log.OrtooError(err)
-					return nil
-				}
-				operations = append(operations, &modelOp)
+				var modelOp = opDoc.GetOperation()
+				operations = append(operations, modelOp)
 				p.currentCheckPoint.Sseq = opDoc.Sseq
 				return nil
 			}); err != nil {
@@ -232,19 +227,20 @@ func (p *PushPullHandler) pushOperations() *model.PushPullError {
 		// op := model.ToOperation(modelOp)
 		if p.currentCheckPoint.Cseq+1 == op.ID.GetSeq() {
 			sseq++
-			marshaledOp, err := proto.Marshal(op)
-			if err != nil {
-				return model.NewPushPullError(model.PushPullErrPushOperations, p.getPushPullTag(), err)
-			}
-			opDoc := &schema.OperationDoc{
-				ID:            fmt.Sprintf("%s:%d", p.DUID, sseq),
-				DUID:          p.DUID,
-				CollectionNum: p.collectionDoc.Num,
-				OpType:        op.OpType.String(),
-				Sseq:          sseq,
-				Operation:     marshaledOp,
-				CreatedAt:     time.Now(),
-			}
+			// marshaledOp, err := proto.Marshal(op)
+			// if err != nil {
+			// 	return model.NewPushPullError(model.PushPullErrPushOperations, p.getPushPullTag(), err)
+			// }
+			opDoc := schema.NewOperationDoc(op, p.DUID, sseq, p.collectionDoc.Num)
+			// opDoc := &schema.OperationDoc{
+			// 	ID:            fmt.Sprintf("%s:%d", p.DUID, sseq),
+			// 	DUID:          p.DUID,
+			// 	CollectionNum: p.collectionDoc.Num,
+			// 	OpType:        op.OpType.String(),
+			// 	Sseq:          sseq,
+			// 	// Operation:     string(marshaledOp),
+			// 	CreatedAt:     time.Now(),
+			// }
 			p.pushingOperations = append(p.pushingOperations, opDoc)
 			// p.responsePushPullPack.Operations = append(p.responsePushPullPack.Operations, modelOp)
 			p.currentCheckPoint.SyncCseq(op.ID.GetSeq())

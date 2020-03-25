@@ -3,7 +3,6 @@ package snapshot
 import (
 	"context"
 	"encoding/json"
-	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
@@ -59,37 +58,33 @@ func (m *Manager) UpdateSnapshot() error {
 	}
 	var transaction []*model.Operation
 	var remainOfTransaction int32 = 0
-	if err := m.mongo.GetOperations(m.ctx, m.datatypeDoc.DUID, sseq+1, constants.InfinitySseq, func(opDoc *schema.OperationDoc) error {
-		// opOnWire := opDoc.Operation
-		var modelOp model.Operation
-		if err := proto.Unmarshal(opDoc.Operation, &modelOp); err != nil {
-			return err
-		}
-		// op := model.ToOperation(&opOnWire)
-		if modelOp.OpType == model.TypeOfOperation_TRANSACTION {
-			trxOp := operations.ModelToOperation(&modelOp).(*operations.TransactionOperation)
-			remainOfTransaction = trxOp.GetNumOfOps()
-		}
-		if remainOfTransaction > 0 {
-			transaction = append(transaction, &modelOp)
-			remainOfTransaction--
-			if remainOfTransaction == 0 {
-				err := datatype.ExecuteTransactionRemote(transaction, nil)
+	if err := m.mongo.GetOperations(m.ctx, m.datatypeDoc.DUID, sseq+1, constants.InfinitySseq,
+		func(opDoc *schema.OperationDoc) error {
+			var modelOp = opDoc.GetOperation()
+			if modelOp.OpType == model.TypeOfOperation_TRANSACTION {
+				trxOp := operations.ModelToOperation(modelOp).(*operations.TransactionOperation)
+				remainOfTransaction = trxOp.GetNumOfOps()
+			}
+			if remainOfTransaction > 0 {
+				transaction = append(transaction, modelOp)
+				remainOfTransaction--
+				if remainOfTransaction == 0 {
+					err := datatype.ExecuteTransactionRemote(transaction, nil)
+					if err != nil {
+						return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+					}
+					transaction = nil
+				}
+			} else {
+				op := operations.ModelToOperation(modelOp)
+				_, err := op.ExecuteRemote(datatype)
 				if err != nil {
 					return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 				}
-				transaction = nil
 			}
-		} else {
-			op := operations.ModelToOperation(&modelOp)
-			_, err := op.ExecuteRemote(datatype)
-			if err != nil {
-				return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
-			}
-		}
-		sseq = opDoc.Sseq
-		return nil
-	}); err != nil {
+			sseq = opDoc.Sseq
+			return nil
+		}); err != nil {
 		return err
 	}
 

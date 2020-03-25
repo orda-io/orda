@@ -36,6 +36,20 @@ func ModelToOperation(op *model.Operation) Operation {
 			BaseOperation: &BaseOperation{ID: op.ID},
 			C:             c,
 		}
+	case model.TypeOfOperation_HASH_MAP_PUT:
+		var c PutContent
+		unmarshalContent(op.Json, &c)
+		return &PutOperation{
+			BaseOperation: &BaseOperation{ID: op.ID},
+			C:             c,
+		}
+	case model.TypeOfOperation_HASH_MAP_REMOVE:
+		var c RemoveContent
+		unmarshalContent(op.Json, &c)
+		return &RemoveOperation{
+			BaseOperation: &BaseOperation{ID: op.ID},
+			C:             c,
+		}
 	}
 	panic("unsupported type of operation")
 }

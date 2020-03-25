@@ -2,12 +2,13 @@ package mongodb_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/knowhunger/ortoo/integration_test"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"gotest.tools/assert"
@@ -149,26 +150,21 @@ func TestMongo(t *testing.T) {
 	})
 
 	t.Run("Can manipulate operationDoc", func(t *testing.T) {
-		op, err := model.NewSnapshotOperation(
+		op, err := operations.NewSnapshotOperation(
 			model.TypeOfDatatype_INT_COUNTER,
 			model.StateOfDatatype_DUE_TO_CREATE,
 			&testSnapshot{Value: 1})
 		if err != nil {
 			t.Fatal(err)
 		}
-		model.ToOperationOnWire(op)
-		opb, _ := proto.Marshal(op)
+		op.ID = model.NewOperationIDWithCuid(model.NewCUID())
+		modelOp := op.ToModelOperation()
+		// opb, _ := proto.Marshal(op)
 
 		var operations []interface{}
-		opDoc := &schema.OperationDoc{
-			ID:            "test_duid:1",
-			DUID:          "test_duid",
-			CollectionNum: 1,
-			OpType:        "Snapshot",
-			Sseq:          1,
-			Operation:     opb,
-			CreatedAt:     time.Now(),
-		}
+		opDoc := schema.NewOperationDoc(modelOp, "test_duid", 1, 1)
+		log.Logger.Infof("%+v", opDoc.GetOperation())
+		log.Logger.Infof("%+v", modelOp)
 		operations = append(operations, opDoc)
 
 		_, err = mongo.DeleteOperation(context.TODO(), opDoc.DUID, 1)
@@ -188,7 +184,7 @@ func TestMongo(t *testing.T) {
 		//deletedNum,  err := mongo.DeleteOperation(context.TODO(), opDoc.DUID, 1)
 		//if err != nil || deletedNum != 1{
 		//	t.Fatal(err)
-		//}
+		// }
 
 	})
 }
@@ -197,16 +193,16 @@ type testSnapshot struct {
 	Value int32 `json:"value"`
 }
 
-func (i *testSnapshot) CloneSnapshot() model.Snapshot {
-	return &testSnapshot{
-		Value: i.Value,
+func (its *testSnapshot) GetAsJSON() (string, error) {
+	j, err := json.Marshal(its)
+	if err != nil {
+		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
+	return string(j), nil
 }
 
-func (i *testSnapshot) GetTypeURL() string {
-	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
-}
-
-func (i *testSnapshot) GetTypeAny() (*types.Any, error) {
-	return nil, nil
+func (its *testSnapshot) CloneSnapshot() model.Snapshot {
+	return &testSnapshot{
+		Value: its.Value,
+	}
 }

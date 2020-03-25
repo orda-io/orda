@@ -198,9 +198,9 @@ func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDataty
 	return &SnapshotOperation{
 		BaseOperation: NewBaseOperation(nil),
 		C: SnapshotContent{
-			TypeOfDatatype: typeOf,
-			State:          state,
-			Snapshot:       json,
+			Type:     typeOf,
+			State:    state,
+			Snapshot: json,
 		},
 	}, nil
 }
@@ -211,9 +211,9 @@ type SnapshotOperation struct {
 }
 
 type SnapshotContent struct {
-	TypeOfDatatype model.TypeOfDatatype
-	State          model.StateOfDatatype
-	Snapshot       string
+	Type     model.TypeOfDatatype
+	State    model.StateOfDatatype
+	Snapshot string
 }
 
 func (its *SnapshotOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {

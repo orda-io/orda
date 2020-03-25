@@ -3,12 +3,11 @@ package ortoo
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gogo/protobuf/types"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
-	operations2 "github.com/knowhunger/ortoo/ortoo/operations"
+	operations "github.com/knowhunger/ortoo/ortoo/operations"
 )
 
 // HashMap is an Ortoo datatype which provides hash map interfaces.
@@ -63,28 +62,27 @@ func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) erro
 
 func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
-	case *operations2.PutOperation:
-
+	case *operations.PutOperation:
 		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.ID.GetTimestamp())
-		// case *model.RemoveOperation:
-		// 	return its.snapshot.removeCommon(remove.Key, remove.Base.GetTimestamp()), nil
+	case *operations.RemoveOperation:
+		return its.snapshot.removeCommon(cast.C.Key, cast.ID.GetTimestamp()), nil
 	}
 	return nil, nil
 }
 
 func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
-	case *operations2.SnapshotOperation:
-		var newSnap hashMapSnapshot
-		// if err := json.Unmarshal(cast.C.Snapshot.Value, &newSnap); err != nil {
-		// 	return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-		// }
-		its.snapshot = &newSnap
+	case *operations.SnapshotOperation:
+		var newSnap = newHashMapSnapshot()
+		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		}
+		its.snapshot = newSnap
 		return nil, nil
-	case *operations2.PutOperation:
+	case *operations.PutOperation:
 		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.ID.GetTimestamp())
-		// case *model.RemoveOperation:
-		// 	return its.snapshot.removeCommon(o.Key, o.Base.GetTimestamp()), nil
+	case *operations.RemoveOperation:
+		return its.snapshot.removeCommon(cast.C.Key, cast.ID.GetTimestamp()), nil
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
@@ -118,11 +116,9 @@ func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot model.Snapshot) err
 }
 
 func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
-	// val, err := model.ConvertType(value)
-	// if err != nil {
-	// 	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidType, err.Error())
-	// }
-	op := operations2.NewPutOperation(key, value)
+	jsonSupportedType := model.ConvertToJSONSupportedType(value)
+
+	op := operations.NewPutOperation(key, jsonSupportedType)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 }
 
@@ -134,9 +130,8 @@ func (its *hashMap) Get(key string) interface{} {
 }
 
 func (its *hashMap) Remove(key string) (interface{}, error) {
-	// op := model.NewRemoveOperation(key)
-	// return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
-	return nil, nil
+	op := operations.NewRemoveOperation(key)
+	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -144,7 +139,7 @@ func (its *hashMap) Remove(key string) (interface{}, error) {
 // ////////////////////////////////////////////////////////////////
 
 type obj struct {
-	V model.OrtooType
+	V model.JSONType
 	T *model.Timestamp
 }
 
@@ -170,22 +165,6 @@ func (its *hashMapSnapshot) CloneSnapshot() model.Snapshot {
 	return &hashMapSnapshot{
 		Map: cloneMap,
 	}
-}
-
-func (its *hashMapSnapshot) GetTypeAny() (*types.Any, error) {
-	bin, err := json.Marshal(its)
-	if err != nil {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-	}
-	log.Logger.Infof("%s", its)
-	return &types.Any{
-		TypeUrl: its.GetTypeURL(),
-		Value:   bin,
-	}, nil
-}
-
-func (its *hashMapSnapshot) GetTypeURL() string {
-	return "github.com/knowhunger/ortoo/ortoo/hashMapSnapshot"
 }
 
 func (its *hashMapSnapshot) get(key string) interface{} {

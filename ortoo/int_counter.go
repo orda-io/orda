@@ -6,7 +6,6 @@ import (
 
 	// "errors"
 	"fmt"
-	"github.com/gogo/protobuf/types"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
@@ -165,27 +164,12 @@ func (its *intCounterSnapshot) CloneSnapshot() model.Snapshot {
 	}
 }
 
-func (its *intCounterSnapshot) GetTypeAny() (*types.Any, error) {
-	bin, err := json.Marshal(its)
-	if err != nil {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-	}
-	return &types.Any{
-		TypeUrl: its.GetTypeURL(),
-		Value:   bin,
-	}, nil
-}
-
 func (its *intCounterSnapshot) GetAsJSON() (string, error) {
 	j, err := json.Marshal(its)
 	if err != nil {
 		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	return string(j), nil
-}
-
-func (its *intCounterSnapshot) GetTypeURL() string {
-	return "github.com/knowhunger/ortoo/ortoo/intCounterSnapshot"
 }
 
 func (its *intCounterSnapshot) increaseCommon(delta int32) int32 {
