@@ -31,7 +31,7 @@ func (d DUID) String() string {
 	return UniqueID(d).String()
 }
 
-// CompareOperationID compares a DUID with another.
+// Compare compares a DUID with another.
 func (d DUID) Compare(o []byte) int {
 	return bytes.Compare(UniqueID(d), o)
 }

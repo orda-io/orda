@@ -5,49 +5,50 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/model"
 )
 
+// ModelToOperation changes a model.Operation to an operations.Operation
 func ModelToOperation(op *model.Operation) Operation {
 	switch op.OpType {
 	case model.TypeOfOperation_SNAPSHOT:
-		var c SnapshotContent
+		var c snapshotContent
 		unmarshalContent(op.Json, &c)
 		return &SnapshotOperation{
-			BaseOperation: &BaseOperation{ID: op.ID},
+			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	case model.TypeOfOperation_DELETE:
 	case model.TypeOfOperation_ERROR:
-		var c ErrorContent
+		var c errorContent
 		unmarshalContent(op.Json, &c)
 		return &ErrorOperation{
-			BaseOperation: &BaseOperation{ID: op.ID},
+			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	case model.TypeOfOperation_TRANSACTION:
-		var c TransactionContent
+		var c transactionContent
 		unmarshalContent(op.Json, &c)
 		return &TransactionOperation{
-			BaseOperation: &BaseOperation{ID: op.ID},
+			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	case model.TypeOfOperation_INT_COUNTER_INCREASE:
-		var c IncreaseContent
+		var c increaseContent
 		unmarshalContent(op.Json, &c)
 		return &IncreaseOperation{
-			BaseOperation: &BaseOperation{ID: op.ID},
+			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	case model.TypeOfOperation_HASH_MAP_PUT:
-		var c PutContent
+		var c putContent
 		unmarshalContent(op.Json, &c)
 		return &PutOperation{
-			BaseOperation: &BaseOperation{ID: op.ID},
+			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	case model.TypeOfOperation_HASH_MAP_REMOVE:
-		var c RemoveContent
+		var c removeContent
 		unmarshalContent(op.Json, &c)
 		return &RemoveOperation{
-			BaseOperation: &BaseOperation{ID: op.ID},
+			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	}

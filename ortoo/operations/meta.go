@@ -19,27 +19,28 @@ type Operation interface {
 	GetAsJSON() interface{}
 }
 
-// ////////////////// BaseOperation ////////////////////
+// ////////////////// baseOperation ////////////////////
 
-func NewBaseOperation(opID *model.OperationID) *BaseOperation {
-	return &BaseOperation{
+func newBaseOperation(opID *model.OperationID) *baseOperation {
+	return &baseOperation{
 		ID: opID,
 	}
 }
 
-type BaseOperation struct {
+type baseOperation struct {
 	ID *model.OperationID
 }
 
-func (its *BaseOperation) SetOperationID(opID *model.OperationID) {
+func (its *baseOperation) SetOperationID(opID *model.OperationID) {
 	its.ID = opID
 }
 
-func (its *BaseOperation) GetID() *model.OperationID {
+func (its *baseOperation) GetID() *model.OperationID {
 	return its.ID
 }
 
-func (its *BaseOperation) GetAsJSON() interface{} {
+// GetAsJSON returns the operation in the format of JSON compatible struct.
+func (its *baseOperation) GetAsJSON() interface{} {
 	return struct {
 		Era     uint32
 		Lamport uint64
@@ -59,41 +60,48 @@ func toString(id *model.OperationID, content interface{}) string {
 
 // ////////////////// TransactionOperation ////////////////////
 
+// NewTransactionOperation creates a TransactionOperation.
 func NewTransactionOperation(tag string) *TransactionOperation {
 	return &TransactionOperation{
-		BaseOperation: NewBaseOperation(nil),
-		C: TransactionContent{
+		baseOperation: newBaseOperation(nil),
+		C: transactionContent{
 			Tag: tag,
 		},
 	}
 }
 
-type TransactionContent struct {
+type transactionContent struct {
 	Tag      string
 	NumOfOps int32
 }
 
+// TransactionOperation is used to begin a transaction.
 type TransactionOperation struct {
-	*BaseOperation
-	C TransactionContent
+	*baseOperation
+	C transactionContent
 }
 
+// GetType returns the type of operation.
 func (its *TransactionOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_TRANSACTION
 }
 
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *TransactionOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
 	return nil, nil
 }
 
+// ExecuteRemote enables the operation to perform something at the remote clients.
 func (its *TransactionOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
 	return nil, nil
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *TransactionOperation) String() string {
 	return toString(its.ID, its.C)
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *TransactionOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
@@ -102,56 +110,64 @@ func (its *TransactionOperation) ToModelOperation() *model.Operation {
 	}
 }
 
+// SetNumOfOps sets the number operations in the transaction.
 func (its *TransactionOperation) SetNumOfOps(numOfOps int) {
 	its.C.NumOfOps = int32(numOfOps)
 }
 
+// GetNumOfOps returns the number operations in the transaction.
 func (its *TransactionOperation) GetNumOfOps() int32 {
 	return its.C.NumOfOps
 }
 
+// GetAsJSON returns the operation in the format of JSON compatible struct.
 func (its *TransactionOperation) GetAsJSON() interface{} {
-	return &struct {
+	return struct {
 		ID   interface{}
 		Type string
-		TransactionContent
+		transactionContent
 	}{
-		ID:                 its.BaseOperation.GetAsJSON(),
+		ID:                 its.baseOperation.GetAsJSON(),
 		Type:               model.TypeOfOperation_TRANSACTION.String(),
-		TransactionContent: its.C,
+		transactionContent: its.C,
 	}
 }
 
 // ////////////////// ErrorOperation ////////////////////
 
+// NewErrorOperation creates an ErrorOperation.
 func NewErrorOperation(err *model.PushPullError) *ErrorOperation {
 	return &ErrorOperation{
-		BaseOperation: nil,
-		C: ErrorContent{
+		baseOperation: nil,
+		C: errorContent{
 			Code: int32(err.Code),
 			Msg:  err.Msg,
 		},
 	}
 }
 
-type ErrorContent struct {
+type errorContent struct {
 	Code int32
 	Msg  string
 }
 
+// ErrorOperation is used to deliver an error.
 type ErrorOperation struct {
-	*BaseOperation
-	C ErrorContent
+	*baseOperation
+	C errorContent
 }
 
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *ErrorOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
 	panic("should not be called")
 }
 
+// ExecuteRemote enables the operation to perform something at the remote clients.
 func (its *ErrorOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
 	panic("should not be called")
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *ErrorOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
@@ -160,6 +176,7 @@ func (its *ErrorOperation) ToModelOperation() *model.Operation {
 	}
 }
 
+// GetType returns the type of operation.
 func (its *ErrorOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_ERROR
 }
@@ -168,15 +185,16 @@ func (its *ErrorOperation) String() string {
 	return toString(its.ID, its.C)
 }
 
+// GetAsJSON returns the operation in the format of JSON compatible struct.
 func (its *ErrorOperation) GetAsJSON() interface{} {
-	return &struct {
+	return struct {
 		ID   interface{}
 		Type string
-		ErrorContent
+		errorContent
 	}{
-		ID:           its.BaseOperation.GetAsJSON(),
+		ID:           its.baseOperation.GetAsJSON(),
 		Type:         model.TypeOfOperation_ERROR.String(),
-		ErrorContent: its.C,
+		errorContent: its.C,
 	}
 }
 
@@ -190,14 +208,15 @@ func (its *ErrorOperation) GetPushPullError() *model.PushPullError {
 
 // ////////////////// SnapshotOperation ////////////////////
 
+// NewSnapshotOperation creates a SnapshotOperation
 func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDatatype, snapshot model.Snapshot) (*SnapshotOperation, error) {
 	json, err := snapshot.GetAsJSON()
 	if err != nil {
 		return nil, log.OrtooError(err)
 	}
 	return &SnapshotOperation{
-		BaseOperation: NewBaseOperation(nil),
-		C: SnapshotContent{
+		baseOperation: newBaseOperation(nil),
+		C: snapshotContent{
 			Type:     typeOf,
 			State:    state,
 			Snapshot: json,
@@ -205,26 +224,30 @@ func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDataty
 	}, nil
 }
 
-type SnapshotOperation struct {
-	*BaseOperation
-	C SnapshotContent
-}
-
-type SnapshotContent struct {
+type snapshotContent struct {
 	Type     model.TypeOfDatatype
 	State    model.StateOfDatatype
 	Snapshot string
 }
 
+// SnapshotOperation is used to deliver the snapshot of a datatype.
+type SnapshotOperation struct {
+	*baseOperation
+	C snapshotContent
+}
+
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *SnapshotOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
 	datatype.SetState(its.C.State)
 	return nil, nil
 }
 
+// ExecuteRemote enables the operation to perform something at the remote clients.
 func (its *SnapshotOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *SnapshotOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
@@ -233,6 +256,7 @@ func (its *SnapshotOperation) ToModelOperation() *model.Operation {
 	}
 }
 
+// GetType returns the type of operation.
 func (its *SnapshotOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_SNAPSHOT
 }
@@ -241,14 +265,15 @@ func (its *SnapshotOperation) String() string {
 	return toString(its.ID, its.C)
 }
 
+// GetAsJSON returns the operation in the format of JSON compatible struct.
 func (its *SnapshotOperation) GetAsJSON() interface{} {
-	return &struct {
+	return struct {
 		ID   interface{}
 		Type string
-		SnapshotContent
+		snapshotContent
 	}{
-		ID:              its.BaseOperation.GetAsJSON(),
+		ID:              its.baseOperation.GetAsJSON(),
 		Type:            model.TypeOfOperation_SNAPSHOT.String(),
-		SnapshotContent: its.C,
+		snapshotContent: its.C,
 	}
 }

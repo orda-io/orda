@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
+	"github.com/knowhunger/ortoo/ortoo/internal/types"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
@@ -38,9 +39,7 @@ func newHashMap(key string, cuid model.CUID, wire datatypes.Wire, handlers *Hand
 
 type hashMap struct {
 	*datatype
-	// *datatypes.FinalDatatype
 	snapshot *hashMapSnapshot
-	// handler  *HashMapHandlers
 }
 
 func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) error) error {
@@ -107,16 +106,18 @@ func (its *hashMap) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
 	return meta, its.snapshot, nil
 }
 
-func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot model.Snapshot) error {
+func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := its.FinalDatatype.SetMeta(meta); err != nil {
 		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
-	its.snapshot = snapshot.(*hashMapSnapshot)
+	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
 	return nil
 }
 
 func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
-	jsonSupportedType := model.ConvertToJSONSupportedType(value)
+	jsonSupportedType := types.ConvertToJSONSupportedType(value)
 
 	op := operations.NewPutOperation(key, jsonSupportedType)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -139,7 +140,7 @@ func (its *hashMap) Remove(key string) (interface{}, error) {
 // ////////////////////////////////////////////////////////////////
 
 type obj struct {
-	V model.JSONType
+	V types.JSONType
 	T *model.Timestamp
 }
 

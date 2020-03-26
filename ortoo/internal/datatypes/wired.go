@@ -69,7 +69,6 @@ func (w *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation) ([]
 	var opList []interface{}
 	for i := 0; i < len(ops); {
 		modelOp := ops[i]
-
 		var transaction []*model.Operation
 		switch modelOp.GetOpType() {
 		case model.TypeOfOperation_TRANSACTION:
@@ -81,8 +80,7 @@ func (w *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation) ([]
 			transaction = []*model.Operation{modelOp}
 			i++
 		}
-		var trxList = make([]interface{}, 0)
-		err := datatype.ExecuteTransactionRemote(transaction, trxList)
+		trxList, err := datatype.ExecuteTransactionRemote(transaction, true)
 		if err != nil {
 			return nil, w.Logger.OrtooErrorf(err, "fail to execute Transaction")
 		}

@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Compare is used to compared with another Timestamp.
 func (t *Timestamp) Compare(o *Timestamp) int {
 	retEra := int32(t.Era - o.Era)
 	if retEra > 0 {
@@ -23,6 +24,7 @@ func (t *Timestamp) Compare(o *Timestamp) int {
 	return bytes.Compare(t.CUID, o.CUID)
 }
 
+// ToString is used to get string for Timestamp
 func (t *Timestamp) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]", t.Era, t.Lamport, hex.EncodeToString(t.CUID), t.Delimiter)

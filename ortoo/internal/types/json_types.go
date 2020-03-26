@@ -1,10 +1,11 @@
-package model
+package types
 
 import (
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"math"
 )
 
+// JSONType is an internal type used in storing various types, for converting any type to JSON supported type.
 type JSONType interface{}
 
 // ConvertToJSONSupportedType converts any type of Go into a type that is supported by JSON

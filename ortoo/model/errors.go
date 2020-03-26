@@ -16,6 +16,7 @@ const (
 	RPCErrNoClient
 )
 
+// ErrorCodePushPull defines error codes for PushPull
 type ErrorCodePushPull uint32
 
 // PushPullErrXXX denotes the error when PushPull is processed.

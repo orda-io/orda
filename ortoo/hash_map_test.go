@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -50,7 +51,9 @@ func TestHashMap(t *testing.T) {
 		clone := newHashMap("key2", model.NewCUID(), nil, nil)
 		meta, snap, err := hashMap1.(model.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
-		err = clone.(model.Datatype).SetMetaAndSnapshot(meta, snap)
+		snapB, err := json.Marshal(snap)
+		require.NoError(t, err)
+		err = clone.(model.Datatype).SetMetaAndSnapshot(meta, string(snapB))
 		require.NoError(t, err)
 	})
 

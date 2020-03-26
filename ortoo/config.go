@@ -2,7 +2,7 @@ package ortoo
 
 import "github.com/knowhunger/ortoo/ortoo/model"
 
-// OrtooClientConfig is a configuration for OrtooClient
+// ClientConfig is a configuration for OrtooClient
 type ClientConfig struct {
 	Address          string
 	CollectionName   string
@@ -10,6 +10,7 @@ type ClientConfig struct {
 	SyncType         model.SyncType
 }
 
+// NewLocalClientConfig makes a new local client which do not synchronize with OrtooServer
 func NewLocalClientConfig(collectionName string) *ClientConfig {
 	return &ClientConfig{
 		Address:          "",

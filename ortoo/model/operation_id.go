@@ -90,7 +90,7 @@ func (o *OperationID) ToString() string {
 	return b.String()
 }
 
-// CompareOperationID compares two operationIDs.
+// Compare compares two operationIDs.
 func (o *OperationID) Compare(other *OperationID) int {
 	retEra := int32(o.Era - other.Era)
 	if retEra > 0 {

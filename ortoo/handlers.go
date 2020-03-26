@@ -19,6 +19,7 @@ type Handlers struct {
 	errorHandler           func(dt Datatype, errs ...error)
 }
 
+// NewHandlers creates a set of handlers for a datatype.
 func NewHandlers(
 	stateChangeHandler func(dt Datatype, old model.StateOfDatatype, new model.StateOfDatatype),
 	remoteOperationHandler func(dt Datatype, opList []interface{}),

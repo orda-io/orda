@@ -89,6 +89,7 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 	return nil
 }
 
+// ResetCollections resets all collections related to collectionName
 func (r *RepositoryMongo) ResetCollections(ctx context.Context, collectionName string) error {
 	if err := r.PurgeAllDocumentsOfCollection(ctx, collectionName); err != nil {
 		return log.OrtooError(err)

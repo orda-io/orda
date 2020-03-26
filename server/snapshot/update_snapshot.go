@@ -52,7 +52,7 @@ func (m *Manager) UpdateSnapshot() error {
 	}
 	if snapshotDoc != nil {
 		sseq = snapshotDoc.Sseq
-		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot.(model.Snapshot)); err != nil {
+		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot); err != nil {
 			return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 		}
 	}
@@ -69,7 +69,7 @@ func (m *Manager) UpdateSnapshot() error {
 				transaction = append(transaction, modelOp)
 				remainOfTransaction--
 				if remainOfTransaction == 0 {
-					err := datatype.ExecuteTransactionRemote(transaction, nil)
+					_, err := datatype.ExecuteTransactionRemote(transaction, false)
 					if err != nil {
 						return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 					}
@@ -92,11 +92,11 @@ func (m *Manager) UpdateSnapshot() error {
 	if err != nil {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
-	snapStr, err := json.Marshal(snap)
+	snapb, err := json.Marshal(snap)
 	if err != nil {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
-	if err := m.mongo.InsertSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID, sseq, meta, string(snapStr)); err != nil {
+	if err := m.mongo.InsertSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID, sseq, meta, string(snapb)); err != nil {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 

@@ -11,18 +11,18 @@ type Datatype interface {
 
 	Rollback() error // @TransactionDatatype
 
-	SubscribeOrCreate(state StateOfDatatype) error                                 // @FinalDatatype
-	ExecuteTransactionRemote(transaction []*Operation, opList []interface{}) error // @FinalDatatype
+	SubscribeOrCreate(state StateOfDatatype) error                                             // @FinalDatatype
+	ExecuteTransactionRemote(transaction []*Operation, obtainList bool) ([]interface{}, error) // @FinalDatatype
 
 	CreatePushPullPack() *PushPullPack // @WiredDatatype
 	ApplyPushPullPack(*PushPullPack)   // @WiredDatatype
 	NeedSync(sseq uint64) bool         // @WiredDatatype
 
-	ExecuteLocal(op interface{}) (interface{}, error)        // @Real datatype
-	ExecuteRemote(op interface{}) (interface{}, error)       // @Real datatype
-	GetSnapshot() Snapshot                                   // @Real datatype
-	GetMetaAndSnapshot() ([]byte, Snapshot, error)           // @Real datatype
-	SetMetaAndSnapshot(meta []byte, snapshot Snapshot) error // @Real datatype
+	ExecuteLocal(op interface{}) (interface{}, error)      // @Real datatype
+	ExecuteRemote(op interface{}) (interface{}, error)     // @Real datatype
+	GetSnapshot() Snapshot                                 // @Real datatype
+	GetMetaAndSnapshot() ([]byte, Snapshot, error)         // @Real datatype
+	SetMetaAndSnapshot(meta []byte, snapshot string) error // @Real datatype
 
 	HandleStateChange(old, new StateOfDatatype)      // @ortoo.Datatype
 	HandleErrors(errs ...error)                      // @ortoo.Datatype

@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// NewOperationDoc creates a new OperationDoc with the given parameters
 func NewOperationDoc(op *model.Operation, duid string, sseq uint64, colNum uint32) *OperationDoc {
 
 	return &OperationDoc{
@@ -41,6 +42,7 @@ type OperationDoc struct {
 	CreatedAt     time.Time `bson:"createdAt"`
 }
 
+// GetOperation returns a model.Operation by composing parameters of OperationDoc.
 func (its *OperationDoc) GetOperation() *model.Operation {
 	opID := &model.OperationID{
 		Era:     its.Era,

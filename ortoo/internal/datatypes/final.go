@@ -1,7 +1,7 @@
 package datatypes
 
 import (
-	"github.com/gogo/protobuf/proto"
+	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -46,7 +46,7 @@ func (c *FinalDatatype) GetMeta() ([]byte, error) {
 		TypeOf: c.TypeOf,
 		State:  c.state,
 	}
-	metab, err := proto.Marshal(&meta)
+	metab, err := json.Marshal(&meta)
 	if err != nil {
 		return nil, log.OrtooError(err)
 	}
@@ -56,7 +56,7 @@ func (c *FinalDatatype) GetMeta() ([]byte, error) {
 // SetMeta sets the metadata with binary metadata.
 func (c *FinalDatatype) SetMeta(meta []byte) error {
 	m := model.DatatypeMeta{}
-	if err := proto.Unmarshal(meta, &m); err != nil {
+	if err := json.Unmarshal(meta, &m); err != nil {
 		return log.OrtooError(err)
 	}
 	c.Key = m.Key
@@ -67,6 +67,7 @@ func (c *FinalDatatype) SetMeta(meta []byte) error {
 	return nil
 }
 
+// DoTransaction enables datatypes to perform a transaction.
 func (c *FinalDatatype) DoTransaction(tag string, fn func(txnCtx *TransactionContext) error) error {
 	txnCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
 	if err != nil {
@@ -102,20 +103,20 @@ func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 }
 
 // ExecuteTransactionRemote is a method to execute a transaction of remote operations
-func (c FinalDatatype) ExecuteTransactionRemote(transaction []*model.Operation, opList []interface{}) error {
+func (c FinalDatatype) ExecuteTransactionRemote(transaction []*model.Operation, obtainList bool) ([]interface{}, error) {
 	var trxCtx *TransactionContext
 	var err error
 	if len(transaction) > 1 {
 		trxOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
 		if !ok {
-			return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
 		}
 		if int(trxOp.GetNumOfOps()) != len(transaction) {
-			return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
 		}
 		trxCtx, err = c.BeginTransaction(trxOp.C.Tag, c.TransactionCtx, false)
 		if err != nil {
-			return log.OrtooError(err)
+			return nil, log.OrtooError(err)
 		}
 		defer func() {
 			if err := c.EndTransaction(trxCtx, false, false); err != nil {
@@ -124,23 +125,16 @@ func (c FinalDatatype) ExecuteTransactionRemote(transaction []*model.Operation, 
 		}()
 		transaction = transaction[1:]
 	}
+	var opList []interface{}
 	for _, modelOp := range transaction {
 		op := operations.ModelToOperation(modelOp)
-		if opList != nil {
+		if obtainList {
 			opList = append(opList, op.GetAsJSON())
 		}
-		c.ExecuteOperationWithTransaction(trxCtx, op, false)
+		_, err := c.ExecuteOperationWithTransaction(trxCtx, op, false)
+		if err != nil {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, err.Error())
+		}
 	}
-	return nil
-}
-
-func validateTransaction(transaction []operations.Operation) error {
-	beginOp, ok := transaction[0].(*operations.TransactionOperation)
-	if !ok {
-		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
-	}
-	if int(beginOp.GetNumOfOps()) != len(transaction) {
-		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
-	}
-	return nil
+	return opList, nil
 }

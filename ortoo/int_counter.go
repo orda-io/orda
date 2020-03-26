@@ -2,7 +2,7 @@ package ortoo
 
 import (
 	"encoding/json"
-	operations2 "github.com/knowhunger/ortoo/ortoo/operations"
+	operations "github.com/knowhunger/ortoo/ortoo/operations"
 
 	// "errors"
 	"fmt"
@@ -29,7 +29,6 @@ type IntCounterInTxn interface {
 type intCounter struct {
 	*datatype
 	snapshot *intCounterSnapshot
-	// handler  *IntCounterHandlers
 }
 
 // newIntCounter creates a new int counter
@@ -69,21 +68,21 @@ func (its *intCounter) GetFinal() *datatypes.FinalDatatype {
 
 // ExecuteLocal is the
 func (its *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
-	iop := op.(*operations2.IncreaseOperation)
+	iop := op.(*operations.IncreaseOperation)
 	return its.snapshot.increaseCommon(iop.C.Delta), nil
 }
 
 // ExecuteRemote is called by operation.ExecuteRemote()
 func (its *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
-	case *operations2.SnapshotOperation:
+	case *operations.SnapshotOperation:
 		newSnap := intCounterSnapshot{}
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), &newSnap); err != nil {
 			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 		}
 		its.snapshot = &newSnap
 		return nil, nil
-	case *operations2.IncreaseOperation:
+	case *operations.IncreaseOperation:
 		return its.snapshot.increaseCommon(cast.C.Delta), nil
 	}
 
@@ -99,7 +98,7 @@ func (its *intCounter) Increase() (int32, error) {
 }
 
 func (its *intCounter) IncreaseBy(delta int32) (int32, error) {
-	op := operations2.NewIncreaseOperation(delta)
+	op := operations.NewIncreaseOperation(delta)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return 0, log.OrtooErrorf(err, "fail to execute operation")
@@ -133,20 +132,17 @@ func (its *intCounter) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
 	if err != nil {
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
-	// jsonb, err := json.Marshal(its.snapshot)
-	// if err != nil {
-	// 	return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-	// }
-
 	return meta, its.snapshot, nil
 }
 
-func (its *intCounter) SetMetaAndSnapshot(meta []byte, snapshot model.Snapshot) error {
+func (its *intCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := its.FinalDatatype.SetMeta(meta); err != nil {
 		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
 
-	its.snapshot = snapshot.(*intCounterSnapshot)
+	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
 	return nil
 }
 

@@ -72,6 +72,7 @@ func (c *DatatypeDoc) ToUpdateBSON() bson.D {
 	}
 }
 
+// GetType returns the type of datatype.
 func (c *DatatypeDoc) GetType() model.TypeOfDatatype {
 	return model.TypeOfDatatype(model.TypeOfDatatype_value[c.Type])
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/model"
 )
 
+// Datatype is an Ortoo Datatype which provides common interfaces.
 type Datatype interface {
 	datatypes.PublicWiredDatatypeInterface
 }
