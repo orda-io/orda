@@ -6,7 +6,7 @@ type Config struct {
 	OrtooDB string `json:"MongoOrtoo"`
 }
 
-// NewTestMongoDBConfig ...
+// NewTestMongoDBConfig creates a new MongoDBConfig for Test
 func NewTestMongoDBConfig(dbName string) *Config {
 	return &Config{
 		Host:    "mongodb://root:ortoo-test@localhost:27017",

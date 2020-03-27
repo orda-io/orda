@@ -52,11 +52,11 @@ func NewOrtooServer(ctx context.Context, conf *OrtooServerConfig) (*OrtooServer,
 // Start start the Ortoo Server
 func (o *OrtooServer) Start() error {
 
-	lis, err := net.Listen("tcp", o.conf.Host)
+	lis, err := net.Listen("tcp", o.conf.OrtooServer)
 	if err != nil {
 		log.Logger.Fatalf("fail to listen: %v", err)
 	}
-	o.notifier, err = notification.NewNotifier(o.conf.PubSubAddr)
+	o.notifier, err = notification.NewNotifier(o.conf.NotificationAddr)
 	if err != nil {
 		return log.OrtooError(err)
 	}

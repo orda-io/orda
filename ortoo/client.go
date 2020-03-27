@@ -14,7 +14,7 @@ type Client interface {
 	Close() error
 	Sync() error
 	IsConnected() bool
-	CreateDatatype(key string, typeOf model.TypeOfDatatype) model.Datatype
+	CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype
 
 	CreateIntCounter(key string, handlers *Handlers) IntCounter
 	SubscribeOrCreateIntCounter(key string, handlers *Handlers) IntCounter
@@ -59,7 +59,7 @@ func NewClient(conf *ClientConfig, alias string) Client {
 	var messageManager *managers.MessageManager = nil
 	var datatypeManager *managers.DatatypeManager = nil
 	if conf.SyncType != model.SyncType_LOCAL_ONLY {
-		messageManager = managers.NewMessageManager(ctx, clientModel, conf.Address, notificationManager)
+		messageManager = managers.NewMessageManager(ctx, clientModel, conf.ServerAddr, notificationManager)
 		datatypeManager = managers.NewDatatypeManager(ctx, messageManager, notificationManager, clientModel.Collection, clientModel.CUID)
 	}
 	return &clientImpl{
@@ -76,12 +76,12 @@ func (c *clientImpl) IsConnected() bool {
 	return c.state == connected
 }
 
-func (c *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype) model.Datatype {
+func (c *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype {
 	switch typeOf {
 	case model.TypeOfDatatype_INT_COUNTER:
-		return c.CreateIntCounter(key, nil).(model.Datatype)
+		return c.CreateIntCounter(key, handlers).(Datatype)
 	case model.TypeOfDatatype_HASH_MAP:
-		return c.CreateHashMap(key, nil).(model.Datatype)
+		return c.CreateHashMap(key, handlers).(Datatype)
 	}
 	return nil
 }

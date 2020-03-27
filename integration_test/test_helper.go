@@ -45,7 +45,7 @@ func GetMongo(dbName string) (*mongodb.RepositoryMongo, error) {
 // NewTestOrtooClientConfig generates an OrtooClientConfig for testing.
 func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 	return &ortoo.ClientConfig{
-		Address:          "127.0.0.1:19061",
+		ServerAddr:       "127.0.0.1:19061",
 		CollectionName:   collectionName,
 		NotificationAddr: "127.0.0.1:1883",
 		SyncType:         model.SyncType_NOTIFIABLE,
@@ -55,9 +55,9 @@ func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 // NewTestOrtooServerConfig generates an OrtooServerConfig for testing.
 func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
-		Host:       "127.0.0.1:19061",
-		PubSubAddr: "127.0.0.1:1883",
-		Mongo:      mongodb.NewTestMongoDBConfig(dbName),
+		OrtooServer:      "127.0.0.1:19061",
+		NotificationAddr: "127.0.0.1:1883",
+		Mongo:            mongodb.NewTestMongoDBConfig(dbName),
 	}
 }
 
