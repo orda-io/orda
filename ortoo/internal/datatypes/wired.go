@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/internal/constants"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 )
 
 // Wire defines the interfaces related to delivering operations. This is called when a datatype needs to send messages
@@ -19,7 +20,7 @@ type WiredDatatype struct {
 	*BaseDatatype
 	wire       Wire
 	checkPoint *model.CheckPoint
-	buffer     []*model.OperationOnWire
+	buffer     []*model.Operation
 }
 
 // PublicWiredDatatypeInterface defines the interface related to the synchronization with Ortoo server
@@ -30,20 +31,20 @@ type PublicWiredDatatypeInterface interface {
 // WiredDatatypeInterface defines the internal interface related to the synchronization with Ortoo server
 type WiredDatatypeInterface interface {
 	GetBase() *BaseDatatype
-	ExecuteRemote(op model.Operation)
-	ReceiveRemoteOperationsOnWire(operations []*model.OperationOnWire) error
+	ExecuteRemote(op operations.Operation)
+	ReceiveRemoteOperationsOnWire(operations []*model.Operation) error
 	ApplyPushPullPack(*model.PushPullPack)
 	CreatePushPullPack() *model.PushPullPack
 }
 
 // newWiredDatatype creates a new wiredDatatype
-func newWiredDatatype(b *BaseDatatype, w Wire) (*WiredDatatype, error) {
+func newWiredDatatype(b *BaseDatatype, w Wire) *WiredDatatype {
 	return &WiredDatatype{
 		BaseDatatype: b,
 		checkPoint:   model.NewCheckPoint(),
-		buffer:       make([]*model.OperationOnWire, 0, constants.OperationBufferSize),
+		buffer:       make([]*model.Operation, 0, constants.OperationBufferSize),
 		wire:         w,
-	}, nil
+	}
 }
 
 // GetBase returns BaseDatatype
@@ -56,47 +57,46 @@ func (w *WiredDatatype) String() string {
 }
 
 // ExecuteRemote ...
-func (w *WiredDatatype) ExecuteRemote(op model.Operation) {
-	w.opID.SyncLamport(op.GetBase().GetID().Lamport)
+func (w *WiredDatatype) ExecuteRemote(op operations.Operation) {
+	w.opID.SyncLamport(op.GetID().Lamport)
 	w.executeRemoteBase(op)
 }
 
-// ReceiveRemoteOperationsOnWire ...
-func (w *WiredDatatype) ReceiveRemoteOperationsOnWire(operations []*model.OperationOnWire) ([]interface{}, error) {
+// ReceiveRemoteModelOperations ...
+func (w *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation) ([]interface{}, error) {
 
-	finalDatatype := w.datatype
+	datatype := w.datatype
 	var opList []interface{}
-	for i := 0; i < len(operations); {
-		op := model.ToOperation(operations[i])
-		opList = append(opList, op.GetAsJSON())
-		var transaction []model.Operation
-		switch cast := op.(type) {
-		case *model.TransactionOperation:
-			transactionOnWire := operations[i : i+int(cast.NumOfOps)]
-			for _, opOnWire := range transactionOnWire {
-				transaction = append(transaction, model.ToOperation(opOnWire))
-			}
-			i += int(cast.NumOfOps)
+	for i := 0; i < len(ops); {
+		modelOp := ops[i]
+		var transaction []*model.Operation
+		switch modelOp.GetOpType() {
+		case model.TypeOfOperation_TRANSACTION:
+			trxOp := operations.ModelToOperation(modelOp).(*operations.TransactionOperation)
+			opList = append(opList, trxOp)
+			transaction = ops[i : i+int(trxOp.GetNumOfOps())]
+			i += int(trxOp.GetNumOfOps())
 		default:
-			transaction = []model.Operation{op}
+			transaction = []*model.Operation{modelOp}
 			i++
 		}
-		err := finalDatatype.ExecuteTransactionRemote(transaction)
+		trxList, err := datatype.ExecuteTransactionRemote(transaction, true)
 		if err != nil {
 			return nil, w.Logger.OrtooErrorf(err, "fail to execute Transaction")
 		}
+		opList = append(opList, trxList)
 	}
 	return opList, nil
 }
 
-func (w *WiredDatatype) applyPushPullPackExecuteOperations(operationsOnWire []*model.OperationOnWire) ([]interface{}, error) {
-	return w.ReceiveRemoteOperationsOnWire(operationsOnWire)
+func (w *WiredDatatype) applyPushPullPackExecuteOperations(operations []*model.Operation) ([]interface{}, error) {
+	return w.ReceiveRemoteModelOperations(operations)
 }
 
 // CreatePushPullPack ...
 func (w *WiredDatatype) CreatePushPullPack() *model.PushPullPack {
 	seq := w.checkPoint.Cseq
-	operations := w.getOperationOnWires(seq + 1)
+	operations := w.getModelOperations(seq + 1)
 	cp := &model.CheckPoint{
 		Sseq: w.checkPoint.GetSseq(),
 		Cseq: w.checkPoint.GetCseq() + uint64(len(operations)),
@@ -129,8 +129,8 @@ func (w *WiredDatatype) calculatePullingOperations(newCheckPoint *model.CheckPoi
 
 func (w *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error {
 	if ppp.GetPushPullPackOption().HasErrorBit() {
-		opOnWire := ppp.GetOperations()[0]
-		errOp, ok := model.ToOperation(opOnWire).(*model.ErrorOperation)
+		modelOp := ppp.GetOperations()[0]
+		errOp, ok := operations.ModelToOperation(modelOp).(*operations.ErrorOperation)
 		if ok {
 			switch errOp.GetPushPullError().Code {
 			case model.PushPullErrQueryToDB:
@@ -222,30 +222,33 @@ func (w *WiredDatatype) applyPushPullPackCallHandler(errs []error, oldState, new
 		w.datatype.HandleStateChange(oldState, newState)
 	}
 	if len(errs) > 0 {
-		w.datatype.HandleError(errs)
+		w.datatype.HandleErrors(errs...)
 	}
 	if len(opList) > 0 {
 		w.datatype.HandleRemoteOperations(opList)
 	}
 }
 
-func (w *WiredDatatype) getOperationOnWires(cseq uint64) []*model.OperationOnWire {
+func (w *WiredDatatype) getModelOperations(cseq uint64) []*model.Operation {
 
 	if len(w.buffer) == 0 {
-		return []*model.OperationOnWire{}
+		return []*model.Operation{}
 	}
-	op := model.ToOperation(w.buffer[0])
-	startCseq := op.GetBase().ID.GetSeq()
+	op := w.buffer[0]
+	startCseq := op.ID.GetSeq()
 	var start = int(cseq - startCseq)
 	if len(w.buffer) > start {
 		return w.buffer[start:]
 	}
-	return []*model.OperationOnWire{}
+	return []*model.Operation{}
 }
 
-func (w *WiredDatatype) deliverTransaction(transaction []model.Operation) {
+func (w *WiredDatatype) deliverTransaction(transaction []operations.Operation) {
+	if w.wire == nil {
+		return
+	}
 	for _, op := range transaction {
-		w.buffer = append(w.buffer, model.ToOperationOnWire(op))
+		w.buffer = append(w.buffer, op.ToModelOperation())
 	}
 	w.wire.DeliverTransaction(w)
 }

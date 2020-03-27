@@ -20,8 +20,42 @@
  # make protoc-gen
  ```
 
-## For developers 
+## How to use Ortoo
 
-### Reading first 
-  - Overall architecture of Ortoo. 
-  - Coding conventions 
+### Run Ortoo Server
+```go
+
+```
+
+### Make a client
+ - An Ortoo client manages the connection with the Ortoo server and synchronization of Ortoo datatypes.   
+ - An Ortoo client participates in a collection of MongoDB, which means that the snapshot of any created datatype is written to the collection of MongoDB.   
+```go
+clientConf := &ortoo.ClientConfig{
+    ServerAddr:       "localhost:19061",         // Ortoo Server address.
+    NotificationAddr: "localhost:1883",          // notification server address.
+    CollectionName:   "hello_world",             // the collection name of MongoDB which the client participates in.
+    SyncType:         model.SyncType_NOTIFIABLE, // syncType that is notified in real-time from notification server.
+}
+
+client1 := ortoo.NewClient(clientConf, "client1") // create a client with alias "client1".
+if err := client1.Connect(); err != nil {         // connect to Ortoo server
+    _ = fmt.Errorf("fail client to connect an Ortoo server: %v", err.Error())
+    return
+}
+
+defer func() {
+    if err := client1.Close(); err != nil { // close the client
+        _ = fmt.Errorf("fail to close client: %v", err.Error())
+    }
+}()
+```
+## Use datatypes
+
+### IntCounter
+### HashMap
+### List
+
+### Inside MongoDB 
+
+

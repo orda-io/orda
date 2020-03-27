@@ -89,6 +89,18 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.Context) error {
 	return nil
 }
 
+// ResetCollections resets all collections related to collectionName
+func (r *RepositoryMongo) ResetCollections(ctx context.Context, collectionName string) error {
+	if err := r.PurgeAllDocumentsOfCollection(ctx, collectionName); err != nil {
+		return log.OrtooError(err)
+	}
+	collection := r.db.Collection(collectionName)
+	if err := collection.Drop(ctx); err != nil {
+		return log.OrtooError(err)
+	}
+	return nil
+}
+
 // GetOrCreateRealCollection is a method that gets or creates a collection of snapshot
 func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.Context, name string) error {
 

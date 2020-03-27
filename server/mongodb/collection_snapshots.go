@@ -34,6 +34,7 @@ func (m *MongoCollections) GetLatestSnapshot(ctx context.Context, collectionNum 
 
 // InsertSnapshot inserts a snapshot for the specified datatype.
 func (m *MongoCollections) InsertSnapshot(ctx context.Context, collectionNum uint32, duid string, sseq uint64, meta []byte, snapshot string) error {
+
 	snap := schema.SnapshotDoc{
 		ID:            fmt.Sprintf("%s:%d", duid, sseq),
 		CollectionNum: collectionNum,

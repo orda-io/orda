@@ -79,6 +79,7 @@ func (m *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.Context, na
 			return log.OrtooError(err)
 		}
 		filter := schema.GetFilter().AddFilterEQ(schema.CollectionDocFields.Name, name)
+
 		result, err := m.collections.DeleteOne(ctx, filter)
 		if err != nil {
 			return log.OrtooError(err)

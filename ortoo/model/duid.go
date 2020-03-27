@@ -10,12 +10,8 @@ import (
 type DUID UniqueID
 
 // NewDUID creates a new DUID.
-func NewDUID() (DUID, error) {
-	u, err := newUniqueID()
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to generate datatype UID")
-	}
-	return DUID(u), nil
+func NewDUID() DUID {
+	return DUID(newUniqueID())
 }
 
 // DUIDFromString creates DUID from string.

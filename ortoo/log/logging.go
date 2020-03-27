@@ -110,15 +110,14 @@ func (o *OrtooLog) ortooErrorf(err error, skip int, format string, args ...inter
 	_, file, line, _ := runtime.Caller(skip)
 	relativeCallFile := strings.Replace(file, basepath, "", 1)
 	errorPlace := fmt.Sprintf("%s:%d", relativeCallFile, line)
-	var errString = "nil"
-	if err != nil {
-		errString = err.Error()
-	} else {
-		err = fmt.Errorf("nil")
-	}
+	// var errString = "nil"
+	// if err != nil {
+	// 	errString = err.Error()
+	// } else {
+	// 	err = fmt.Errorf("nil")
+	// }
 	o.WithFields(logrus.Fields{
 		fieldErrorAt: errorPlace,
-		fieldError:   errString,
 	}).Errorf(format, args...)
 	return err
 }

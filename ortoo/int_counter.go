@@ -2,9 +2,11 @@ package ortoo
 
 import (
 	"encoding/json"
-	"errors"
+	operations "github.com/knowhunger/ortoo/ortoo/operations"
+
+	// "errors"
 	"fmt"
-	"github.com/gogo/protobuf/types"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -12,9 +14,9 @@ import (
 
 // IntCounter is an Ortoo datatype which provides int counter interfaces.
 type IntCounter interface {
-	datatypes.PublicWiredDatatypeInterface
+	Datatype
 	IntCounterInTxn
-	DoTransaction(tag string, transFunc func(intCounter IntCounterInTxn) error) error
+	DoTransaction(tag string, txnFunc func(intCounter IntCounterInTxn) error) error
 }
 
 // IntCounterInTxn is an Ortoo datatype which provides int counter interfaces in a transaction.
@@ -25,179 +27,123 @@ type IntCounterInTxn interface {
 }
 
 type intCounter struct {
-	*datatypes.FinalDatatype
+	*datatype
 	snapshot *intCounterSnapshot
-	handler  *IntCounterHandlers
 }
 
-// NewIntCounter creates a new int counter
-func NewIntCounter(key string, cuid model.CUID, wire datatypes.Wire, handler *IntCounterHandlers) (IntCounter, error) {
-
+// newIntCounter creates a new int counter
+func newIntCounter(key string, cuid model.CUID, wire datatypes.Wire, handler *Handlers) IntCounter {
 	intCounter := &intCounter{
-		FinalDatatype: &datatypes.FinalDatatype{},
+		datatype: &datatype{
+			FinalDatatype: &datatypes.FinalDatatype{},
+			handlers:      handler,
+		},
 		snapshot: &intCounterSnapshot{
 			Value: 0,
 		},
-		handler: handler,
 	}
-	if err := intCounter.Initialize(key, model.TypeOfDatatype_INT_COUNTER, cuid, wire, intCounter.snapshot, intCounter); err != nil {
-		return nil, log.OrtooErrorf(err, "fail to initialize intCounter")
-	}
-	return intCounter, nil
+	intCounter.Initialize(key, model.TypeOfDatatype_INT_COUNTER, cuid, wire, intCounter.snapshot, intCounter)
+	return intCounter
 }
 
-func (c *intCounter) DoTransaction(tag string, transFunc func(intCounter IntCounterInTxn) error) error {
-	transactionCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
-	defer func() {
-		if err := c.EndTransaction(transactionCtx, true, true); err != nil {
-			_ = log.OrtooError(err)
+func (its *intCounter) DoTransaction(tag string, txnFunc func(intCounter IntCounterInTxn) error) error {
+	return its.FinalDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+		clone := &intCounter{
+			datatype: &datatype{
+				FinalDatatype: &datatypes.FinalDatatype{
+					TransactionDatatype: its.FinalDatatype.TransactionDatatype,
+					TransactionCtx:      txnCtx,
+				},
+				handlers: its.handlers,
+			},
+			snapshot: its.snapshot,
 		}
-	}()
-	// make a clone of intCounter have nil FinalDatatype.transactionCtx, which means
-	clone := &intCounter{
-		FinalDatatype: &datatypes.FinalDatatype{
-			TransactionDatatype: c.FinalDatatype.TransactionDatatype,
-			TransactionCtx:      transactionCtx,
-		},
-		snapshot: c.snapshot,
-	}
-	err = transFunc(clone)
-	if err != nil {
-		c.SetTransactionFail()
-		return log.OrtooErrorf(err, "fail to do the transaction: '%s'", tag)
-	}
-	return nil
+		return txnFunc(clone)
+	})
 }
 
-func (c *intCounter) GetFinal() *datatypes.FinalDatatype {
-	return c.FinalDatatype
+func (its *intCounter) GetFinal() *datatypes.FinalDatatype {
+	return its.FinalDatatype
 }
 
 // ExecuteLocal is the
-func (c *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
-	iop := op.(*model.IncreaseOperation)
-	return c.snapshot.increaseCommon(iop.Delta), nil
+func (its *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
+	iop := op.(*operations.IncreaseOperation)
+	return its.snapshot.increaseCommon(iop.C.Delta), nil
 }
 
 // ExecuteRemote is called by operation.ExecuteRemote()
-func (c *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
-	switch o := op.(type) {
-	case *model.SnapshotOperation:
+func (its *intCounter) ExecuteRemote(op interface{}) (interface{}, error) {
+	switch cast := op.(type) {
+	case *operations.SnapshotOperation:
 		newSnap := intCounterSnapshot{}
-		if err := json.Unmarshal(o.Snapshot.Value, &newSnap); err != nil {
-			return nil, log.OrtooError(err)
+		if err := json.Unmarshal([]byte(cast.C.Snapshot), &newSnap); err != nil {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 		}
-		c.snapshot = &newSnap
+		its.snapshot = &newSnap
 		return nil, nil
-	case *model.IncreaseOperation:
-		return c.snapshot.increaseCommon(o.Delta), nil
+	case *operations.IncreaseOperation:
+		return its.snapshot.increaseCommon(cast.C.Delta), nil
 	}
 
-	return nil, log.OrtooError(errors.New("invalid operation"))
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
-func (c *intCounter) HandleStateChange(old, new model.StateOfDatatype) {
-	if c.handler != nil && c.handler.stateChangeHandler != nil {
-		go c.handler.stateChangeHandler(c, old, new)
-	}
-
+func (its *intCounter) Get() int32 {
+	return its.snapshot.Value
 }
 
-func (c *intCounter) HandleError(errs []error) {
-	if c.handler != nil && c.handler.errorHandler != nil {
-		go c.handler.errorHandler(errs...)
-	}
+func (its *intCounter) Increase() (int32, error) {
+	return its.IncreaseBy(1)
 }
 
-func (c *intCounter) HandleRemoteOperations(operations []interface{}) {
-	if c.handler != nil && c.handler.remoteOperationHandler != nil {
-		go c.handler.remoteOperationHandler(c, operations)
-	}
-}
-
-func (c *intCounter) Get() int32 {
-	return c.snapshot.Value
-}
-
-func (c *intCounter) Increase() (int32, error) {
-	return c.IncreaseBy(1)
-}
-
-func (c *intCounter) IncreaseBy(delta int32) (int32, error) {
-	op := model.NewIncreaseOperation(delta)
-	ret, err := c.ExecuteOperationWithTransaction(c.TransactionCtx, op, true)
+func (its *intCounter) IncreaseBy(delta int32) (int32, error) {
+	op := operations.NewIncreaseOperation(delta)
+	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return 0, log.OrtooErrorf(err, "fail to execute operation")
 	}
 	return ret.(int32), nil
 }
 
-func (c *intCounter) GetSnapshot() model.Snapshot {
-	return c.snapshot
+func (its *intCounter) GetSnapshot() model.Snapshot {
+	return its.snapshot
 }
 
-func (c *intCounter) SetSnapshot(snapshot model.Snapshot) {
-	c.snapshot = snapshot.(*intCounterSnapshot)
+func (its *intCounter) SetSnapshot(snapshot model.Snapshot) {
+	its.snapshot = snapshot.(*intCounterSnapshot)
 }
 
-func (c *intCounter) GetMetaAndSnapshot() ([]byte, string, error) {
-	meta, err := c.FinalDatatype.GetMeta()
+func (its *intCounter) GetAsJSON() (string, error) {
+	j := &struct {
+		Value int32
+	}{
+		Value: its.snapshot.Value,
+	}
+	b, err := json.Marshal(j)
 	if err != nil {
-		return nil, "", log.OrtooError(err)
+		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
-	jsonb, err := json.Marshal(c.snapshot)
-	if err != nil {
-		return nil, "", log.OrtooError(err)
-	}
-
-	return meta, string(jsonb), nil
+	return string(b), nil
 }
 
-func (c *intCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
-	if err := c.FinalDatatype.SetMeta(meta); err != nil {
-		return log.OrtooError(err)
+func (its *intCounter) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
+	meta, err := its.FinalDatatype.GetMeta()
+	if err != nil {
+		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
-	snap := &intCounterSnapshot{}
-	if err := json.Unmarshal([]byte(snapshot), snap); err != nil {
-		return log.OrtooError(err)
+	return meta, its.snapshot, nil
+}
+
+func (its *intCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
+	if err := its.FinalDatatype.SetMeta(meta); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
-	c.snapshot = snap
+
+	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
 	return nil
-}
-
-// IntCounterHandlers defines a set of handlers which can handles the events related to IntCounter
-type IntCounterHandlers struct {
-	stateChangeHandler     func(intCounter IntCounter, old model.StateOfDatatype, new model.StateOfDatatype)
-	remoteOperationHandler func(intCount IntCounter, opList []interface{})
-	errorHandler           func(errs ...error)
-}
-
-// NewIntCounterHandlers creates a new IntCounterHandlers
-func NewIntCounterHandlers(
-	stateChangeHandler func(intCounter IntCounter, old model.StateOfDatatype, new model.StateOfDatatype),
-	remoteOperationHandler func(intCounter IntCounter, opList []interface{}),
-	errorHandler func(errs ...error)) *IntCounterHandlers {
-	return &IntCounterHandlers{
-		stateChangeHandler:     stateChangeHandler,
-		remoteOperationHandler: remoteOperationHandler,
-		errorHandler:           errorHandler,
-	}
-}
-
-// SetHandlers sets the handlers if a given handler is not nil.
-func (i *IntCounterHandlers) SetHandlers(
-	stateChangeHandler func(intCounter IntCounter, old model.StateOfDatatype, new model.StateOfDatatype),
-	remoteOperationHandler func(intCounter IntCounter, opList []interface{}),
-	errorHandler func(errs ...error)) {
-	if stateChangeHandler != nil {
-		i.stateChangeHandler = stateChangeHandler
-	}
-	if remoteOperationHandler != nil {
-		i.remoteOperationHandler = remoteOperationHandler
-	}
-	if errorHandler != nil {
-		i.errorHandler = errorHandler
-	}
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -208,34 +154,27 @@ type intCounterSnapshot struct {
 	Value int32 `json:"value"`
 }
 
-func (i *intCounterSnapshot) CloneSnapshot() model.Snapshot {
+func (its *intCounterSnapshot) CloneSnapshot() model.Snapshot {
 	return &intCounterSnapshot{
-		Value: i.Value,
+		Value: its.Value,
 	}
 }
 
-func (i *intCounterSnapshot) GetTypeAny() (*types.Any, error) {
-	bin, err := json.Marshal(i)
+func (its *intCounterSnapshot) GetAsJSON() (string, error) {
+	j, err := json.Marshal(its)
 	if err != nil {
-		return nil, log.OrtooError(err)
+		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
-	return &types.Any{
-		TypeUrl: i.GetTypeURL(),
-		Value:   bin,
-	}, nil
+	return string(j), nil
 }
 
-func (i *intCounterSnapshot) GetTypeURL() string {
-	return "github.com/knowhunger/ortoo/common/intCounterSnapshot"
+func (its *intCounterSnapshot) increaseCommon(delta int32) int32 {
+	temp := its.Value
+	its.Value = its.Value + delta
+	log.Logger.Infof("increaseCommon: %d + %d = %d", temp, delta, its.Value)
+	return its.Value
 }
 
-func (i *intCounterSnapshot) increaseCommon(delta int32) int32 {
-	temp := i.Value
-	i.Value = i.Value + delta
-	log.Logger.Infof("increaseCommon: %d + %d = %d", temp, delta, i.Value)
-	return i.Value
-}
-
-func (i *intCounterSnapshot) String() string {
-	return fmt.Sprintf("Value: %d", i.Value)
+func (its *intCounterSnapshot) String() string {
+	return fmt.Sprintf("Map: %d", its.Value)
 }

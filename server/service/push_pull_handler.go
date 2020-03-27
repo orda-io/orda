@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -112,8 +112,8 @@ func (p *PushPullHandler) finalize() {
 	} else {
 		p.responsePushPullPack.GetPushPullPackOption().SetErrorBit()
 
-		errOp := model.NewErrorOperation(p.err)
-		p.responsePushPullPack.Operations = append(p.responsePushPullPack.Operations, model.ToOperationOnWire(errOp))
+		errOp := operations.NewErrorOperation(p.err)
+		p.responsePushPullPack.Operations = append(p.responsePushPullPack.Operations, errOp.ToModelOperation())
 
 	}
 	log.Logger.Infof("send back to %s %s", p.clientDoc.Alias, p.responsePushPullPack.ToString())
@@ -201,26 +201,21 @@ func (p *PushPullHandler) commitToMongoDB() *model.PushPullError {
 func (p *PushPullHandler) pullOperations() *model.PushPullError {
 	sseqBegin := p.gotPushPullPack.CheckPoint.Sseq + 1
 
-	var operations []*model.OperationOnWire
+	var operations []*model.Operation
 	if p.datatypeDoc.SseqBegin <= sseqBegin && !p.gotOption.HasSnapshotBit() {
 		if err := p.mongo.GetOperations(p.ctx,
 			p.DUID,
 			sseqBegin,
 			constants.InfinitySseq,
 			func(opDoc *schema.OperationDoc) error {
-				var opOnWire model.OperationOnWire
-				if err := proto.Unmarshal(opDoc.Operation, &opOnWire); err != nil {
-					_ = log.OrtooError(err)
-					return nil
-				}
-				operations = append(operations, &opOnWire)
+				var modelOp = opDoc.GetOperation()
+				operations = append(operations, modelOp)
 				p.currentCheckPoint.Sseq = opDoc.Sseq
 				return nil
 			}); err != nil {
 			return model.NewPushPullError(model.PushPullErrPullOperations, p.getPushPullTag(), err)
 		}
 		p.responsePushPullPack.Operations = operations
-
 	}
 	return nil
 }
@@ -228,34 +223,34 @@ func (p *PushPullHandler) pullOperations() *model.PushPullError {
 func (p *PushPullHandler) pushOperations() *model.PushPullError {
 
 	sseq := p.initialCheckPoint.Sseq
-	for _, opOnWire := range p.gotPushPullPack.Operations {
-		op := model.ToOperation(opOnWire)
-		if p.currentCheckPoint.Cseq+1 == op.GetBase().ID.GetSeq() {
+	for _, op := range p.gotPushPullPack.Operations {
+		// op := model.ToOperation(modelOp)
+		if p.currentCheckPoint.Cseq+1 == op.ID.GetSeq() {
 			sseq++
-			marshaledOp, err := proto.Marshal(opOnWire)
-			if err != nil {
-				return model.NewPushPullError(model.PushPullErrPushOperations, p.getPushPullTag(), err)
-			}
-			opDoc := &schema.OperationDoc{
-				ID:            fmt.Sprintf("%s:%d", p.DUID, sseq),
-				DUID:          p.DUID,
-				CollectionNum: p.collectionDoc.Num,
-				OpType:        op.GetBase().OpType.String(),
-				Sseq:          sseq,
-				Operation:     marshaledOp,
-				CreatedAt:     time.Now(),
-			}
+			// marshaledOp, err := proto.Marshal(op)
+			// if err != nil {
+			// 	return model.NewPushPullError(model.PushPullErrPushOperations, p.getPushPullTag(), err)
+			// }
+			opDoc := schema.NewOperationDoc(op, p.DUID, sseq, p.collectionDoc.Num)
+			// opDoc := &schema.OperationDoc{
+			// 	ID:            fmt.Sprintf("%s:%d", p.DUID, sseq),
+			// 	DUID:          p.DUID,
+			// 	CollectionNum: p.collectionDoc.Num,
+			// 	OpType:        op.OpType.String(),
+			// 	Sseq:          sseq,
+			// 	// Operation:     string(marshaledOp),
+			// 	CreatedAt:     time.Now(),
+			// }
 			p.pushingOperations = append(p.pushingOperations, opDoc)
-			p.responsePushPullPack.Operations = append(p.responsePushPullPack.Operations, opOnWire)
-			p.currentCheckPoint.SyncCseq(op.GetBase().ID.GetSeq())
+			// p.responsePushPullPack.Operations = append(p.responsePushPullPack.Operations, modelOp)
+			p.currentCheckPoint.SyncCseq(op.ID.GetSeq())
 			p.currentCheckPoint.Sseq++
-
-		} else if p.currentCheckPoint.Cseq >= op.GetBase().ID.GetSeq() {
-			log.Logger.Warnf("reject operation due to duplicate: %v", op.ToString())
+		} else if p.currentCheckPoint.Cseq >= op.ID.GetSeq() {
+			log.Logger.Warnf("reject operation due to duplicate: %v", op.String())
 		} else {
 			return model.NewPushPullError(model.PushPullErrMissingOperations, p.getPushPullTag(),
 				fmt.Errorf("missing something in pushed operations: cp.Cseq=%d < op.Seq=%d",
-					p.initialCheckPoint.Cseq, op.GetBase().ID.GetSeq()))
+					p.initialCheckPoint.Cseq, op.ID.GetSeq()))
 		}
 	}
 	return nil

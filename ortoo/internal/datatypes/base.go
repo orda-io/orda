@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	operations2 "github.com/knowhunger/ortoo/ortoo/operations"
 )
 
 // BaseDatatype is the base datatype which contains
@@ -23,13 +24,11 @@ type BaseDatatype struct {
 type PublicBaseDatatypeInterface interface {
 	GetType() model.TypeOfDatatype
 	GetState() model.StateOfDatatype
+	GetAsJSON() (string, error)
 }
 
-func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*BaseDatatype, error) {
-	duid, err := model.NewDUID()
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to create base datatype due to duid")
-	}
+func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) *BaseDatatype {
+	duid := model.NewDUID()
 	return &BaseDatatype{
 		Key:    key,
 		id:     duid,
@@ -37,7 +36,7 @@ func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) (*Base
 		opID:   model.NewOperationIDWithCuid(cuid),
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
 		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
-	}, nil
+	}
 }
 
 // GetCUID returns CUID of the client which this datatype subecribes to.
@@ -54,14 +53,14 @@ func (b *BaseDatatype) String() string {
 	return fmt.Sprintf("%s", b.id)
 }
 
-func (b *BaseDatatype) executeLocalBase(op model.Operation) (interface{}, error) {
+func (b *BaseDatatype) executeLocalBase(op operations2.Operation) (interface{}, error) {
 	b.SetNextOpID(op)
 	return op.ExecuteLocal(b.datatype)
 }
 
 // Replay replays an already executed operation.
-func (b *BaseDatatype) Replay(op model.Operation) error {
-	if bytes.Compare(b.opID.CUID, op.GetBase().ID.CUID) == 0 {
+func (b *BaseDatatype) Replay(op operations2.Operation) error {
+	if bytes.Compare(b.opID.CUID, op.GetID().CUID) == 0 {
 		_, err := b.executeLocalBase(op)
 		if err != nil {
 			return log.OrtooErrorf(err, "fail to replay local operation")
@@ -73,11 +72,11 @@ func (b *BaseDatatype) Replay(op model.Operation) error {
 }
 
 // SetNextOpID proceeds the operation ID next.
-func (b *BaseDatatype) SetNextOpID(op model.Operation) {
-	op.GetBase().SetOperationID(b.opID.Next())
+func (b *BaseDatatype) SetNextOpID(op operations2.Operation) {
+	op.SetOperationID(b.opID.Next())
 }
 
-func (b *BaseDatatype) executeRemoteBase(op model.Operation) {
+func (b *BaseDatatype) executeRemoteBase(op operations2.Operation) {
 	op.ExecuteRemote(b.datatype)
 }
 
@@ -92,8 +91,8 @@ func (b *BaseDatatype) GetState() model.StateOfDatatype {
 }
 
 // SetDatatype sets the Datatype which implements this BaseDatatype.
-func (b *BaseDatatype) SetDatatype(finalDatatype model.Datatype) {
-	b.datatype = finalDatatype
+func (b *BaseDatatype) SetDatatype(datatype model.Datatype) {
+	b.datatype = datatype
 }
 
 // GetDatatype returns the Datatype which implements this BaseDatatype.

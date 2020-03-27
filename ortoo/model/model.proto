@@ -12,8 +12,16 @@ message Client {
 }
 
 enum SyncType {
-    MANUALLY = 0;
-    NOTIFIABLE = 1;
+    LOCAL_ONLY = 0;
+    MANUALLY = 1;
+    NOTIFIABLE = 2;
+}
+
+message Timestamp {
+    uint32 era = 1;
+    uint64 lamport = 2;
+    bytes CUID = 3;
+    uint32 delimiter = 4;
 }
 
 message OperationID {
@@ -23,35 +31,58 @@ message OperationID {
     uint64 seq = 4;
 }
 
-message BaseOperation {
+message Operation {
     OperationID ID = 1;
     TypeOfOperation opType = 2;
+    bytes json = 3;
 }
 
-message SnapshotOperation {
-    BaseOperation base = 1;
-    TypeOfDatatype type = 2;
-    StateOfDatatype state = 3;
-    google.protobuf.Any snapshot = 4;
-}
-
-message IncreaseOperation {
-    BaseOperation base = 1;
-    int32 delta = 2;
-}
-
-message TransactionOperation {
-    BaseOperation base = 1;
-    bytes uuid = 2;
-    string tag = 3;
-    uint32 numOfOps = 4;
-}
-
-message ErrorOperation {
-    BaseOperation base = 1;
-    uint32 code = 2;
-    string msg = 3;
-}
+//message BaseOperation {
+//    OperationID ID = 1;
+//    TypeOfOperation opType = 2;
+//}
+//
+//message SnapshotOperation {
+//    BaseOperation base = 1;
+//    TypeOfDatatype type = 2;
+//    StateOfDatatype state = 3;
+//    google.protobuf.Any snapshot = 4;
+//}
+//
+//message IncreaseOperation {
+//    BaseOperation base = 1;
+//    int32 delta = 2;
+//}
+//
+//message TransactionOperation {
+//    BaseOperation base = 1;
+//    bytes uuid = 2;
+//    string tag = 3;
+//    uint32 numOfOps = 4;
+//}
+//
+//message ErrorOperation {
+//    BaseOperation base = 1;
+//    uint32 code = 2;
+//    string msg = 3;
+//}
+//
+//message PayloadOperation {
+//    BaseOperation base = 1;
+//    int32 typeOf = 2;
+//    bytes payload = 3;
+//}
+//
+//message PutOperation {
+//    BaseOperation base = 1;
+//    string key = 2;
+//    string value = 3;
+//}
+//
+//message RemoveOperation {
+//    BaseOperation base = 1;
+//    string key = 2;
+//}
 
 enum TypeOfOperation {
     SNAPSHOT = 0;
@@ -59,11 +90,14 @@ enum TypeOfOperation {
     ERROR = 3;
     TRANSACTION = 5;
     INT_COUNTER_INCREASE = 11;
+    HASH_MAP_PUT = 21;
+    HASH_MAP_REMOVE = 22;
 }
 
 enum TypeOfDatatype {
     INT_COUNTER = 0;
-    JSON = 1;
+    HASH_MAP = 1;
+    JSON = 2;
 }
 
 enum StateOfDatatype {
@@ -75,15 +109,18 @@ enum StateOfDatatype {
     UNSUBSCRIBED = 6;
     DELETED = 7;
 }
-
-message OperationOnWire {
-    oneof body {
-        SnapshotOperation snapshot = 1;
-        ErrorOperation error = 2;
-        TransactionOperation transaction = 5;
-        IncreaseOperation increase = 11;
-    }
-}
+//
+//message OperationOnWire {
+//    oneof body {
+//        SnapshotOperation snapshot = 1;
+//        ErrorOperation error = 2;
+//        TransactionOperation transaction = 5;
+//        IncreaseOperation increase = 11;
+//        PutOperation put = 21;
+//        RemoveOperation remove = 22;
+//        PayloadOperation payload = 31;
+//    }
+//}
 
 message PushPullPack {
     bytes DUID = 1;
@@ -92,7 +129,7 @@ message PushPullPack {
     CheckPoint checkPoint = 4;
     uint32 era = 5;
     int32 type = 6;
-    repeated OperationOnWire operations = 7;
+    repeated Operation operations = 7;
 }
 
 message CheckPoint {

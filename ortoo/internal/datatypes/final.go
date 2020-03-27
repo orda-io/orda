@@ -1,9 +1,11 @@
 package datatypes
 
 import (
-	"github.com/gogo/protobuf/proto"
+	"encoding/json"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 )
 
 // FinalDatatype implements the datatype features finally used.
@@ -24,27 +26,15 @@ func (c *FinalDatatype) Initialize(
 	cuid model.CUID,
 	w Wire,
 	snapshot model.Snapshot,
-	datatype model.Datatype) error {
+	datatype model.Datatype) {
 
-	baseDatatype, err := newBaseDatatype(key, typeOf, cuid)
-	if err != nil {
-		return log.OrtooErrorf(err, "fail to create BaseDatatype")
-	}
+	baseDatatype := newBaseDatatype(key, typeOf, cuid)
+	wiredDatatype := newWiredDatatype(baseDatatype, w)
+	transactionDatatype := newTransactionDatatype(wiredDatatype, snapshot)
 
-	wiredDatatype, err := newWiredDatatype(baseDatatype, w)
-	if err != nil {
-		return log.OrtooErrorf(err, "fail to create wiredDatatype")
-	}
-
-	transactionDatatype, err := newTransactionDatatype(wiredDatatype, snapshot)
-	if err != nil {
-		return log.OrtooErrorf(err, "fail to create transaction manager")
-	}
 	c.TransactionDatatype = transactionDatatype
 	c.TransactionCtx = nil
 	c.SetDatatype(datatype)
-
-	return nil
 }
 
 // GetMeta returns the binary of metadata of the datatype.
@@ -56,7 +46,7 @@ func (c *FinalDatatype) GetMeta() ([]byte, error) {
 		TypeOf: c.TypeOf,
 		State:  c.state,
 	}
-	metab, err := proto.Marshal(&meta)
+	metab, err := json.Marshal(&meta)
 	if err != nil {
 		return nil, log.OrtooError(err)
 	}
@@ -66,7 +56,7 @@ func (c *FinalDatatype) GetMeta() ([]byte, error) {
 // SetMeta sets the metadata with binary metadata.
 func (c *FinalDatatype) SetMeta(meta []byte) error {
 	m := model.DatatypeMeta{}
-	if err := proto.Unmarshal(meta, &m); err != nil {
+	if err := json.Unmarshal(meta, &m); err != nil {
 		return log.OrtooError(err)
 	}
 	c.Key = m.Key
@@ -77,13 +67,31 @@ func (c *FinalDatatype) SetMeta(meta []byte) error {
 	return nil
 }
 
+// DoTransaction enables datatypes to perform a transaction.
+func (c *FinalDatatype) DoTransaction(tag string, fn func(txnCtx *TransactionContext) error) error {
+	txnCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := c.EndTransaction(txnCtx, true, true); err != nil {
+			_ = log.OrtooError(err)
+		}
+	}()
+	if err := fn(txnCtx); err != nil {
+		c.SetTransactionFail()
+		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, err.Error())
+	}
+	return nil
+}
+
 // SubscribeOrCreate enables a datatype to subscribe and create itself.
 func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
 		c.state = state
 		return nil
 	}
-	subscribeOp, err := model.NewSnapshotOperation(c.TypeOf, state, c.datatype.GetSnapshot())
+	subscribeOp, err := operations.NewSnapshotOperation(c.TypeOf, state, c.datatype.GetSnapshot())
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to subscribe")
 	}
@@ -95,27 +103,38 @@ func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 }
 
 // ExecuteTransactionRemote is a method to execute a transaction of remote operations
-func (c FinalDatatype) ExecuteTransactionRemote(transaction []model.Operation) error {
-	var transactionCtx *TransactionContext
+func (c FinalDatatype) ExecuteTransactionRemote(transaction []*model.Operation, obtainList bool) ([]interface{}, error) {
+	var trxCtx *TransactionContext
 	var err error
 	if len(transaction) > 1 {
-		if err := validateTransaction(transaction); err != nil {
-			return log.OrtooErrorf(err, "fail to validate transaction")
+		trxOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
+		if !ok {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
 		}
-		transactionOp := transaction[0].(*model.TransactionOperation)
-		transactionCtx, err = c.BeginTransaction(transactionOp.Tag, c.TransactionCtx, false)
+		if int(trxOp.GetNumOfOps()) != len(transaction) {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
+		}
+		trxCtx, err = c.BeginTransaction(trxOp.C.Tag, c.TransactionCtx, false)
 		if err != nil {
-			return log.OrtooError(err)
+			return nil, log.OrtooError(err)
 		}
 		defer func() {
-			if err := c.EndTransaction(transactionCtx, false, false); err != nil {
+			if err := c.EndTransaction(trxCtx, false, false); err != nil {
 				_ = log.OrtooError(err)
 			}
 		}()
 		transaction = transaction[1:]
 	}
-	for _, op := range transaction {
-		c.ExecuteOperationWithTransaction(transactionCtx, op, false)
+	var opList []interface{}
+	for _, modelOp := range transaction {
+		op := operations.ModelToOperation(modelOp)
+		if obtainList {
+			opList = append(opList, op.GetAsJSON())
+		}
+		_, err := c.ExecuteOperationWithTransaction(trxCtx, op, false)
+		if err != nil {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, err.Error())
+		}
 	}
-	return nil
+	return opList, nil
 }

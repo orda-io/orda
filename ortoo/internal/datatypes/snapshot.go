@@ -6,4 +6,5 @@ import "github.com/knowhunger/ortoo/ortoo/model"
 type SnapshotDatatype interface {
 	SetSnapshot(snapshot model.Snapshot)
 	GetSnapshot() model.Snapshot
+	GetAsJSON() (string, error)
 }

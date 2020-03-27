@@ -1,11 +1,11 @@
 .PHONY: dependency unit-test integration-test docker-up docker-down protobuf lint
 
 protoc-gen:
-	protoc commons/model/*.proto \
-			-I=./commons/model/ \
-			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,:./commons/model/
+	protoc ortoo/model/*.proto \
+			-I=./ortoo/model/ \
+			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,:./ortoo/model/
 #			--gotag_out=xxx="bson+\"-\"",output_path=./ortoo/model/:.
-	protoc-go-inject-tag -input=./commons/model/model.pb.go
+	protoc-go-inject-tag -input=./ortoo/model/model.pb.go
 
 dependency:
 	go get -v ./...

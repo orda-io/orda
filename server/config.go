@@ -6,7 +6,7 @@ import (
 
 // OrtooServerConfig is a configuration of OrtooServer
 type OrtooServerConfig struct {
-	Host       string
-	Mongo      *mongodb.Config
-	PubSubAddr string
+	OrtooServer      string
+	Mongo            *mongodb.Config
+	NotificationAddr string
 }

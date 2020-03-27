@@ -1,10 +1,10 @@
 package ortoo
 
 import (
+	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/context"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/managers"
-	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 )
 
@@ -14,9 +14,13 @@ type Client interface {
 	Close() error
 	Sync() error
 	IsConnected() bool
-	SubscribeOrCreateIntCounter(key string, handlers *IntCounterHandlers) IntCounter
-	SubscribeIntCounter(key string, handlers *IntCounterHandlers) IntCounter
-	CreateIntCounter(key string, handlers *IntCounterHandlers) IntCounter
+	CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype
+
+	CreateIntCounter(key string, handlers *Handlers) IntCounter
+	SubscribeOrCreateIntCounter(key string, handlers *Handlers) IntCounter
+	SubscribeIntCounter(key string, handlers *Handlers) IntCounter
+
+	CreateHashMap(key string, handlers *Handlers) HashMap
 }
 
 type clientState uint8
@@ -29,37 +33,35 @@ const (
 type clientImpl struct {
 	state           clientState
 	model           *model.Client
-	conf            *OrtooClientConfig
+	conf            *ClientConfig
 	ctx             *context.OrtooContext
 	messageManager  *managers.MessageManager
 	datatypeManager *managers.DatatypeManager
 }
 
-// NewOrtooClient creates a new Ortoo client
-func NewOrtooClient(conf *OrtooClientConfig, alias string) (Client, error) {
+// NewClient creates a new Ortoo client
+func NewClient(conf *ClientConfig, alias string) Client {
 	ctx := context.NewOrtooContext(alias)
-	cuid, err := model.NewCUID()
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to create cuid")
-	}
-
 	clientModel := &model.Client{
-		CUID:       cuid,
+		CUID:       model.NewCUID(),
 		Alias:      alias,
 		Collection: conf.CollectionName,
 		SyncType:   conf.SyncType,
 	}
+
 	var notificationManager *managers.NotificationManager
 	switch conf.SyncType {
-	case model.SyncType_MANUALLY:
+	case model.SyncType_LOCAL_ONLY, model.SyncType_MANUALLY:
 		notificationManager = nil
 	case model.SyncType_NOTIFIABLE:
 		notificationManager = managers.NewNotificationManager(ctx, conf.NotificationAddr)
 	}
-
-	messageManager := managers.NewMessageManager(ctx, clientModel, conf.Address, notificationManager)
-	datatypeManager := managers.NewDatatypeManager(ctx, messageManager, notificationManager, clientModel.Collection, clientModel.CUID)
-
+	var messageManager *managers.MessageManager = nil
+	var datatypeManager *managers.DatatypeManager = nil
+	if conf.SyncType != model.SyncType_LOCAL_ONLY {
+		messageManager = managers.NewMessageManager(ctx, clientModel, conf.ServerAddr, notificationManager)
+		datatypeManager = managers.NewDatatypeManager(ctx, messageManager, notificationManager, clientModel.Collection, clientModel.CUID)
+	}
 	return &clientImpl{
 		conf:            conf,
 		ctx:             ctx,
@@ -67,11 +69,21 @@ func NewOrtooClient(conf *OrtooClientConfig, alias string) (Client, error) {
 		state:           notConnected,
 		messageManager:  messageManager,
 		datatypeManager: datatypeManager,
-	}, nil
+	}
 }
 
 func (c *clientImpl) IsConnected() bool {
 	return c.state == connected
+}
+
+func (c *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype {
+	switch typeOf {
+	case model.TypeOfDatatype_INT_COUNTER:
+		return c.CreateIntCounter(key, handlers).(Datatype)
+	case model.TypeOfDatatype_HASH_MAP:
+		return c.CreateHashMap(key, handlers).(Datatype)
+	}
+	return nil
 }
 
 func (c *clientImpl) Connect() (err error) {
@@ -95,40 +107,86 @@ func (c *clientImpl) Close() error {
 	return c.messageManager.Close()
 }
 
-func (c *clientImpl) CreateIntCounter(key string, handlers *IntCounterHandlers) IntCounter {
+func (c *clientImpl) CreateHashMap(key string, handlers *Handlers) HashMap {
+	return c.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
+}
+
+func (c *clientImpl) SubscribeHashMap(key string, handlers *Handlers) HashMap {
+	return c.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
+}
+
+func (c *clientImpl) SubscribeOrCreateHashMap(key string, handlers *Handlers) HashMap {
+	return c.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
+}
+
+func (c *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfDatatype, handlers *Handlers) HashMap {
+	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_HASH_MAP, state, handlers)
+	if datatype != nil {
+		return datatype.(HashMap)
+	}
+	return nil
+}
+
+func (c *clientImpl) CreateIntCounter(key string, handlers *Handlers) IntCounter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (c *clientImpl) SubscribeIntCounter(key string, handlers *IntCounterHandlers) IntCounter {
+func (c *clientImpl) SubscribeIntCounter(key string, handlers *Handlers) IntCounter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (c *clientImpl) SubscribeOrCreateIntCounter(key string, handlers *IntCounterHandlers) IntCounter {
+func (c *clientImpl) SubscribeOrCreateIntCounter(key string, handlers *Handlers) IntCounter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype, handlers *IntCounterHandlers) IntCounter {
-	datatypeFromDM := c.datatypeManager.Get(key)
-	if datatypeFromDM != nil {
-		if datatypeFromDM.GetType() == model.TypeOfDatatype_INT_COUNTER {
-			c.ctx.Logger.Warn("Already subscribed datatype")
-			// datatypeFromDM.HandleStateChange()
-			return datatypeFromDM.(*intCounter)
-		}
-		handlers.errorHandler(errors.NewDatatypeError(errors.ErrDatatypeSubscribe, "not matched type"))
-		return nil
+func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype, handlers *Handlers) IntCounter {
+	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_INT_COUNTER, state, handlers)
+	if datatype != nil {
+		return datatype.(IntCounter)
 	}
+	return nil
+}
 
-	ic, err := NewIntCounter(key, c.model.CUID, c.datatypeManager, handlers)
-	if err != nil {
-		handlers.errorHandler(errors.NewDatatypeError(errors.ErrDatatypeCreate, err.Error()))
-		return nil
+func (c *clientImpl) subscribeOrCreateDatatype(
+	key string,
+	typeOf model.TypeOfDatatype,
+	state model.StateOfDatatype,
+	handler *Handlers,
+) model.Datatype {
+	if c.datatypeManager != nil {
+		datatypeFromDM := c.datatypeManager.Get(key)
+		if datatypeFromDM != nil {
+			if datatypeFromDM.GetType() == typeOf {
+				c.ctx.Logger.Warnf("already subscribed datatype '%s'", key)
+				return datatypeFromDM
+			}
+			err := errors.NewDatatypeError(errors.ErrDatatypeSubscribe,
+				fmt.Sprintf("not matched type: %s vs %s", typeOf.String(), datatypeFromDM.GetType().String()))
+			if handler != nil {
+				handler.errorHandler(nil, err)
+			}
+		}
 	}
-	icImpl := ic.(*intCounter)
-	if err := c.datatypeManager.SubscribeOrCreate(icImpl, state); err != nil {
-		handlers.errorHandler(errors.NewDatatypeError(errors.ErrDatatypeSubscribe, err.Error()))
+	var datatype model.Datatype
+	var impl interface{}
+
+	switch typeOf {
+	case model.TypeOfDatatype_INT_COUNTER:
+		impl = newIntCounter(key, c.model.CUID, c.datatypeManager, handler)
+	case model.TypeOfDatatype_HASH_MAP:
+		impl = newHashMap(key, c.model.CUID, c.datatypeManager, handler)
 	}
-	return ic
+	datatype = impl.(model.Datatype)
+
+	if c.datatypeManager != nil {
+		if err := c.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {
+			err := errors.NewDatatypeError(errors.ErrDatatypeSubscribe, err.Error())
+			if handler != nil {
+				handler.errorHandler(nil, err)
+			}
+		}
+	}
+	return datatype
 }
 
 func (c *clientImpl) Sync() error {

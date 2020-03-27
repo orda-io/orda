@@ -29,7 +29,7 @@ func (c *TestWire) DeliverTransaction(wired *datatypes.WiredDatatype) {
 	for _, w := range c.wiredList {
 		if wired != w {
 			log.Logger.Info(wired, " => ", w)
-			w.ReceiveRemoteOperationsOnWire(operations)
+			w.ReceiveRemoteModelOperations(operations)
 		}
 	}
 }
