@@ -45,7 +45,7 @@ func (m *Manager) getPushPullTag() model.PushPullTag {
 func (m *Manager) UpdateSnapshot() error {
 	var sseq uint64 = 0
 	client := ortoo.NewClient(ortoo.NewLocalClientConfig(m.collectionDoc.Name), "server")
-	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType())
+	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType(), nil).(model.Datatype)
 	snapshotDoc, err := m.mongo.GetLatestSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID)
 	if err != nil {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
