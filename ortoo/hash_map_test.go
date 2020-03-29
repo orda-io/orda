@@ -57,7 +57,7 @@ func TestHashMap(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("Can test hashMapSnapshot", func(t *testing.T) {
+	t.Run("Can do operations with hashMapSnapshot", func(t *testing.T) {
 		snap := newHashMapSnapshot()
 		opID1 := model.NewOperationID()
 		opID2 := model.NewOperationID()

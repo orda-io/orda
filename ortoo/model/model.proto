@@ -37,53 +37,6 @@ message Operation {
     bytes json = 3;
 }
 
-//message BaseOperation {
-//    OperationID ID = 1;
-//    TypeOfOperation opType = 2;
-//}
-//
-//message SnapshotOperation {
-//    BaseOperation base = 1;
-//    TypeOfDatatype type = 2;
-//    StateOfDatatype state = 3;
-//    google.protobuf.Any snapshot = 4;
-//}
-//
-//message IncreaseOperation {
-//    BaseOperation base = 1;
-//    int32 delta = 2;
-//}
-//
-//message TransactionOperation {
-//    BaseOperation base = 1;
-//    bytes uuid = 2;
-//    string tag = 3;
-//    uint32 numOfOps = 4;
-//}
-//
-//message ErrorOperation {
-//    BaseOperation base = 1;
-//    uint32 code = 2;
-//    string msg = 3;
-//}
-//
-//message PayloadOperation {
-//    BaseOperation base = 1;
-//    int32 typeOf = 2;
-//    bytes payload = 3;
-//}
-//
-//message PutOperation {
-//    BaseOperation base = 1;
-//    string key = 2;
-//    string value = 3;
-//}
-//
-//message RemoveOperation {
-//    BaseOperation base = 1;
-//    string key = 2;
-//}
-
 enum TypeOfOperation {
     SNAPSHOT = 0;
     DELETE = 2;
@@ -92,12 +45,17 @@ enum TypeOfOperation {
     INT_COUNTER_INCREASE = 11;
     HASH_MAP_PUT = 21;
     HASH_MAP_REMOVE = 22;
+    LIST_INSERT = 31;
+    LIST_DELETE = 32;
+    LIST_UPDATE = 33;
 }
 
 enum TypeOfDatatype {
     INT_COUNTER = 0;
     HASH_MAP = 1;
-    JSON = 2;
+    LIST = 2;
+    JSON = 3;
+
 }
 
 enum StateOfDatatype {
@@ -109,18 +67,6 @@ enum StateOfDatatype {
     UNSUBSCRIBED = 6;
     DELETED = 7;
 }
-//
-//message OperationOnWire {
-//    oneof body {
-//        SnapshotOperation snapshot = 1;
-//        ErrorOperation error = 2;
-//        TransactionOperation transaction = 5;
-//        IncreaseOperation increase = 11;
-//        PutOperation put = 21;
-//        RemoveOperation remove = 22;
-//        PayloadOperation payload = 31;
-//    }
-//}
 
 message PushPullPack {
     bytes DUID = 1;

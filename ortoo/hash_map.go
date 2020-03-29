@@ -66,7 +66,7 @@ func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
 	case *operations.RemoveOperation:
 		return its.snapshot.removeCommon(cast.C.Key, cast.ID.GetTimestamp()), nil
 	}
-	return nil, nil
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
 func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
@@ -117,6 +117,9 @@ func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 }
 
 func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
+	if key == "" || value == nil {
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "empty key or nil value is not allowed")
+	}
 	jsonSupportedType := types.ConvertToJSONSupportedType(value)
 
 	op := operations.NewPutOperation(key, jsonSupportedType)
@@ -131,6 +134,9 @@ func (its *hashMap) Get(key string) interface{} {
 }
 
 func (its *hashMap) Remove(key string) (interface{}, error) {
+	if key == "" {
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "empty key is not allowed")
+	}
 	op := operations.NewRemoveOperation(key)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 }
