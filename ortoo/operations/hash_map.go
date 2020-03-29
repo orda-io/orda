@@ -67,6 +67,8 @@ func (its *PutOperation) GetAsJSON() interface{} {
 	}
 }
 
+// ////////////////// RemoveOperation ////////////////////
+
 // NewRemoveOperation creates a RemoveOperation of hash map.
 func NewRemoveOperation(key string) *RemoveOperation {
 	return &RemoveOperation{

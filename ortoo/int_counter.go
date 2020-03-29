@@ -66,7 +66,7 @@ func (its *intCounter) GetFinal() *datatypes.FinalDatatype {
 	return its.FinalDatatype
 }
 
-// ExecuteLocal is the
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
 	iop := op.(*operations.IncreaseOperation)
 	return its.snapshot.increaseCommon(iop.C.Delta), nil

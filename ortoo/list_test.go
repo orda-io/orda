@@ -12,10 +12,14 @@ func TestList(t *testing.T) {
 
 	t.Run("Can perform list operations", func(t *testing.T) {
 		tw := testonly.NewTestWire()
-		cuid1 := model.NewCUID()
-		list1 := newList("key1", cuid1, tw, nil)
+		list1 := newList("key1", model.NewCUID(), tw, nil)
+		list2 := newList("key2", model.NewCUID(), tw, nil)
+		tw.SetDatatypes(list1.(*list).FinalDatatype, list2.(*list).FinalDatatype)
 
-		list1.Insert(0, 1)
+		_, _ = list1.Insert(0, "x", "y")
+		log.Logger.Infof("%v", list1.(*list).snapshot)
+		_, _ = list1.Insert(2, "A", "B")
+		log.Logger.Infof("%v", list1.(*list).snapshot)
 
 	})
 

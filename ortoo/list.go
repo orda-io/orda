@@ -44,6 +44,13 @@ func (its *list) GetAsJSON() (string, error) {
 }
 
 func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
+	switch cast := op.(type) {
+	case *operations.SnapshotOperation:
+
+	case *operations.InsertOperation:
+		return its.snapshot.insertRemote(cast.C.Target.Hash(), cast.ID.GetTimestamp(), cast.C.Values...)
+	case *operations.DeleteOperation:
+	}
 	panic("implement me")
 }
 
@@ -63,7 +70,7 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
 	case *operations.InsertOperation:
 		// cast.C.Target
-		target, ret, err := its.snapshot.insertLocal(cast.Pos, cast.ID.GetTimestamp(), cast.C.Values)
+		target, ret, err := its.snapshot.insertLocal(cast.Pos, cast.ID.GetTimestamp(), cast.C.Values...)
 		if err != nil {
 
 		}
@@ -79,7 +86,7 @@ func (its *list) Insert(pos int32, values ...interface{}) (interface{}, error) {
 		jsonValues = append(jsonValues, types.ConvertToJSONSupportedType(val))
 	}
 
-	op := operations.NewInsertOperation(pos, jsonValues)
+	op := operations.NewInsertOperation(pos, jsonValues...)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 }
 
@@ -224,7 +231,7 @@ func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...i
 }
 
 func (its *listSnapshot) deleteLocal(pos int32, ts *model.Timestamp) (interface{}, error) {
-	if its.size-1 < int32(pos) { // if size==4, 3 is ok, but 4 is not ok
+	if its.size-1 < pos { // if size==4, 3 is ok, but 4 is not ok
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
 	target := its.findNthNode(pos + 1)
@@ -236,7 +243,7 @@ func (its *listSnapshot) deleteLocal(pos int32, ts *model.Timestamp) (interface{
 	return nil, nil
 }
 
-// h t1 n1 n2 t2 t3 n3 t4 (h:head, n:node, t: tombstone)
+// for example: h t1 n1 n2 t2 t3 n3 t4 (h:head, n:node, t: tombstone)
 // pos : 0 => h : when tombstones follows, the node before them is returned.
 // pos : 1 => n1
 // pos : 2 => n2
@@ -252,7 +259,6 @@ func (its *listSnapshot) findNthNode(pos int32) *node {
 				ret = ret.next
 			}
 		}
-
 	}
 	return ret
 }

@@ -8,15 +8,15 @@ import (
 
 // TestWire ...
 type TestWire struct {
-	wiredList []*datatypes.WiredDatatype //Interface
-	sseqMap   map[string]int
+	datatypeList []*datatypes.FinalDatatype
+	sseqMap      map[string]int
 }
 
 // NewTestWire ...
 func NewTestWire() *TestWire {
 	return &TestWire{
-		wiredList: make([]*datatypes.WiredDatatype, 0),
-		sseqMap:   make(map[string]int),
+		datatypeList: make([]*datatypes.FinalDatatype, 0),
+		sseqMap:      make(map[string]int),
 	}
 }
 
@@ -25,9 +25,10 @@ func (c *TestWire) DeliverTransaction(wired *datatypes.WiredDatatype) {
 	pushPullPack := wired.CreatePushPullPack()
 	sseq := c.sseqMap[wired.GetBase().GetCUID()]
 	operations := pushPullPack.Operations[sseq:]
+	log.Logger.Infof("deliver transaction:%v", operations)
 	c.sseqMap[wired.GetBase().GetCUID()] = len(pushPullPack.Operations)
-	for _, w := range c.wiredList {
-		if wired != w {
+	for _, w := range c.datatypeList {
+		if wired != w.GetWired() {
 			log.Logger.Info(wired, " => ", w)
 			w.ReceiveRemoteModelOperations(operations)
 		}
@@ -40,13 +41,10 @@ func (c *TestWire) OnChangeDatatypeState(dt model.Datatype, state model.StateOfD
 }
 
 // SetDatatypes ...
-func (c *TestWire) SetDatatypes(datatypeList ...interface{}) {
+func (c *TestWire) SetDatatypes(datatypeList ...*datatypes.FinalDatatype) {
 
 	for _, v := range datatypeList {
-		if cv, ok := v.(datatypes.FinalDatatypeInterface); ok {
-			common := cv.GetFinal()
-			c.wiredList = append(c.wiredList, common.GetWired())
-			c.sseqMap[common.GetCUID()] = 0
-		}
+		c.datatypeList = append(c.datatypeList, v)
+		c.sseqMap[v.GetCUID()] = 0
 	}
 }

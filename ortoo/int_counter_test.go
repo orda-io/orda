@@ -41,7 +41,7 @@ func TestIntCounterTransactions(t *testing.T) {
 		intCounter1 := newIntCounter("key1", model.NewNilCUID(), tw, nil)
 		intCounter2 := newIntCounter("key2", model.NewNilCUID(), tw, nil)
 
-		tw.SetDatatypes(intCounter1, intCounter2)
+		tw.SetDatatypes(intCounter1.(*intCounter).FinalDatatype, intCounter2.(*intCounter).FinalDatatype)
 
 		i, err := intCounter1.Increase()
 		require.NoError(t, err)
