@@ -62,7 +62,7 @@ func (b *BaseDatatype) executeLocalBase(op operations.Operation) (interface{}, e
 func (b *BaseDatatype) Replay(op operations.Operation) error {
 	if bytes.Compare(b.opID.CUID, op.GetID().CUID) == 0 {
 		_, err := b.executeLocalBase(op)
-		if err != nil {
+		if err != nil { // TODO: if an operation fails to be executed, opID should be rollbacked.
 			return log.OrtooErrorf(err, "fail to replay local operation")
 		}
 	} else {
