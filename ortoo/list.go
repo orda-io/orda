@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
@@ -41,7 +42,7 @@ type list struct {
 }
 
 func (its *list) GetAsJSON() (string, error) {
-	panic("implement me")
+	return its.snapshot.GetAsJSON()
 }
 
 func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
@@ -78,7 +79,7 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
 		cast.C.Target = target
 		return ret, nil
 	case *operations.DeleteOperation:
-		deletedTimestamps, deletedValues, err := its.snapshot.deleteLocal(cast.Pos, cast.Pos, cast.ID.GetTimestamp())
+		deletedTimestamps, deletedValues, err := its.snapshot.deleteLocal(cast.Pos, int(cast.Pos), cast.ID.GetTimestamp())
 		if err != nil {
 			return nil, err
 		}
@@ -261,31 +262,51 @@ func (its *listSnapshot) isTombstone(n *node) bool {
 	return false
 }
 
-func (its *listSnapshot) updateLocal(pos int32, ts *model.Timestamp, values ...interface{}) (interface{}, error) {
+func (its *listSnapshot) updateLocal(pos int32, ts *model.Timestamp, values ...interface{}) ([]*model.Timestamp, interface{}, error) {
 	if err := its.validateRange(pos, len(values)); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
+	var updatedValues []interface{}
+	var updatedTargets []*model.Timestamp
+	target := its.findNthTarget(pos + 1)
+	for _, v := range values {
+		target.V = append(updatedValues, target.V)
+		updatedTargets = append(updatedTargets, target.T)
+		target.V = v
+		target.P = ts
+		target = target.getNextLiveNode()
+	}
+	return updatedTargets, updatedValues, nil
 }
 
-func (its *listSnapshot) updateRemote() {
-
+func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []interface{}, ts *model.Timestamp) {
+	for i, t := range targets {
+		if node, ok := its.Map[t.Hash()]; ok {
+			if its.isTombstone(node) {
+				continue
+			}
+			if node.T.Compare(ts) < 0 {
+				node.V = values[i]
+				node.P = ts
+			}
+		}
+	}
 }
 
 func (its *listSnapshot) deleteRemote(targets []*model.Timestamp, ts *model.Timestamp) (interface{}, error) {
 	for _, t := range targets {
 		if node, ok := its.Map[t.Hash()]; ok {
-
-			if node.P != nil && node.P.Compare(ts) >= 0 { // 1st condition: updated or deleted,
-
-			}
-			node.P = ts
-			if node.V != nil {
+			if !its.isTombstone(node) {
+				node.V = nil
 				its.size--
+				node.P = ts
+			} else { // concurrent deletes
+				if node.P.Compare(ts) < 0 {
+					node.P = ts
+				}
 			}
-			node.V = nil
 		} else {
-			log.Logger.Warnf("fail to find target: %v", t.ToString())
+			log.Logger.Warnf("fail to find delete target: %v", t.ToString())
 		}
 	}
 	return nil, nil
@@ -304,19 +325,19 @@ func (its *listSnapshot) deleteLocal(pos int32, numOfNodes int, ts *model.Timest
 	if err := its.validateRange(pos, numOfNodes); err != nil {
 		return nil, nil, err
 	}
-	var deletedTS []*model.Timestamp
+	var deletedTargets []*model.Timestamp
 	var deletedValues []interface{}
 	target := its.findNthTarget(pos + 1) // no head, but live node
-	for i := 0; i < int(numOfNodes); i++ {
+	for i := 0; i < numOfNodes; i++ {
 		deletedValues = append(deletedValues, target.V)
-		deletedTS = append(deletedTS, target.T)
+		deletedTargets = append(deletedTargets, target.T)
 		target.V = nil
 		target.P = ts
 		its.size--
 
 		target = target.getNextLiveNode()
 	}
-	return deletedTS, deletedValues, nil
+	return deletedTargets, deletedValues, nil
 }
 
 // for example: h t1 n1 n2 t2 t3 n3 t4 (h:head, n:node, t: tombstone) size==3
@@ -366,5 +387,15 @@ func (its *listSnapshot) String() string {
 }
 
 func (its *listSnapshot) GetAsJSON() (string, error) {
-	return "", nil
+	var l []interface{}
+	n := its.head.getNextLiveNode()
+	for n != nil {
+		l = append(l, n.V)
+		n = n.getNextLiveNode()
+	}
+	j, err := json.Marshal(l)
+	if err != nil {
+		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	return string(j), nil
 }

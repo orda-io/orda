@@ -11,7 +11,7 @@ import (
 
 func TestIntCounterTransactions(t *testing.T) {
 	t.Run("Can transaction for IntCounter", func(t *testing.T) {
-		tw := testonly.NewTestWire()
+		tw := testonly.NewTestWire(true)
 		cuid1 := model.NewCUID()
 
 		intCounter1 := newIntCounter("key1", cuid1, tw, nil)
@@ -37,7 +37,7 @@ func TestIntCounterTransactions(t *testing.T) {
 	})
 
 	t.Run("Can sync IntCounter operations with Test wire", func(t *testing.T) {
-		tw := testonly.NewTestWire()
+		tw := testonly.NewTestWire(true)
 		intCounter1 := newIntCounter("key1", model.NewNilCUID(), tw, nil)
 		intCounter2 := newIntCounter("key2", model.NewNilCUID(), tw, nil)
 

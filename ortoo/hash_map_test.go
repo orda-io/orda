@@ -13,7 +13,7 @@ import (
 func TestHashMap(t *testing.T) {
 
 	t.Run("Can run transaction", func(t *testing.T) {
-		tw := testonly.NewTestWire()
+		tw := testonly.NewTestWire(true)
 		cuid1 := model.NewCUID()
 		hashMap1 := newHashMap("key1", cuid1, tw, nil)
 		key1 := "k1"

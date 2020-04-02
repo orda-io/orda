@@ -11,20 +11,30 @@ import (
 func TestList(t *testing.T) {
 
 	t.Run("Can perform list operations", func(t *testing.T) {
-		tw := testonly.NewTestWire()
+		tw := testonly.NewTestWire(false)
 		list1 := newList("key1", model.NewCUID(), tw, nil)
 		list2 := newList("key2", model.NewCUID(), tw, nil)
 		tw.SetDatatypes(list1.(*list).FinalDatatype, list2.(*list).FinalDatatype)
 
 		inserted1, _ := list1.Insert(0, "x", "y")
 		require.Equal(t, []interface{}{"x", "y"}, inserted1)
-		log.Logger.Infof("%v", list1.(*list).snapshot)
-		inserted2, _ := list1.Insert(2, 1, 3.1415)
-		require.Equal(t, []interface{}{int64(1), 3.1415}, inserted2)
-		log.Logger.Infof("%v", list1.(*list).snapshot)
-
+		if json1, err := list1.GetAsJSON(); err == nil {
+			log.Logger.Infof("%s", json1)
+		}
+		log.Logger.Infof("SNAP1: %v", list1.(*list).snapshot)
+		log.Logger.Infof("SNAP2: %v", list2.(*list).snapshot)
+		inserted2, _ := list2.Insert(0, "a", "b")
+		require.Equal(t, []interface{}{"a", "b"}, inserted2)
+		log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
+		log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
+		tw.Sync()
+		log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
+		log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
 	})
 
+}
+
+func TestListSnapshot(t *testing.T) {
 	t.Run("Can do operations with listSnapshot", func(t *testing.T) {
 		snap := newListSnapshot()
 		ts1 := model.NewOperationIDWithCuid(model.NewCUID()).GetTimestamp()
