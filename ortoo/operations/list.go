@@ -2,19 +2,19 @@ package operations
 
 import "github.com/knowhunger/ortoo/ortoo/model"
 
-func NewInsertOperation(pos int, values ...interface{}) *InsertOperation {
+func NewInsertOperation(pos int, values []interface{}) *InsertOperation {
 	return &InsertOperation{
 		baseOperation: newBaseOperation(nil),
 		Pos:           int32(pos),
 		C: insertContent{
-			Values: values,
+			V: values,
 		},
 	}
 }
 
 type insertContent struct {
-	Target *model.Timestamp
-	Values []interface{}
+	T *model.Timestamp
+	V []interface{}
 }
 
 type InsertOperation struct {
@@ -59,7 +59,7 @@ func NewDeleteOperation(pos int, numOfNodes int) *DeleteOperation {
 }
 
 type deleteContent struct {
-	Targets []*model.Timestamp
+	T []*model.Timestamp
 }
 
 type DeleteOperation struct {
@@ -95,12 +95,25 @@ func (its *DeleteOperation) String() string {
 
 // ////////////////// UpdateOperation ////////////////////
 
+func NewUpdateOperation(pos int, values []interface{}) *UpdateOperation {
+	return &UpdateOperation{
+		baseOperation: newBaseOperation(nil),
+		Pos:           int32(pos),
+		C: updateContent{
+			V: values,
+		},
+	}
+}
+
 type updateContent struct {
+	T []*model.Timestamp
+	V []interface{}
 }
 
 type UpdateOperation struct {
 	*baseOperation
-	C updateContent
+	Pos int32
+	C   updateContent
 }
 
 func (its *UpdateOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {

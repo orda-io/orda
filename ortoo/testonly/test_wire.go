@@ -53,11 +53,11 @@ func (its *TestWire) Sync() {
 		sseq := its.sseqMap[wired.GetCUID()]
 		operations := pushPullPack.Operations[sseq:]
 
-		log.Logger.Infof("deliver transaction:%v", operations)
+		log.Logger.Infof("deliver transaction:%v", model.OperationsToString(operations))
 		its.sseqMap[wired.GetBase().GetCUID()] = len(pushPullPack.Operations)
 		for _, w := range its.datatypeList {
 			if wired != w.GetWired() {
-				log.Logger.Info(wired, " => ", w)
+				log.Logger.Info(wired.GetCUID(), " => ", w.GetCUID())
 				w.ReceiveRemoteModelOperations(operations)
 			}
 		}

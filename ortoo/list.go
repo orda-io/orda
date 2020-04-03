@@ -19,9 +19,11 @@ type List interface {
 
 type ListInTxn interface {
 	Insert(pos int, value ...interface{}) (interface{}, error)
-	Get(pos int) interface{}
+	Get(pos int) (interface{}, error)
+	GetMany(pos int, numOfNode int) ([]interface{}, error)
 	Delete(pos int) (interface{}, error)
 	DeleteMany(pos int, numOfNode int) ([]interface{}, error)
+	Update(pos int, value ...interface{}) ([]interface{}, error)
 }
 
 func newList(key string, cuid model.CUID, wire datatypes.Wire, handlers *Handlers) List {
@@ -50,11 +52,13 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
 	case *operations.SnapshotOperation:
 
 	case *operations.InsertOperation:
-		return its.snapshot.insertRemote(cast.C.Target.Hash(), cast.ID.GetTimestamp(), cast.C.Values...)
+		return its.snapshot.insertRemote(cast.C.T.Hash(), cast.ID.GetTimestamp(), cast.C.V...)
 	case *operations.DeleteOperation:
-		return its.snapshot.deleteRemote(cast.C.Targets, cast.ID.GetTimestamp())
+		return its.snapshot.deleteRemote(cast.C.T, cast.ID.GetTimestamp())
+	case *operations.UpdateOperation:
+		return its.snapshot.updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
 	}
-	panic("implement me")
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
 func (its *list) GetSnapshot() model.Snapshot {
@@ -72,38 +76,74 @@ func (its *list) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
 	case *operations.InsertOperation:
-		target, ret, err := its.snapshot.insertLocal(cast.Pos, cast.ID.GetTimestamp(), cast.C.Values...)
+		target, ret, err := its.snapshot.insertLocal(cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
 		if err != nil {
 			return nil, err
 		}
-		cast.C.Target = target
+		cast.C.T = target
 		return ret, nil
 	case *operations.DeleteOperation:
-		deletedTimestamps, deletedValues, err := its.snapshot.deleteLocal(cast.Pos, int(cast.Pos), cast.ID.GetTimestamp())
+		deletedTargets, deletedValues, err := its.snapshot.deleteLocal(cast.Pos, int(cast.Pos), cast.ID.GetTimestamp())
 		if err != nil {
 			return nil, err
 		}
-		cast.C.Targets = deletedTimestamps
+		cast.C.T = deletedTargets
 		return deletedValues, nil
+	case *operations.UpdateOperation:
+		updatedTargets, updatedValues, err := its.snapshot.updateLocal(cast.Pos, cast.ID.GetTimestamp(), cast.C.V)
+		if err != nil {
+			return nil, err
+		}
+		cast.C.T = updatedTargets
+		if len(cast.C.T) != len(cast.C.V) {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "not matched")
+		}
+		return updatedValues, nil
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+}
+
+func (its *list) Update(pos int, values ...interface{}) ([]interface{}, error) {
+	if len(values) < 1 {
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
+	}
+	if err := its.snapshot.validateRange(int32(pos), len(values)); err != nil {
+		return nil, err
+	}
+	jsonValues, err := types.ConvertValueList(values)
+	if err != nil {
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, err.Error())
+	}
+	op := operations.NewUpdateOperation(pos, jsonValues)
+	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		return nil, err
+	}
+	return ret.([]interface{}), nil
 }
 
 func (its *list) Insert(pos int, values ...interface{}) (interface{}, error) {
 	if len(values) < 1 {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
 	}
-	var jsonValues []interface{}
-	for _, val := range values {
-		jsonValues = append(jsonValues, types.ConvertToJSONSupportedType(val))
+	jsonValues, err := types.ConvertValueList(values)
+	if err != nil {
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, err.Error())
 	}
-
-	op := operations.NewInsertOperation(pos, jsonValues...)
-	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	op := operations.NewInsertOperation(pos, jsonValues)
+	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
-func (its *list) Get(pos int) interface{} {
-	return nil
+func (its *list) Get(pos int) (interface{}, error) {
+	return its.snapshot.get(int32(pos))
+}
+
+func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, error) {
+	return its.snapshot.getMany(int32(pos), numOfNodes)
 }
 
 // Delete deletes one node at index pos.
@@ -117,6 +157,9 @@ func (its *list) Delete(pos int) (interface{}, error) {
 
 // DeleteMany deletes the nodes at index pos in sequence.
 func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
+	if err := its.snapshot.validateRange(int32(pos), numOfNode); err != nil {
+		return nil, err
+	}
 	op := operations.NewDeleteOperation(pos, numOfNode)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
@@ -207,7 +250,7 @@ func (its *listSnapshot) insertRemote(pos string, ts *model.Timestamp, values ..
 		currentTs := ts
 		for _, val := range values {
 			nextTarget := target.next
-			for nextTarget != nil && nextTarget.T.Compare(ts) < 0 {
+			for nextTarget != nil && nextTarget.T.Compare(ts) > 0 {
 				target = target.next
 				nextTarget = nextTarget.next
 			}
@@ -230,7 +273,7 @@ func (its *listSnapshot) insertRemote(pos string, ts *model.Timestamp, values ..
 	return nil, nil
 }
 
-func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...interface{}) (*model.Timestamp, interface{}, error) {
+func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...interface{}) (*model.Timestamp, []interface{}, error) {
 	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
@@ -262,7 +305,7 @@ func (its *listSnapshot) isTombstone(n *node) bool {
 	return false
 }
 
-func (its *listSnapshot) updateLocal(pos int32, ts *model.Timestamp, values ...interface{}) ([]*model.Timestamp, interface{}, error) {
+func (its *listSnapshot) updateLocal(pos int32, ts *model.Timestamp, values []interface{}) ([]*model.Timestamp, []interface{}, error) {
 	if err := its.validateRange(pos, len(values)); err != nil {
 		return nil, nil, err
 	}
@@ -270,7 +313,7 @@ func (its *listSnapshot) updateLocal(pos int32, ts *model.Timestamp, values ...i
 	var updatedTargets []*model.Timestamp
 	target := its.findNthTarget(pos + 1)
 	for _, v := range values {
-		target.V = append(updatedValues, target.V)
+		updatedValues = append(updatedValues, target.V)
 		updatedTargets = append(updatedTargets, target.T)
 		target.V = v
 		target.P = ts
@@ -279,7 +322,7 @@ func (its *listSnapshot) updateLocal(pos int32, ts *model.Timestamp, values ...i
 	return updatedTargets, updatedValues, nil
 }
 
-func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []interface{}, ts *model.Timestamp) {
+func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []interface{}, ts *model.Timestamp) (interface{}, error) {
 	for i, t := range targets {
 		if node, ok := its.Map[t.Hash()]; ok {
 			if its.isTombstone(node) {
@@ -291,6 +334,7 @@ func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []inter
 			}
 		}
 	}
+	return nil, nil
 }
 
 func (its *listSnapshot) deleteRemote(targets []*model.Timestamp, ts *model.Timestamp) (interface{}, error) {
@@ -365,16 +409,26 @@ func (its *listSnapshot) get(pos int32) (interface{}, error) {
 	if its.size <= pos {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
-	target := its.findNthTarget(pos)
+	target := its.findNthTarget(pos + 1)
 	liveNode := target.getNextLiveNode()
 	return liveNode.V, nil
 }
 
+func (its *listSnapshot) getMany(pos int32, numOfNodes int) ([]interface{}, error) {
+	if err := its.validateRange(pos, numOfNodes); err != nil {
+		return nil, err
+	}
+	var ret []interface{}
+	for i := 0; i < numOfNodes; i++ {
+		target := its.findNthTarget(pos + int32(i))
+		ret = append(ret, target)
+	}
+	return ret, nil
+}
+
 func (its *listSnapshot) String() string {
 	sb := strings.Builder{}
-	_, _ = fmt.Fprintf(&sb, "(SIZE"+
-		":%d) ", its.size)
-	sb.WriteString("HEAD =>")
+	_, _ = fmt.Fprintf(&sb, "(SIZE:%d) HEAD =>", its.size)
 	n := its.head.next
 	for n != nil {
 		sb.WriteString(n.String())
