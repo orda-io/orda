@@ -60,7 +60,7 @@ func (its *list) DoTransaction(tag string, txnFunc func(list ListInTxn) error) e
 	})
 }
 
-func (its *list) GetAsJSON() (string, error) {
+func (its *list) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSON()
 }
 
@@ -478,16 +478,16 @@ func (its *listSnapshot) String() string {
 	return sb.String()
 }
 
-func (its *listSnapshot) GetAsJSON() (string, error) {
+func (its *listSnapshot) GetAsJSON() interface{} {
 	var l []interface{}
 	n := its.head.getNextLiveNode()
 	for n != nil {
 		l = append(l, n.V)
 		n = n.getNextLiveNode()
 	}
-	j, err := json.Marshal(l)
-	if err != nil {
-		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	return struct {
+		Value []interface{}
+	}{
+		Value: l,
 	}
-	return string(j), nil
 }

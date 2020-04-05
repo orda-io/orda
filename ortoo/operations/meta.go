@@ -2,6 +2,7 @@ package operations
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -210,7 +211,11 @@ func (its *ErrorOperation) GetPushPullError() *model.PushPullError {
 
 // NewSnapshotOperation creates a SnapshotOperation
 func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDatatype, snapshot model.Snapshot) (*SnapshotOperation, error) {
-	json, err := snapshot.GetAsJSON()
+	j := snapshot.GetAsJSON()
+	// if err != nil {
+	// 	return nil, log.OrtooError(err)
+	// }
+	data, err := json.Marshal(j)
 	if err != nil {
 		return nil, log.OrtooError(err)
 	}
@@ -219,7 +224,7 @@ func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDataty
 		C: snapshotContent{
 			Type:     typeOf,
 			State:    state,
-			Snapshot: json,
+			Snapshot: string(data),
 		},
 	}, nil
 }

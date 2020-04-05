@@ -93,7 +93,7 @@ func (its *hashMap) SetSnapshot(snapshot model.Snapshot) {
 	its.snapshot = snapshot.(*hashMapSnapshot)
 }
 
-func (its *hashMap) GetAsJSON() (string, error) {
+func (its *hashMap) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSON()
 }
 
@@ -200,18 +200,14 @@ func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.T
 	return oldObj.V, nil
 }
 
-func (its *hashMapSnapshot) GetAsJSON() (string, error) {
+func (its *hashMapSnapshot) GetAsJSON() interface{} {
 	m := make(map[string]interface{})
 	for k, v := range its.Map {
 		if v.V != nil {
 			m[k] = v.V
 		}
 	}
-	data, err := json.Marshal(m)
-	if err != nil {
-		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-	}
-	return string(data), nil
+	return m
 
 }
 

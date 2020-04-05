@@ -13,13 +13,20 @@ const (
 )
 
 // InsertRealSnapshot inserts a snapshot for real collection.
-func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName, id, data string, sseq uint64) error {
-
+func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName, id string, data interface{}, sseq uint64) error {
 	collection := r.db.Collection(collectionName)
-	var bsonM = bson.M{}
-	if err := bson.Unmarshal([]byte(data), &bsonM); err != nil {
+
+	// TODO: interface{} is transformed to bson.M through two phases: interface{} -> bytes{} -> bson.M
+	// need to write a direct transformation method.
+	marshaled, err := bson.Marshal(data)
+	if err != nil {
 		return log.OrtooError(err)
 	}
+	var bsonM = bson.M{}
+	if err := bson.Unmarshal(marshaled, &bsonM); err != nil {
+		return log.OrtooError(err)
+	}
+
 	bsonM[ver] = sseq
 	filter := schema.GetFilter().AddSnapshot(bsonM)
 	res, err := collection.UpdateOne(ctx, schema.FilterByID(id), bson.D(filter), schema.UpsertOption)

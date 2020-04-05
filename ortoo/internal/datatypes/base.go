@@ -24,7 +24,7 @@ type BaseDatatype struct {
 type PublicBaseDatatypeInterface interface {
 	GetType() model.TypeOfDatatype
 	GetState() model.StateOfDatatype
-	GetAsJSON() (string, error)
+	GetAsJSON() interface{}
 }
 
 func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) *BaseDatatype {

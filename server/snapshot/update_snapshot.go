@@ -100,10 +100,7 @@ func (m *Manager) UpdateSnapshot() error {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 
-	data, err := snap.GetAsJSON()
-	if err != nil {
-		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
-	}
+	data := snap.GetAsJSON()
 	if err := m.mongo.InsertRealSnapshot(m.ctx, m.collectionDoc.Name, m.datatypeDoc.Key, data, sseq); err != nil {
 		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}

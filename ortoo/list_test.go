@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -9,6 +10,12 @@ import (
 	"testing"
 	"time"
 )
+
+func marshal(t *testing.T, j interface{}) string {
+	data, err := json.Marshal(j)
+	require.NoError(t, err)
+	return string(data)
+}
 
 func TestList(t *testing.T) {
 
@@ -20,23 +27,19 @@ func TestList(t *testing.T) {
 
 		inserted1, _ := list1.Insert(0, "x", "y")
 		require.Equal(t, []interface{}{"x", "y"}, inserted1)
-		json1, err := list1.GetAsJSON()
-		require.NoError(t, err)
+		json1 := marshal(t, list1.GetAsJSON())
 		require.Equal(t, `["x","y"]`, json1)
 		log.Logger.Infof("%s", json1)
 
 		inserted2, _ := list2.Insert(0, "a", "b")
 		require.Equal(t, []interface{}{"a", "b"}, inserted2)
-		json2, err := list2.GetAsJSON()
-		require.NoError(t, err)
+		json2 := marshal(t, list2.GetAsJSON())
 		require.Equal(t, `["a","b"]`, json2)
 		log.Logger.Infof("%s", json2)
 
 		tw.Sync()
-		json3, err := list1.GetAsJSON()
-		require.NoError(t, err)
-		json4, err := list2.GetAsJSON()
-		require.NoError(t, err)
+		json3 := marshal(t, list1.GetAsJSON())
+		json4 := marshal(t, list2.GetAsJSON())
 		require.Equal(t, json3, json4)
 		log.Logger.Infof("%s vs. %s", json3, json4)
 		log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
@@ -47,8 +50,8 @@ func TestList(t *testing.T) {
 		log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
 		tw.Sync()
-		json5, _ := list1.GetAsJSON()
-		json6, _ := list2.GetAsJSON()
+		json5 := marshal(t, list1.GetAsJSON())
+		json6 := marshal(t, list2.GetAsJSON())
 		log.Logger.Infof("SNAP1: %v => %v", json5, list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2: %v => %v", json6, list2.(*list).snapshot)
 		require.Equal(t, json5, json6)
@@ -58,8 +61,8 @@ func TestList(t *testing.T) {
 		updated2, _ := list2.Update(0, "A", "B")
 		require.Equal(t, []interface{}{"a", "b"}, updated2)
 		tw.Sync()
-		json7, _ := list1.GetAsJSON()
-		json8, _ := list2.GetAsJSON()
+		json7 := marshal(t, list1.GetAsJSON())
+		json8 := marshal(t, list2.GetAsJSON())
 		require.Equal(t, json7, json8)
 		log.Logger.Infof("SNAP1: %v => %v", json7, list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2: %v => %v", json8, list2.(*list).snapshot)
@@ -70,8 +73,8 @@ func TestList(t *testing.T) {
 		_, _ = list1.Update(2, time1, m)
 		_, _ = list2.Update(2, m, time1)
 		tw.Sync()
-		json9, _ := list1.GetAsJSON()
-		json10, _ := list2.GetAsJSON()
+		json9 := marshal(t, list1.GetAsJSON())
+		json10 := marshal(t, list2.GetAsJSON())
 		log.Logger.Infof("SNAP1: %v => %v", json9, list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2: %v => %v", json10, list2.(*list).snapshot)
 		require.Equal(t, json9, json10)
@@ -83,8 +86,8 @@ func TestList(t *testing.T) {
 		deleted2, _ := list2.DeleteMany(0, 2)
 		log.Logger.Infof("%v vs %v", deleted1, deleted2)
 		tw.Sync()
-		json11, _ := list1.GetAsJSON()
-		json12, _ := list2.GetAsJSON()
+		json11 := marshal(t, list1.GetAsJSON())
+		json12 := marshal(t, list2.GetAsJSON())
 		log.Logger.Infof("SNAP1: %v => %v", json11, list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2: %v => %v", json12, list2.(*list).snapshot)
 
