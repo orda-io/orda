@@ -15,7 +15,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/lyft/protoc-gen-star v0.4.14 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/stretchr/testify v1.3.0
 	github.com/tebeka/go2xunit v1.4.10 // indirect

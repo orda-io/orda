@@ -4,14 +4,15 @@ import (
 	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
+	"time"
 )
 
-func (its *OrtooIntegrationTestSuite) TestHashMap() {
+func (its *OrtooIntegrationTestSuite) TestList() {
 	key := GetFunctionName()
 
-	its.Run("Can update snapshot for hash map", func() {
+	its.Run("Can update snapshot for list", func() {
 		config := NewTestOrtooClientConfig(its.collectionName)
-		client1 := ortoo.NewClient(config, "client1")
+		client1 := ortoo.NewClient(config, "listClient")
 
 		err := client1.Connect()
 		require.NoError(its.T(), err)
@@ -19,7 +20,7 @@ func (its *OrtooIntegrationTestSuite) TestHashMap() {
 			_ = client1.Close()
 		}()
 
-		hashMap1 := client1.CreateHashMap(key, ortoo.NewHandlers(
+		list1 := client1.CreateList(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 
 			},
@@ -29,19 +30,7 @@ func (its *OrtooIntegrationTestSuite) TestHashMap() {
 			func(dt ortoo.Datatype, errs ...error) {
 
 			}))
-		_, _ = hashMap1.Put("hello", "world")
-		_, _ = hashMap1.Put("num", 1234)
-		_, _ = hashMap1.Put("float", 3.141592)
-		_, _ = hashMap1.Put("struct", struct {
-			ID  string
-			Age uint
-		}{
-			ID:  "hello",
-			Age: 10,
-		})
-		_, _ = hashMap1.Put("list", []string{"x", "y", "z"})
-		_, _ = hashMap1.Put("Removed", "deleted")
-		_, _ = hashMap1.Remove("Removed")
+		_, _ = list1.Insert(0, "a", 2, 3.141592, time.Now())
 		require.NoError(its.T(), client1.Sync())
 	})
 }

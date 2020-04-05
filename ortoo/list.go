@@ -15,6 +15,7 @@ import (
 type List interface {
 	Datatype
 	ListInTxn
+	DoTransaction(tag string, txnFunc func(listTxn ListInTxn) error) error
 }
 
 type ListInTxn interface {
@@ -43,34 +44,24 @@ type list struct {
 	snapshot *listSnapshot
 }
 
+func (its *list) DoTransaction(tag string, txnFunc func(list ListInTxn) error) error {
+	return its.FinalDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+		clone := &list{
+			datatype: &datatype{
+				FinalDatatype: &datatypes.FinalDatatype{
+					TransactionDatatype: its.FinalDatatype.TransactionDatatype,
+					TransactionCtx:      txnCtx,
+				},
+				handlers: its.handlers,
+			},
+			snapshot: its.snapshot,
+		}
+		return txnFunc(clone)
+	})
+}
+
 func (its *list) GetAsJSON() (string, error) {
 	return its.snapshot.GetAsJSON()
-}
-
-func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
-	switch cast := op.(type) {
-	case *operations.SnapshotOperation:
-
-	case *operations.InsertOperation:
-		return its.snapshot.insertRemote(cast.C.T.Hash(), cast.ID.GetTimestamp(), cast.C.V...)
-	case *operations.DeleteOperation:
-		return its.snapshot.deleteRemote(cast.C.T, cast.ID.GetTimestamp())
-	case *operations.UpdateOperation:
-		return its.snapshot.updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
-	}
-	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
-}
-
-func (its *list) GetSnapshot() model.Snapshot {
-	panic("implement me")
-}
-
-func (its *list) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
-	panic("implement me")
-}
-
-func (its *list) SetMetaAndSnapshot(meta []byte, snapshot string) error {
-	panic("implement me")
 }
 
 func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
@@ -83,7 +74,7 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
 		cast.C.T = target
 		return ret, nil
 	case *operations.DeleteOperation:
-		deletedTargets, deletedValues, err := its.snapshot.deleteLocal(cast.Pos, int(cast.Pos), cast.ID.GetTimestamp())
+		deletedTargets, deletedValues, err := its.snapshot.deleteLocal(cast.Pos, int(cast.NumOfNodes), cast.ID.GetTimestamp())
 		if err != nil {
 			return nil, err
 		}
@@ -101,6 +92,51 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
 		return updatedValues, nil
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+}
+
+func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
+	switch cast := op.(type) {
+	case *operations.SnapshotOperation:
+		var newSnap = newListSnapshot()
+		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		}
+		its.snapshot = newSnap
+		return nil, nil
+	case *operations.InsertOperation:
+		return its.snapshot.insertRemote(cast.C.T.Hash(), cast.ID.GetTimestamp(), cast.C.V...)
+	case *operations.DeleteOperation:
+		return its.snapshot.deleteRemote(cast.C.T, cast.ID.GetTimestamp())
+	case *operations.UpdateOperation:
+		return its.snapshot.updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
+	}
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+}
+
+func (its *list) GetSnapshot() model.Snapshot {
+	return its.snapshot
+}
+
+func (its *list) SetSnapshot(snapshot model.Snapshot) {
+	its.snapshot = snapshot.(*listSnapshot)
+}
+
+func (its *list) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
+	meta, err := its.FinalDatatype.GetMeta()
+	if err != nil {
+		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	return meta, its.snapshot, nil
+}
+
+func (its *list) SetMetaAndSnapshot(meta []byte, snapshot string) error {
+	if err := its.FinalDatatype.SetMeta(meta); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	return nil
 }
 
 func (its *list) Update(pos int, values ...interface{}) ([]interface{}, error) {
@@ -328,7 +364,7 @@ func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []inter
 			if its.isTombstone(node) {
 				continue
 			}
-			if node.T.Compare(ts) < 0 {
+			if node.P == nil || node.P.Compare(ts) < 0 {
 				node.V = values[i]
 				node.P = ts
 			}
@@ -359,6 +395,9 @@ func (its *listSnapshot) deleteRemote(targets []*model.Timestamp, ts *model.Time
 func (its *listSnapshot) validateRange(pos int32, numOfNodes int) error {
 	// 1st condition: if size==4, pos==3 is ok, but 4 is not ok
 	// 2nd condition: if size==4, (pos==3, numOfNodes==1) is ok, (pos==3, numOfNodes=2) is not ok.
+	if numOfNodes < 1 {
+		return errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "numOfNodes should be more than 0")
+	}
 	if its.size-1 < pos || pos+int32(numOfNodes) > its.size {
 		return errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
@@ -410,8 +449,7 @@ func (its *listSnapshot) get(pos int32) (interface{}, error) {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
 	target := its.findNthTarget(pos + 1)
-	liveNode := target.getNextLiveNode()
-	return liveNode.V, nil
+	return target.V, nil
 }
 
 func (its *listSnapshot) getMany(pos int32, numOfNodes int) ([]interface{}, error) {
@@ -419,9 +457,9 @@ func (its *listSnapshot) getMany(pos int32, numOfNodes int) ([]interface{}, erro
 		return nil, err
 	}
 	var ret []interface{}
-	for i := 0; i < numOfNodes; i++ {
+	for i := 1; i <= numOfNodes; i++ {
 		target := its.findNthTarget(pos + int32(i))
-		ret = append(ret, target)
+		ret = append(ret, target.V)
 	}
 	return ret, nil
 }

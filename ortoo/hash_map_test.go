@@ -19,7 +19,7 @@ func TestHashMap(t *testing.T) {
 		key1 := "k1"
 		key2 := "k2"
 
-		require.NoError(t, hashMap1.DoTransaction("transaction1", func(hm HashMapInTxn) error {
+		require.NoError(t, hashMap1.DoTransaction("transaction success", func(hm HashMapInTxn) error {
 			_, _ = hm.Put(key1, 2)
 			require.Equal(t, int64(2), hm.Get(key1))
 			oldVal, _ := hm.Put(key1, 3)
@@ -29,13 +29,13 @@ func TestHashMap(t *testing.T) {
 		}))
 		require.Equal(t, int64(3), hashMap1.Get(key1))
 
-		require.Error(t, hashMap1.DoTransaction("transaction2", func(hm HashMapInTxn) error {
+		require.Error(t, hashMap1.DoTransaction("transaction failure", func(hm HashMapInTxn) error {
 			oldVal, _ := hm.Remove(key1)
 			require.Equal(t, int64(3), oldVal)
 			require.Equal(t, nil, hm.Get(key1))
 			_, _ = hm.Put(key2, 5)
 			require.Equal(t, int64(5), hm.Get(key2))
-			return fmt.Errorf("error")
+			return fmt.Errorf("fail")
 		}))
 		require.Equal(t, int64(3), hashMap1.Get(key1))
 		require.Equal(t, nil, hashMap1.Get(key2))

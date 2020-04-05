@@ -9,7 +9,7 @@ type Datatype interface {
 	SetState(state StateOfDatatype) // @baseDatatype
 	GetCUID() string                // @baseDatatype
 
-	Rollback() error // @TransactionDatatype
+	// Rollback() error // @TransactionDatatype
 
 	SubscribeOrCreate(state StateOfDatatype) error                                             // @FinalDatatype
 	ExecuteTransactionRemote(transaction []*Operation, obtainList bool) ([]interface{}, error) // @FinalDatatype

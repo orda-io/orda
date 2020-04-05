@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,7 +17,7 @@ func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName
 
 	collection := r.db.Collection(collectionName)
 	var bsonM = bson.M{}
-	if err := json.Unmarshal([]byte(data), &bsonM); err != nil {
+	if err := bson.Unmarshal([]byte(data), &bsonM); err != nil {
 		return log.OrtooError(err)
 	}
 	bsonM[ver] = sseq

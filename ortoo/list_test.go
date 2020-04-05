@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/testonly"
@@ -62,71 +63,62 @@ func TestList(t *testing.T) {
 		require.Equal(t, json7, json8)
 		log.Logger.Infof("SNAP1: %v => %v", json7, list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2: %v => %v", json8, list2.(*list).snapshot)
+		m := make(map[string]string)
+		m["a"] = "x"
+		m["b"] = "y"
+		time1 := time.Now()
+		_, _ = list1.Update(2, time1, m)
+		_, _ = list2.Update(2, m, time1)
+		tw.Sync()
+		json9, _ := list1.GetAsJSON()
+		json10, _ := list2.GetAsJSON()
+		log.Logger.Infof("SNAP1: %v => %v", json9, list1.(*list).snapshot)
+		log.Logger.Infof("SNAP2: %v => %v", json10, list2.(*list).snapshot)
+		require.Equal(t, json9, json10)
+		time2, err := list1.Get(2)
+		require.NoError(t, err)
+		require.Equal(t, time1, time2.(time.Time))
+
+		deleted1, _ := list1.DeleteMany(0, 2)
+		deleted2, _ := list2.DeleteMany(0, 2)
+		log.Logger.Infof("%v vs %v", deleted1, deleted2)
+		tw.Sync()
+		json11, _ := list1.GetAsJSON()
+		json12, _ := list2.GetAsJSON()
+		log.Logger.Infof("SNAP1: %v => %v", json11, list1.(*list).snapshot)
+		log.Logger.Infof("SNAP2: %v => %v", json12, list2.(*list).snapshot)
+
+		_, err = list2.DeleteMany(0, 0)
+		require.Error(t, err)
+
 	})
 
-}
+	t.Run("Can run transactions", func(t *testing.T) {
+		tw := testonly.NewTestWire(true)
+		cuid1 := model.NewCUID()
+		list1 := newList("key1", cuid1, tw, nil)
 
-func TestListSnapshot(t *testing.T) {
-	t.Run("Can do operations with listSnapshot", func(t *testing.T) {
-		snap := newListSnapshot()
-		ts1 := model.NewOperationIDWithCuid(model.NewCUID()).GetTimestamp()
-		ts2 := model.NewOperationIDWithCuid(model.NewCUID()).GetTimestamp()
-
-		_, _, _ = snap.insertLocal(0, ts1, "hello", "world")
-		require.Equal(t, int32(2), snap.size)
-		n1, err := snap.get(1)
+		require.NoError(t, list1.DoTransaction("succeeded transaction", func(listTxn ListInTxn) error {
+			_, _ = listTxn.Insert(0, "a", "b")
+			gets1, err := listTxn.GetMany(0, 2)
+			require.NoError(t, err)
+			require.Equal(t, []interface{}{"a", "b"}, gets1)
+			return nil
+		}))
+		gets1, err := list1.GetMany(0, 2)
 		require.NoError(t, err)
-		require.Equal(t, "world", n1)
+		require.Equal(t, []interface{}{"a", "b"}, gets1)
 
-		_, _ = snap.insertRemote(model.OldestTimestamp.Hash(), ts2, "hi", "there")
-		require.Equal(t, int32(4), snap.size)
-		log.Logger.Infof("%v", snap)
-		n2, err := snap.get(4)
-		require.Error(t, err)
-		require.Nil(t, n2)
-
-		ts1.Lamport++
-		_, _, _ = snap.insertLocal(0, ts1, 3.1415)
-		log.Logger.Infof("%v", snap)
-
-		_, deleted1, _ := snap.deleteLocal(0, 1, ts1)
-		require.Equal(t, 3.1415, deleted1[0])
-		log.Logger.Infof("%v", snap)
-
-		ts1 = ts1.Next()
-		_, deleted2, _ := snap.deleteLocal(0, 1, ts1)
-		require.Equal(t, "hello", deleted2[0])
-		log.Logger.Infof("%v", snap)
-		ts1 = ts1.Next()
-		_, _, _ = snap.insertLocal(0, ts1, "x")
-		log.Logger.Infof("%v", snap)
-		require.Equal(t, nil, snap.findNthTarget(0).V) // should be head
-		require.Equal(t, "x", snap.findNthTarget(1).V)
-		require.Equal(t, "world", snap.findNthTarget(2).V)
-		require.Equal(t, "hi", snap.findNthTarget(3).V)
-		require.Equal(t, "there", snap.findNthTarget(4).V)
-		_, deleted3, _ := snap.deleteLocal(3, 1, ts1)
-		log.Logger.Infof("%v", snap)
-		require.Equal(t, "there", deleted3[0])
-		require.Equal(t, int32(3), snap.size)
-		ts1 = ts1.Next()
-		_, _, err = snap.deleteLocal(4, 1, ts1)
-		require.Error(t, err)
-		ts1 = ts1.Next()
-		ret, deleted4, err := snap.deleteLocal(0, 3, ts1)
-		require.Equal(t, int32(0), snap.size)
-		log.Logger.Infof("%v", snap)
-		log.Logger.Infof("%v", ret)
-		log.Logger.Infof("%v", deleted4)
-		require.Equal(t, []interface{}{"x", "world", "hi"}, deleted4)
-
-		ts1 = ts1.Next()
-		ti := time.Now()
-		_, _, err = snap.insertLocal(0, ts1, ti)
+		require.Error(t, list1.DoTransaction("failed transaction", func(listTxn ListInTxn) error {
+			_, _ = listTxn.Insert(0, "x", "y")
+			gets1, err := listTxn.GetMany(0, 2)
+			require.NoError(t, err)
+			require.Equal(t, []interface{}{"x", "y"}, gets1)
+			return fmt.Errorf("fail")
+		}))
+		gets2, err := list1.GetMany(0, 2)
 		require.NoError(t, err)
-		log.Logger.Infof("%v", snap)
-		g1, err := snap.get(0)
-		require.Equal(t, ti, g1)
-
+		require.Equal(t, []interface{}{"a", "b"}, gets2)
 	})
+
 }

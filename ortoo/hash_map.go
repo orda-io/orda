@@ -52,7 +52,6 @@ func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) erro
 				},
 				handlers: its.handlers,
 			},
-
 			snapshot: its.snapshot,
 		}
 		return txnFunc(clone)
