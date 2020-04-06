@@ -3,7 +3,7 @@ package mongodb
 // Config is a configuration for MongoDB
 type Config struct {
 	Host    string `json:"MongoHost"`
-	OrtooDB string `json:"MongoOrtoo"`
+	OrtooDB string `json:"OrtooDB"`
 }
 
 // NewTestMongoDBConfig creates a new MongoDBConfig for Test

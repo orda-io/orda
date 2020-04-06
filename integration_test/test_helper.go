@@ -5,8 +5,8 @@ import (
 	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
-	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/knowhunger/ortoo/server/server"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -55,9 +55,9 @@ func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 // NewTestOrtooServerConfig generates an OrtooServerConfig for testing.
 func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
-		OrtooServer:      "127.0.0.1:19061",
-		NotificationAddr: "127.0.0.1:1883",
-		Mongo:            mongodb.NewTestMongoDBConfig(dbName),
+		OrtooServer:  "127.0.0.1:19061",
+		Notification: "127.0.0.1:1883",
+		Mongo:        mongodb.NewTestMongoDBConfig(dbName),
 	}
 }
 

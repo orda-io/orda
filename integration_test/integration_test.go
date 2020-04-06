@@ -3,8 +3,8 @@ package integration
 import (
 	"context"
 	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/knowhunger/ortoo/server/server"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"strings"
