@@ -60,20 +60,3 @@ func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 		Mongo:        mongodb.NewTestMongoDBConfig(dbName),
 	}
 }
-
-// MakeTestCollection makes collections for testing.
-func MakeTestCollection(mongo *mongodb.RepositoryMongo, collectionName string) (uint32, error) {
-	collectionDoc, err := mongo.GetCollection(context.TODO(), collectionName)
-	if err != nil {
-		return 0, log.OrtooError(err)
-	}
-	if collectionDoc != nil {
-		return collectionDoc.Num, nil
-	}
-	collectionDoc, err = mongo.InsertCollection(context.TODO(), collectionName)
-	if err != nil {
-		return 0, log.OrtooError(err)
-	}
-	log.Logger.Infof("create a new collection:%+v", collectionDoc)
-	return collectionDoc.Num, nil
-}

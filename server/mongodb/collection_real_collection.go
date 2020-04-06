@@ -16,8 +16,8 @@ const (
 func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName, id string, data interface{}, sseq uint64) error {
 	collection := r.db.Collection(collectionName)
 
-	// TODO: interface{} is transformed to bson.M through two phases: interface{} -> bytes{} -> bson.M
-	// need to write a direct transformation method.
+	// interface{} is currently transformed to bson.M through two phases: interface{} -> bytes{} -> bson.M
+	// TODO: need to develop a direct transformation method.
 	marshaled, err := bson.Marshal(data)
 	if err != nil {
 		return log.OrtooError(err)

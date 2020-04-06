@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	confFile := flag.String("conf", "./server/conf/local-config.json", "configuration file path")
+	confFile := flag.String("conf", "", "configuration file path")
 	flag.Parse()
 
 	conf, err := server.LoadOrtooServerConfig(*confFile)

@@ -1,4 +1,4 @@
-.PHONY: dependency unit-test integration-test docker-up docker-down protobuf lint
+.PHONY: dependency unit-test integration-test docker-up docker-down protobuf lint server
 
 protoc-gen:
 	protoc ortoo/model/*.proto \
@@ -6,6 +6,9 @@ protoc-gen:
 			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,:./ortoo/model/
 #			--gotag_out=xxx="bson+\"-\"",output_path=./ortoo/model/:.
 	protoc-go-inject-tag -input=./ortoo/model/model.pb.go
+
+server:
+	CGO_ENABLED=1 go build  -race -gcflags='all=-N -l' -o build/ortoo_server ./server/...
 
 dependency:
 	go get -v ./...

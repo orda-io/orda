@@ -1,5 +1,5 @@
 {
-  "OrtooServer": "127.0.0.1:19081",
+  "OrtooServer": "127.0.0.1:19061",
   "Notification": "127.0.0.1:1883",
   "Mongo": {
     "MongoHost": "mongodb://root:ortoo-test@localhost:27017",

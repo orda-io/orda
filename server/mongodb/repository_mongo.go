@@ -116,3 +116,20 @@ func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.Context, name st
 	}
 	return nil
 }
+
+// MakeCollection makes a real collection.
+func MakeCollection(mongo *RepositoryMongo, collectionName string) (uint32, error) {
+	collectionDoc, err := mongo.GetCollection(context.TODO(), collectionName)
+	if err != nil {
+		return 0, log.OrtooError(err)
+	}
+	if collectionDoc != nil {
+		return collectionDoc.Num, nil
+	}
+	collectionDoc, err = mongo.InsertCollection(context.TODO(), collectionName)
+	if err != nil {
+		return 0, log.OrtooError(err)
+	}
+	log.Logger.Infof("create a new collection:%+v", collectionDoc)
+	return collectionDoc.Num, nil
+}
