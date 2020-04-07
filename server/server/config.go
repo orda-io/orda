@@ -25,7 +25,7 @@ func LoadOrtooServerConfig(filePath string) (*OrtooServerConfig, error) {
 func (its *OrtooServerConfig) loadConfig(filepath string) error {
 	data, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return log.OrtooErrorf(err, "fail to read server config file")
+		return log.OrtooErrorf(err, "fail to read server config file: %s", filepath)
 	}
 	if err := json.Unmarshal(data, its); err != nil {
 		return log.OrtooErrorf(err, "fail to unmarshal server config file")

@@ -1,5 +1,7 @@
-.PHONY: dependency unit-test integration-test docker-up docker-down protobuf lint server
+BUILD_DIR = build
+GOSRCS := $(shell find . -path ./vendor -prune -o -type f -name '*.go' -print)
 
+.PHONY: protoc-gen
 protoc-gen:
 	protoc ortoo/model/*.proto \
 			-I=./ortoo/model/ \
@@ -7,9 +9,12 @@ protoc-gen:
 #			--gotag_out=xxx="bson+\"-\"",output_path=./ortoo/model/:.
 	protoc-go-inject-tag -input=./ortoo/model/model.pb.go
 
+.PHONY: server
 server:
-	CGO_ENABLED=1 go build  -race -gcflags='all=-N -l' -o build/ortoo_server ./server/...
+	mkdir -p $(BUILD_DIR)
+	cd server && CGO_ENABLED=1 go build -race -gcflags='all=-N -l' -o ../$(BUILD_DIR)
 
+.PHONY: dependency
 dependency:
 	go get -v ./...
 	go get github.com/gogo/protobuf/proto
@@ -23,19 +28,30 @@ dependency:
 	go get github.com/favadi/protoc-go-inject-tag
 	go get github.com/amsokol/protoc-gen-gotag
 
+.PHONY: fmt
+fmt:
+	gofmt -w $(GOSRCS)
+	goimports -w -local github.com/knowhunger $(GOSRCS)
+
+.PHONY: integration-test
 integration-test: docker-up dependency
 	@go test -v -race ./...
 
+.PHONY: unit-test
 unit-test: dependency
 	@go test -v -short -race ./...
 
+.PHONY: docker-up
 docker-up:
 	@docker-compose up -d
 
+.PHONY: docker-down
 docker-down:
 	@docker-compose down
 
+.PHONY: clear
 clear: docker-down
 
+.PHONY: lint
 lint: dependency
 	golint ./...

@@ -2,33 +2,49 @@ package main
 
 import (
 	"context"
-	"flag"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/server"
 	"os"
+
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	confFile := flag.String("conf", "", "configuration file path")
-	flag.Parse()
+	//
+	// flags := []cli.Flag{
+	// 	&cli.StringFlag{Name: "conf"},
+	// }
 
-	conf, err := server.LoadOrtooServerConfig(*confFile)
-	if err != nil {
-		log.Logger.Errorf("fail to load server config: %s", *confFile)
-		os.Exit(1)
+	app := &cli.App{
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "conf",
+				Usage:    "server configuration file in JSON format",
+				Required: true,
+			},
+		},
+
+		Action: func(c *cli.Context) error {
+			confFile := c.String("conf")
+
+			conf, err := server.LoadOrtooServerConfig(confFile)
+			if err != nil {
+				os.Exit(1)
+			}
+			svr, err := server.NewOrtooServer(context.Background(), conf)
+			if err != nil {
+				_ = log.OrtooError(err)
+				os.Exit(1)
+			}
+			go func() {
+				if err := svr.Start(); err != nil {
+					_ = log.OrtooError(err)
+					os.Exit(1)
+				}
+			}()
+			os.Exit(svr.HandleSignals())
+			return nil
+		},
 	}
-
-	svr, err := server.NewOrtooServer(context.Background(), conf)
-	if err != nil {
-		_ = log.OrtooError(err)
-		os.Exit(1)
-	}
-	go func() {
-		if err := svr.Start(); err != nil {
-			_ = log.OrtooError(err)
-			os.Exit(1)
-		}
-	}()
-
-	os.Exit(svr.HandleSignals())
+	app.Run(os.Args)
 }
