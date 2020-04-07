@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -33,8 +35,8 @@ func NewManager(
 	}
 }
 
-func (m *Manager) getPushPullTag() model.PushPullTag {
-	return model.PushPullTag{
+func (m *Manager) getPushPullTag() errors.PushPullTag {
+	return errors.PushPullTag{
 		CollectionName: m.collectionDoc.Name,
 		Key:            m.datatypeDoc.Key,
 		DUID:           m.datatypeDoc.DUID,
@@ -45,15 +47,15 @@ func (m *Manager) getPushPullTag() model.PushPullTag {
 func (m *Manager) UpdateSnapshot() error {
 	var sseq uint64 = 0
 	client := ortoo.NewClient(ortoo.NewLocalClientConfig(m.collectionDoc.Name), "server")
-	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType(), nil).(model.Datatype)
+	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType(), nil).(types.Datatype)
 	snapshotDoc, err := m.mongo.GetLatestSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID)
 	if err != nil {
-		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 	if snapshotDoc != nil {
 		sseq = snapshotDoc.Sseq
 		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot); err != nil {
-			return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+			return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 		}
 	}
 	var transaction []*model.Operation
@@ -71,7 +73,7 @@ func (m *Manager) UpdateSnapshot() error {
 				if remainOfTransaction == 0 {
 					_, err := datatype.ExecuteTransactionRemote(transaction, false)
 					if err != nil {
-						return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+						return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 					}
 					transaction = nil
 				}
@@ -79,7 +81,7 @@ func (m *Manager) UpdateSnapshot() error {
 				op := operations.ModelToOperation(modelOp)
 				_, err := op.ExecuteRemote(datatype)
 				if err != nil {
-					return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+					return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 				}
 			}
 			sseq = opDoc.Sseq
@@ -90,19 +92,19 @@ func (m *Manager) UpdateSnapshot() error {
 
 	meta, snap, err := datatype.GetMetaAndSnapshot()
 	if err != nil {
-		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 	snapb, err := json.Marshal(snap)
 	if err != nil {
-		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 	if err := m.mongo.InsertSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID, sseq, meta, string(snapb)); err != nil {
-		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 
 	data := snap.GetAsJSON()
 	if err := m.mongo.InsertRealSnapshot(m.ctx, m.collectionDoc.Name, m.datatypeDoc.Key, data, sseq); err != nil {
-		return model.NewPushPullError(model.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 	return nil
 }

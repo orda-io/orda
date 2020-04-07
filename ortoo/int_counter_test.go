@@ -3,8 +3,8 @@ package ortoo
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/testonly"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -12,7 +12,7 @@ import (
 func TestIntCounterTransactions(t *testing.T) {
 	t.Run("Can transaction for IntCounter", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		cuid1 := model.NewCUID()
+		cuid1 := types.NewCUID()
 
 		intCounter1 := newIntCounter("key1", cuid1, tw, nil)
 
@@ -38,8 +38,8 @@ func TestIntCounterTransactions(t *testing.T) {
 
 	t.Run("Can sync IntCounter operations with Test wire", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		intCounter1 := newIntCounter("key1", model.NewNilCUID(), tw, nil)
-		intCounter2 := newIntCounter("key2", model.NewNilCUID(), tw, nil)
+		intCounter1 := newIntCounter("key1", types.NewNilCUID(), tw, nil)
+		intCounter2 := newIntCounter("key2", types.NewNilCUID(), tw, nil)
 
 		tw.SetDatatypes(intCounter1.(*intCounter).FinalDatatype, intCounter2.(*intCounter).FinalDatatype)
 

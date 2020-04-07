@@ -1,6 +1,9 @@
 package operations
 
-import "github.com/knowhunger/ortoo/ortoo/model"
+import (
+	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
+)
 
 func NewInsertOperation(pos int, values []interface{}) *InsertOperation {
 	return &InsertOperation{
@@ -23,11 +26,11 @@ type InsertOperation struct {
 	C   insertContent
 }
 
-func (its *InsertOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *InsertOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *InsertOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *InsertOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
@@ -69,11 +72,11 @@ type DeleteOperation struct {
 	C          deleteContent
 }
 
-func (its *DeleteOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *DeleteOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *DeleteOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *DeleteOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
@@ -116,11 +119,11 @@ type UpdateOperation struct {
 	C   updateContent
 }
 
-func (its *UpdateOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *UpdateOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *UpdateOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *UpdateOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 

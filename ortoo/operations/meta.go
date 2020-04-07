@@ -4,15 +4,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // Operation defines the interfaces of Operation
 type Operation interface {
 	SetOperationID(opID *model.OperationID)
-	ExecuteLocal(datatype model.Datatype) (interface{}, error)
-	ExecuteRemote(datatype model.Datatype) (interface{}, error)
+	ExecuteLocal(datatype types.Datatype) (interface{}, error)
+	ExecuteRemote(datatype types.Datatype) (interface{}, error)
 	ToModelOperation() *model.Operation
 	GetType() model.TypeOfOperation
 	String() string
@@ -88,12 +90,12 @@ func (its *TransactionOperation) GetType() model.TypeOfOperation {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *TransactionOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *TransactionOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	return nil, nil
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *TransactionOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *TransactionOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	return nil, nil
 }
 
@@ -137,7 +139,7 @@ func (its *TransactionOperation) GetAsJSON() interface{} {
 // ////////////////// ErrorOperation ////////////////////
 
 // NewErrorOperation creates an ErrorOperation.
-func NewErrorOperation(err *model.PushPullError) *ErrorOperation {
+func NewErrorOperation(err *errors.PushPullError) *ErrorOperation {
 	return &ErrorOperation{
 		baseOperation: nil,
 		C: errorContent{
@@ -159,12 +161,12 @@ type ErrorOperation struct {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *ErrorOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *ErrorOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	panic("should not be called")
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *ErrorOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *ErrorOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	panic("should not be called")
 }
 
@@ -200,9 +202,9 @@ func (its *ErrorOperation) GetAsJSON() interface{} {
 }
 
 // GetPushPullError returns PushPullError from ErrorOperation
-func (its *ErrorOperation) GetPushPullError() *model.PushPullError {
-	return &model.PushPullError{
-		Code: model.ErrorCodePushPull(its.C.Code),
+func (its *ErrorOperation) GetPushPullError() *errors.PushPullError {
+	return &errors.PushPullError{
+		Code: errors.ErrorCodePushPull(its.C.Code),
 		Msg:  its.C.Msg,
 	}
 }
@@ -210,7 +212,7 @@ func (its *ErrorOperation) GetPushPullError() *model.PushPullError {
 // ////////////////// SnapshotOperation ////////////////////
 
 // NewSnapshotOperation creates a SnapshotOperation
-func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDatatype, snapshot model.Snapshot) (*SnapshotOperation, error) {
+func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDatatype, snapshot types.Snapshot) (*SnapshotOperation, error) {
 	j := snapshot.GetAsJSON()
 	// if err != nil {
 	// 	return nil, log.OrtooError(err)
@@ -242,13 +244,13 @@ type SnapshotOperation struct {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *SnapshotOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *SnapshotOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	datatype.SetState(its.C.State)
 	return nil, nil
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *SnapshotOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *SnapshotOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 

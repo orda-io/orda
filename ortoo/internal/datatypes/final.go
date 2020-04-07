@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // FinalDatatype implements the datatype features finally used.
@@ -23,10 +24,10 @@ type FinalDatatypeInterface interface {
 func (c *FinalDatatype) Initialize(
 	key string,
 	typeOf model.TypeOfDatatype,
-	cuid model.CUID,
+	cuid types.CUID,
 	w Wire,
-	snapshot model.Snapshot,
-	datatype model.Datatype) {
+	snapshot types.Snapshot,
+	datatype types.Datatype) {
 
 	baseDatatype := newBaseDatatype(key, typeOf, cuid)
 	wiredDatatype := newWiredDatatype(baseDatatype, w)

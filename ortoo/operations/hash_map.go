@@ -2,6 +2,7 @@ package operations
 
 import (
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // NewPutOperation creates a PutOperation of hash map.
@@ -27,12 +28,12 @@ type PutOperation struct {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *PutOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *PutOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *PutOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *PutOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
@@ -90,12 +91,12 @@ type RemoveOperation struct {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *RemoveOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *RemoveOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *RemoveOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *RemoveOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 

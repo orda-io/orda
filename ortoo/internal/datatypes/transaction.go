@@ -3,6 +3,7 @@ package datatypes
 import (
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -18,7 +19,7 @@ type TransactionDatatype struct {
 	mutex            *sync.RWMutex
 	isLocked         bool
 	success          bool
-	rollbackSnapshot model.Snapshot
+	rollbackSnapshot types.Snapshot
 	rollbackOps      []operations.Operation
 	rollbackOpID     *model.OperationID
 	currentTrxCtx    *TransactionContext
@@ -36,7 +37,7 @@ func (t *TransactionContext) appendOperation(op operations.Operation) {
 }
 
 // newTransactionDatatype creates a new TransactionDatatype
-func newTransactionDatatype(w *WiredDatatype, snapshot model.Snapshot) *TransactionDatatype {
+func newTransactionDatatype(w *WiredDatatype, snapshot types.Snapshot) *TransactionDatatype {
 	return &TransactionDatatype{
 		WiredDatatype:    w,
 		mutex:            new(sync.RWMutex),

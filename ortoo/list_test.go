@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/testonly"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -21,8 +21,8 @@ func TestList(t *testing.T) {
 
 	t.Run("Can perform list operations", func(t *testing.T) {
 		tw := testonly.NewTestWire(false)
-		list1 := newList("key1", model.NewCUID(), tw, nil)
-		list2 := newList("key2", model.NewCUID(), tw, nil)
+		list1 := newList("key1", types.NewCUID(), tw, nil)
+		list2 := newList("key2", types.NewCUID(), tw, nil)
 		tw.SetDatatypes(list1.(*list).FinalDatatype, list2.(*list).FinalDatatype)
 
 		inserted1, _ := list1.Insert(0, "x", "y")
@@ -98,7 +98,7 @@ func TestList(t *testing.T) {
 
 	t.Run("Can run transactions", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		cuid1 := model.NewCUID()
+		cuid1 := types.NewCUID()
 		list1 := newList("key1", cuid1, tw, nil)
 
 		require.NoError(t, list1.DoTransaction("succeeded transaction", func(listTxn ListInTxn) error {

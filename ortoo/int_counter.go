@@ -3,6 +3,7 @@ package ortoo
 import (
 	"encoding/json"
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 
 	// "errors"
 	"fmt"
@@ -32,7 +33,7 @@ type intCounter struct {
 }
 
 // newIntCounter creates a new int counter
-func newIntCounter(key string, cuid model.CUID, wire datatypes.Wire, handler *Handlers) IntCounter {
+func newIntCounter(key string, cuid types.CUID, wire datatypes.Wire, handler *Handlers) IntCounter {
 	intCounter := &intCounter{
 		datatype: &datatype{
 			FinalDatatype: &datatypes.FinalDatatype{},
@@ -106,11 +107,11 @@ func (its *intCounter) IncreaseBy(delta int32) (int32, error) {
 	return ret.(int32), nil
 }
 
-func (its *intCounter) GetSnapshot() model.Snapshot {
+func (its *intCounter) GetSnapshot() types.Snapshot {
 	return its.snapshot
 }
 
-func (its *intCounter) SetSnapshot(snapshot model.Snapshot) {
+func (its *intCounter) SetSnapshot(snapshot types.Snapshot) {
 	its.snapshot = snapshot.(*intCounterSnapshot)
 }
 
@@ -118,7 +119,7 @@ func (its *intCounter) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSON()
 }
 
-func (its *intCounter) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
+func (its *intCounter) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
 	meta, err := its.FinalDatatype.GetMeta()
 	if err != nil {
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
@@ -145,7 +146,7 @@ type intCounterSnapshot struct {
 	Value int32 `json:"value"`
 }
 
-func (its *intCounterSnapshot) CloneSnapshot() model.Snapshot {
+func (its *intCounterSnapshot) CloneSnapshot() types.Snapshot {
 	return &intCounterSnapshot{
 		Value: its.Value,
 	}

@@ -1,4 +1,4 @@
-package model
+package types
 
 import (
 	"bytes"
@@ -27,11 +27,11 @@ func DUIDFromString(duidString string) (DUID, error) {
 	return b, nil
 }
 
-func (d DUID) String() string {
-	return UniqueID(d).String()
+func (its *DUID) String() string {
+	return UniqueID(*its).String()
 }
 
 // Compare compares a DUID with another.
-func (d DUID) Compare(o []byte) int {
-	return bytes.Compare(UniqueID(d), o)
+func (its *DUID) Compare(o []byte) int {
+	return bytes.Compare(*its, o)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/managers"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // Client is a client of Ortoo which manages connections and data
@@ -49,7 +50,7 @@ type clientImpl struct {
 func NewClient(conf *ClientConfig, alias string) Client {
 	ctx := context.NewOrtooContext(alias)
 	clientModel := &model.Client{
-		CUID:       model.NewCUID(),
+		CUID:       types.NewCUID(),
 		Alias:      alias,
 		Collection: conf.CollectionName,
 		SyncType:   conf.SyncType,
@@ -186,7 +187,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 	typeOf model.TypeOfDatatype,
 	state model.StateOfDatatype,
 	handler *Handlers,
-) model.Datatype {
+) types.Datatype {
 	if c.datatypeManager != nil {
 		datatypeFromDM := c.datatypeManager.Get(key)
 		if datatypeFromDM != nil {
@@ -201,7 +202,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 			}
 		}
 	}
-	var datatype model.Datatype
+	var datatype types.Datatype
 	var impl interface{}
 
 	switch typeOf {
@@ -212,7 +213,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 	case model.TypeOfDatatype_LIST:
 		impl = newList(key, c.model.CUID, c.datatypeManager, handler)
 	}
-	datatype = impl.(model.Datatype)
+	datatype = impl.(types.Datatype)
 
 	if c.datatypeManager != nil {
 		if err := c.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {

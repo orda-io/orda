@@ -2,6 +2,7 @@ package operations
 
 import (
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // NewIncreaseOperation creates an IncreaseOperation.
@@ -25,12 +26,12 @@ type IncreaseOperation struct {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *IncreaseOperation) ExecuteLocal(datatype model.Datatype) (interface{}, error) {
+func (its *IncreaseOperation) ExecuteLocal(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *IncreaseOperation) ExecuteRemote(datatype model.Datatype) (interface{}, error) {
+func (its *IncreaseOperation) ExecuteRemote(datatype types.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 

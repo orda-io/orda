@@ -1,4 +1,4 @@
-package model
+package types
 
 // CUID is a uniqueID for a client.
 type CUID UniqueID
@@ -14,6 +14,6 @@ func NewNilCUID() CUID {
 	return bin
 }
 
-func (c *CUID) String() string {
-	return UniqueID(*c).String()
+func (its *CUID) String() string {
+	return UniqueID(*its).String()
 }

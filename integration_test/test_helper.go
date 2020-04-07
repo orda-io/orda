@@ -58,6 +58,6 @@ func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 		RPCServerPort: 19061,
 		RestfulPort:   19861,
 		Notification:  "127.0.0.1:1883",
-		Mongo:         mongodb.NewTestMongoDBConfig(dbName),
+		Mongo:         *mongodb.NewTestMongoDBConfig(dbName),
 	}
 }

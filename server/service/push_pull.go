@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/hex"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"reflect"
@@ -13,18 +14,18 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	log.Logger.Infof("receive PUSHPULL REQUEST: %v", in.ToString())
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Header.GetCollection())
 	if collectionDoc == nil || err != nil {
-		return nil, model.NewRPCError(model.RPCErrMongoDB)
+		return nil, errors.NewRPCError(errors.RPCErrMongoDB)
 	}
 
 	clientDoc, err := o.mongo.GetClient(ctx, hex.EncodeToString(in.Header.GetCuid()))
 	if err != nil {
-		return nil, model.NewRPCError(model.RPCErrMongoDB)
+		return nil, errors.NewRPCError(errors.RPCErrMongoDB)
 	}
 	if clientDoc == nil {
-		return nil, model.NewRPCError(model.RPCErrNoClient)
+		return nil, errors.NewRPCError(errors.RPCErrNoClient)
 	}
 	if clientDoc.CollectionNum != collectionDoc.Num {
-		return nil, model.NewRPCError(model.RPCErrClientInconsistentCollection, clientDoc.CollectionNum, collectionDoc.Name)
+		return nil, errors.NewRPCError(errors.RPCErrClientInconsistentCollection, clientDoc.CollectionNum, collectionDoc.Name)
 	}
 	var chanList []<-chan *model.PushPullPack
 	for _, ppp := range in.PushPullPacks {

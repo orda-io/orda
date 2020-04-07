@@ -7,6 +7,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"github.com/stretchr/testify/require"
@@ -153,7 +154,7 @@ func TestMongo(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		op.ID = model.NewOperationIDWithCuid(model.NewCUID())
+		op.ID = model.NewOperationIDWithCUID(types.NewCUID())
 		modelOp := op.ToModelOperation()
 		// opb, _ := proto.Marshal(op)
 
@@ -210,7 +211,7 @@ func (its *testSnapshot) GetAsJSON() interface{} {
 	return its
 }
 
-func (its *testSnapshot) CloneSnapshot() model.Snapshot {
+func (its *testSnapshot) CloneSnapshot() types.Snapshot {
 	return &testSnapshot{
 		Value: its.Value,
 	}

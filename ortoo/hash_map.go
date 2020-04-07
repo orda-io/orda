@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
-	"github.com/knowhunger/ortoo/ortoo/internal/types"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // HashMap is an Ortoo datatype which provides hash map interfaces.
@@ -25,7 +25,7 @@ type HashMapInTxn interface {
 	Remove(key string) (interface{}, error)
 }
 
-func newHashMap(key string, cuid model.CUID, wire datatypes.Wire, handlers *Handlers) HashMap {
+func newHashMap(key string, cuid types.CUID, wire datatypes.Wire, handlers *Handlers) HashMap {
 	hashMap := &hashMap{
 		datatype: &datatype{
 			FinalDatatype: &datatypes.FinalDatatype{},
@@ -85,11 +85,11 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
-func (its *hashMap) GetSnapshot() model.Snapshot {
+func (its *hashMap) GetSnapshot() types.Snapshot {
 	return its.snapshot
 }
 
-func (its *hashMap) SetSnapshot(snapshot model.Snapshot) {
+func (its *hashMap) SetSnapshot(snapshot types.Snapshot) {
 	its.snapshot = snapshot.(*hashMapSnapshot)
 }
 
@@ -97,7 +97,7 @@ func (its *hashMap) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSON()
 }
 
-func (its *hashMap) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
+func (its *hashMap) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
 	meta, err := its.FinalDatatype.GetMeta()
 	if err != nil {
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
@@ -163,7 +163,7 @@ func newHashMapSnapshot() *hashMapSnapshot {
 	}
 }
 
-func (its *hashMapSnapshot) CloneSnapshot() model.Snapshot {
+func (its *hashMapSnapshot) CloneSnapshot() types.Snapshot {
 	var cloneMap = make(map[string]*obj)
 	for k, v := range its.Map {
 		cloneMap[k] = v

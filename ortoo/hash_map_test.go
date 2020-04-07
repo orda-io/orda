@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/testonly"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -14,7 +15,7 @@ func TestHashMap(t *testing.T) {
 
 	t.Run("Can run transaction", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		cuid1 := model.NewCUID()
+		cuid1 := types.NewCUID()
 		hashMap1 := newHashMap("key1", cuid1, tw, nil)
 		key1 := "k1"
 		key2 := "k2"
@@ -42,18 +43,18 @@ func TestHashMap(t *testing.T) {
 	})
 
 	t.Run("Can set and get snapshot", func(t *testing.T) {
-		hashMap1 := newHashMap("key1", model.NewCUID(), nil, nil)
+		hashMap1 := newHashMap("key1", types.NewCUID(), nil, nil)
 		hashMap1.Put("k1", 1)
 		hashMap1.Put("k2", "2")
 		hashMap1.Put("k3", 3.141592)
 		hashMap1.Remove("k2")
 
-		clone := newHashMap("key2", model.NewCUID(), nil, nil)
-		meta, snap, err := hashMap1.(model.Datatype).GetMetaAndSnapshot()
+		clone := newHashMap("key2", types.NewCUID(), nil, nil)
+		meta, snap, err := hashMap1.(types.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
 		snapB, err := json.Marshal(snap)
 		require.NoError(t, err)
-		err = clone.(model.Datatype).SetMetaAndSnapshot(meta, string(snapB))
+		err = clone.(types.Datatype).SetMetaAndSnapshot(meta, string(snapB))
 		require.NoError(t, err)
 	})
 

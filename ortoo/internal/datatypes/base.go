@@ -7,16 +7,17 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // BaseDatatype is the base datatype which contains
 type BaseDatatype struct {
 	Key      string
-	id       model.DUID
+	id       types.DUID
 	opID     *model.OperationID
 	TypeOf   model.TypeOfDatatype
 	state    model.StateOfDatatype
-	datatype model.Datatype
+	datatype types.Datatype
 	Logger   *log.OrtooLog
 }
 
@@ -27,13 +28,13 @@ type PublicBaseDatatypeInterface interface {
 	GetAsJSON() interface{}
 }
 
-func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) *BaseDatatype {
-	duid := model.NewDUID()
+func newBaseDatatype(key string, t model.TypeOfDatatype, cuid types.CUID) *BaseDatatype {
+	duid := types.NewDUID()
 	return &BaseDatatype{
 		Key:    key,
 		id:     duid,
 		TypeOf: t,
-		opID:   model.NewOperationIDWithCuid(cuid),
+		opID:   model.NewOperationIDWithCUID(cuid),
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
 		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
 	}
@@ -91,12 +92,12 @@ func (b *BaseDatatype) GetState() model.StateOfDatatype {
 }
 
 // SetDatatype sets the Datatype which implements this BaseDatatype.
-func (b *BaseDatatype) SetDatatype(datatype model.Datatype) {
+func (b *BaseDatatype) SetDatatype(datatype types.Datatype) {
 	b.datatype = datatype
 }
 
 // GetDatatype returns the Datatype which implements this BaseDatatype.
-func (b *BaseDatatype) GetDatatype() model.Datatype {
+func (b *BaseDatatype) GetDatatype() types.Datatype {
 	return b.datatype
 }
 
@@ -111,12 +112,12 @@ func (b *BaseDatatype) GetKey() string {
 }
 
 // GetDUID returns DUID.
-func (b *BaseDatatype) GetDUID() model.DUID {
+func (b *BaseDatatype) GetDUID() types.DUID {
 	return b.id
 }
 
 // SetDUID sets the DUID.
-func (b *BaseDatatype) SetDUID(duid model.DUID) {
+func (b *BaseDatatype) SetDUID(duid types.DUID) {
 	b.id = duid
 }
 

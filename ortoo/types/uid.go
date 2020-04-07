@@ -1,4 +1,4 @@
-package model
+package types
 
 import (
 	"bytes"
@@ -20,8 +20,8 @@ func newUniqueID() UniqueID {
 	return b
 }
 
-func (u UniqueID) String() string {
-	uid, err := uuid.FromBytes(u)
+func (its UniqueID) String() string {
+	uid, err := uuid.FromBytes(its)
 	if err != nil {
 		return "fail to make string to uuid"
 	}

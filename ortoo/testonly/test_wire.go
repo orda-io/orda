@@ -4,6 +4,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // TestWire ...
@@ -32,7 +33,7 @@ func (its *TestWire) DeliverTransaction(wired *datatypes.WiredDatatype) {
 }
 
 // OnChangeDatatypeState ...
-func (its *TestWire) OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error {
+func (its *TestWire) OnChangeDatatypeState(dt types.Datatype, state model.StateOfDatatype) error {
 	return nil
 }
 

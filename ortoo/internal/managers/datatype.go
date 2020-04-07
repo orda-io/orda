@@ -8,6 +8,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ type DatatypeManager struct {
 	collectionName      string
 	messageManager      *MessageManager
 	notificationManager *NotificationManager
-	dataMap             map[string]model.Datatype
+	dataMap             map[string]types.Datatype
 }
 
 // DeliverTransaction delivers a transaction
@@ -40,7 +41,7 @@ func (d *DatatypeManager) ReceiveNotification(topic string, notification model.N
 }
 
 // OnChangeDatatypeState deals with what datatypeManager has to do when the state of datatype changes.
-func (d *DatatypeManager) OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error {
+func (d *DatatypeManager) OnChangeDatatypeState(dt types.Datatype, state model.StateOfDatatype) error {
 	switch state {
 	case model.StateOfDatatype_SUBSCRIBED:
 		topic := fmt.Sprintf("%s/%s", d.collectionName, dt.GetKey())
@@ -55,12 +56,12 @@ func (d *DatatypeManager) OnChangeDatatypeState(dt model.Datatype, state model.S
 }
 
 // NewDatatypeManager creates a new instance of DatatypeManager
-func NewDatatypeManager(ctx *context.OrtooContext, mm *MessageManager, nm *NotificationManager, collectionName string, cuid model.CUID) *DatatypeManager {
+func NewDatatypeManager(ctx *context.OrtooContext, mm *MessageManager, nm *NotificationManager, collectionName string, cuid types.CUID) *DatatypeManager {
 	dm := &DatatypeManager{
 		ctx:                 ctx,
 		cuid:                hex.EncodeToString(cuid),
 		collectionName:      collectionName,
-		dataMap:             make(map[string]model.Datatype),
+		dataMap:             make(map[string]types.Datatype),
 		messageManager:      mm,
 		notificationManager: nm,
 	}
@@ -71,7 +72,7 @@ func NewDatatypeManager(ctx *context.OrtooContext, mm *MessageManager, nm *Notif
 }
 
 // Get returns a datatype for the specified key
-func (d *DatatypeManager) Get(key string) model.Datatype {
+func (d *DatatypeManager) Get(key string) types.Datatype {
 	dt, ok := d.dataMap[key]
 	if ok {
 		return dt.GetDatatype()
@@ -80,7 +81,7 @@ func (d *DatatypeManager) Get(key string) model.Datatype {
 }
 
 // SubscribeOrCreate links a datatype with the datatype
-func (d *DatatypeManager) SubscribeOrCreate(dt model.Datatype, state model.StateOfDatatype) error {
+func (d *DatatypeManager) SubscribeOrCreate(dt types.Datatype, state model.StateOfDatatype) error {
 	if _, ok := d.dataMap[dt.GetKey()]; !ok {
 		d.dataMap[dt.GetKey()] = dt
 		if err := dt.SubscribeOrCreate(state); err != nil {

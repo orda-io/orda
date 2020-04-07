@@ -11,7 +11,7 @@ var (
 	OldestTimestamp = &Timestamp{
 		Era:       0,
 		Lamport:   0,
-		CUID:      NewNilCUID(),
+		CUID:      make([]byte, 16),
 		Delimiter: 0,
 	}
 )

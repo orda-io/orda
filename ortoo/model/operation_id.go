@@ -17,8 +17,8 @@ func NewOperationID() *OperationID {
 	}
 }
 
-// NewOperationIDWithCuid creates a new OperationID with CUID.
-func NewOperationIDWithCuid(cuid CUID) *OperationID {
+// NewOperationIDWithCUID creates a new OperationID with CUID.
+func NewOperationIDWithCUID(cuid []byte) *OperationID {
 	return &OperationID{
 		Era:     0,
 		Lamport: 0,

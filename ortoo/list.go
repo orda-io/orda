@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
-	"github.com/knowhunger/ortoo/ortoo/internal/types"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"strings"
 )
 
@@ -27,7 +27,7 @@ type ListInTxn interface {
 	Update(pos int, value ...interface{}) ([]interface{}, error)
 }
 
-func newList(key string, cuid model.CUID, wire datatypes.Wire, handlers *Handlers) List {
+func newList(key string, cuid types.CUID, wire datatypes.Wire, handlers *Handlers) List {
 	list := &list{
 		datatype: &datatype{
 			FinalDatatype: &datatypes.FinalDatatype{},
@@ -113,15 +113,15 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
-func (its *list) GetSnapshot() model.Snapshot {
+func (its *list) GetSnapshot() types.Snapshot {
 	return its.snapshot
 }
 
-func (its *list) SetSnapshot(snapshot model.Snapshot) {
+func (its *list) SetSnapshot(snapshot types.Snapshot) {
 	its.snapshot = snapshot.(*listSnapshot)
 }
 
-func (its *list) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
+func (its *list) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
 	meta, err := its.FinalDatatype.GetMeta()
 	if err != nil {
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
@@ -252,7 +252,7 @@ type listSnapshot struct {
 	Map  map[string]*node
 }
 
-func (its *listSnapshot) CloneSnapshot() model.Snapshot {
+func (its *listSnapshot) CloneSnapshot() types.Snapshot {
 	var cloneMap = make(map[string]*node)
 	for k, v := range its.Map {
 		cloneMap[k] = v

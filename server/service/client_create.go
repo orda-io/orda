@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -15,7 +16,7 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 	log.Logger.Infof("receive Client REQUEST: %s", in.ToString())
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Client.Collection)
 	if err != nil {
-		return nil, model.NewRPCError(model.RPCErrMongoDB)
+		return nil, errors.NewRPCError(errors.RPCErrMongoDB)
 	}
 	if collectionDoc == nil {
 		return nil, log.OrtooError(status.New(codes.InvalidArgument, "fail to find collection").Err())
@@ -31,17 +32,17 @@ func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientReques
 		transferredDoc.CreatedAt = time.Now()
 		log.Logger.Infof("create a new client:%+v", transferredDoc)
 		if err := o.mongo.GetOrCreateRealCollection(ctx, in.Client.Collection); err != nil {
-			return nil, model.NewRPCError(model.RPCErrMongoDB)
+			return nil, errors.NewRPCError(errors.RPCErrMongoDB)
 		}
 	} else {
 		if storedDoc.CollectionNum != transferredDoc.CollectionNum {
-			return nil, model.NewRPCError(model.RPCErrClientInconsistentCollection, storedDoc.CollectionNum, transferredDoc.CollectionNum)
+			return nil, errors.NewRPCError(errors.RPCErrClientInconsistentCollection, storedDoc.CollectionNum, transferredDoc.CollectionNum)
 		}
 		log.Logger.Infof("Client will be updated:%+v", transferredDoc)
 	}
 	transferredDoc.CreatedAt = time.Now()
 	if err = o.mongo.UpdateClient(ctx, transferredDoc); err != nil {
-		return nil, model.NewRPCError(model.RPCErrMongoDB)
+		return nil, errors.NewRPCError(errors.RPCErrMongoDB)
 	}
 
 	return model.NewClientResponse(in.Header, model.StateOfResponse_OK), nil

@@ -7,12 +7,13 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // Wire defines the interfaces related to delivering operations. This is called when a datatype needs to send messages
 type Wire interface {
 	DeliverTransaction(wired *WiredDatatype)
-	OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error
+	OnChangeDatatypeState(dt types.Datatype, state model.StateOfDatatype) error
 }
 
 // WiredDatatype implements the datatype features related to the synchronization with Ortoo server
@@ -133,14 +134,14 @@ func (w *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error {
 		errOp, ok := operations.ModelToOperation(modelOp).(*operations.ErrorOperation)
 		if ok {
 			switch errOp.GetPushPullError().Code {
-			case model.PushPullErrQueryToDB:
-			case model.PushPullErrIllegalFormat:
-			case model.PushPullErrDuplicateDatatypeKey:
+			case errors.PushPullErrQueryToDB:
+			case errors.PushPullErrIllegalFormat:
+			case errors.PushPullErrDuplicateDatatypeKey:
 				err := errors.NewDatatypeError(errors.ErrDatatypeCreate, fmt.Sprintf("duplicated key:'%s'", w.Key))
 				return err
-			case model.PushPullErrPullOperations:
-			case model.PushPullErrPushOperations:
-			case model.PushPullErrMissingOperations:
+			case errors.PushPullErrPullOperations:
+			case errors.PushPullErrPushOperations:
+			case errors.PushPullErrMissingOperations:
 			}
 		} else {
 
