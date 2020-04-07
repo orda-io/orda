@@ -12,7 +12,7 @@ protoc-gen:
 .PHONY: server
 server:
 	mkdir -p $(BUILD_DIR)
-	cd server && CGO_ENABLED=1 go build -race -gcflags='all=-N -l' -o ../$(BUILD_DIR)
+	cd server && go build -gcflags='all=-N -l' -o ../$(BUILD_DIR)
 
 .PHONY: dependency
 dependency:
@@ -48,6 +48,10 @@ docker-up:
 .PHONY: docker-down
 docker-down:
 	@docker-compose down
+
+.PHONY: run-local-server
+run-local-server: docker-up server
+	build/server --conf examples/local-config.json
 
 .PHONY: clear
 clear: docker-down

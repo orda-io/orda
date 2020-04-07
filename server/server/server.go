@@ -24,6 +24,7 @@ const banner = `
  _/    _/  _/_/        _/      _/    _/  _/    _/   
 _/    _/  _/          _/      _/    _/  _/    _/    
  _/_/    _/            _/_/    _/_/      _/_/
+
 `
 
 const defaultGracefulTimeout = 10 * time.Second
@@ -44,7 +45,7 @@ type OrtooServer struct {
 
 // NewOrtooServer creates a new Ortoo server
 func NewOrtooServer(ctx context.Context, conf *OrtooServerConfig) (*OrtooServer, error) {
-	mongo, err := mongodb.New(ctx, conf.Mongo)
+	mongo, err := mongodb.New(ctx, &conf.Mongo)
 	if err != nil {
 		return nil, log.OrtooError(err)
 	}
@@ -63,7 +64,7 @@ func (its *OrtooServer) Start() error {
 	its.mutex.Lock()
 	defer its.mutex.Unlock()
 
-	lis, err := net.Listen("tcp", its.conf.OrtooServer)
+	lis, err := net.Listen("tcp", its.conf.getRPCServerAddr())
 	if err != nil {
 		log.Logger.Fatalf("fail to listen: %v", err)
 	}
@@ -76,10 +77,9 @@ func (its *OrtooServer) Start() error {
 	if its.service, err = service.NewOrtooService(its.Mongo, its.notifier); err != nil {
 		panic("fail to connect MongoDB")
 	}
-
-	its.httpServer = restful.NewServer(5000, its.Mongo)
-
 	model.RegisterOrtooServiceServer(its.rpcServer, its.service)
+
+	its.httpServer = restful.NewServer(its.conf.RestfulPort, its.Mongo)
 	fmt.Printf("%sStarted at %s\n", banner, time.Now().String())
 	go func() {
 		if err := its.rpcServer.Serve(lis); err != nil {
@@ -94,7 +94,7 @@ func (its *OrtooServer) Start() error {
 		}
 	}()
 
-	log.Logger.Info("successfully start")
+	log.Logger.Info("successfully start Ortoo server")
 	return nil
 }
 

@@ -55,8 +55,9 @@ func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 // NewTestOrtooServerConfig generates an OrtooServerConfig for testing.
 func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
-		OrtooServer:  "127.0.0.1:19061",
-		Notification: "127.0.0.1:1883",
-		Mongo:        mongodb.NewTestMongoDBConfig(dbName),
+		RPCServerPort: 19061,
+		RestfulPort:   19861,
+		Notification:  "127.0.0.1:1883",
+		Mongo:         mongodb.NewTestMongoDBConfig(dbName),
 	}
 }

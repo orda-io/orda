@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"io/ioutil"
@@ -9,9 +10,10 @@ import (
 
 // OrtooServerConfig is a configuration of OrtooServer
 type OrtooServerConfig struct {
-	OrtooServer  string          `json:"OrtooServer"`
-	Notification string          `json:"Notification"`
-	Mongo        *mongodb.Config `json:"Mongo"`
+	RPCServerPort int            `json:"RPCServerPort"`
+	RestfulPort   int            `json:"RestfulPort"`
+	Notification  string         `json:"Notification"`
+	Mongo         mongodb.Config `json:"Mongo"`
 }
 
 func LoadOrtooServerConfig(filePath string) (*OrtooServerConfig, error) {
@@ -31,4 +33,12 @@ func (its *OrtooServerConfig) loadConfig(filepath string) error {
 		return log.OrtooErrorf(err, "fail to unmarshal server config file")
 	}
 	return nil
+}
+
+func (its *OrtooServerConfig) getRPCServerAddr() string {
+	return fmt.Sprintf(":%d", its.RPCServerPort)
+}
+
+func (its *OrtooServerConfig) getRestfulAddr() string {
+	return fmt.Sprintf(":%d", its.RestfulPort)
 }

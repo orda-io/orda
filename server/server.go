@@ -10,10 +10,6 @@ import (
 )
 
 func main() {
-	//
-	// flags := []cli.Flag{
-	// 	&cli.StringFlag{Name: "conf"},
-	// }
 
 	app := &cli.App{
 		Flags: []cli.Flag{
@@ -31,6 +27,7 @@ func main() {
 			if err != nil {
 				os.Exit(1)
 			}
+			log.Logger.Infof("Config: %#v", conf)
 			svr, err := server.NewOrtooServer(context.Background(), conf)
 			if err != nil {
 				_ = log.OrtooError(err)
