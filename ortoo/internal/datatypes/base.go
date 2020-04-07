@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
-	operations2 "github.com/knowhunger/ortoo/ortoo/operations"
+	operations "github.com/knowhunger/ortoo/ortoo/operations"
 )
 
 // BaseDatatype is the base datatype which contains
@@ -24,7 +24,7 @@ type BaseDatatype struct {
 type PublicBaseDatatypeInterface interface {
 	GetType() model.TypeOfDatatype
 	GetState() model.StateOfDatatype
-	GetAsJSON() (string, error)
+	GetAsJSON() interface{}
 }
 
 func newBaseDatatype(key string, t model.TypeOfDatatype, cuid model.CUID) *BaseDatatype {
@@ -53,16 +53,16 @@ func (b *BaseDatatype) String() string {
 	return fmt.Sprintf("%s", b.id)
 }
 
-func (b *BaseDatatype) executeLocalBase(op operations2.Operation) (interface{}, error) {
+func (b *BaseDatatype) executeLocalBase(op operations.Operation) (interface{}, error) {
 	b.SetNextOpID(op)
 	return op.ExecuteLocal(b.datatype)
 }
 
 // Replay replays an already executed operation.
-func (b *BaseDatatype) Replay(op operations2.Operation) error {
+func (b *BaseDatatype) Replay(op operations.Operation) error {
 	if bytes.Compare(b.opID.CUID, op.GetID().CUID) == 0 {
 		_, err := b.executeLocalBase(op)
-		if err != nil {
+		if err != nil { // TODO: if an operation fails to be executed, opID should be rollbacked.
 			return log.OrtooErrorf(err, "fail to replay local operation")
 		}
 	} else {
@@ -72,11 +72,11 @@ func (b *BaseDatatype) Replay(op operations2.Operation) error {
 }
 
 // SetNextOpID proceeds the operation ID next.
-func (b *BaseDatatype) SetNextOpID(op operations2.Operation) {
+func (b *BaseDatatype) SetNextOpID(op operations.Operation) {
 	op.SetOperationID(b.opID.Next())
 }
 
-func (b *BaseDatatype) executeRemoteBase(op operations2.Operation) {
+func (b *BaseDatatype) executeRemoteBase(op operations.Operation) {
 	op.ExecuteRemote(b.datatype)
 }
 

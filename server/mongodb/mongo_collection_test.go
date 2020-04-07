@@ -2,15 +2,15 @@ package mongodb_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/integration_test"
-	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"gotest.tools/assert"
 
 	// "log"
@@ -52,10 +52,6 @@ func TestMongo(t *testing.T) {
 		if len(madeCollections) != 10 {
 			t.Fail()
 		}
-
-	})
-
-	t.Run("Can get clientDoc with checkpoint", func(t *testing.T) {
 
 	})
 
@@ -181,11 +177,24 @@ func TestMongo(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		//deletedNum,  err := mongo.DeleteOperation(context.TODO(), opDoc.DUID, 1)
-		//if err != nil || deletedNum != 1{
+		// deletedNum,  err := mongo.DeleteOperation(context.TODO(), opDoc.DUID, 1)
+		// if err != nil || deletedNum != 1{
 		//	t.Fatal(err)
 		// }
 
+	})
+
+	t.Run("Can change json to bson", func(t *testing.T) {
+		j := &struct {
+			Key   string
+			Array []string
+		}{
+			Key:   "world",
+			Array: []string{"x", "y"},
+		}
+		data1, err := bson.Marshal(j)
+		require.NoError(t, err)
+		log.Logger.Infof("%v", data1)
 	})
 }
 
@@ -193,12 +202,12 @@ type testSnapshot struct {
 	Value int32 `json:"value"`
 }
 
-func (its *testSnapshot) GetAsJSON() (string, error) {
-	j, err := json.Marshal(its)
-	if err != nil {
-		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-	}
-	return string(j), nil
+func (its *testSnapshot) GetAsJSON() interface{} {
+	// j, err := json.Marshal(its)
+	// if err != nil {
+	// 	return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	// }
+	return its
 }
 
 func (its *testSnapshot) CloneSnapshot() model.Snapshot {

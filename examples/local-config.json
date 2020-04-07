@@ -1,0 +1,9 @@
+{
+  "RPCServerPort": 19061,
+  "RestfulPort": 19861,
+  "Notification": "127.0.0.1:1883",
+  "Mongo": {
+    "MongoHost": "mongodb://root:ortoo-test@localhost:27017",
+    "OrtooDB": "ortoodb"
+  }
+}

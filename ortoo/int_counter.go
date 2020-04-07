@@ -66,7 +66,7 @@ func (its *intCounter) GetFinal() *datatypes.FinalDatatype {
 	return its.FinalDatatype
 }
 
-// ExecuteLocal is the
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *intCounter) ExecuteLocal(op interface{}) (interface{}, error) {
 	iop := op.(*operations.IncreaseOperation)
 	return its.snapshot.increaseCommon(iop.C.Delta), nil
@@ -114,17 +114,8 @@ func (its *intCounter) SetSnapshot(snapshot model.Snapshot) {
 	its.snapshot = snapshot.(*intCounterSnapshot)
 }
 
-func (its *intCounter) GetAsJSON() (string, error) {
-	j := &struct {
-		Value int32
-	}{
-		Value: its.snapshot.Value,
-	}
-	b, err := json.Marshal(j)
-	if err != nil {
-		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-	}
-	return string(b), nil
+func (its *intCounter) GetAsJSON() interface{} {
+	return its.snapshot.GetAsJSON()
 }
 
 func (its *intCounter) GetMetaAndSnapshot() ([]byte, model.Snapshot, error) {
@@ -160,12 +151,8 @@ func (its *intCounterSnapshot) CloneSnapshot() model.Snapshot {
 	}
 }
 
-func (its *intCounterSnapshot) GetAsJSON() (string, error) {
-	j, err := json.Marshal(its)
-	if err != nil {
-		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-	}
-	return string(j), nil
+func (its *intCounterSnapshot) GetAsJSON() interface{} {
+	return its
 }
 
 func (its *intCounterSnapshot) increaseCommon(delta int32) int32 {

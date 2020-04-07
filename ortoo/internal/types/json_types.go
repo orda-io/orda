@@ -1,12 +1,24 @@
 package types
 
 import (
+	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"math"
 )
 
 // JSONType is an internal type used in storing various types, for converting any type to JSON supported type.
 type JSONType interface{}
+
+func ConvertValueList(values []interface{}) ([]interface{}, error) {
+	var jsonValues []interface{}
+	for _, val := range values {
+		if val == nil {
+			return nil, fmt.Errorf("null value cannot be inserted")
+		}
+		jsonValues = append(jsonValues, ConvertToJSONSupportedType(val))
+	}
+	return jsonValues, nil
+}
 
 // ConvertToJSONSupportedType converts any type of Go into a type that is supported by JSON
 func ConvertToJSONSupportedType(t interface{}) JSONType {

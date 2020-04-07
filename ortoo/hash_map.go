@@ -52,7 +52,6 @@ func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) erro
 				},
 				handlers: its.handlers,
 			},
-
 			snapshot: its.snapshot,
 		}
 		return txnFunc(clone)
@@ -66,7 +65,7 @@ func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
 	case *operations.RemoveOperation:
 		return its.snapshot.removeCommon(cast.C.Key, cast.ID.GetTimestamp()), nil
 	}
-	return nil, nil
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
 func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
@@ -94,7 +93,7 @@ func (its *hashMap) SetSnapshot(snapshot model.Snapshot) {
 	its.snapshot = snapshot.(*hashMapSnapshot)
 }
 
-func (its *hashMap) GetAsJSON() (string, error) {
+func (its *hashMap) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSON()
 }
 
@@ -117,6 +116,9 @@ func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 }
 
 func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
+	if key == "" || value == nil {
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "empty key or nil value is not allowed")
+	}
 	jsonSupportedType := types.ConvertToJSONSupportedType(value)
 
 	op := operations.NewPutOperation(key, jsonSupportedType)
@@ -131,6 +133,9 @@ func (its *hashMap) Get(key string) interface{} {
 }
 
 func (its *hashMap) Remove(key string) (interface{}, error) {
+	if key == "" {
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "empty key is not allowed")
+	}
 	op := operations.NewRemoveOperation(key)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 }
@@ -195,18 +200,14 @@ func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.T
 	return oldObj.V, nil
 }
 
-func (its *hashMapSnapshot) GetAsJSON() (string, error) {
+func (its *hashMapSnapshot) GetAsJSON() interface{} {
 	m := make(map[string]interface{})
 	for k, v := range its.Map {
 		if v.V != nil {
 			m[k] = v.V
 		}
 	}
-	data, err := json.Marshal(m)
-	if err != nil {
-		return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-	}
-	return string(data), nil
+	return m
 
 }
 

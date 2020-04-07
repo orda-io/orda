@@ -13,13 +13,13 @@ import (
 func TestHashMap(t *testing.T) {
 
 	t.Run("Can run transaction", func(t *testing.T) {
-		tw := testonly.NewTestWire()
+		tw := testonly.NewTestWire(true)
 		cuid1 := model.NewCUID()
 		hashMap1 := newHashMap("key1", cuid1, tw, nil)
 		key1 := "k1"
 		key2 := "k2"
 
-		require.NoError(t, hashMap1.DoTransaction("transaction1", func(hm HashMapInTxn) error {
+		require.NoError(t, hashMap1.DoTransaction("transaction success", func(hm HashMapInTxn) error {
 			_, _ = hm.Put(key1, 2)
 			require.Equal(t, int64(2), hm.Get(key1))
 			oldVal, _ := hm.Put(key1, 3)
@@ -29,13 +29,13 @@ func TestHashMap(t *testing.T) {
 		}))
 		require.Equal(t, int64(3), hashMap1.Get(key1))
 
-		require.Error(t, hashMap1.DoTransaction("transaction2", func(hm HashMapInTxn) error {
+		require.Error(t, hashMap1.DoTransaction("transaction failure", func(hm HashMapInTxn) error {
 			oldVal, _ := hm.Remove(key1)
 			require.Equal(t, int64(3), oldVal)
 			require.Equal(t, nil, hm.Get(key1))
 			_, _ = hm.Put(key2, 5)
 			require.Equal(t, int64(5), hm.Get(key2))
-			return fmt.Errorf("error")
+			return fmt.Errorf("fail")
 		}))
 		require.Equal(t, int64(3), hashMap1.Get(key1))
 		require.Equal(t, nil, hashMap1.Get(key2))
@@ -57,7 +57,7 @@ func TestHashMap(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("Can test hashMapSnapshot", func(t *testing.T) {
+	t.Run("Can do operations with hashMapSnapshot", func(t *testing.T) {
 		snap := newHashMapSnapshot()
 		opID1 := model.NewOperationID()
 		opID2 := model.NewOperationID()
@@ -69,18 +69,20 @@ func TestHashMap(t *testing.T) {
 
 		_, _ = snap.putCommon("key2", "value2-1", opID2.GetTimestamp())
 		_, _ = snap.putCommon("key2", "value2-2", opID1.GetTimestamp())
-		snap1, err := snap.GetAsJSON()
-		require.NoError(t, err)
+		snap1 := snap.GetAsJSON()
 		log.Logger.Infof("%+v", snap1)
-		require.Equal(t, `{"key1":"value1-2","key2":"value2-1"}`, snap1)
+		j1, err := json.Marshal(snap1)
+		require.NoError(t, err)
+		require.Equal(t, `{"key1":"value1-2","key2":"value2-1"}`, string(j1))
 
 		removed1 := snap.removeCommon("key1", opID3.GetTimestamp())
 		removed2 := snap.removeCommon("key2", opID1.GetTimestamp())
 		require.Equal(t, "value1-2", removed1)
 		require.Nil(t, removed2)
-		snap2, err := snap.GetAsJSON()
-		require.NoError(t, err)
+		snap2 := snap.GetAsJSON()
 		log.Logger.Infof("%+v", snap2)
-		require.Equal(t, `{"key2":"value2-1"}`, snap2)
+		j2, err := json.Marshal(snap2)
+		require.NoError(t, err)
+		require.Equal(t, `{"key2":"value2-1"}`, string(j2))
 	})
 }

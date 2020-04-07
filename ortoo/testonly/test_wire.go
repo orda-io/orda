@@ -8,45 +8,58 @@ import (
 
 // TestWire ...
 type TestWire struct {
-	wiredList []*datatypes.WiredDatatype //Interface
-	sseqMap   map[string]int
+	datatypeList  []*datatypes.FinalDatatype
+	sseqMap       map[string]int
+	deliveredList []*datatypes.WiredDatatype
+	notifiable    bool
 }
 
 // NewTestWire ...
-func NewTestWire() *TestWire {
+func NewTestWire(notifiable bool) *TestWire {
 	return &TestWire{
-		wiredList: make([]*datatypes.WiredDatatype, 0),
-		sseqMap:   make(map[string]int),
+		datatypeList: make([]*datatypes.FinalDatatype, 0),
+		sseqMap:      make(map[string]int),
+		notifiable:   notifiable,
 	}
 }
 
 // DeliverTransaction ...
-func (c *TestWire) DeliverTransaction(wired *datatypes.WiredDatatype) {
-	pushPullPack := wired.CreatePushPullPack()
-	sseq := c.sseqMap[wired.GetBase().GetCUID()]
-	operations := pushPullPack.Operations[sseq:]
-	c.sseqMap[wired.GetBase().GetCUID()] = len(pushPullPack.Operations)
-	for _, w := range c.wiredList {
-		if wired != w {
-			log.Logger.Info(wired, " => ", w)
-			w.ReceiveRemoteModelOperations(operations)
-		}
+func (its *TestWire) DeliverTransaction(wired *datatypes.WiredDatatype) {
+	its.deliveredList = append(its.deliveredList, wired)
+	if its.notifiable {
+		its.Sync()
 	}
 }
 
 // OnChangeDatatypeState ...
-func (c *TestWire) OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error {
+func (its *TestWire) OnChangeDatatypeState(dt model.Datatype, state model.StateOfDatatype) error {
 	return nil
 }
 
 // SetDatatypes ...
-func (c *TestWire) SetDatatypes(datatypeList ...interface{}) {
-
+func (its *TestWire) SetDatatypes(datatypeList ...*datatypes.FinalDatatype) {
 	for _, v := range datatypeList {
-		if cv, ok := v.(datatypes.FinalDatatypeInterface); ok {
-			common := cv.GetFinal()
-			c.wiredList = append(c.wiredList, common.GetWired())
-			c.sseqMap[common.GetCUID()] = 0
+		its.datatypeList = append(its.datatypeList, v)
+		its.sseqMap[v.GetCUID()] = 0
+	}
+}
+
+func (its *TestWire) Sync() {
+	for len(its.deliveredList) > 0 {
+		var wired *datatypes.WiredDatatype
+		wired, its.deliveredList = its.deliveredList[0], its.deliveredList[1:]
+
+		pushPullPack := wired.CreatePushPullPack()
+		sseq := its.sseqMap[wired.GetCUID()]
+		operations := pushPullPack.Operations[sseq:]
+
+		log.Logger.Infof("deliver transaction:%v", model.OperationsToString(operations))
+		its.sseqMap[wired.GetBase().GetCUID()] = len(pushPullPack.Operations)
+		for _, w := range its.datatypeList {
+			if wired != w.GetWired() {
+				log.Logger.Info(wired.GetCUID(), " => ", w.GetCUID())
+				w.ReceiveRemoteModelOperations(operations)
+			}
 		}
 	}
 }

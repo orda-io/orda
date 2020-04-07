@@ -159,7 +159,10 @@ func (t *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp,
 				t.Logger.Infof("End the transaction: `%s`", t.currentTrxCtx.tag)
 			}
 		} else {
-			t.Rollback() // todo: error handling
+			if err := t.Rollback(); err != nil {
+				panic(err)
+			}
+
 		}
 	}
 	return nil

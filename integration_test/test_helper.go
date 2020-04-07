@@ -5,8 +5,8 @@ import (
 	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
-	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/knowhunger/ortoo/server/server"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -55,25 +55,9 @@ func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 // NewTestOrtooServerConfig generates an OrtooServerConfig for testing.
 func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
-		OrtooServer:      "127.0.0.1:19061",
-		NotificationAddr: "127.0.0.1:1883",
-		Mongo:            mongodb.NewTestMongoDBConfig(dbName),
+		RPCServerPort: 19061,
+		RestfulPort:   19861,
+		Notification:  "127.0.0.1:1883",
+		Mongo:         mongodb.NewTestMongoDBConfig(dbName),
 	}
-}
-
-// MakeTestCollection makes collections for testing.
-func MakeTestCollection(mongo *mongodb.RepositoryMongo, collectionName string) (uint32, error) {
-	collectionDoc, err := mongo.GetCollection(context.TODO(), collectionName)
-	if err != nil {
-		return 0, log.OrtooError(err)
-	}
-	if collectionDoc != nil {
-		return collectionDoc.Num, nil
-	}
-	collectionDoc, err = mongo.InsertCollection(context.TODO(), collectionName)
-	if err != nil {
-		return 0, log.OrtooError(err)
-	}
-	log.Logger.Infof("create a new collection:%+v", collectionDoc)
-	return collectionDoc.Num, nil
 }

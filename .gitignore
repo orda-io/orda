@@ -13,3 +13,4 @@
 *.sum
 .idea/
 docker_volumes/
+build/*

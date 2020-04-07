@@ -3,8 +3,8 @@ package integration
 import (
 	"context"
 	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/server"
 	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/knowhunger/ortoo/server/server"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"strings"
@@ -49,14 +49,14 @@ func (its *OrtooIntegrationTestSuite) SetupTest() {
 	log.Logger.Infof("Setup OrtooIntegrationTest:%s", its.collectionName)
 	var err error
 	require.NoError(its.T(), its.mongo.ResetCollections(context.Background(), its.collectionName))
-	its.collectionNum, err = MakeTestCollection(its.server.Mongo, its.collectionName)
+	its.collectionNum, err = mongodb.MakeCollection(its.server.Mongo, its.collectionName)
 	require.NoError(its.T(), err)
 }
 
 // TearDownTest tears down OrtooIntegrationTestSuite.
 func (its *OrtooIntegrationTestSuite) TearDownSuite() {
 	its.T().Log("TearDown OrtooIntegrationTestSuite")
-	its.server.Close()
+	its.server.Close(true)
 }
 
 func TestIntegration(t *testing.T) {

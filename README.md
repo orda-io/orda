@@ -18,16 +18,28 @@
  # cd ortoo 
  # make docker-up
  # make protoc-gen
+ # make server
  ```
 
 ## How to use Ortoo
 
 ### Run Ortoo Server
-```go
-
+```bash
+ $ make run-local-server 
+or 
+ $ make server 
+ $ ./build/server --conf ./examples/local-config.json 
 ```
 
-### Make a client
+### Use Ortoo client SDK
+
+#### Make a collection
+ - To make Ortoo clients connect to Ortoo server, a `collection` should be prepared. The `collection` corresponds to the real collection of MongoDB. It can be created by restful API: `curl -X GET http://<SERVER_ADDR>/collections/<COLLECTION_NAME>`
+```bash
+ $ curl -s -X GET http://localhost:19861/collections/hello_world
+Created collection 'hello_world(1)'
+```
+#### Make a client
  - An Ortoo client manages the connection with the Ortoo server and synchronization of Ortoo datatypes.   
  - An Ortoo client participates in a collection of MongoDB, which means that the snapshot of any created datatype is written to the collection of MongoDB.   
 ```go
@@ -50,12 +62,11 @@ defer func() {
     }
 }()
 ```
-## Use datatypes
+### Use Datatypes
 
-### IntCounter
-### HashMap
-### List
-
-### Inside MongoDB 
-
-
+#### Creation and Subscription of Datatypes
+#### IntCounter
+#### HashMap
+#### List
+#### Transaction
+#### Handlers
