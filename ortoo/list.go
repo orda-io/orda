@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -27,11 +28,11 @@ type ListInTxn interface {
 	Update(pos int, value ...interface{}) ([]interface{}, error)
 }
 
-func newList(key string, cuid types.CUID, wire datatypes.Wire, handlers *Handlers) List {
+func newList(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) List {
 	list := &list{
 		datatype: &datatype{
-			FinalDatatype: &datatypes.FinalDatatype{},
-			handlers:      handlers,
+			ManageableDatatype: &datatypes.ManageableDatatype{},
+			handlers:           handlers,
 		},
 		snapshot: newListSnapshot(),
 	}
@@ -45,11 +46,11 @@ type list struct {
 }
 
 func (its *list) DoTransaction(tag string, txnFunc func(list ListInTxn) error) error {
-	return its.FinalDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
 		clone := &list{
 			datatype: &datatype{
-				FinalDatatype: &datatypes.FinalDatatype{
-					TransactionDatatype: its.FinalDatatype.TransactionDatatype,
+				ManageableDatatype: &datatypes.ManageableDatatype{
+					TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
 					TransactionCtx:      txnCtx,
 				},
 				handlers: its.handlers,
@@ -113,16 +114,16 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
-func (its *list) GetSnapshot() types.Snapshot {
+func (its *list) GetSnapshot() iface.Snapshot {
 	return its.snapshot
 }
 
-func (its *list) SetSnapshot(snapshot types.Snapshot) {
+func (its *list) SetSnapshot(snapshot iface.Snapshot) {
 	its.snapshot = snapshot.(*listSnapshot)
 }
 
-func (its *list) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
-	meta, err := its.FinalDatatype.GetMeta()
+func (its *list) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
+	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
@@ -130,7 +131,7 @@ func (its *list) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
 }
 
 func (its *list) SetMetaAndSnapshot(meta []byte, snapshot string) error {
-	if err := its.FinalDatatype.SetMeta(meta); err != nil {
+	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
 		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
@@ -252,7 +253,7 @@ type listSnapshot struct {
 	Map  map[string]*node
 }
 
-func (its *listSnapshot) CloneSnapshot() types.Snapshot {
+func (its *listSnapshot) CloneSnapshot() iface.Snapshot {
 	var cloneMap = make(map[string]*node)
 	for k, v := range its.Map {
 		cloneMap[k] = v

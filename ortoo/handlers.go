@@ -1,16 +1,8 @@
 package ortoo
 
-import "github.com/knowhunger/ortoo/ortoo/model"
-
-type handler interface {
-	HandleStateChange(oldState, newState model.StateOfDatatype)
-	HandleErrors(err ...error)
-	HandleRemoteOperations(operations []interface{})
-}
-
-// type handler interface {
-// 	callErrorHandler(errs ...error)
-// }
+import (
+	"github.com/knowhunger/ortoo/ortoo/model"
+)
 
 // Handlers defines a set of handlers which can handles the events related to Datatype
 type Handlers struct {

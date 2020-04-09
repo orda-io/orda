@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/context"
 	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/managers"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/types"
@@ -187,7 +188,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 	typeOf model.TypeOfDatatype,
 	state model.StateOfDatatype,
 	handler *Handlers,
-) types.Datatype {
+) iface.Datatype {
 	if c.datatypeManager != nil {
 		datatypeFromDM := c.datatypeManager.Get(key)
 		if datatypeFromDM != nil {
@@ -202,7 +203,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 			}
 		}
 	}
-	var datatype types.Datatype
+	var datatype iface.Datatype
 	var impl interface{}
 
 	switch typeOf {
@@ -213,7 +214,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 	case model.TypeOfDatatype_LIST:
 		impl = newList(key, c.model.CUID, c.datatypeManager, handler)
 	}
-	datatype = impl.(types.Datatype)
+	datatype = impl.(iface.Datatype)
 
 	if c.datatypeManager != nil {
 		if err := c.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {

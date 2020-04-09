@@ -2,11 +2,12 @@ package operations
 
 import (
 	"encoding/json"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/model"
 )
 
 // ModelToOperation changes a model.Operation to an operations.Operation
-func ModelToOperation(op *model.Operation) Operation {
+func ModelToOperation(op *model.Operation) iface.Operation {
 	switch op.OpType {
 	case model.TypeOfOperation_SNAPSHOT:
 		var c snapshotContent

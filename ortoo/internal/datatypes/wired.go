@@ -3,43 +3,23 @@ package datatypes
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/constants"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
-	"github.com/knowhunger/ortoo/ortoo/types"
 )
-
-// Wire defines the interfaces related to delivering operations. This is called when a datatype needs to send messages
-type Wire interface {
-	DeliverTransaction(wired *WiredDatatype)
-	OnChangeDatatypeState(dt types.Datatype, state model.StateOfDatatype) error
-}
 
 // WiredDatatype implements the datatype features related to the synchronization with Ortoo server
 type WiredDatatype struct {
 	*BaseDatatype
-	wire       Wire
+	wire       iface.Wire
 	checkPoint *model.CheckPoint
 	buffer     []*model.Operation
 }
 
-// PublicWiredDatatypeInterface defines the interface related to the synchronization with Ortoo server
-type PublicWiredDatatypeInterface interface {
-	PublicBaseDatatypeInterface
-}
-
-// WiredDatatypeInterface defines the internal interface related to the synchronization with Ortoo server
-type WiredDatatypeInterface interface {
-	GetBase() *BaseDatatype
-	ExecuteRemote(op operations.Operation)
-	ReceiveRemoteOperationsOnWire(operations []*model.Operation) error
-	ApplyPushPullPack(*model.PushPullPack)
-	CreatePushPullPack() *model.PushPullPack
-}
-
 // newWiredDatatype creates a new wiredDatatype
-func newWiredDatatype(b *BaseDatatype, w Wire) *WiredDatatype {
+func newWiredDatatype(b *BaseDatatype, w iface.Wire) *WiredDatatype {
 	return &WiredDatatype{
 		BaseDatatype: b,
 		checkPoint:   model.NewCheckPoint(),
@@ -58,7 +38,7 @@ func (w *WiredDatatype) String() string {
 }
 
 // ExecuteRemote ...
-func (w *WiredDatatype) ExecuteRemote(op operations.Operation) {
+func (w *WiredDatatype) ExecuteRemote(op iface.Operation) {
 	w.opID.SyncLamport(op.GetID().Lamport)
 	w.executeRemoteBase(op)
 }
@@ -97,10 +77,10 @@ func (w *WiredDatatype) applyPushPullPackExecuteOperations(operations []*model.O
 // CreatePushPullPack ...
 func (w *WiredDatatype) CreatePushPullPack() *model.PushPullPack {
 	seq := w.checkPoint.Cseq
-	operations := w.getModelOperations(seq + 1)
+	modelOps := w.getModelOperations(seq + 1)
 	cp := &model.CheckPoint{
 		Sseq: w.checkPoint.GetSseq(),
-		Cseq: w.checkPoint.GetCseq() + uint64(len(operations)),
+		Cseq: w.checkPoint.GetCseq() + uint64(len(modelOps)),
 	}
 	option := model.PushPullBitNormal
 	if w.state == model.StateOfDatatype_DUE_TO_CREATE {
@@ -117,7 +97,7 @@ func (w *WiredDatatype) CreatePushPullPack() *model.PushPullPack {
 		CheckPoint: cp,
 		Era:        w.GetEra(),
 		Type:       int32(w.TypeOf),
-		Operations: operations,
+		Operations: modelOps,
 	}
 }
 
@@ -244,7 +224,7 @@ func (w *WiredDatatype) getModelOperations(cseq uint64) []*model.Operation {
 	return []*model.Operation{}
 }
 
-func (w *WiredDatatype) deliverTransaction(transaction []operations.Operation) {
+func (w *WiredDatatype) deliverTransaction(transaction []iface.Operation) {
 	if w.wire == nil {
 		return
 	}

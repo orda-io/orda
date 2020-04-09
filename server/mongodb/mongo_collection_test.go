@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/knowhunger/ortoo/integration_test"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
@@ -211,7 +212,7 @@ func (its *testSnapshot) GetAsJSON() interface{} {
 	return its
 }
 
-func (its *testSnapshot) CloneSnapshot() types.Snapshot {
+func (its *testSnapshot) CloneSnapshot() iface.Snapshot {
 	return &testSnapshot{
 		Value: its.Value,
 	}

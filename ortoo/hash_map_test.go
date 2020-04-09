@@ -3,6 +3,7 @@ package ortoo
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/testonly"
@@ -50,11 +51,11 @@ func TestHashMap(t *testing.T) {
 		hashMap1.Remove("k2")
 
 		clone := newHashMap("key2", types.NewCUID(), nil, nil)
-		meta, snap, err := hashMap1.(types.Datatype).GetMetaAndSnapshot()
+		meta, snap, err := hashMap1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
 		snapB, err := json.Marshal(snap)
 		require.NoError(t, err)
-		err = clone.(types.Datatype).SetMetaAndSnapshot(meta, string(snapB))
+		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta, string(snapB))
 		require.NoError(t, err)
 	})
 

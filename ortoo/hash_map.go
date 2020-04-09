@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -25,11 +26,11 @@ type HashMapInTxn interface {
 	Remove(key string) (interface{}, error)
 }
 
-func newHashMap(key string, cuid types.CUID, wire datatypes.Wire, handlers *Handlers) HashMap {
+func newHashMap(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) HashMap {
 	hashMap := &hashMap{
 		datatype: &datatype{
-			FinalDatatype: &datatypes.FinalDatatype{},
-			handlers:      handlers,
+			ManageableDatatype: &datatypes.ManageableDatatype{},
+			handlers:           handlers,
 		},
 		snapshot: newHashMapSnapshot(),
 	}
@@ -43,11 +44,11 @@ type hashMap struct {
 }
 
 func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) error) error {
-	return its.FinalDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
 		clone := &hashMap{
 			datatype: &datatype{
-				FinalDatatype: &datatypes.FinalDatatype{
-					TransactionDatatype: its.FinalDatatype.TransactionDatatype,
+				ManageableDatatype: &datatypes.ManageableDatatype{
+					TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
 					TransactionCtx:      txnCtx,
 				},
 				handlers: its.handlers,
@@ -85,11 +86,11 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
 
-func (its *hashMap) GetSnapshot() types.Snapshot {
+func (its *hashMap) GetSnapshot() iface.Snapshot {
 	return its.snapshot
 }
 
-func (its *hashMap) SetSnapshot(snapshot types.Snapshot) {
+func (its *hashMap) SetSnapshot(snapshot iface.Snapshot) {
 	its.snapshot = snapshot.(*hashMapSnapshot)
 }
 
@@ -97,8 +98,8 @@ func (its *hashMap) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSON()
 }
 
-func (its *hashMap) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
-	meta, err := its.FinalDatatype.GetMeta()
+func (its *hashMap) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
+	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
@@ -106,7 +107,7 @@ func (its *hashMap) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
 }
 
 func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
-	if err := its.FinalDatatype.SetMeta(meta); err != nil {
+	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
 		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
@@ -163,7 +164,7 @@ func newHashMapSnapshot() *hashMapSnapshot {
 	}
 }
 
-func (its *hashMapSnapshot) CloneSnapshot() types.Snapshot {
+func (its *hashMapSnapshot) CloneSnapshot() iface.Snapshot {
 	var cloneMap = make(map[string]*obj)
 	for k, v := range its.Map {
 		cloneMap[k] = v

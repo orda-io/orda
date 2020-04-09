@@ -2,6 +2,7 @@ package ortoo
 
 import (
 	"encoding/json"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/ortoo/types"
 
@@ -33,11 +34,11 @@ type intCounter struct {
 }
 
 // newIntCounter creates a new int counter
-func newIntCounter(key string, cuid types.CUID, wire datatypes.Wire, handler *Handlers) IntCounter {
+func newIntCounter(key string, cuid types.CUID, wire iface.Wire, handler *Handlers) IntCounter {
 	intCounter := &intCounter{
 		datatype: &datatype{
-			FinalDatatype: &datatypes.FinalDatatype{},
-			handlers:      handler,
+			ManageableDatatype: &datatypes.ManageableDatatype{},
+			handlers:           handler,
 		},
 		snapshot: &intCounterSnapshot{
 			Value: 0,
@@ -48,11 +49,11 @@ func newIntCounter(key string, cuid types.CUID, wire datatypes.Wire, handler *Ha
 }
 
 func (its *intCounter) DoTransaction(tag string, txnFunc func(intCounter IntCounterInTxn) error) error {
-	return its.FinalDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
 		clone := &intCounter{
 			datatype: &datatype{
-				FinalDatatype: &datatypes.FinalDatatype{
-					TransactionDatatype: its.FinalDatatype.TransactionDatatype,
+				ManageableDatatype: &datatypes.ManageableDatatype{
+					TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
 					TransactionCtx:      txnCtx,
 				},
 				handlers: its.handlers,
@@ -63,8 +64,8 @@ func (its *intCounter) DoTransaction(tag string, txnFunc func(intCounter IntCoun
 	})
 }
 
-func (its *intCounter) GetFinal() *datatypes.FinalDatatype {
-	return its.FinalDatatype
+func (its *intCounter) GetFinal() *datatypes.ManageableDatatype {
+	return its.ManageableDatatype
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
@@ -107,11 +108,11 @@ func (its *intCounter) IncreaseBy(delta int32) (int32, error) {
 	return ret.(int32), nil
 }
 
-func (its *intCounter) GetSnapshot() types.Snapshot {
+func (its *intCounter) GetSnapshot() iface.Snapshot {
 	return its.snapshot
 }
 
-func (its *intCounter) SetSnapshot(snapshot types.Snapshot) {
+func (its *intCounter) SetSnapshot(snapshot iface.Snapshot) {
 	its.snapshot = snapshot.(*intCounterSnapshot)
 }
 
@@ -119,8 +120,8 @@ func (its *intCounter) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSON()
 }
 
-func (its *intCounter) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
-	meta, err := its.FinalDatatype.GetMeta()
+func (its *intCounter) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
+	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
@@ -128,7 +129,7 @@ func (its *intCounter) GetMetaAndSnapshot() ([]byte, types.Snapshot, error) {
 }
 
 func (its *intCounter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
-	if err := its.FinalDatatype.SetMeta(meta); err != nil {
+	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
 		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
 
@@ -146,7 +147,7 @@ type intCounterSnapshot struct {
 	Value int32 `json:"value"`
 }
 
-func (its *intCounterSnapshot) CloneSnapshot() types.Snapshot {
+func (its *intCounterSnapshot) CloneSnapshot() iface.Snapshot {
 	return &intCounterSnapshot{
 		Value: its.Value,
 	}

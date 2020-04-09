@@ -3,31 +3,27 @@ package datatypes
 import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
-// FinalDatatype implements the datatype features finally used.
-type FinalDatatype struct {
+// ManageableDatatype implements the datatype features finally used.
+type ManageableDatatype struct {
 	*TransactionDatatype
 	TransactionCtx *TransactionContext
 }
 
-// FinalDatatypeInterface defines the interface to obtain FinalDatatype which provide final interfaces.
-type FinalDatatypeInterface interface {
-	GetFinal() *FinalDatatype
-}
-
 // Initialize is a method for initialization
-func (c *FinalDatatype) Initialize(
+func (c *ManageableDatatype) Initialize(
 	key string,
 	typeOf model.TypeOfDatatype,
 	cuid types.CUID,
-	w Wire,
-	snapshot types.Snapshot,
-	datatype types.Datatype) {
+	w iface.Wire,
+	snapshot iface.Snapshot,
+	datatype iface.Datatype) {
 
 	baseDatatype := newBaseDatatype(key, typeOf, cuid)
 	wiredDatatype := newWiredDatatype(baseDatatype, w)
@@ -39,7 +35,7 @@ func (c *FinalDatatype) Initialize(
 }
 
 // GetMeta returns the binary of metadata of the datatype.
-func (c *FinalDatatype) GetMeta() ([]byte, error) {
+func (c *ManageableDatatype) GetMeta() ([]byte, error) {
 	meta := model.DatatypeMeta{
 		Key:    c.Key,
 		DUID:   c.id,
@@ -55,7 +51,7 @@ func (c *FinalDatatype) GetMeta() ([]byte, error) {
 }
 
 // SetMeta sets the metadata with binary metadata.
-func (c *FinalDatatype) SetMeta(meta []byte) error {
+func (c *ManageableDatatype) SetMeta(meta []byte) error {
 	m := model.DatatypeMeta{}
 	if err := json.Unmarshal(meta, &m); err != nil {
 		return log.OrtooError(err)
@@ -69,7 +65,7 @@ func (c *FinalDatatype) SetMeta(meta []byte) error {
 }
 
 // DoTransaction enables datatypes to perform a transaction.
-func (c *FinalDatatype) DoTransaction(tag string, fn func(txnCtx *TransactionContext) error) error {
+func (c *ManageableDatatype) DoTransaction(tag string, fn func(txnCtx *TransactionContext) error) error {
 	txnCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
 	if err != nil {
 		return err
@@ -87,7 +83,7 @@ func (c *FinalDatatype) DoTransaction(tag string, fn func(txnCtx *TransactionCon
 }
 
 // SubscribeOrCreate enables a datatype to subscribe and create itself.
-func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
+func (c *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
 		c.state = state
 		return nil
@@ -104,7 +100,7 @@ func (c *FinalDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 }
 
 // ExecuteTransactionRemote is a method to execute a transaction of remote operations
-func (c FinalDatatype) ExecuteTransactionRemote(transaction []*model.Operation, obtainList bool) ([]interface{}, error) {
+func (c ManageableDatatype) ExecuteTransactionRemote(transaction []*model.Operation, obtainList bool) ([]interface{}, error) {
 	var trxCtx *TransactionContext
 	var err error
 	if len(transaction) > 1 {

@@ -2,11 +2,10 @@ package datatypes
 
 import (
 	"github.com/knowhunger/ortoo/ortoo/errors"
-	operations "github.com/knowhunger/ortoo/ortoo/operations"
-	"github.com/knowhunger/ortoo/ortoo/types"
-
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 	"sync"
 )
 
@@ -19,8 +18,8 @@ type TransactionDatatype struct {
 	mutex            *sync.RWMutex
 	isLocked         bool
 	success          bool
-	rollbackSnapshot types.Snapshot
-	rollbackOps      []operations.Operation
+	rollbackSnapshot iface.Snapshot
+	rollbackOps      []iface.Operation
 	rollbackOpID     *model.OperationID
 	currentTrxCtx    *TransactionContext
 }
@@ -28,16 +27,16 @@ type TransactionDatatype struct {
 // TransactionContext is a context used for transactions
 type TransactionContext struct {
 	tag          string
-	opBuffer     []operations.Operation
+	opBuffer     []iface.Operation
 	rollbackOpID *model.OperationID
 }
 
-func (t *TransactionContext) appendOperation(op operations.Operation) {
+func (t *TransactionContext) appendOperation(op iface.Operation) {
 	t.opBuffer = append(t.opBuffer, op)
 }
 
 // newTransactionDatatype creates a new TransactionDatatype
-func newTransactionDatatype(w *WiredDatatype, snapshot types.Snapshot) *TransactionDatatype {
+func newTransactionDatatype(w *WiredDatatype, snapshot iface.Snapshot) *TransactionDatatype {
 	return &TransactionDatatype{
 		WiredDatatype:    w,
 		mutex:            new(sync.RWMutex),
@@ -57,7 +56,7 @@ func (t *TransactionDatatype) GetWired() *WiredDatatype {
 
 // ExecuteOperationWithTransaction is a method to execute an operation with a transaction.
 // an operation can be either local or remote
-func (t *TransactionDatatype) ExecuteOperationWithTransaction(ctx *TransactionContext, op operations.Operation, isLocal bool) (interface{}, error) {
+func (t *TransactionDatatype) ExecuteOperationWithTransaction(ctx *TransactionContext, op iface.Operation, isLocal bool) (interface{}, error) {
 	transactionCtx, err := t.BeginTransaction(NotUserTransactionTag, ctx, false)
 	if err != nil {
 		return 0, t.Logger.OrtooErrorf(err, "fail to execute transaction")
@@ -115,7 +114,7 @@ func (t *TransactionDatatype) BeginTransaction(tag string, tnxCtx *TransactionCo
 // Rollback is called to rollback a transaction
 func (t *TransactionDatatype) Rollback() error {
 	t.Logger.Infof("Begin the rollback: '%s'", t.currentTrxCtx.tag)
-	snapshotDatatype, _ := t.datatype.(SnapshotDatatype)
+	snapshotDatatype, _ := t.datatype.(iface.SnapshotDatatype)
 	redoOpID := t.opID
 	redoSnapshot := snapshotDatatype.GetSnapshot().CloneSnapshot()
 	t.SetOpID(t.currentTrxCtx.rollbackOpID)

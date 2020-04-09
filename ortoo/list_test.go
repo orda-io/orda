@@ -23,7 +23,7 @@ func TestList(t *testing.T) {
 		tw := testonly.NewTestWire(false)
 		list1 := newList("key1", types.NewCUID(), tw, nil)
 		list2 := newList("key2", types.NewCUID(), tw, nil)
-		tw.SetDatatypes(list1.(*list).FinalDatatype, list2.(*list).FinalDatatype)
+		tw.SetDatatypes(list1.(*list).ManageableDatatype, list2.(*list).ManageableDatatype)
 
 		inserted1, _ := list1.Insert(0, "x", "y")
 		require.Equal(t, []interface{}{"x", "y"}, inserted1)

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
-	operations "github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
@@ -17,15 +17,8 @@ type BaseDatatype struct {
 	opID     *model.OperationID
 	TypeOf   model.TypeOfDatatype
 	state    model.StateOfDatatype
-	datatype types.Datatype
+	datatype iface.Datatype
 	Logger   *log.OrtooLog
-}
-
-// PublicBaseDatatypeInterface is a public interface for a datatype.
-type PublicBaseDatatypeInterface interface {
-	GetType() model.TypeOfDatatype
-	GetState() model.StateOfDatatype
-	GetAsJSON() interface{}
 }
 
 func newBaseDatatype(key string, t model.TypeOfDatatype, cuid types.CUID) *BaseDatatype {
@@ -54,13 +47,13 @@ func (b *BaseDatatype) String() string {
 	return fmt.Sprintf("%s", b.id)
 }
 
-func (b *BaseDatatype) executeLocalBase(op operations.Operation) (interface{}, error) {
+func (b *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, error) {
 	b.SetNextOpID(op)
 	return op.ExecuteLocal(b.datatype)
 }
 
 // Replay replays an already executed operation.
-func (b *BaseDatatype) Replay(op operations.Operation) error {
+func (b *BaseDatatype) Replay(op iface.Operation) error {
 	if bytes.Compare(b.opID.CUID, op.GetID().CUID) == 0 {
 		_, err := b.executeLocalBase(op)
 		if err != nil { // TODO: if an operation fails to be executed, opID should be rollbacked.
@@ -73,11 +66,11 @@ func (b *BaseDatatype) Replay(op operations.Operation) error {
 }
 
 // SetNextOpID proceeds the operation ID next.
-func (b *BaseDatatype) SetNextOpID(op operations.Operation) {
+func (b *BaseDatatype) SetNextOpID(op iface.Operation) {
 	op.SetOperationID(b.opID.Next())
 }
 
-func (b *BaseDatatype) executeRemoteBase(op operations.Operation) {
+func (b *BaseDatatype) executeRemoteBase(op iface.Operation) {
 	op.ExecuteRemote(b.datatype)
 }
 
@@ -92,12 +85,12 @@ func (b *BaseDatatype) GetState() model.StateOfDatatype {
 }
 
 // SetDatatype sets the Datatype which implements this BaseDatatype.
-func (b *BaseDatatype) SetDatatype(datatype types.Datatype) {
+func (b *BaseDatatype) SetDatatype(datatype iface.Datatype) {
 	b.datatype = datatype
 }
 
 // GetDatatype returns the Datatype which implements this BaseDatatype.
-func (b *BaseDatatype) GetDatatype() types.Datatype {
+func (b *BaseDatatype) GetDatatype() iface.Datatype {
 	return b.datatype
 }
 

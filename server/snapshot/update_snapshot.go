@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
-	"github.com/knowhunger/ortoo/ortoo/types"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -47,7 +47,7 @@ func (m *Manager) getPushPullTag() errors.PushPullTag {
 func (m *Manager) UpdateSnapshot() error {
 	var sseq uint64 = 0
 	client := ortoo.NewClient(ortoo.NewLocalClientConfig(m.collectionDoc.Name), "server")
-	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType(), nil).(types.Datatype)
+	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType(), nil).(iface.Datatype)
 	snapshotDoc, err := m.mongo.GetLatestSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID)
 	if err != nil {
 		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
