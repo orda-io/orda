@@ -26,6 +26,7 @@ type ListInTxn interface {
 	Delete(pos int) (interface{}, error)
 	DeleteMany(pos int, numOfNode int) ([]interface{}, error)
 	Update(pos int, value ...interface{}) ([]interface{}, error)
+	Size() int
 }
 
 func newList(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) List {
@@ -112,6 +113,10 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
 		return its.snapshot.updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+}
+
+func (its *list) Size() int {
+	return its.Size()
 }
 
 func (its *list) GetSnapshot() iface.Snapshot {
@@ -491,4 +496,8 @@ func (its *listSnapshot) GetAsJSON() interface{} {
 	}{
 		Value: l,
 	}
+}
+
+func (its *listSnapshot) Size() int {
+	return int(its.size)
 }

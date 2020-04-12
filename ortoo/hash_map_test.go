@@ -76,7 +76,7 @@ func TestHashMap(t *testing.T) {
 		j1, err := json.Marshal(snap1)
 		require.NoError(t, err)
 		require.Equal(t, `{"key1":"value1-2","key2":"value2-1"}`, string(j1))
-
+		require.Equal(t, 2, snap.size())
 		removed1 := snap.removeCommon("key1", opID3.GetTimestamp())
 		removed2 := snap.removeCommon("key2", opID1.GetTimestamp())
 		require.Equal(t, "value1-2", removed1)

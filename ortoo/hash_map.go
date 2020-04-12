@@ -24,6 +24,7 @@ type HashMapInTxn interface {
 	Get(key string) interface{}
 	Put(key string, value interface{}) (interface{}, error)
 	Remove(key string) (interface{}, error)
+	Size() int
 }
 
 func newHashMap(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) HashMap {
@@ -141,6 +142,10 @@ func (its *hashMap) Remove(key string) (interface{}, error) {
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 }
 
+func (its *hashMap) Size() int {
+	return its.snapshot.size()
+}
+
 // ////////////////////////////////////////////////////////////////
 //  hashMapSnapshot
 // ////////////////////////////////////////////////////////////////
@@ -155,12 +160,14 @@ func (its *obj) String() string {
 }
 
 type hashMapSnapshot struct {
-	Map map[string]*obj
+	Map  map[string]*obj
+	Size int
 }
 
 func newHashMapSnapshot() *hashMapSnapshot {
 	return &hashMapSnapshot{
-		Map: make(map[string]*obj),
+		Map:  make(map[string]*obj),
+		Size: 0,
 	}
 }
 
@@ -188,6 +195,7 @@ func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.T
 			V: value,
 			T: ts,
 		}
+		its.Size++
 		return nil, nil
 	}
 
@@ -219,8 +227,15 @@ func (its *hashMapSnapshot) removeCommon(key string, ts *model.Timestamp) interf
 				V: nil,
 				T: ts,
 			}
+			if oldObj.V != nil {
+				its.Size--
+			}
 			return oldObj.V
 		}
 	}
 	return nil
+}
+
+func (its *hashMapSnapshot) size() int {
+	return its.Size
 }
