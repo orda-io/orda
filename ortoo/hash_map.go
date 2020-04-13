@@ -187,9 +187,6 @@ func (its *hashMapSnapshot) get(key string) interface{} {
 
 func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
 	oldObj, ok := its.Map[key]
-	defer func() {
-		log.Logger.Infof("putCommon value: %v => %v for key: %s", oldObj, its.Map[key], key)
-	}()
 	if !ok {
 		its.Map[key] = &obj{
 			V: value,
@@ -198,6 +195,9 @@ func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.T
 		its.Size++
 		return nil, nil
 	}
+	defer func() {
+		log.Logger.Infof("putCommon value: %v => %v for key: %s", oldObj, its.Map[key], key)
+	}()
 
 	if oldObj.T.Compare(ts) <= 0 {
 		its.Map[key] = &obj{
