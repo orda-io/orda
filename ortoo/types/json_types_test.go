@@ -50,4 +50,10 @@ func TestConvertToJSONSupportedType(t *testing.T) {
 		log.Logger.Infof("[%v]", strtStr)
 	})
 
+	t.Run("Can convert JSON supported pointer types", func(t *testing.T) {
+		var intt = 1234
+		cintt := ConvertToJSONSupportedType(&intt)
+		require.Equal(t, cintt, int64(intt))
+	})
+
 }

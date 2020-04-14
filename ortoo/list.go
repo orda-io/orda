@@ -289,7 +289,6 @@ func newListSnapshot() *listSnapshot {
 
 func (its *listSnapshot) insertRemote(pos string, ts *model.Timestamp, values ...interface{}) (interface{}, error) {
 	if target, ok := its.Map[pos]; ok {
-		currentTs := ts
 		for _, val := range values {
 			nextTarget := target.next
 			for nextTarget != nil && nextTarget.T.Compare(ts) > 0 {
@@ -298,7 +297,7 @@ func (its *listSnapshot) insertRemote(pos string, ts *model.Timestamp, values ..
 			}
 			newNode := &node{
 				V:    val,
-				T:    currentTs,
+				T:    ts,
 				P:    nil,
 				next: target.next,
 				prev: target,
@@ -307,7 +306,7 @@ func (its *listSnapshot) insertRemote(pos string, ts *model.Timestamp, values ..
 			its.Map[newNode.hash()] = newNode
 			its.size++
 			target = newNode
-			currentTs = ts.GetNextDeliminator()
+			ts.NextDeliminator()
 		}
 		return nil, nil
 	}
@@ -322,11 +321,10 @@ func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...i
 	var inserted []interface{}
 	target := its.findNthTarget(pos)
 	targetTs := target.T
-	currentTs := ts
 	for _, v := range values {
 		newNode := &node{
 			V:    v,
-			T:    currentTs,
+			T:    ts,
 			next: target.next,
 			prev: target,
 		}
@@ -334,7 +332,7 @@ func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...i
 		its.Map[newNode.hash()] = newNode
 		inserted = append(inserted, v)
 		its.size++
-		currentTs = ts.GetNextDeliminator()
+		ts.NextDeliminator()
 		target = newNode
 	}
 	return targetTs, inserted, nil

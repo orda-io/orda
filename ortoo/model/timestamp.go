@@ -56,11 +56,12 @@ func (its *Timestamp) Next() *Timestamp {
 	}
 }
 
-func (its *Timestamp) GetNextDeliminator() *Timestamp {
+func (its *Timestamp) NextDeliminator() *Timestamp {
+	its.Delimiter++
 	return &Timestamp{
 		Era:       its.Era,
 		Lamport:   its.Lamport,
 		CUID:      its.CUID,
-		Delimiter: its.Delimiter + 1,
+		Delimiter: its.Delimiter,
 	}
 }
