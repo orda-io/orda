@@ -314,6 +314,10 @@ func (its *listSnapshot) insertRemote(pos string, ts *model.Timestamp, values ..
 	return nil, nil
 }
 
+func (its *listSnapshot) appendLocal(ts *model.Timestamp, values ...interface{}) (*model.Timestamp, []interface{}, error) {
+	return its.insertLocal(its.size, ts, values...)
+}
+
 func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...interface{}) (*model.Timestamp, []interface{}, error) {
 	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
@@ -332,7 +336,7 @@ func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...i
 		its.Map[newNode.hash()] = newNode
 		inserted = append(inserted, v)
 		its.size++
-		ts.NextDeliminator()
+		ts = ts.NextDeliminator()
 		target = newNode
 	}
 	return targetTs, inserted, nil

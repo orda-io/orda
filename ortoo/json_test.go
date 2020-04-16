@@ -10,18 +10,30 @@ func TestJSONSnapshot(t *testing.T) {
 	t.Run("Can test JSON operations", func(t *testing.T) {
 		snap := newJSONSnapshot()
 		hello := struct {
+			X string
+			Y int32
+		}{
+			X: "hi",
+			Y: 999,
+		}
+		world := struct {
 			A int32
 			B string
 			C struct {
 				X float32
 			}
+			D []interface{}
 		}{
 			A: 10,
 			B: "string",
 			C: struct{ X float32 }{X: 3.141592},
+			D: []interface{}{"world", 1, 3.141592, hello},
 		}
 		op1 := model.NewOperationID()
-		snap.putLocal("key1", hello, op1.Next().GetTimestamp())
+		snap.putLocal("key1", world, op1.Next().GetTimestamp())
+
+		// world := []interface{}{"world", 1, 3.141592, world}
+		// snap.putLocal("key2", world, op1.Next().GetTimestamp())
 		// snap.putLocal("key2", 123, op1.Next().GetTimestamp())
 		// snap.putLocal("key3", []string{"a", "b", "c"}, op1.Next().GetTimestamp())
 	})
