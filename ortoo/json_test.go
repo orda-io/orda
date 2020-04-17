@@ -1,12 +1,27 @@
 package ortoo
 
 import (
+	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestJSONSnapshot(t *testing.T) {
+
+	t.Run("...", func(t *testing.T) {
+		opID1 := model.NewOperationID()
+		jsonObject := newJSONObject()
+		jsonObject.put("key1", 1234, opID1.Next().GetTimestamp())
+		jsonObject.put("key2", 3.141592, opID1.Next().GetTimestamp())
+		je := jsonObject.getAsJSONElement("key1")
+		log.Logger.Infof("%+v", je)
+		parent := je.getParentAsJSONObject()
+		require.Equal(t, typeJSONObject, je.getParent().getType())
+		log.Logger.Infof("%+v", parent)
+
+	})
+
 	t.Run("Can test JSON operations", func(t *testing.T) {
 		snap := newJSONSnapshot()
 		hello := struct {

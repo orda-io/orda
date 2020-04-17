@@ -12,12 +12,70 @@ import (
 //  jsonSnapshot
 // ////////////////////////////////////////////////////////////////
 
-type jsonSnapshot struct {
-	Map  map[string]*element
-	Size int
+type typeOfJSON int
+
+const (
+	typeJSONElement typeOfJSON = iota
+	typeJSONObject
+	typeJSONArray
+)
+
+//  jsonPrimitive
+
+type jsonPrimitive interface {
+	getType() typeOfJSON
+	getParent() jsonPrimitive
+	isRoot() bool
+	getParentAsJSONObject() *jsonObject
 }
 
-type element struct {
+type jsonPrimitiveImpl struct {
+	parent jsonPrimitive
+}
+
+func (its *jsonPrimitiveImpl) getParent() jsonPrimitive {
+	return its.parent
+}
+
+func (its *jsonPrimitiveImpl) getParentAsJSONObject() *jsonObject {
+	return its.parent.(*jsonObject)
+}
+
+func (its *jsonPrimitiveImpl) isRoot() bool {
+	return its.parent == nil
+}
+
+func (its *jsonPrimitiveImpl) String() string {
+
+}
+
+//  jsonElement
+
+type jsonElement struct {
+	jsonPrimitiveImpl
+	V types.JSONType
+}
+
+func newJSONElement(parent jsonPrimitive, value interface{}) *jsonElement {
+	return &jsonElement{
+		jsonPrimitiveImpl: jsonPrimitiveImpl{parent: parent},
+		V:                 value,
+	}
+}
+
+func (its *jsonElement) getType() typeOfJSON {
+	return typeJSONElement
+}
+
+func (its *jsonElement) String() string {
+	return fmt.Sprintf("%v", its.V)
+}
+
+//  jsonObject
+
+type jsonObject struct {
+	jsonPrimitive
+	hashMapSnapshot
 }
 
 func newJSONObject() *jsonObject {
@@ -26,8 +84,30 @@ func newJSONObject() *jsonObject {
 	}
 }
 
-type jsonObject struct {
-	hashMapSnapshot
+func (its *jsonObject) getType() typeOfJSON {
+	return typeJSONObject
+}
+
+func (its *jsonObject) put(key string, value interface{}, ts *model.Timestamp) {
+	element := newJSONElement(its, value)
+	its.putCommon(key, element, ts)
+}
+
+func (its *jsonObject) getAsJSONElement(key string) *jsonElement {
+	value := its.get(key).(*obj)
+	return value.V.(*jsonElement)
+}
+
+func (its *jsonObject) String() string {
+	return its.hashMapSnapshot.String()
+}
+
+type jsonSnapshot struct {
+	Map  map[string]*element
+	Size int
+}
+
+type element struct {
 }
 
 // func newJSONObject(value interface{}, ts *model.Timestamp) *jsonObject {

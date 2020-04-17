@@ -10,6 +10,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/model"
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/ortoo/types"
+	"strings"
 )
 
 // HashMap is an Ortoo datatype which provides hash map interfaces.
@@ -156,7 +157,10 @@ type obj struct {
 }
 
 func (its *obj) String() string {
-	return fmt.Sprintf("{V:%v,T:%s}", its.V, its.T.ToString())
+	if its.V == nil {
+		return fmt.Sprintf("Φ|%s", its.T.ToString())
+	}
+	return fmt.Sprintf("%v|%s}", its.V, its.T.ToString())
 }
 
 type hashMapSnapshot struct {
@@ -238,4 +242,17 @@ func (its *hashMapSnapshot) removeCommon(key string, ts *model.Timestamp) interf
 
 func (its *hashMapSnapshot) size() int {
 	return its.Size
+}
+
+func (its *hashMapSnapshot) String() string {
+	var sb strings.Builder
+	sb.WriteString("{ ")
+	for k, v := range its.Map {
+		sb.WriteString(k)
+		sb.WriteString(":")
+		sb.WriteString(v.String())
+		sb.WriteString(" ")
+	}
+	sb.WriteString("}")
+	return sb.String()
 }
