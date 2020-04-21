@@ -28,7 +28,7 @@ func TestList(t *testing.T) {
 		inserted1, _ := list1.Insert(0, "x", "y")
 		require.Equal(t, []interface{}{"x", "y"}, inserted1)
 		json1 := marshal(t, list1.GetAsJSON())
-		require.Equal(t, `["x","y"]`, json1)
+		require.Equal(t, `{"Value":["x","y"]}`, json1)
 		log.Logger.Infof("%s", json1)
 
 		inserted2, _ := list2.Insert(0, "a", "b")

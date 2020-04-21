@@ -6,8 +6,8 @@ import (
 	"math"
 )
 
-// JSONType is an internal type used in storing various types, for converting any type to JSON supported type.
-type JSONType interface{}
+// JSONValue is an internal type used in storing various types, for converting any type to JSON supported type.
+type JSONValue interface{}
 
 func ConvertValueList(values []interface{}) ([]interface{}, error) {
 	var jsonValues []interface{}
@@ -15,13 +15,13 @@ func ConvertValueList(values []interface{}) ([]interface{}, error) {
 		if val == nil {
 			return nil, fmt.Errorf("null value cannot be inserted")
 		}
-		jsonValues = append(jsonValues, ConvertToJSONSupportedType(val))
+		jsonValues = append(jsonValues, ConvertToJSONSupportedValue(val))
 	}
 	return jsonValues, nil
 }
 
-// ConvertToJSONSupportedType converts any type of Go into a type that is supported by JSON
-func ConvertToJSONSupportedType(t interface{}) JSONType {
+// ConvertToJSONSupportedValue converts any type of Go into a type that is supported by JSON
+func ConvertToJSONSupportedValue(t interface{}) JSONValue {
 	switch v := t.(type) {
 	// all number types are stored as float64, i.e., IEEE 754 64 bits floating point type.
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,

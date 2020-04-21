@@ -65,3 +65,12 @@ func (its *Timestamp) NextDeliminator() *Timestamp {
 		Delimiter: its.Delimiter,
 	}
 }
+
+func (its *Timestamp) Clone() *Timestamp {
+	return &Timestamp{
+		Era:       its.Era,
+		Lamport:   its.Lamport,
+		CUID:      its.CUID,
+		Delimiter: its.Delimiter,
+	}
+}

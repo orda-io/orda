@@ -215,27 +215,28 @@ func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
 // ////////////////////////////////////////////////////////////////
 
 type node struct {
-	V    types.JSONType
-	T    *model.Timestamp
+	// V    types.JSONValue
+	// T    *model.Timestamp
+	timedValue
 	P    *model.Timestamp
 	next *node
 	prev *node
 }
 
 func (its *node) hash() string {
-	return its.T.Hash()
+	return its.getTime().Hash()
 }
 
 func (its *node) String() string {
 	var sb strings.Builder
-	sb.WriteString(its.T.ToString())
+	sb.WriteString(its.getTime().ToString())
 	if its.P != nil {
 		sb.WriteString(its.P.ToString())
 	}
-	if its.V == nil {
+	if its.getValue() == nil {
 		sb.WriteString(":DELETED")
 	} else {
-		_, _ = fmt.Fprintf(&sb, ":%v", its.V)
+		_, _ = fmt.Fprintf(&sb, ":%v", its.getValue())
 	}
 
 	return sb.String()
@@ -244,7 +245,7 @@ func (its *node) String() string {
 func (its *node) getNextLiveNode() *node {
 	ret := its.next
 	for ret != nil {
-		if ret.V != nil {
+		if ret.getValue() != nil {
 			return ret
 		}
 		ret = ret.next
@@ -272,8 +273,12 @@ func (its *listSnapshot) CloneSnapshot() iface.Snapshot {
 
 func newListSnapshot() *listSnapshot {
 	head := &node{
-		V:    nil,
-		T:    model.OldestTimestamp,
+		// V:    nil,
+		// T:    model.OldestTimestamp,
+		timedValue: &timedValueImpl{
+			V: nil,
+			T: model.OldestTimestamp,
+		},
 		P:    nil,
 		prev: nil,
 		next: nil,
@@ -291,13 +296,15 @@ func (its *listSnapshot) insertRemote(pos string, ts *model.Timestamp, values ..
 	if target, ok := its.Map[pos]; ok {
 		for _, val := range values {
 			nextTarget := target.next
-			for nextTarget != nil && nextTarget.T.Compare(ts) > 0 {
+			for nextTarget != nil && nextTarget.getTime().Compare(ts) > 0 {
 				target = target.next
 				nextTarget = nextTarget.next
 			}
 			newNode := &node{
-				V:    val,
-				T:    ts,
+				timedValue: &timedValueImpl{
+					V: val,
+					T: ts,
+				},
 				P:    nil,
 				next: target.next,
 				prev: target,
@@ -319,31 +326,62 @@ func (its *listSnapshot) appendLocal(ts *model.Timestamp, values ...interface{})
 }
 
 func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...interface{}) (*model.Timestamp, []interface{}, error) {
+	var tvs []timedValue
+	for _, v := range values {
+		tvs = append(tvs, &timedValueImpl{
+			V: v,
+			T: ts.NextDeliminator(),
+		})
+	}
+	return its.insertLocalWithTimedValue(pos, tvs...)
+	// if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
+	// 	return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
+	// }
+	// var inserted []interface{}
+	// target := its.findNthTarget(pos)
+	// targetTs := target.T
+	// for _, v := range values {
+	// 	newNode := &node{
+	// 		V:    v,
+	// 		T:    ts,
+	// 		next: target.next,
+	// 		prev: target,
+	// 	}
+	// 	target.next = newNode
+	// 	its.Map[newNode.hash()] = newNode
+	// 	inserted = append(inserted, v)
+	// 	its.size++
+	// 	ts = ts.NextDeliminator()
+	// 	target = newNode
+	// }
+	// return targetTs, inserted, nil
+}
+
+func (its *listSnapshot) insertLocalWithTimedValue(pos int32, tvs ...timedValue) (*model.Timestamp, []interface{}, error) {
 	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
 	var inserted []interface{}
 	target := its.findNthTarget(pos)
-	targetTs := target.T
-	for _, v := range values {
+	targetTs := target.getTime()
+	for _, v := range tvs {
 		newNode := &node{
-			V:    v,
-			T:    ts,
-			next: target.next,
-			prev: target,
+			timedValue: v,
+			next:       target.next,
+			prev:       target,
 		}
 		target.next = newNode
 		its.Map[newNode.hash()] = newNode
-		inserted = append(inserted, v)
+		inserted = append(inserted, v.getValue())
 		its.size++
-		ts = ts.NextDeliminator()
+		// ts = ts.NextDeliminator()
 		target = newNode
 	}
 	return targetTs, inserted, nil
 }
 
 func (its *listSnapshot) isTombstone(n *node) bool {
-	if n.V == nil && n.P != nil {
+	if n.getValue() == nil && n.P != nil {
 		return true
 	}
 	return false
@@ -357,9 +395,9 @@ func (its *listSnapshot) updateLocal(pos int32, ts *model.Timestamp, values []in
 	var updatedTargets []*model.Timestamp
 	target := its.findNthTarget(pos + 1)
 	for _, v := range values {
-		updatedValues = append(updatedValues, target.V)
-		updatedTargets = append(updatedTargets, target.T)
-		target.V = v
+		updatedValues = append(updatedValues, target.getValue())
+		updatedTargets = append(updatedTargets, target.getTime())
+		target.timedValue.setValue(v)
 		target.P = ts
 		target = target.getNextLiveNode()
 	}
@@ -373,7 +411,7 @@ func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []inter
 				continue
 			}
 			if node.P == nil || node.P.Compare(ts) < 0 {
-				node.V = values[i]
+				node.setValue(values[i])
 				node.P = ts
 			}
 		}
@@ -385,7 +423,7 @@ func (its *listSnapshot) deleteRemote(targets []*model.Timestamp, ts *model.Time
 	for _, t := range targets {
 		if node, ok := its.Map[t.Hash()]; ok {
 			if !its.isTombstone(node) {
-				node.V = nil
+				node.setValue(nil)
 				its.size--
 				node.P = ts
 			} else { // concurrent deletes
@@ -420,9 +458,9 @@ func (its *listSnapshot) deleteLocal(pos int32, numOfNodes int, ts *model.Timest
 	var deletedValues []interface{}
 	target := its.findNthTarget(pos + 1) // no head, but live node
 	for i := 0; i < numOfNodes; i++ {
-		deletedValues = append(deletedValues, target.V)
-		deletedTargets = append(deletedTargets, target.T)
-		target.V = nil
+		deletedValues = append(deletedValues, target.getValue())
+		deletedTargets = append(deletedTargets, target.getTime())
+		target.setValue(nil)
 		target.P = ts
 		its.size--
 
@@ -457,7 +495,7 @@ func (its *listSnapshot) get(pos int32) (interface{}, error) {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
 	target := its.findNthTarget(pos + 1)
-	return target.V, nil
+	return target.getValue(), nil
 }
 
 func (its *listSnapshot) getMany(pos int32, numOfNodes int) ([]interface{}, error) {
@@ -467,7 +505,7 @@ func (its *listSnapshot) getMany(pos int32, numOfNodes int) ([]interface{}, erro
 	var ret []interface{}
 	for i := 1; i <= numOfNodes; i++ {
 		target := its.findNthTarget(pos + int32(i))
-		ret = append(ret, target.V)
+		ret = append(ret, target.getValue())
 	}
 	return ret, nil
 }
@@ -490,7 +528,7 @@ func (its *listSnapshot) GetAsJSON() interface{} {
 	var l []interface{}
 	n := its.head.getNextLiveNode()
 	for n != nil {
-		l = append(l, n.V)
+		l = append(l, n.timedValue.getValue())
 		n = n.getNextLiveNode()
 	}
 	return struct {

@@ -15,7 +15,8 @@ import (
 type typeOfJSON int
 
 const (
-	typeJSONElement typeOfJSON = iota
+	typeJSONPrimitive typeOfJSON = iota
+	typeJSONElement
 	typeJSONObject
 	typeJSONArray
 )
@@ -23,14 +24,30 @@ const (
 //  jsonPrimitive
 
 type jsonPrimitive interface {
+	timedValue
 	getType() typeOfJSON
 	getParent() jsonPrimitive
-	isRoot() bool
 	getParentAsJSONObject() *jsonObject
 }
 
 type jsonPrimitiveImpl struct {
 	parent jsonPrimitive
+}
+
+func (its *jsonPrimitiveImpl) getValue() types.JSONValue {
+	panic("should be overridden")
+}
+
+func (its *jsonPrimitiveImpl) setValue(v types.JSONValue) {
+	panic("should be overridden")
+}
+
+func (its *jsonPrimitiveImpl) getTime() *model.Timestamp {
+	panic("should be overridden")
+}
+
+func (its *jsonPrimitiveImpl) getType() typeOfJSON {
+	return typeJSONPrimitive
 }
 
 func (its *jsonPrimitiveImpl) getParent() jsonPrimitive {
@@ -41,47 +58,78 @@ func (its *jsonPrimitiveImpl) getParentAsJSONObject() *jsonObject {
 	return its.parent.(*jsonObject)
 }
 
-func (its *jsonPrimitiveImpl) isRoot() bool {
-	return its.parent == nil
-}
-
 func (its *jsonPrimitiveImpl) String() string {
-
+	return fmt.Sprintf("%x", &its.parent)
 }
 
 //  jsonElement
 
 type jsonElement struct {
-	jsonPrimitiveImpl
-	V types.JSONType
+	jsonPrimitive
+	timedValue
 }
 
-func newJSONElement(parent jsonPrimitive, value interface{}) *jsonElement {
+func newJSONElement(parent jsonPrimitive, value interface{}, ts *model.Timestamp) *jsonElement {
 	return &jsonElement{
-		jsonPrimitiveImpl: jsonPrimitiveImpl{parent: parent},
-		V:                 value,
+		jsonPrimitive: &jsonPrimitiveImpl{
+			parent: parent,
+		},
+		timedValue: &timedValueImpl{
+			V: value,
+			T: ts,
+		},
 	}
+}
+
+func (its *jsonElement) getValue() types.JSONValue {
+	return its.timedValue.getValue()
+}
+
+func (its *jsonElement) getTime() *model.Timestamp {
+	return its.timedValue.getTime()
 }
 
 func (its *jsonElement) getType() typeOfJSON {
 	return typeJSONElement
 }
 
+func (its *jsonElement) setValue(v types.JSONValue) {
+	panic("not used")
+}
+
 func (its *jsonElement) String() string {
-	return fmt.Sprintf("%v", its.V)
+	parent := its.getParent()
+	parentTS := "nil"
+	if parent != nil {
+		parentTS = parent.getTime().ToString()
+	}
+	return fmt.Sprintf("JE(P%v)[T%v|%v]", parentTS, its.getTime().ToString(), its.getValue())
 }
 
 //  jsonObject
 
 type jsonObject struct {
 	jsonPrimitive
-	hashMapSnapshot
+	T *model.Timestamp
+	*hashMapSnapshot
 }
 
-func newJSONObject() *jsonObject {
+func newJSONObject(parent jsonPrimitive, ts *model.Timestamp) *jsonObject {
 	return &jsonObject{
-		hashMapSnapshot: *newHashMapSnapshot(),
+		T: ts,
+		jsonPrimitive: &jsonPrimitiveImpl{
+			parent: parent,
+		},
+		hashMapSnapshot: newHashMapSnapshot(),
 	}
+}
+
+func (its *jsonObject) getTime() *model.Timestamp {
+	return its.T
+}
+
+func (its *jsonObject) getValue() types.JSONValue {
+	return its.hashMapSnapshot
 }
 
 func (its *jsonObject) getType() typeOfJSON {
@@ -89,97 +137,53 @@ func (its *jsonObject) getType() typeOfJSON {
 }
 
 func (its *jsonObject) put(key string, value interface{}, ts *model.Timestamp) {
-	element := newJSONElement(its, value)
-	its.putCommon(key, element, ts)
-}
-
-func (its *jsonObject) getAsJSONElement(key string) *jsonElement {
-	value := its.get(key).(*obj)
-	return value.V.(*jsonElement)
-}
-
-func (its *jsonObject) String() string {
-	return its.hashMapSnapshot.String()
-}
-
-type jsonSnapshot struct {
-	Map  map[string]*element
-	Size int
-}
-
-type element struct {
-}
-
-// func newJSONObject(value interface{}, ts *model.Timestamp) *jsonObject {
-// 	target := reflect.ValueOf(value)
-// 	elements := target.Elem()
-// 	for i := 0; i < elements.NumField(); i++ {
-// 		mValue := elements.Field(i)
-// 		newHashMapSnapshot()
-// 	}
-// 	return nil
-// }
-
-func newJSONArray() *jsonArray {
-	return &jsonArray{
-		listSnapshot: *newListSnapshot(),
-	}
-}
-
-type jsonArray struct {
-	listSnapshot
-}
-
-func newJSONSnapshot() *jsonSnapshot {
-	return &jsonSnapshot{
-		Map:  make(map[string]*element),
-		Size: 0,
-	}
-}
-
-func (its *jsonSnapshot) convertJSONType(value interface{}) interface{} {
-	rt := reflect.TypeOf(value)
+	rt := reflect.ValueOf(value)
 	switch rt.Kind() {
 	case reflect.Slice, reflect.Array:
-
+		jsonArray := its.createJSONArray(its, value, ts)
+		its.putCommonWithTimedValue(key, jsonArray)
 	case reflect.Struct:
+		jsonObj := its.createJSONObject(its, value, ts)
+		its.putCommonWithTimedValue(key, jsonObj)
 	case reflect.Ptr:
-		return its.convertJSONType(reflect.Indirect(reflect.ValueOf(value)).Interface())
+		val := rt.Elem()
+		log.Logger.Infof("%+v", val.Interface())
+		its.put(key, val.Interface(), ts)
 	default:
-		return types.ConvertToJSONSupportedType(value)
+		element := newJSONElement(its, types.ConvertToJSONSupportedValue(value), ts)
+		its.putCommonWithTimedValue(key, element)
 	}
-	return nil
 }
 
-func (its *jsonSnapshot) createJSONArray(value interface{}, ts *model.Timestamp) *listSnapshot {
-	jsonArray := newListSnapshot()
-	var appendValues []interface{}
+func (its *jsonObject) createJSONArray(parent jsonPrimitive, value interface{}, ts *model.Timestamp) *jsonArray {
+	ja := newJSONArray(parent, ts.NextDeliminator())
 	target := reflect.ValueOf(value)
-	// fields := reflect.TypeOf(value)
+	var appendValues []interface{}
 	for i := 0; i < target.Len(); i++ {
 		mValue := target.Index(i)
 		switch mValue.Kind() {
-		case reflect.Slice, reflect.Array:
-			array := its.createJSONArray(mValue.Interface(), ts)
-			appendValues = append(appendValues, array)
-		case reflect.Struct:
-			object := its.createJSONObject(mValue.Interface(), ts)
-			appendValues = append(appendValues, object)
-		case reflect.Ptr:
+		// case reflect.Slice, reflect.Array:
+		// 	child := its.createJSONArray(ja, mValue.Interface(), ts)
+		// 	appendValues = append(appendValues, child)
+		// case reflect.Struct:
+		// 	object := its.createJSONObject(mValue.Interface(), ts)
+		// 	appendValues = append(appendValues, object)
+		// case reflect.Ptr:
 		default:
-			appendValues = append(appendValues, types.ConvertToJSONSupportedType(mValue.Interface()))
+			element := newJSONElement(ja, types.ConvertToJSONSupportedValue(mValue.Interface()), ts.NextDeliminator())
+			appendValues = append(appendValues, element)
 		}
 		log.Logger.Infof("%v", mValue.Interface())
 	}
 	if appendValues != nil {
-		jsonArray.appendLocal(ts, appendValues...)
+		ja.appendLocal(ts, appendValues...)
 	}
-	log.Logger.Infof("%v", jsonArray.String())
+	// log.Logger.Infof("%v", ja.String())
 	return nil
 }
 
-func (its *jsonSnapshot) createJSONObject(value interface{}, ts *model.Timestamp) *hashMapSnapshot {
-	jsonObject := newHashMapSnapshot()
+func (its *jsonObject) createJSONObject(parent jsonPrimitive, value interface{}, ts *model.Timestamp) *jsonObject {
+	jsonObj := newJSONObject(parent, ts.NextDeliminator())
 	target := reflect.ValueOf(value)
 	fields := reflect.TypeOf(value)
 
@@ -187,60 +191,210 @@ func (its *jsonSnapshot) createJSONObject(value interface{}, ts *model.Timestamp
 		mValue := target.Field(i)
 		switch mValue.Kind() {
 		case reflect.Slice, reflect.Array:
-			array := its.createJSONArray(mValue.Interface(), ts)
-			jsonObject.putCommon(fields.Field(i).Name, array, ts.NextDeliminator())
+			// array := its.createJSONArray(mValue.Interface(), ts)
+			// jsonObject.putCommon(fields.Field(i).Name, array, ts.NextDeliminator())
 		case reflect.Struct:
-			object := its.createJSONObject(mValue.Interface(), ts)
-			jsonObject.putCommon(fields.Field(i).Name, object, ts.NextDeliminator())
+			// object := its.createJSONObject(mValue.Interface(), ts)
+			// jsonObject.putCommon(fields.Field(i).Name, object, ts.NextDeliminator())
 		case reflect.Ptr:
 		default:
-			jsonObject.putCommon(fields.Field(i).Name, types.ConvertToJSONSupportedType(mValue.Interface()), ts.NextDeliminator())
-			log.Logger.Infof("Key:%v Type:%v Value:%v", fields.Field(i).Name, mValue.Type(), mValue.Interface())
+			element := newJSONElement(jsonObj, types.ConvertToJSONSupportedValue(mValue.Interface()), ts.NextDeliminator())
+			jsonObj.putCommonWithTimedValue(fields.Field(i).Name, element)
 		}
 	}
-	return jsonObject
+	return jsonObj
 }
 
-func (its *jsonSnapshot) putLocal(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
-	log.Logger.Infof("PUT value: %v", reflect.TypeOf(value))
-	rt := reflect.TypeOf(value)
-	switch rt.Kind() {
-	case reflect.Slice, reflect.Array:
-		_ = its.createJSONArray(value, ts)
-		fmt.Println("is a slice/array with element type", rt.Elem())
-	case reflect.Struct:
-		jsonObject := its.createJSONObject(value, ts)
-		log.Logger.Infof("jsonObject: %v", jsonObject)
-	case reflect.Ptr:
-		switch rt.Elem().Kind() {
-		case reflect.Slice, reflect.Array:
-		case reflect.Struct:
+func (its *jsonObject) getAsJSONElement(key string) *jsonElement {
+	value := its.get(key)
+	return value.(*jsonElement)
+}
 
-		}
-		log.Logger.Infof("%v", rt.Elem())
+func (its *jsonObject) getAsJSONObject(key string) *jsonObject {
+	value := its.get(key)
+	return value.(*jsonObject)
+}
 
-	default:
-		fmt.Println("is something else entirely")
+func (its *jsonObject) String() string {
+	parent := its.getParent()
+	parentTS := "nil"
+	if parent != nil {
+		parentTS = parent.getTime().ToString()
 	}
-	return nil, nil
+	return fmt.Sprintf("JO(%v)[T%v|V%v]", parentTS, its.T.ToString(), its.hashMapSnapshot.String())
 }
 
-func (its *jsonSnapshot) removeLocal(key string) interface{} {
-	return nil
+func (its *jsonObject) GetAsJSON() interface{} {
+	m := make(map[string]interface{})
+	for k, v := range its.Map {
+		if v != nil {
+			switch cast := v.(type) {
+			case *jsonObject:
+				log.Logger.Infof("%v:%v", k, cast)
+				m[k] = cast.GetAsJSON()
+			case *jsonElement:
+				m[k] = v.getValue()
+			}
+		}
+	}
+	return m
 }
 
-func (its *jsonSnapshot) updateLocal(key string) interface{} {
-	return nil
+//  jsonArray
+
+type jsonArray struct {
+	jsonPrimitive
+	T *model.Timestamp
+	*listSnapshot
 }
 
-func (its *jsonSnapshot) getAsJSONObject() *jsonObject {
-	return nil
+func newJSONArray(parent jsonPrimitive, ts *model.Timestamp) *jsonArray {
+	return &jsonArray{
+		T: ts,
+		jsonPrimitive: &jsonPrimitiveImpl{
+			parent: parent,
+		},
+		listSnapshot: newListSnapshot(),
+	}
 }
 
-func (its *jsonSnapshot) getAsJSONArray() *jsonArray {
-	return nil
+func (its *jsonArray) getTime() *model.Timestamp {
+	return its.T
 }
 
-func (its *jsonSnapshot) getAsJSONElement() interface{} {
-	return nil
+func (its *jsonArray) getValue() types.JSONValue {
+	return its.listSnapshot
 }
+
+func (its *jsonArray) getType() typeOfJSON {
+	return typeJSONArray
+}
+
+func (its *jsonArray) setValue(v types.JSONValue) {
+	panic("not used")
+}
+
+func (its *jsonArray) String() string {
+	return its.listSnapshot.String()
+}
+
+//
+// type jsonSnapshot struct {
+// 	Map  map[string]*element
+// 	Size int
+// }
+//
+// type element struct {
+// }
+//
+// // func newJSONObject(value interface{}, ts *model.Timestamp) *jsonObject {
+// // 	target := reflect.ValueOf(value)
+// // 	elements := target.Elem()
+// // 	for i := 0; i < elements.NumField(); i++ {
+// // 		mValue := elements.Field(i)
+// // 		newHashMapSnapshot()
+// // 	}
+// // 	return nil
+// // }
+//
+// func newJSONArray() *jsonArray {
+// 	return &jsonArray{
+// 		listSnapshot: *newListSnapshot(),
+// 	}
+// }
+//
+// type jsonArray struct {
+// 	listSnapshot
+// }
+//
+// func newJSONSnapshot() *jsonSnapshot {
+// 	return &jsonSnapshot{
+// 		Map:  make(map[string]*element),
+// 		Size: 0,
+// 	}
+// }
+//
+// func (its *jsonSnapshot) convertJSONType(value interface{}) interface{} {
+// 	rt := reflect.TypeOf(value)
+// 	switch rt.Kind() {
+// 	case reflect.Slice, reflect.Array:
+//
+// 	case reflect.Struct:
+// 	case reflect.Ptr:
+// 		return its.convertJSONType(reflect.Indirect(reflect.ValueOf(value)).Interface())
+// 	default:
+// 		return types.ConvertToJSONSupportedValue(value)
+// 	}
+// 	return nil
+// }
+//
+// func (its *jsonSnapshot) createJSONArray(value interface{}, ts *model.Timestamp) *listSnapshot {
+// 	jsonArray := newListSnapshot()
+// 	var appendValues []interface{}
+// 	target := reflect.ValueOf(value)
+// 	// fields := reflect.TypeOf(value)
+// 	for i := 0; i < target.Len(); i++ {
+// 		mValue := target.Index(i)
+// 		switch mValue.Kind() {
+// 		case reflect.Slice, reflect.Array:
+// 			array := its.createJSONArray(mValue.Interface(), ts)
+// 			appendValues = append(appendValues, array)
+// 		case reflect.Struct:
+// 			// object := its.createJSONObject(mValue.Interface(), ts)
+// 			// appendValues = append(appendValues, object)
+// 		case reflect.Ptr:
+// 		default:
+// 			appendValues = append(appendValues, types.ConvertToJSONSupportedValue(mValue.Interface()))
+// 		}
+// 		log.Logger.Infof("%v", mValue.Interface())
+// 	}
+// 	if appendValues != nil {
+// 		jsonArray.appendLocal(ts, appendValues...)
+// 	}
+// 	log.Logger.Infof("%v", jsonArray.String())
+// 	return nil
+// }
+//
+// func (its *jsonSnapshot) putLocal(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
+// 	log.Logger.Infof("PUT value: %v", reflect.TypeOf(value))
+// 	rt := reflect.TypeOf(value)
+// 	switch rt.Kind() {
+// 	case reflect.Slice, reflect.Array:
+// 		_ = its.createJSONArray(value, ts)
+// 		fmt.Println("is a slice/array with element type", rt.Elem())
+// 	case reflect.Struct:
+// 		// jsonObject := its.createJSONObject(value, ts)
+// 		// log.Logger.Infof("jsonObject: %v", jsonObject)
+// 	case reflect.Ptr:
+// 		switch rt.Elem().Kind() {
+// 		case reflect.Slice, reflect.Array:
+// 		case reflect.Struct:
+//
+// 		}
+// 		log.Logger.Infof("%v", rt.Elem())
+//
+// 	default:
+// 		fmt.Println("is something else entirely")
+// 	}
+// 	return nil, nil
+// }
+//
+// func (its *jsonSnapshot) removeLocal(key string) interface{} {
+// 	return nil
+// }
+//
+// func (its *jsonSnapshot) updateLocal(key string) interface{} {
+// 	return nil
+// }
+//
+// func (its *jsonSnapshot) getAsJSONObject() *jsonObject {
+// 	return nil
+// }
+//
+// func (its *jsonSnapshot) getAsJSONArray() *jsonArray {
+// 	return nil
+// }
+//
+// func (its *jsonSnapshot) getAsJSONElement() interface{} {
+// 	return nil
+// }

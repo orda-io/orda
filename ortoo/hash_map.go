@@ -122,7 +122,7 @@ func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
 	if key == "" || value == nil {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "empty key or nil value is not allowed")
 	}
-	jsonSupportedType := types.ConvertToJSONSupportedType(value)
+	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
 	op := operations.NewPutOperation(key, jsonSupportedType)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -130,7 +130,7 @@ func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
 
 func (its *hashMap) Get(key string) interface{} {
 	if obj, ok := its.snapshot.Map[key]; ok {
-		return obj.V
+		return obj.getValue()
 	}
 	return nil
 }
@@ -151,32 +151,51 @@ func (its *hashMap) Size() int {
 //  hashMapSnapshot
 // ////////////////////////////////////////////////////////////////
 
-type obj struct {
-	V types.JSONType
+type timedValue interface {
+	getValue() types.JSONValue
+	setValue(v types.JSONValue)
+	getTime() *model.Timestamp
+	String() string
+}
+
+type timedValueImpl struct {
+	V types.JSONValue
 	T *model.Timestamp
 }
 
-func (its *obj) String() string {
+func (its *timedValueImpl) getValue() types.JSONValue {
+	return its.V
+}
+
+func (its *timedValueImpl) setValue(v types.JSONValue) {
+	its.V = v
+}
+
+func (its *timedValueImpl) getTime() *model.Timestamp {
+	return its.T
+}
+
+func (its *timedValueImpl) String() string {
 	if its.V == nil {
 		return fmt.Sprintf("Φ|%s", its.T.ToString())
 	}
-	return fmt.Sprintf("%v|%s}", its.V, its.T.ToString())
+	return fmt.Sprintf("TV[%v|T%s]", its.V, its.T.ToString())
 }
 
 type hashMapSnapshot struct {
-	Map  map[string]*obj
+	Map  map[string]timedValue
 	Size int
 }
 
 func newHashMapSnapshot() *hashMapSnapshot {
 	return &hashMapSnapshot{
-		Map:  make(map[string]*obj),
+		Map:  make(map[string]timedValue),
 		Size: 0,
 	}
 }
 
 func (its *hashMapSnapshot) CloneSnapshot() iface.Snapshot {
-	var cloneMap = make(map[string]*obj)
+	var cloneMap = make(map[string]timedValue)
 	for k, v := range its.Map {
 		cloneMap[k] = v
 	}
@@ -190,12 +209,16 @@ func (its *hashMapSnapshot) get(key string) interface{} {
 }
 
 func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
+	return its.putCommonWithTimedValue(key, &timedValueImpl{
+		V: value,
+		T: ts,
+	})
+}
+
+func (its *hashMapSnapshot) putCommonWithTimedValue(key string, tv timedValue) (interface{}, error) {
 	oldObj, ok := its.Map[key]
 	if !ok {
-		its.Map[key] = &obj{
-			V: value,
-			T: ts,
-		}
+		its.Map[key] = tv
 		its.Size++
 		return nil, nil
 	}
@@ -203,21 +226,18 @@ func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.T
 		log.Logger.Infof("putCommon value: %v => %v for key: %s", oldObj, its.Map[key], key)
 	}()
 
-	if oldObj.T.Compare(ts) <= 0 {
-		its.Map[key] = &obj{
-			V: value,
-			T: ts,
-		}
+	if oldObj.getTime().Compare(tv.getTime()) <= 0 {
+		its.Map[key] = tv
 	}
 
-	return oldObj.V, nil
+	return oldObj.getValue(), nil
 }
 
 func (its *hashMapSnapshot) GetAsJSON() interface{} {
 	m := make(map[string]interface{})
 	for k, v := range its.Map {
-		if v.V != nil {
-			m[k] = v.V
+		if v.getValue() != nil {
+			m[k] = v.getValue()
 		}
 	}
 	return m
@@ -226,15 +246,15 @@ func (its *hashMapSnapshot) GetAsJSON() interface{} {
 
 func (its *hashMapSnapshot) removeCommon(key string, ts *model.Timestamp) interface{} {
 	if oldObj, ok := its.Map[key]; ok {
-		if oldObj.T.Compare(ts) <= 0 {
-			its.Map[key] = &obj{
+		if oldObj.getTime().Compare(ts) <= 0 {
+			its.Map[key] = &timedValueImpl{
 				V: nil,
 				T: ts,
 			}
-			if oldObj.V != nil {
+			if oldObj.getValue() != nil {
 				its.Size--
 			}
-			return oldObj.V
+			return oldObj.getValue()
 		}
 	}
 	return nil
@@ -246,13 +266,13 @@ func (its *hashMapSnapshot) size() int {
 
 func (its *hashMapSnapshot) String() string {
 	var sb strings.Builder
-	sb.WriteString("{ ")
+	sb.WriteString("[")
 	for k, v := range its.Map {
 		sb.WriteString(k)
 		sb.WriteString(":")
 		sb.WriteString(v.String())
 		sb.WriteString(" ")
 	}
-	sb.WriteString("}")
+	sb.WriteString("]")
 	return sb.String()
 }
