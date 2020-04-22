@@ -1,7 +1,6 @@
 package ortoo
 
 import (
-	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
@@ -9,6 +8,16 @@ import (
 )
 
 func TestJSONSnapshot(t *testing.T) {
+
+	var strt1 = struct {
+		K1 string
+		K2 int
+	}{
+		K1: "hello",
+		K2: 1234,
+	}
+
+	var arr1 = []interface{}{"world", 1234, 3.14}
 
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
 		opID1 := model.NewOperationID()
@@ -20,7 +29,7 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%+v", je1.String())
 		require.Equal(t, int64(1234), je1.getValue())
 
-		require.Equal(t, typeJSONObject, je1.getParent().getType())
+		require.Equal(t, TypeJSONObject, je1.getParent().getType())
 		parent := je1.getParentAsJSONObject()
 		require.Equal(t, jsonObj, parent)
 		log.Logger.Infof("%+v", parent.String())
@@ -32,43 +41,63 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", jsonObj.GetAsJSON())
 	})
 
-	t.Run("Can put JSONObject to JSONObject", func(t *testing.T) {
+	t.Run("Can put nested JSONObject to JSONObject", func(t *testing.T) {
 		opID1 := model.NewOperationID()
 		jsonObj := newJSONObject(nil, model.OldestTimestamp)
 
-		strt := struct {
-			K1_1 string
-			K1_2 int
-		}{
-			K1_1: "hello",
-			K1_2: 1234,
-		}
-
-		jsonObj.put("K1", strt, opID1.Next().GetTimestamp())
+		jsonObj.put("K1", strt1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 		k1JSONObj := jsonObj.getAsJSONObject("K1")
 		log.Logger.Infof("%v", k1JSONObj)
+		log.Logger.Infof("%v", marshal(t, k1JSONObj.GetAsJSON()))
 
 		// add struct ptr
-		k1JSONObj.put("K1_3", &strt, opID1.Next().GetTimestamp())
+		k1JSONObj.put("K3", &strt1, opID1.Next().GetTimestamp())
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 
 		parent := k1JSONObj.getParentAsJSONObject()
-		log.Logger.Infof("%v", parent)
 		require.Equal(t, jsonObj, parent)
-		log.Logger.Infof("%v", jsonObj.GetAsJSON())
-		d, err := json.Marshal(jsonObj.GetAsJSON())
-		require.NoError(t, err)
-		log.Logger.Infof("%s", string(d))
-		require.Equal(t, string(d), `{"K1":{"K1_1":"hello","K1_2":1234,"K1_3":{"K1_1":"hello","K1_2":1234}}}`)
+
+		jsonObj.put("K2", arr1, opID1.Next().GetTimestamp())
+		log.Logger.Infof("%v", jsonObj)
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+
+		jsonObj.put("K3", &arr1, opID1.Next().GetTimestamp())
+		log.Logger.Infof("%v", jsonObj)
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+
+		// map is put in bundle.
+		mp := make(map[string]interface{})
+		mp["X"] = 1234
+		mp["Y"] = []interface{}{"hi", strt1}
+		jsonObj.put("K4", mp, opID1.Next().GetTimestamp())
+		log.Logger.Infof("%v", jsonObj)
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+
+		require.Equal(t, "hello", jsonObj.getAsJSONObject("K1").getAsJSONElement("K1").getValue())
+		// jsonObj.getAsJSONArray("K2").get(1)
+		// require.Equal(t, "world", )
+
 	})
 
 	t.Run("Can put JSONArray to JSONObject", func(t *testing.T) {
 		opID1 := model.NewOperationID()
 		jsonObj := newJSONObject(nil, model.OldestTimestamp)
 
-		array := []interface{}{123, 3.14, "hello"}
+		array := []interface{}{1234, 3.14, "hello"}
 		jsonObj.put("K1", array, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj.String())
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+		arr := jsonObj.getAsJSONArray("K1")
+		val1, err := arr.getAsJSONElement(0)
+		require.NoError(t, err)
+		log.Logger.Infof("%v", val1)
+		require.Equal(t, int64(1234), val1.getValue())
+
+		arr.insertLocal(0, opID1.Next().GetTimestamp(), "hi", "there")
+		log.Logger.Infof("%v", arr.String())
+		log.Logger.Infof("%v", marshal(t, arr.GetAsJSON()))
 
 	})
 

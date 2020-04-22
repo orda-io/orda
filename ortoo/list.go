@@ -63,7 +63,12 @@ func (its *list) DoTransaction(tag string, txnFunc func(list ListInTxn) error) e
 }
 
 func (its *list) GetAsJSON() interface{} {
-	return its.snapshot.GetAsJSON()
+
+	return struct {
+		Value []interface{}
+	}{
+		Value: its.snapshot.GetAsJSON().([]interface{}),
+	}
 }
 
 func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
@@ -334,27 +339,6 @@ func (its *listSnapshot) insertLocal(pos int32, ts *model.Timestamp, values ...i
 		})
 	}
 	return its.insertLocalWithTimedValue(pos, tvs...)
-	// if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
-	// 	return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
-	// }
-	// var inserted []interface{}
-	// target := its.findNthTarget(pos)
-	// targetTs := target.T
-	// for _, v := range values {
-	// 	newNode := &node{
-	// 		V:    v,
-	// 		T:    ts,
-	// 		next: target.next,
-	// 		prev: target,
-	// 	}
-	// 	target.next = newNode
-	// 	its.Map[newNode.hash()] = newNode
-	// 	inserted = append(inserted, v)
-	// 	its.size++
-	// 	ts = ts.NextDeliminator()
-	// 	target = newNode
-	// }
-	// return targetTs, inserted, nil
 }
 
 func (its *listSnapshot) insertLocalWithTimedValue(pos int32, tvs ...timedValue) (*model.Timestamp, []interface{}, error) {
@@ -490,12 +474,19 @@ func (its *listSnapshot) findNthTarget(pos int32) *node {
 }
 
 func (its *listSnapshot) get(pos int32) (interface{}, error) {
+	tv, err := its.getTimedValue(pos)
+	if err != nil {
+		return nil, err
+	}
+	return tv.getValue(), nil
+}
+
+func (its *listSnapshot) getTimedValue(pos int32) (timedValue, error) {
 	// size == 3, pos can be 0, 1, 2
 	if its.size <= pos {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
-	target := its.findNthTarget(pos + 1)
-	return target.getValue(), nil
+	return its.findNthTarget(pos + 1).timedValue, nil
 }
 
 func (its *listSnapshot) getMany(pos int32, numOfNodes int) ([]interface{}, error) {
@@ -531,11 +522,7 @@ func (its *listSnapshot) GetAsJSON() interface{} {
 		l = append(l, n.timedValue.getValue())
 		n = n.getNextLiveNode()
 	}
-	return struct {
-		Value []interface{}
-	}{
-		Value: l,
-	}
+	return l
 }
 
 func (its *listSnapshot) Size() int {
