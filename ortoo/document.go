@@ -2,13 +2,83 @@ package ortoo
 
 import (
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/iface"
+	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/ortoo/types"
 	"reflect"
 )
 
-type JSON interface {
+type Document interface {
+	Add(key string, value interface{})
+}
+
+func newDocument(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) Document {
+	doc := &document{
+		datatype: &datatype{
+			ManageableDatatype: &datatypes.ManageableDatatype{},
+			handlers:           handlers,
+		},
+		snapshot: nil,
+	}
+	doc.Initialize(key, model.TypeOfDatatype_JSON, cuid, wire, doc.snapshot, doc)
+	return doc
+}
+
+type document struct {
+	*datatype
+	snapshot *jsonObject
+}
+
+func (its *document) Add(key string, value interface{}) {
+	op := operations.NewAddOperation(key, value)
+	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		// return nil,
+	}
+	// return ret, nil
+}
+
+func (its *document) ExecuteLocal(op interface{}) (interface{}, error) {
+	switch cast := op.(type) {
+	case *operations.AddOperation:
+	case *operations.CutOperation:
+	case *operations.SetOperation:
+	}
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+}
+
+func (its *document) ExecuteRemote(op interface{}) (interface{}, error) {
+	switch cast := op.(type) {
+	case *operations.SnapshotOperation:
+	case *operations.AddOperation:
+	case *operations.CutOperation:
+	case *operations.SetOperation:
+	}
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+}
+
+func (its *document) GetAsJSON() interface{} {
+	panic("implement me")
+}
+
+func (its *document) SetSnapshot(snapshot iface.Snapshot) {
+	panic("implement me")
+}
+
+func (its *document) GetSnapshot() iface.Snapshot {
+	panic("implement me")
+}
+
+func (its *document) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
+	panic("implement me")
+}
+
+func (its *document) SetMetaAndSnapshot(meta []byte, snapshot string) error {
+	panic("implement me")
 }
 
 // ////////////////////////////////////////////////////////////////

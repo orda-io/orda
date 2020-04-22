@@ -48,6 +48,9 @@ enum TypeOfOperation {
     LIST_INSERT = 31;
     LIST_DELETE = 32;
     LIST_UPDATE = 33;
+    DOCUMENT_ADD = 41;
+    DOCUMENT_CUT = 42;
+    DOCUMENT_SET = 43;
 }
 
 enum TypeOfDatatype {
