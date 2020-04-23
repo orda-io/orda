@@ -7,14 +7,21 @@ import (
 
 // ////////////////// AddOperation ////////////////////
 
-func NewAddOperation(key string, value interface{}) *AddOperation {
+func NewAddOperation(parent *model.Timestamp, key string, value interface{}) *AddOperation {
 	return &AddOperation{
 		baseOperation: newBaseOperation(nil),
+		C: addContent{
+			P: parent,
+			K: key,
+			V: value,
+		},
 	}
 }
 
 type addContent struct {
-	key string
+	P *model.Timestamp
+	K string
+	V interface{}
 }
 
 type AddOperation struct {

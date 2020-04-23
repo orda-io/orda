@@ -57,8 +57,7 @@ enum TypeOfDatatype {
     INT_COUNTER = 0;
     HASH_MAP = 1;
     LIST = 2;
-    JSON = 3;
-
+    DOCUMENT = 3;
 }
 
 enum StateOfDatatype {

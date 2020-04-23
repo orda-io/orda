@@ -29,6 +29,10 @@ type Client interface {
 	CreateList(key string, handlers *Handlers) List
 	SubscribeOrCreateList(key string, handlers *Handlers) List
 	SubscribeList(key string, handlers *Handlers) List
+
+	CreateDocument(key string, handlers *Handlers) Document
+	SubscribeOrCreateDocument(key string, handlers *Handlers) Document
+	SubscribeDocument(key string, handlers *Handlers) Document
 }
 
 type clientState uint8
@@ -115,6 +119,28 @@ func (c *clientImpl) Close() error {
 	c.ctx.Logger.Infof("close client: %s", c.model.ToString())
 
 	return c.messageManager.Close()
+}
+
+// methods for Document
+
+func (c *clientImpl) CreateDocument(key string, handlers *Handlers) Document {
+	return c.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
+}
+
+func (c *clientImpl) SubscribeDocument(key string, handlers *Handlers) Document {
+	return c.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
+}
+
+func (c *clientImpl) SubscribeOrCreateDocument(key string, handlers *Handlers) Document {
+	return c.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
+}
+
+func (c *clientImpl) subscribeOrCreateDocument(key string, state model.StateOfDatatype, handlers *Handlers) Document {
+	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_DOCUMENT, state, handlers)
+	if datatype != nil {
+		return datatype.(Document)
+	}
+	return nil
 }
 
 // methods for List
@@ -213,6 +239,8 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 		impl = newHashMap(key, c.model.CUID, c.datatypeManager, handler)
 	case model.TypeOfDatatype_LIST:
 		impl = newList(key, c.model.CUID, c.datatypeManager, handler)
+	case model.TypeOfDatatype_DOCUMENT:
+		impl = newDocument(key, c.model.CUID, c.datatypeManager, handler)
 	}
 	datatype = impl.(iface.Datatype)
 
