@@ -96,6 +96,8 @@ func (c *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, han
 		return c.CreateHashMap(key, handlers).(Datatype)
 	case model.TypeOfDatatype_LIST:
 		return c.CreateList(key, handlers).(Datatype)
+	case model.TypeOfDatatype_DOCUMENT:
+		return c.CreateDocument(key, handlers).(Datatype)
 	}
 	return nil
 }

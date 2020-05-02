@@ -241,7 +241,6 @@ func (its *hashMapSnapshot) GetAsJSON() interface{} {
 		}
 	}
 	return m
-
 }
 
 func (its *hashMapSnapshot) removeCommon(key string, ts *model.Timestamp) interface{} {

@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
@@ -47,15 +48,22 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
 	case *operations.AddOperation:
 		its.snapshot.addLocal(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
+		return nil, nil
 	case *operations.CutOperation:
 	case *operations.SetOperation:
 	}
-	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op.(iface.Operation).GetType())
 }
 
 func (its *document) ExecuteRemote(op interface{}) (interface{}, error) {
-	switch op.(type) {
+	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
+		var newSnap = newJSONObject(nil, model.OldestTimestamp)
+		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		}
+		its.snapshot = newSnap
+		return nil, nil
 	case *operations.AddOperation:
 
 	case *operations.CutOperation:

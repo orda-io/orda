@@ -201,7 +201,7 @@ func (its *ErrorOperation) GetPushPullError() *errors.PushPullError {
 
 // NewSnapshotOperation creates a SnapshotOperation
 func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDatatype, snapshot iface.Snapshot) (*SnapshotOperation, error) {
-	j := snapshot.GetAsJSON()
+	j := snapshot // .GetAsJSON()
 	data, err := json.Marshal(j)
 	if err != nil {
 		return nil, log.OrtooError(err)
