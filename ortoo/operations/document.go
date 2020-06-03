@@ -40,7 +40,7 @@ func (its *AddOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, er
 func (its *AddOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
-		OpType: model.TypeOfOperation_LIST_INSERT,
+		OpType: model.TypeOfOperation_DOCUMENT_ADD,
 		Json:   marshalContent(its.C),
 	}
 }

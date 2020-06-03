@@ -73,6 +73,13 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
+	case model.TypeOfOperation_DOCUMENT_ADD:
+		var c addContent
+		unmarshalContent(op.Json, &c)
+		return &AddOperation{
+			baseOperation: &baseOperation{ID: op.ID},
+			C:             c,
+		}
 	}
 	panic("unsupported type of operation")
 }
