@@ -73,10 +73,10 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
-	case model.TypeOfOperation_DOCUMENT_ADD:
-		var c addContent
+	case model.TypeOfOperation_DOCUMENT_ADD_OBJ:
+		var c addObjectContent
 		unmarshalContent(op.Json, &c)
-		return &AddOperation{
+		return &AddObjectOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}

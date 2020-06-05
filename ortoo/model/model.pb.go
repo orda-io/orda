@@ -65,9 +65,10 @@ const (
 	TypeOfOperation_LIST_INSERT          TypeOfOperation = 31
 	TypeOfOperation_LIST_DELETE          TypeOfOperation = 32
 	TypeOfOperation_LIST_UPDATE          TypeOfOperation = 33
-	TypeOfOperation_DOCUMENT_ADD         TypeOfOperation = 41
-	TypeOfOperation_DOCUMENT_CUT         TypeOfOperation = 42
-	TypeOfOperation_DOCUMENT_SET         TypeOfOperation = 43
+	TypeOfOperation_DOCUMENT_ADD_OBJ     TypeOfOperation = 41
+	TypeOfOperation_DOCUMENT_ADD_ARR     TypeOfOperation = 42
+	TypeOfOperation_DOCUMENT_CUT         TypeOfOperation = 43
+	TypeOfOperation_DOCUMENT_SET         TypeOfOperation = 44
 )
 
 var TypeOfOperation_name = map[int32]string{

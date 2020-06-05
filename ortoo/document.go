@@ -14,7 +14,8 @@ import (
 )
 
 type Document interface {
-	Add(key string, value interface{}) (interface{}, error)
+	Put(key string, value interface{}) (interface{}, error)
+	Insert(pos int, value ...interface{}) (interface{}, error)
 	GetByKey(key string) (Document, error)
 	GetByIndex(pos int) (Document, error)
 	GetDocumentType() TypeOfDocument
@@ -41,20 +42,37 @@ type document struct {
 	snapshot *jsonObject
 }
 
-func (its *document) Add(key string, value interface{}) (interface{}, error) {
-	op := operations.NewAddOperation(its.root, key, value)
-	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
-	if err != nil {
-		return nil, err
+func (its *document) Put(key string, value interface{}) (interface{}, error) {
+	if its.typeof == TypeJSONObject {
+		op := operations.NewAddObjectOperation(its.root, key, value)
+		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+		if err != nil {
+			return nil, err
+		}
+		return ret, nil
 	}
-	return ret, nil
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParentDocumentType)
+}
+
+func (its *document) Insert(pos int, values ...interface{}) (interface{}, error) {
+	if its.typeof == TypeJSONArray {
+		op := operations.NewAddArrayOperation(its.root, pos, values)
+		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+		if err != nil {
+			return nil, err
+		}
+		return ret, nil
+	}
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParentDocumentType)
 }
 
 func (its *document) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
-	case *operations.AddOperation:
-		its.snapshot.addCommon(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
+	case *operations.AddObjectOperation:
+		its.snapshot.AddCommon(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
 		return nil, nil
+	case *operations.AddArrayOperation:
+		its.snapshot.
 	case *operations.CutOperation:
 	case *operations.SetOperation:
 	}
@@ -70,8 +88,8 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, error) {
 		}
 		its.snapshot = newSnap
 		return nil, nil
-	case *operations.AddOperation:
-		its.snapshot.addCommon(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
+	case *operations.AddObjectOperation:
+		its.snapshot.AddCommon(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
 		return nil, nil
 	case *operations.CutOperation:
 	case *operations.SetOperation:
@@ -81,7 +99,8 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, error) {
 
 func (its *document) GetByKey(key string) (Document, error) {
 	if its.typeof == TypeJSONObject {
-		child := its.snapshot.get(key).(jsonPrimitive)
+		currentRoot := its.snapshot.getNode(its.root).(*jsonObject)
+		child := currentRoot.get(key).(jsonPrimitive)
 		if child == nil {
 			return nil, errors.NewDatatypeError(errors.ErrDatatypeNotExistChildDocument)
 		}
@@ -96,7 +115,22 @@ func (its *document) GetByKey(key string) (Document, error) {
 }
 
 func (its *document) GetByIndex(pos int) (Document, error) {
-	return nil, nil
+	if its.typeof == TypeJSONArray {
+		currentRoot := its.snapshot.getNode(its.root).(*jsonArray)
+		c, err := currentRoot.getTimedValue(int32(pos))
+		if err != nil {
+			return nil, err
+		}
+		child := c.(jsonPrimitive)
+		return &document{
+			datatype: its.datatype,
+			root:     child.getTime(),
+			typeof:   child.getType(),
+			snapshot: its.snapshot,
+		}, nil
+		// child := its.snapshot
+	}
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParentDocumentType)
 }
 
 func (its *document) GetDocumentType() TypeOfDocument {
@@ -153,16 +187,17 @@ type jsonPrimitive interface {
 	timedValue
 	getType() TypeOfDocument
 	getRoot() *jsonRoot
+	getNode(ts *model.Timestamp) jsonPrimitive
 	setRoot(r *jsonObject)
 	getParent() jsonPrimitive
-	putInNodeMap(tv timedValue)
+	putInNodeMap(tv jsonPrimitive)
 	getParentAsJSONObject() *jsonObject
 	createJSONObject(parent jsonPrimitive, value interface{}, ts *model.Timestamp) *jsonObject
 	createJSONArray(parent jsonPrimitive, value interface{}, ts *model.Timestamp) *jsonArray
 }
 
 type jsonRoot struct {
-	nodeMap map[string]timedValue
+	nodeMap map[string]jsonPrimitive
 	root    *jsonObject
 }
 
@@ -171,7 +206,11 @@ type jsonPrimitiveImpl struct {
 	root   *jsonRoot
 }
 
-func (its *jsonPrimitiveImpl) putInNodeMap(tv timedValue) {
+func (its *jsonPrimitiveImpl) getNode(ts *model.Timestamp) jsonPrimitive {
+	return its.getRoot().nodeMap[ts.ToString()]
+}
+
+func (its *jsonPrimitiveImpl) putInNodeMap(tv jsonPrimitive) {
 	its.getRoot().nodeMap[tv.getTime().ToString()] = tv
 }
 
@@ -236,7 +275,7 @@ func (its *jsonPrimitiveImpl) createJSONArray(parent jsonPrimitive, value interf
 	if appendValues != nil {
 		ja.insertLocalWithTimedValue(0, appendValues...)
 		for _, v := range appendValues {
-			its.putInNodeMap(v)
+			its.putInNodeMap(v.(jsonPrimitive))
 		}
 	}
 	// log.Logger.Infof("%v", ja.String())
@@ -251,48 +290,35 @@ func (its *jsonPrimitiveImpl) createJSONObject(parent jsonPrimitive, value inter
 	if target.Kind() == reflect.Map {
 		mapValue := value.(map[string]interface{})
 		for k, v := range mapValue {
+			val := reflect.ValueOf(v)
+			its.addValueToJSONObject(jo, k, val, ts)
+		}
+	} else {
+		for i := 0; i < target.NumField(); i++ {
+			value := target.Field(i)
+			its.addValueToJSONObject(jo, fields.Field(i).Name, value, ts)
+		}
+	}
 
-		}
-	}
-	for i := 0; i < target.NumField(); i++ {
-		field := target.Field(i)
-		switch field.Kind() {
-		case reflect.Slice, reflect.Array:
-			ja := its.createJSONArray(jo, field.Interface(), ts)
-			jo.putCommonWithTimedValue(fields.Field(i).Name, ja)
-			its.putInNodeMap(ja)
-		case reflect.Struct:
-			childJO := its.createJSONObject(jo, field.Interface(), ts)
-			jo.putCommonWithTimedValue(fields.Field(i).Name, childJO)
-			its.putInNodeMap(childJO)
-		case reflect.Ptr:
-			val := field.Elem()
-			its.createJSONObject(parent, val.Interface(), ts)
-		default:
-			element := newJSONElement(jo, types.ConvertToJSONSupportedValue(field.Interface()), ts.NextDeliminator())
-			jo.putCommonWithTimedValue(fields.Field(i).Name, element)
-			its.putInNodeMap(element)
-		}
-	}
 	return jo
 }
 
-func (its *jsonPrimitiveImpl) addValueToJSONObject(jo jsonObject, key string, field reflect.Value) {
-	switch field.Kind() {
+func (its *jsonPrimitiveImpl) addValueToJSONObject(jo *jsonObject, key string, value reflect.Value, ts *model.Timestamp) {
+	switch value.Kind() {
 	case reflect.Slice, reflect.Array:
-		ja := its.createJSONArray(jo, field.Interface(), ts)
-		jo.putCommonWithTimedValue(fields.Field(i).Name, ja)
+		ja := its.createJSONArray(jo, value.Interface(), ts)
+		jo.putCommonWithTimedValue(key, ja)
 		its.putInNodeMap(ja)
 	case reflect.Struct:
-		childJO := its.createJSONObject(jo, field.Interface(), ts)
-		jo.putCommonWithTimedValue(fields.Field(i).Name, childJO)
+		childJO := its.createJSONObject(jo, value.Interface(), ts)
+		jo.putCommonWithTimedValue(key, childJO)
 		its.putInNodeMap(childJO)
 	case reflect.Ptr:
-		val := field.Elem()
-		its.createJSONObject(parent, val.Interface(), ts)
+		val := value.Elem()
+		its.createJSONObject(jo, val.Interface(), ts)
 	default:
-		element := newJSONElement(jo, types.ConvertToJSONSupportedValue(field.Interface()), ts.NextDeliminator())
-		jo.putCommonWithTimedValue(fields.Field(i).Name, element)
+		element := newJSONElement(jo, types.ConvertToJSONSupportedValue(value.Interface()), ts.NextDeliminator())
+		jo.putCommonWithTimedValue(key, element)
 		its.putInNodeMap(element)
 	}
 }
@@ -352,7 +378,7 @@ func newJSONObject(parent jsonPrimitive, ts *model.Timestamp) *jsonObject {
 	var root *jsonRoot
 	if parent == nil {
 		root = &jsonRoot{
-			nodeMap: make(map[string]timedValue),
+			nodeMap: make(map[string]jsonPrimitive),
 			root:    nil,
 		}
 	} else {
@@ -377,10 +403,12 @@ func (its *jsonObject) CloneSnapshot() iface.Snapshot {
 	return &jsonObject{}
 }
 
-func (its *jsonObject) addCommon(parent *model.Timestamp, key string, value interface{}, ts *model.Timestamp) {
-	parentObj := its.getRoot().nodeMap[parent.ToString()].(*jsonObject)
+func (its *jsonObject) AddCommon(parent *model.Timestamp, key string, value interface{}, ts *model.Timestamp) {
+	parentObj := its.getNode(parent).(*jsonObject)
 	parentObj.put(key, value, ts)
 }
+
+func (its *jsonObject) InsertLocal(parent *model.Timestamp, )
 
 func (its *jsonObject) getTime() *model.Timestamp {
 	return its.T
