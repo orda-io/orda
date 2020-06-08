@@ -44,22 +44,25 @@ func (its *OrtooIntegrationTestSuite) TestDocument() {
 
 			}))
 
-		_, _ = docu1.Put("K1", "X")
-		_, _ = docu1.Put("K2", strt1)
-		_, _ = docu1.Put("K3", arr1)
-		docu2, err := docu1.GetByKey("K2")
+		_, _ = docu1.AddToObject("K1", "X")
+		_, _ = docu1.AddToObject("K2", strt1)
+		_, _ = docu1.AddToObject("K3", arr1)
+		docu2, err := docu1.GetFromObject("K2")
 		require.NoError(its.T(), err)
 		require.Equal(its.T(), docu2.GetDocumentType(), ortoo.TypeJSONObject)
-		log.Logger.Infof("%v", docu2)
-		docu2.Put("K4", "world")
+		log.Logger.Infof("%v => %v", docu1.GetAsJSON(), docu2.GetAsJSON())
 
-		docu3, err := docu1.GetByKey("K3")
+		docu2.AddToObject("K4", "world")
+
+		docu3, err := docu1.GetFromObject("K3")
 		require.Equal(its.T(), docu3.GetDocumentType(), ortoo.TypeJSONArray)
+		docu3.AddToArray(1, strt1)
 
-		docu4, err := docu3.GetByIndex(0)
+		docu4, err := docu3.GetFromArray(1)
 		require.NoError(its.T(), err)
-		require.Equal(its.T(), docu4.GetDocumentType(), ortoo.TypeJSONElement)
-
+		require.Equal(its.T(), docu4.GetDocumentType(), ortoo.TypeJSONObject)
+		docu4.AddToObject("K4", strt1)
 		require.NoError(its.T(), client1.Sync())
+		log.Logger.Infof("%v", docu1.GetAsJSON())
 	})
 }

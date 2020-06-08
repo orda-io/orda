@@ -95,7 +95,7 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", val1)
 		require.Equal(t, int64(1234), val1.getValue())
 
-		arr.insertLocal(0, opID1.Next().GetTimestamp(), "hi", "there")
+		arr.insertCommon(0, opID1.Next().GetTimestamp(), "hi", "there")
 		log.Logger.Infof("%v", arr.String())
 		log.Logger.Infof("%v", marshal(t, arr.GetAsJSON()))
 

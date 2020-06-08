@@ -111,7 +111,7 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
 		its.snapshot = newSnap
 		return nil, nil
 	case *operations.InsertOperation:
-		return its.snapshot.insertRemote(cast.C.T.Hash(), cast.ID.GetTimestamp(), cast.C.V...)
+		return its.snapshot.insertRemote(cast.C.T, cast.ID.GetTimestamp(), cast.C.V...)
 	case *operations.DeleteOperation:
 		return its.snapshot.deleteRemote(cast.C.T, cast.ID.GetTimestamp())
 	case *operations.UpdateOperation:
@@ -297,28 +297,35 @@ func newListSnapshot() *listSnapshot {
 	}
 }
 
-func (its *listSnapshot) insertRemote(pos string, ts *model.Timestamp, values ...interface{}) (interface{}, error) {
-	if target, ok := its.Map[pos]; ok {
-		for _, val := range values {
+func (its *listSnapshot) insertRemote(pos *model.Timestamp, ts *model.Timestamp, values ...interface{}) (interface{}, error) {
+	var tvs []timedValue
+	for _, v := range values {
+		tvs = append(tvs, &timedValueImpl{
+			V: v,
+			T: ts.NextDeliminator(),
+		})
+	}
+	return its.insertRemoteWithTimedValue(pos, ts, tvs...)
+}
+
+func (its *listSnapshot) insertRemoteWithTimedValue(pos *model.Timestamp, ts *model.Timestamp, tvs ...timedValue) (interface{}, error) {
+	if target, ok := its.Map[pos.Hash()]; ok {
+		for _, val := range tvs {
 			nextTarget := target.next
 			for nextTarget != nil && nextTarget.getTime().Compare(ts) > 0 {
 				target = target.next
 				nextTarget = nextTarget.next
 			}
 			newNode := &node{
-				timedValue: &timedValueImpl{
-					V: val,
-					T: ts,
-				},
-				P:    nil,
-				next: target.next,
-				prev: target,
+				timedValue: val,
+				P:          nil,
+				next:       target.next,
+				prev:       target,
 			}
 			target.next = newNode
 			its.Map[newNode.hash()] = newNode
 			its.size++
 			target = newNode
-			ts.NextDeliminator()
 		}
 		return nil, nil
 	}

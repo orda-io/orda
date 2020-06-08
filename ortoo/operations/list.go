@@ -16,7 +16,7 @@ func NewInsertOperation(pos int, values []interface{}) *InsertOperation {
 }
 
 type insertContent struct {
-	// T *model.Timestamp
+	T *model.Timestamp
 	V []interface{}
 }
 
