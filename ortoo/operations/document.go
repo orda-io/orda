@@ -102,29 +102,98 @@ func (its *AddArrayOperation) String() string {
 	panic("implement me")
 }
 
-// ////////////////// CutOperation ////////////////////
+// ////////////////// DeleteInObjectOperation ////////////////////
 
-type CutOperation struct {
-	*baseOperation
+func NewDeleteInObjectOperation(parent *model.Timestamp, key string) *DeleteInObjectOperation {
+	return &DeleteInObjectOperation{
+		baseOperation: newBaseOperation(nil),
+		C: deleteInObjectContent{
+			P:   parent,
+			Key: key,
+		},
+	}
 }
 
-func (its *CutOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+type deleteInObjectContent struct {
+	P   *model.Timestamp
+	Key string
+}
+
+type DeleteInObjectOperation struct {
+	*baseOperation
+	C deleteInObjectContent
+}
+
+func (its *DeleteInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *CutOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DeleteInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
-func (its *CutOperation) ToModelOperation() *model.Operation {
+func (its *DeleteInObjectOperation) ToModelOperation() *model.Operation {
+	return &model.Operation{
+		ID:     its.ID,
+		OpType: model.TypeOfOperation_DOCUMENT_DEL_OBJ,
+		Json:   marshalContent(its.C),
+	}
+}
+
+func (its *DeleteInObjectOperation) GetType() model.TypeOfOperation {
+	return model.TypeOfOperation_DOCUMENT_DEL_OBJ
+}
+
+func (its *DeleteInObjectOperation) String() string {
 	panic("implement me")
 }
 
-func (its *CutOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOCUMENT_CUT
+// ////////////////// DeleteInObjectOperation ////////////////////
+
+func NewDeleteInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) *DeleteInArrayOperation {
+	return &DeleteInArrayOperation{
+		baseOperation: newBaseOperation(nil),
+		Pos:           int32(pos),
+		NumOfNodes:    int32(numOfNodes),
+		C: deleteInArrayContent{
+			P: parent,
+		},
+	}
 }
 
-func (its *CutOperation) String() string {
+type deleteInArrayContent struct {
+	P *model.Timestamp
+	T []*model.Timestamp
+}
+
+type DeleteInArrayOperation struct {
+	*baseOperation
+	Pos        int
+	NumOfNodes int
+	C          deleteInArrayContent
+}
+
+func (its *DeleteInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+	return datatype.ExecuteLocal(its)
+}
+
+func (its *DeleteInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+	return datatype.ExecuteRemote(its)
+}
+
+func (its *DeleteInArrayOperation) ToModelOperation() *model.Operation {
+	return &model.Operation{
+		ID:     its.ID,
+		OpType: model.TypeOfOperation_DOCUMENT_DEL_OBJ,
+		Json:   marshalContent(its.C),
+	}
+}
+
+func (its *DeleteInArrayOperation) GetType() model.TypeOfOperation {
+	return model.TypeOfOperation_DOCUMENT_DEL_OBJ
+}
+
+func (its *DeleteInArrayOperation) String() string {
 	panic("implement me")
 }
 

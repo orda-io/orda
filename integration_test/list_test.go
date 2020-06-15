@@ -30,7 +30,7 @@ func (its *OrtooIntegrationTestSuite) TestList() {
 			func(dt ortoo.Datatype, errs ...error) {
 
 			}))
-		_, _ = list1.Insert(0, "a", 2, 3.141592, time.Now())
+		_, _ = list1.InsertMany(0, "a", 2, 3.141592, time.Now())
 		require.NoError(its.T(), client1.Sync())
 	})
 }

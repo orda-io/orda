@@ -25,13 +25,13 @@ func TestList(t *testing.T) {
 		list2 := newList("key2", types.NewCUID(), tw, nil)
 		tw.SetDatatypes(list1.(*list).ManageableDatatype, list2.(*list).ManageableDatatype)
 
-		inserted1, _ := list1.Insert(0, "x", "y")
+		inserted1, _ := list1.InsertMany(0, "x", "y")
 		require.Equal(t, []interface{}{"x", "y"}, inserted1)
 		json1 := marshal(t, list1.GetAsJSON())
 		require.Equal(t, `{"Value":["x","y"]}`, json1)
 		log.Logger.Infof("%s", json1)
 
-		inserted2, _ := list2.Insert(0, "a", "b")
+		inserted2, _ := list2.InsertMany(0, "a", "b")
 		require.Equal(t, []interface{}{"a", "b"}, inserted2)
 		json2 := marshal(t, list2.GetAsJSON())
 		require.Equal(t, `{"Value":["a","b"]}`, json2)
@@ -45,8 +45,8 @@ func TestList(t *testing.T) {
 		log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
 
-		_, _ = list1.Insert(2, 7479)
-		_, _ = list1.Insert(2, 3.141592)
+		_, _ = list1.InsertMany(2, 7479)
+		_, _ = list1.InsertMany(2, 3.141592)
 		log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
 		tw.Sync()
@@ -102,7 +102,7 @@ func TestList(t *testing.T) {
 		list1 := newList("key1", cuid1, tw, nil)
 
 		require.NoError(t, list1.DoTransaction("succeeded transaction", func(listTxn ListInTxn) error {
-			_, _ = listTxn.Insert(0, "a", "b")
+			_, _ = listTxn.InsertMany(0, "a", "b")
 			gets1, err := listTxn.GetMany(0, 2)
 			require.NoError(t, err)
 			require.Equal(t, []interface{}{"a", "b"}, gets1)
@@ -113,7 +113,7 @@ func TestList(t *testing.T) {
 		require.Equal(t, []interface{}{"a", "b"}, gets1)
 
 		require.Error(t, list1.DoTransaction("failed transaction", func(listTxn ListInTxn) error {
-			_, _ = listTxn.Insert(0, "x", "y")
+			_, _ = listTxn.InsertMany(0, "x", "y")
 			gets1, err := listTxn.GetMany(0, 2)
 			require.NoError(t, err)
 			require.Equal(t, []interface{}{"x", "y"}, gets1)

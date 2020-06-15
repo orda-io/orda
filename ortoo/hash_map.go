@@ -2,7 +2,6 @@ package ortoo
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
@@ -151,37 +150,6 @@ func (its *hashMap) Size() int {
 //  hashMapSnapshot
 // ////////////////////////////////////////////////////////////////
 
-type timedValue interface {
-	getValue() types.JSONValue
-	setValue(v types.JSONValue)
-	getTime() *model.Timestamp
-	String() string
-}
-
-type timedValueImpl struct {
-	V types.JSONValue
-	T *model.Timestamp
-}
-
-func (its *timedValueImpl) getValue() types.JSONValue {
-	return its.V
-}
-
-func (its *timedValueImpl) setValue(v types.JSONValue) {
-	its.V = v
-}
-
-func (its *timedValueImpl) getTime() *model.Timestamp {
-	return its.T
-}
-
-func (its *timedValueImpl) String() string {
-	if its.V == nil {
-		return fmt.Sprintf("Φ|%s", its.T.ToString())
-	}
-	return fmt.Sprintf("TV[%v|T%s]", its.V, its.T.ToString())
-}
-
 type hashMapSnapshot struct {
 	Map  map[string]timedValue
 	Size int
@@ -244,16 +212,14 @@ func (its *hashMapSnapshot) GetAsJSON() interface{} {
 }
 
 func (its *hashMapSnapshot) removeCommon(key string, ts *model.Timestamp) interface{} {
-	if oldObj, ok := its.Map[key]; ok {
-		if oldObj.getTime().Compare(ts) <= 0 {
-			its.Map[key] = &timedValueImpl{
-				V: nil,
-				T: ts,
-			}
-			if oldObj.getValue() != nil {
+	if tv, ok := its.Map[key]; ok {
+		if tv.getTime().Compare(ts) <= 0 {
+			oldVal := tv.getValue()
+			tv.makeTomb(ts)
+			if tv.getValue() != nil {
 				its.Size--
 			}
-			return oldObj.getValue()
+			return oldVal
 		}
 	}
 	return nil

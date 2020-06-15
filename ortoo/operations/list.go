@@ -8,7 +8,7 @@ import (
 func NewInsertOperation(pos int, values []interface{}) *InsertOperation {
 	return &InsertOperation{
 		baseOperation: newBaseOperation(nil),
-		Pos:           int32(pos),
+		Pos:           pos,
 		C: insertContent{
 			V: values,
 		},
@@ -22,7 +22,7 @@ type insertContent struct {
 
 type InsertOperation struct {
 	*baseOperation
-	Pos int32
+	Pos int
 	C   insertContent
 }
 
@@ -55,8 +55,8 @@ func (its *InsertOperation) String() string {
 func NewDeleteOperation(pos int, numOfNodes int) *DeleteOperation {
 	return &DeleteOperation{
 		baseOperation: newBaseOperation(nil),
-		Pos:           int32(pos),
-		NumOfNodes:    int32(numOfNodes),
+		Pos:           pos,
+		NumOfNodes:    numOfNodes,
 		C:             deleteContent{},
 	}
 }
@@ -67,8 +67,8 @@ type deleteContent struct {
 
 type DeleteOperation struct {
 	*baseOperation
-	Pos        int32
-	NumOfNodes int32
+	Pos        int
+	NumOfNodes int
 	C          deleteContent
 }
 
@@ -101,7 +101,7 @@ func (its *DeleteOperation) String() string {
 func NewUpdateOperation(pos int, values []interface{}) *UpdateOperation {
 	return &UpdateOperation{
 		baseOperation: newBaseOperation(nil),
-		Pos:           int32(pos),
+		Pos:           pos,
 		C: updateContent{
 			V: values,
 		},
@@ -115,7 +115,7 @@ type updateContent struct {
 
 type UpdateOperation struct {
 	*baseOperation
-	Pos int32
+	Pos int
 	C   updateContent
 }
 

@@ -62,7 +62,13 @@ func (its *OrtooIntegrationTestSuite) TestDocument() {
 		require.NoError(its.T(), err)
 		require.Equal(its.T(), docu4.GetDocumentType(), ortoo.TypeJSONObject)
 		docu4.AddToObject("K4", strt1)
-		require.NoError(its.T(), client1.Sync())
+
+		docu1.DeleteInObject("K1")
+		docu1.DeleteInObject("K2")
+		docu3.DeleteInArray(1)
 		log.Logger.Infof("%v", docu1.GetAsJSON())
+
+		require.NoError(its.T(), client1.Sync())
+
 	})
 }

@@ -22,8 +22,8 @@ func TestJSONSnapshot(t *testing.T) {
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
 		opID1 := model.NewOperationID()
 		jsonObj := newJSONObject(nil, model.OldestTimestamp)
-		jsonObj.put("key1", int64(1234), opID1.Next().GetTimestamp())
-		jsonObj.put("key2", 3.14, opID1.Next().GetTimestamp())
+		jsonObj.objAdd("key1", int64(1234), opID1.Next().GetTimestamp())
+		jsonObj.objAdd("key2", 3.14, opID1.Next().GetTimestamp())
 
 		je1 := jsonObj.getAsJSONElement("key1")
 		log.Logger.Infof("%+v", je1.String())
@@ -45,7 +45,7 @@ func TestJSONSnapshot(t *testing.T) {
 		opID1 := model.NewOperationID()
 		jsonObj := newJSONObject(nil, model.OldestTimestamp)
 
-		jsonObj.put("K1", strt1, opID1.Next().GetTimestamp())
+		jsonObj.objAdd("K1", strt1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 		k1JSONObj := jsonObj.getAsJSONObject("K1")
@@ -53,17 +53,17 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", marshal(t, k1JSONObj.GetAsJSON()))
 
 		// add struct ptr
-		k1JSONObj.put("K3", &strt1, opID1.Next().GetTimestamp())
+		k1JSONObj.objAdd("K3", &strt1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 
 		parent := k1JSONObj.getParentAsJSONObject()
 		require.Equal(t, jsonObj, parent)
 
-		jsonObj.put("K2", arr1, opID1.Next().GetTimestamp())
+		jsonObj.objAdd("K2", arr1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 
-		jsonObj.put("K3", &arr1, opID1.Next().GetTimestamp())
+		jsonObj.objAdd("K3", &arr1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 
@@ -71,7 +71,7 @@ func TestJSONSnapshot(t *testing.T) {
 		mp := make(map[string]interface{})
 		mp["X"] = 1234
 		mp["Y"] = []interface{}{"hi", strt1}
-		jsonObj.put("K4", mp, opID1.Next().GetTimestamp())
+		jsonObj.objAdd("K4", mp, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 
@@ -86,7 +86,7 @@ func TestJSONSnapshot(t *testing.T) {
 		jsonObj := newJSONObject(nil, model.OldestTimestamp)
 
 		array := []interface{}{1234, 3.14, "hello"}
-		jsonObj.put("K1", array, opID1.Next().GetTimestamp())
+		jsonObj.objAdd("K1", array, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj.String())
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 		arr := jsonObj.getAsJSONArray("K1")
@@ -95,7 +95,7 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", val1)
 		require.Equal(t, int64(1234), val1.getValue())
 
-		arr.insertCommon(0, opID1.Next().GetTimestamp(), "hi", "there")
+		arr.arrayInsertCommon(0, opID1.Next().GetTimestamp(), "hi", "there")
 		log.Logger.Infof("%v", arr.String())
 		log.Logger.Infof("%v", marshal(t, arr.GetAsJSON()))
 

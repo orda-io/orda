@@ -67,7 +67,7 @@ const (
 	TypeOfOperation_LIST_UPDATE          TypeOfOperation = 33
 	TypeOfOperation_DOCUMENT_ADD_OBJ     TypeOfOperation = 41
 	TypeOfOperation_DOCUMENT_ADD_ARR     TypeOfOperation = 42
-	TypeOfOperation_DOCUMENT_CUT         TypeOfOperation = 43
+	TypeOfOperation_DOCUMENT_DEL_OBJ     TypeOfOperation = 43
 	TypeOfOperation_DOCUMENT_SET         TypeOfOperation = 44
 )
 
