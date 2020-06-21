@@ -25,7 +25,7 @@ func TestJSONSnapshot(t *testing.T) {
 		jsonObj.objAdd("key1", int64(1234), opID1.Next().GetTimestamp())
 		jsonObj.objAdd("key2", 3.14, opID1.Next().GetTimestamp())
 
-		je1 := jsonObj.getAsJSONElement("key1")
+		je1 := jsonObj.getChildAsJSONElement("key1")
 		log.Logger.Infof("%+v", je1.String())
 		require.Equal(t, int64(1234), je1.getValue())
 
@@ -34,7 +34,7 @@ func TestJSONSnapshot(t *testing.T) {
 		require.Equal(t, jsonObj, parent)
 		log.Logger.Infof("%+v", parent.String())
 
-		je2 := parent.getAsJSONElement("key2")
+		je2 := parent.getChildAsJSONElement("key2")
 		log.Logger.Infof("%+v", je2.String())
 		require.Equal(t, 3.14, je2.getValue())
 
@@ -48,7 +48,7 @@ func TestJSONSnapshot(t *testing.T) {
 		jsonObj.objAdd("K1", strt1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
-		k1JSONObj := jsonObj.getAsJSONObject("K1")
+		k1JSONObj := jsonObj.getChildAsJSONObject("K1")
 		log.Logger.Infof("%v", k1JSONObj)
 		log.Logger.Infof("%v", marshal(t, k1JSONObj.GetAsJSON()))
 
@@ -75,7 +75,7 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", jsonObj)
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
 
-		require.Equal(t, "hello", jsonObj.getAsJSONObject("K1").getAsJSONElement("K1").getValue())
+		require.Equal(t, "hello", jsonObj.getChildAsJSONObject("K1").getChildAsJSONElement("K1").getValue())
 		// jsonObj.getAsJSONArray("K2").get(1)
 		// require.Equal(t, "world", )
 
@@ -89,7 +89,7 @@ func TestJSONSnapshot(t *testing.T) {
 		jsonObj.objAdd("K1", array, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj.String())
 		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
-		arr := jsonObj.getAsJSONArray("K1")
+		arr := jsonObj.getChildAsJSONArray("K1")
 		val1, err := arr.getAsJSONElement(0)
 		require.NoError(t, err)
 		log.Logger.Infof("%v", val1)

@@ -216,7 +216,7 @@ func (its *hashMapSnapshot) removeCommon(key string, ts *model.Timestamp) interf
 		if tv.getTime().Compare(ts) <= 0 {
 			oldVal := tv.getValue()
 			tv.makeTomb(ts)
-			if tv.getValue() != nil {
+			if tv.isTomb() {
 				its.Size--
 			}
 			return oldVal

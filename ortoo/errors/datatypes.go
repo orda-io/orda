@@ -17,19 +17,19 @@ const (
 	ErrDatatypeSnapshot
 	ErrDatatypeInvalidType
 	ErrDatatypeIllegalOperation
-	ErrDatatypeInvalidParentDocumentType
+	ErrDatatypeInvalidParent
 	ErrDatatypeNotExistChildDocument
 )
 
 var datatypeErrFormats = map[errorCodeDatatype]string{
-	ErrDatatypeCreate:                    "fail to create datatype: %s",
-	ErrDatatypeSubscribe:                 "fail to subscribe datatype: %s",
-	ErrDatatypeTransaction:               "fail to proceed transaction: %s",
-	ErrDatatypeSnapshot:                  "fail to make a snapshot: %s",
-	ErrDatatypeInvalidType:               "fail to make an operation due to invalid value type: %s",
-	ErrDatatypeIllegalOperation:          "fail to execute operation due to illegal operation: %v",
-	ErrDatatypeNotExistChildDocument:     "fail to retrieve child due to absence",
-	ErrDatatypeInvalidParentDocumentType: "fail to access child with invalid document type",
+	ErrDatatypeCreate:                "fail to create datatype: %s",
+	ErrDatatypeSubscribe:             "fail to subscribe datatype: %s",
+	ErrDatatypeTransaction:           "fail to proceed transaction: %s",
+	ErrDatatypeSnapshot:              "fail to make a snapshot: %s",
+	ErrDatatypeInvalidType:           "fail to make an operation due to invalid value type: %s",
+	ErrDatatypeIllegalOperation:      "fail to execute operation due to illegal operation: %v",
+	ErrDatatypeNotExistChildDocument: "fail to retrieve child due to absence",
+	ErrDatatypeInvalidParent:         "fail to access child with invalid parent",
 }
 
 // DatatypeError is an error related to Datatype

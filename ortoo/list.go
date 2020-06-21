@@ -226,6 +226,16 @@ func (its *node) hash() string {
 	return its.getTime().Hash()
 }
 
+// override makeTomb() for list
+func (its *node) makeTomb(ts *model.Timestamp) {
+	its.setValue(nil)
+	its.P = ts
+}
+
+func (its *node) isTomb() bool {
+	return its.getValue() == nil && its.P != nil
+}
+
 func (its *node) String() string {
 	var sb strings.Builder
 	sb.WriteString(its.getTime().ToString())
@@ -357,17 +367,9 @@ func (its *listSnapshot) insertLocalWithTimedValue(pos int, tvs ...timedValue) (
 		its.Map[newNode.hash()] = newNode
 		inserted = append(inserted, v.getValue())
 		its.size++
-		// ts = ts.NextDeliminator()
 		target = newNode
 	}
 	return targetTs, inserted, nil
-}
-
-func (its *listSnapshot) isTombstone(n *node) bool {
-	if n.getValue() == nil && n.P != nil {
-		return true
-	}
-	return false
 }
 
 func (its *listSnapshot) updateLocal(pos int, ts *model.Timestamp, values []interface{}) ([]*model.Timestamp, []interface{}, error) {
@@ -390,7 +392,7 @@ func (its *listSnapshot) updateLocal(pos int, ts *model.Timestamp, values []inte
 func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []interface{}, ts *model.Timestamp) (interface{}, error) {
 	for i, t := range targets {
 		if node, ok := its.Map[t.Hash()]; ok {
-			if its.isTombstone(node) {
+			if node.isTomb() {
 				continue
 			}
 			if node.P == nil || node.P.Compare(ts) < 0 {
@@ -405,10 +407,9 @@ func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []inter
 func (its *listSnapshot) deleteRemote(targets []*model.Timestamp, ts *model.Timestamp) (interface{}, error) {
 	for _, t := range targets {
 		if node, ok := its.Map[t.Hash()]; ok {
-			if !its.isTombstone(node) {
-				node.setValue(nil)
+			if !node.isTomb() {
+				node.makeTomb(ts)
 				its.size--
-				node.P = ts
 			} else { // concurrent deletes
 				if node.P.Compare(ts) < 0 {
 					node.P = ts
@@ -443,10 +444,8 @@ func (its *listSnapshot) deleteLocal(pos, numOfNodes int, ts *model.Timestamp) (
 	for i := 0; i < numOfNodes; i++ {
 		deletedValues = append(deletedValues, target.getValue())
 		deletedTargets = append(deletedTargets, target.getTime())
-		target.setValue(nil)
-		target.P = ts
+		target.makeTomb(ts)
 		its.size--
-
 		target = target.getNextLiveNode()
 	}
 	return deletedTargets, deletedValues, nil
@@ -461,10 +460,10 @@ func (its *listSnapshot) findNthTarget(pos int) *node {
 	ret := its.head
 	for i := 1; i <= pos; {
 		ret = ret.next
-		if !its.isTombstone(ret) { // not tombstone
+		if !ret.isTomb() { // not tombstone
 			i++
 		} else { // if tombstone
-			for ret.next != nil && its.isTombstone(ret.next) { // while next is tombstone
+			for ret.next != nil && ret.next.isTomb() { // while next is tombstone
 				ret = ret.next
 			}
 		}

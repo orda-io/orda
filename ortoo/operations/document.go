@@ -58,7 +58,7 @@ func (its *AddObjectOperation) String() string {
 func NewAddArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *AddArrayOperation {
 	return &AddArrayOperation{
 		baseOperation: newBaseOperation(nil),
-		Pos:           int32(pos),
+		Pos:           pos,
 		C: addArrayContent{
 			P: parent,
 			V: values,
@@ -74,7 +74,7 @@ type addArrayContent struct {
 
 type AddArrayOperation struct {
 	*baseOperation
-	Pos int32
+	Pos int
 	C   addArrayContent
 }
 
@@ -153,8 +153,8 @@ func (its *DeleteInObjectOperation) String() string {
 func NewDeleteInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) *DeleteInArrayOperation {
 	return &DeleteInArrayOperation{
 		baseOperation: newBaseOperation(nil),
-		Pos:           int32(pos),
-		NumOfNodes:    int32(numOfNodes),
+		Pos:           pos,
+		NumOfNodes:    numOfNodes,
 		C: deleteInArrayContent{
 			P: parent,
 		},

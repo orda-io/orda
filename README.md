@@ -1,4 +1,12 @@
 # Ortoo
+````
+     _/_/                _/                         
+  _/    _/  _/  _/_/  _/_/_/_/    _/_/      _/_/    
+ _/    _/  _/_/        _/      _/    _/  _/    _/   
+_/    _/  _/          _/      _/    _/  _/    _/    
+ _/_/    _/            _/_/    _/_/      _/_/
+````
+
 [Ortoo (or Yam)](https://en.wikipedia.org/wiki/Yam_(route) was a mongolian messenger system. Ortoo project is a multi-device data synchronization platform based on MongoDB (which could be other document databases). Ortoo is based on CRDT(conflict-free data types), which enables operation-based syncronization.  
 
 

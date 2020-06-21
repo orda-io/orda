@@ -12,25 +12,19 @@ type timedValue interface {
 	getTime() *model.Timestamp
 	setTime(ts *model.Timestamp)
 	makeTomb(ts *model.Timestamp)
-	String() string
 	isTomb() bool
+	String() string
 }
 
 type timedValueImpl struct {
 	V types.JSONValue
 	T *model.Timestamp
+	P *model.Timestamp
 }
 
 func (its *timedValueImpl) getValue() types.JSONValue {
 	return its.V
 }
-
-func (its *timedValueImpl) makeTomb(ts *model.Timestamp) {
-	its.V = nil
-	its.T = ts
-}
-
-func (its)
 
 func (its *timedValueImpl) setValue(v types.JSONValue) {
 	its.V = v
@@ -42,6 +36,19 @@ func (its *timedValueImpl) getTime() *model.Timestamp {
 
 func (its *timedValueImpl) setTime(ts *model.Timestamp) {
 	its.T = ts
+}
+
+// this is for hash_map
+func (its *timedValueImpl) makeTomb(ts *model.Timestamp) {
+	its.V = nil
+	its.T = ts
+}
+
+func (its *timedValueImpl) isTomb() bool {
+	if its.V == nil {
+		return true
+	}
+	return false
 }
 
 func (its *timedValueImpl) String() string {
