@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
+	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/server/constants"
@@ -79,6 +80,7 @@ func (m *Manager) UpdateSnapshot() error {
 				}
 			} else {
 				op := operations.ModelToOperation(modelOp)
+				log.Logger.Infof("%v", op.String())
 				_, err := op.ExecuteRemote(datatype)
 				if err != nil {
 					return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())

@@ -227,9 +227,10 @@ func (its *node) hash() string {
 }
 
 // override makeTomb() for list
-func (its *node) makeTomb(ts *model.Timestamp) {
+func (its *node) makeTomb(ts *model.Timestamp) bool {
 	its.setValue(nil)
 	its.P = ts
+	return true
 }
 
 func (its *node) isTomb() bool {

@@ -20,8 +20,8 @@ type Document interface {
 }
 
 type DocumentInTxn interface {
-	AddToObject(key string, value interface{}) (interface{}, error)
-	AddToArray(pos int, value ...interface{}) (interface{}, error)
+	PutToObject(key string, value interface{}) (interface{}, error)
+	InsertToArray(pos int, value ...interface{}) (interface{}, error)
 	DeleteInObject(key string) (interface{}, error)
 	DeleteInArray(pos int) (interface{}, error)
 	DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, error)
@@ -69,9 +69,9 @@ func (its *document) DoTransaction(tag string, txnFunc func(document DocumentInT
 	})
 }
 
-func (its *document) AddToObject(key string, value interface{}) (interface{}, error) {
+func (its *document) PutToObject(key string, value interface{}) (interface{}, error) {
 	if its.typeOfDoc == TypeJSONObject {
-		op := operations.NewAddObjectOperation(its.root, key, value)
+		op := operations.NewPutObjectOperation(its.root, key, value)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -81,9 +81,9 @@ func (its *document) AddToObject(key string, value interface{}) (interface{}, er
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
 
-func (its *document) AddToArray(pos int, values ...interface{}) (interface{}, error) {
+func (its *document) InsertToArray(pos int, values ...interface{}) (interface{}, error) {
 	if its.typeOfDoc == TypeJSONArray {
-		op := operations.NewAddArrayOperation(its.root, pos, values)
+		op := operations.NewInsArrayOperation(its.root, pos, values)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -95,27 +95,26 @@ func (its *document) AddToArray(pos int, values ...interface{}) (interface{}, er
 
 func (its *document) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
-	case *operations.AddObjectOperation:
+	case *operations.PutObjectOperation:
 		its.snapshot.AddCommon(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
 		return nil, nil
-	case *operations.AddArrayOperation:
+	case *operations.InsArrayOperation:
 		target, ret, err := its.snapshot.InsertLocal(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = target
 		return ret, nil
-	case *operations.DeleteInObjectOperation:
+	case *operations.DelInObjectOperation:
 		its.snapshot.DeleteCommonInObject(cast.C.P, cast.C.Key, cast.ID.GetTimestamp())
 		return nil, nil
-	case *operations.DeleteInArrayOperation:
+	case *operations.DelInArrayOperation:
 		deletedTargets, deletedValues, err := its.snapshot.DeleteLocalInArray(cast.C.P, cast.Pos, cast.NumOfNodes, cast.ID.GetTimestamp())
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = deletedTargets
 		return deletedValues, nil
-	case *operations.SetOperation:
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op.(iface.Operation).GetType())
 }
@@ -129,19 +128,18 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, error) {
 		}
 		its.snapshot = newSnap
 		return nil, nil
-	case *operations.AddObjectOperation:
+	case *operations.PutObjectOperation:
 		its.snapshot.AddCommon(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
 		return nil, nil
-	case *operations.AddArrayOperation:
+	case *operations.InsArrayOperation:
 		its.snapshot.InsertRemote(cast.C.P, cast.C.T, cast.ID.GetTimestamp(), cast.C.V...)
 		return nil, nil
-	case *operations.DeleteInObjectOperation:
+	case *operations.DelInObjectOperation:
 		its.snapshot.DeleteCommonInObject(cast.C.P, cast.C.Key, cast.ID.GetTimestamp())
 		return nil, nil
-	case *operations.DeleteInArrayOperation:
+	case *operations.DelInArrayOperation:
 		its.snapshot.DeleteRemoteInArray(cast.C.P, cast.C.T, cast.ID.GetTimestamp())
 		return nil, nil
-	case *operations.SetOperation:
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
@@ -187,7 +185,7 @@ func (its *document) GetFromArray(pos int) (Document, error) {
 
 func (its *document) DeleteInObject(key string) (interface{}, error) {
 	if its.typeOfDoc == TypeJSONObject {
-		op := operations.NewDeleteInObjectOperation(its.root, key)
+		op := operations.NewDelInObjectOperation(its.root, key)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -204,7 +202,7 @@ func (its *document) DeleteInArray(pos int) (interface{}, error) {
 
 func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, error) {
 	if its.typeOfDoc == TypeJSONArray {
-		op := operations.NewDeleteInArrayOperation(its.root, pos, numOfNodes)
+		op := operations.NewDelInArrayOperation(its.root, pos, numOfNodes)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -315,10 +313,16 @@ func (its *jsonPrimitiveImpl) isTomb() bool {
 	return its.deleted
 }
 
-func (its *jsonPrimitiveImpl) makeTomb(ts *model.Timestamp) {
+func (its *jsonPrimitiveImpl) makeTomb(ts *model.Timestamp) bool {
+	if its.deleted {
+		if its.P.Compare(ts) > 0 {
+			return false
+		}
+	}
 	its.P = ts
 	its.deleted = true
-	log.Logger.Infof("makeTomb() of jsonPrimitiveImpl")
+	log.Logger.Infof("makeTomb() of jsonPrimitiveImpl:%v", its.K.ToString())
+	return true
 }
 
 func (its *jsonPrimitiveImpl) getKey() *model.Timestamp {
@@ -367,10 +371,6 @@ func (its *jsonPrimitiveImpl) findJSONArray(ts *model.Timestamp) (json *jsonArra
 
 func (its *jsonPrimitiveImpl) putInNodeMap(primitive jsonPrimitive) {
 	its.getRoot().nodeMap[primitive.getKey().Hash()] = primitive
-}
-
-func (its *jsonPrimitiveImpl) putInGraveyard(primitive jsonPrimitive) {
-
 }
 
 func (its *jsonPrimitiveImpl) getValue() types.JSONValue {
@@ -599,6 +599,7 @@ func (its *jsonObject) DeleteLocalInArray(
 func (its *jsonObject) DeleteRemoteInArray(parent *model.Timestamp, targets []*model.Timestamp, ts *model.Timestamp) {
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		parentArray.arrayDeleteRemote(targets, ts)
+		return
 	}
 	_ = errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
@@ -611,61 +612,38 @@ func (its *jsonObject) getType() TypeOfDocument {
 	return TypeJSONObject
 }
 
-func (its *jsonObject) makeTomb(ts *model.Timestamp) {
-	log.Logger.Infof("makeTomb() of jsonObject")
+func (its *jsonObject) makeTomb(ts *model.Timestamp) bool {
+	log.Logger.Infof("makeTomb() of jsonObject:%v", its.getValue())
 	its.jsonPrimitive.makeTomb(ts)
 	for _, v := range its.Map {
 		switch cast := v.(type) {
 		case *jsonElement:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-			}
+			// if !cast.isTomb() {
+			cast.makeTomb(ts)
+			// }
 		case *jsonObject:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-				// cast.deleteChildren(ts)
-			}
+			// if !cast.isTomb() {
+			cast.makeTomb(ts)
+			// cast.deleteChildren(ts)
+			// }
 		case *jsonArray:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-				// cast.deleteChildren(ts)
-			}
+			// if !cast.isTomb() {
+			cast.makeTomb(ts)
+			// cast.deleteChildren(ts)
+			// }
 		}
 	}
+
 }
 
 func (its *jsonObject) objDeleteCommon(key string, ts *model.Timestamp) interface{} {
 	target := its.get(key)
-	if j, ok := target.(jsonPrimitive); ok {
-		if !j.isTomb() {
-			ret := its.removeCommon(key, ts)
-			return ret
-		}
+	if _, ok := target.(jsonPrimitive); ok {
+		// if !j.isTomb() {
+		ret := its.removeCommon(key, ts)
+		return ret
+		// }
 	}
-	// switch cast := target.(type) {
-	// case *jsonElement:
-	// 	if !cast.isTomb() {
-	// 		ret := its.removeCommon(key, ts)
-	// 		return ret
-	// 	}
-	// case *jsonObject:
-	// 	if !cast.isTomb() {
-	// 		ret := its.removeCommon(key, ts)
-	// 		if ret != nil {
-	// 			cast.makeTomb(ts)
-	// 		}
-	// 		return ret
-	// 	}
-	// case *jsonArray:
-	// 	if !cast.isTomb() {
-	// 		ret := its.removeCommon(key, ts)
-	// 		if ret != nil {
-	// 			cast.makeTomb(ts)
-	// 		}
-	// 		return ret
-	// 	}
-	//
-	// }
 	return nil
 }
 
@@ -760,12 +738,12 @@ func newJSONArray(parent jsonPrimitive, ts *model.Timestamp) *jsonArray {
 	}
 }
 
-func (its *jsonArray) makeTomb(ts *model.Timestamp) {
+func (its *jsonArray) makeTomb(ts *model.Timestamp) bool {
 	log.Logger.Infof("makeTomb() of jsonArray")
 	its.jsonPrimitive.makeTomb(ts)
 	node := its.head
 	for node != nil {
-		switch cast := node.getValue().(type) {
+		switch cast := node.timedValue.(type) {
 		case *jsonElement:
 			if !cast.isTomb() {
 				cast.makeTomb(ts)

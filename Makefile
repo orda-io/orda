@@ -3,10 +3,10 @@ GOSRCS := $(shell find . -path ./vendor -prune -o -type f -name '*.go' -print)
 
 .PHONY: protoc-gen
 protoc-gen:
+	-rm ./ortoo/model/model.pb.go
 	protoc ortoo/model/*.proto \
 			-I=./ortoo/model/ \
-			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,:./ortoo/model/
-#			--gotag_out=xxx="bson+\"-\"",output_path=./ortoo/model/:.
+			--gofast_out=plugins=grpc,:./ortoo/model/
 	protoc-go-inject-tag -input=./ortoo/model/model.pb.go
 
 .PHONY: server
