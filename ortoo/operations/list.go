@@ -22,7 +22,7 @@ type insertContent struct {
 
 type InsertOperation struct {
 	*baseOperation
-	Pos int
+	Pos int // for local
 	C   insertContent
 }
 

@@ -25,8 +25,7 @@ type DocumentInTxn interface {
 	DeleteInObject(key string) (interface{}, error)
 	DeleteInArray(pos int) (interface{}, error)
 	DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, error)
-	UpdateInObject(key string, value interface{}) (interface{}, error)
-	UpdateInArray(pos int, value interface{}) (interface{}, error)
+	UpdateInArray(pos int, values ...interface{}) ([]interface{}, error)
 	GetFromObject(key string) (Document, error)
 	GetFromArray(pos int) (Document, error)
 	GetDocumentType() TypeOfDocument
@@ -115,6 +114,9 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, error) {
 		}
 		cast.C.T = deletedTargets
 		return deletedValues, nil
+	case *operations.UpdInArrayOperation:
+		its.snapshot.UpdateLocaInArray()
+		return nil, nil
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op.(iface.Operation).GetType())
 }
@@ -212,12 +214,20 @@ func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, 
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
 
-func (its *document) UpdateInObject(key string, value interface{}) (interface{}, error) {
-	panic("implement me")
-}
+func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{}, error) {
+	if its.typeOfDoc == TypeJSONArray {
+		if len(values) < 1 {
+			return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
+		}
 
-func (its *document) UpdateInArray(pos int, value interface{}) (interface{}, error) {
-	panic("implement me")
+		op := operations.NewUpdInArrayOperation(its.root, pos, values)
+		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+		if err != nil {
+			return nil, err
+		}
+		return ret.([]interface{}), nil
+	}
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
 
 func (its *document) GetDocumentType() TypeOfDocument {
@@ -313,9 +323,11 @@ func (its *jsonPrimitiveImpl) isTomb() bool {
 	return its.deleted
 }
 
+// 어떤 애가 지워졌는지는 parent까지 조사해야 하나?
 func (its *jsonPrimitiveImpl) makeTomb(ts *model.Timestamp) bool {
 	if its.deleted {
-		if its.P.Compare(ts) > 0 {
+		if its.P.Compare(ts) > 0 { // This condition makes newer timestamps remain in nodes.
+			log.Logger.Infof("fail to makeTomb() of jsonPrimitiveImpl:%v", its.K.ToString())
 			return false
 		}
 	}
@@ -588,6 +600,13 @@ func (its *jsonObject) DeleteCommonInObject(parent *model.Timestamp, key string,
 	_ = errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
 
+func (its *jsonObject) UpdateLocalInArray(op *operations.UpdInArrayOperation) {
+	if parentArray, ok := its.findJSONArray(op.C.P); ok {
+		return parentArray.arrayUpdateLocal(op)
+	}
+	// return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
+}
+
 func (its *jsonObject) DeleteLocalInArray(
 	parent *model.Timestamp, pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, error) {
 	if parentArray, ok := its.findJSONArray(parent); ok {
@@ -613,27 +632,30 @@ func (its *jsonObject) getType() TypeOfDocument {
 }
 
 func (its *jsonObject) makeTomb(ts *model.Timestamp) bool {
-	log.Logger.Infof("makeTomb() of jsonObject:%v", its.getValue())
-	its.jsonPrimitive.makeTomb(ts)
-	for _, v := range its.Map {
-		switch cast := v.(type) {
-		case *jsonElement:
-			// if !cast.isTomb() {
-			cast.makeTomb(ts)
-			// }
-		case *jsonObject:
-			// if !cast.isTomb() {
-			cast.makeTomb(ts)
-			// cast.deleteChildren(ts)
-			// }
-		case *jsonArray:
-			// if !cast.isTomb() {
-			cast.makeTomb(ts)
-			// cast.deleteChildren(ts)
-			// }
-		}
+	// log.Logger.Infof("makeTomb() of jsonObject:%v", its.getValue())
+	if its.jsonPrimitive.makeTomb(ts) {
+		// for _, v := range its.Map {
+		//
+		// 	switch cast := v.(type) {
+		// 	case *jsonElement:
+		// 		// if !cast.isTomb() {
+		// 		cast.makeTomb(ts)
+		// 		// }
+		// 	case *jsonObject:
+		// 		// if !cast.isTomb() {
+		// 		cast.makeTomb(ts)
+		// 		// cast.deleteChildren(ts)
+		// 		// }
+		// 	case *jsonArray:
+		// 		// if !cast.isTomb() {
+		// 		cast.makeTomb(ts)
+		// 		// cast.deleteChildren(ts)
+		// 		// }
+		// 	}
+		// }
+		return true
 	}
-
+	return false
 }
 
 func (its *jsonObject) objDeleteCommon(key string, ts *model.Timestamp) interface{} {
@@ -740,27 +762,30 @@ func newJSONArray(parent jsonPrimitive, ts *model.Timestamp) *jsonArray {
 
 func (its *jsonArray) makeTomb(ts *model.Timestamp) bool {
 	log.Logger.Infof("makeTomb() of jsonArray")
-	its.jsonPrimitive.makeTomb(ts)
-	node := its.head
-	for node != nil {
-		switch cast := node.timedValue.(type) {
-		case *jsonElement:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-			}
-		case *jsonObject:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-				// cast.deleteChildren(ts)
-			}
-		case *jsonArray:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-				// cast.deleteChildren(ts)
-			}
-		}
-		node = node.next
+	if its.jsonPrimitive.makeTomb(ts) {
+		return true
 	}
+	return false
+	// node := its.head
+	// for node != nil {
+	// 	switch cast := node.timedValue.(type) {
+	// 	case *jsonElement:
+	// 		if !cast.isTomb() {
+	// 			cast.makeTomb(ts)
+	// 		}
+	// 	case *jsonObject:
+	// 		if !cast.isTomb() {
+	// 			cast.makeTomb(ts)
+	// 			// cast.deleteChildren(ts)
+	// 		}
+	// 	case *jsonArray:
+	// 		if !cast.isTomb() {
+	// 			cast.makeTomb(ts)
+	// 			// cast.deleteChildren(ts)
+	// 		}
+	// 	}
+	// 	node = node.next
+	// }
 
 }
 
@@ -782,6 +807,16 @@ func (its *jsonArray) arrayDeleteRemote(targets []*model.Timestamp, ts *model.Ti
 	// return nil, nil
 }
 
+func (its *jsonArray) arrayUpdateLocal(op *operations.UpdInArrayOperation) error {
+	if err := its.validateRange(op.Pos, len(op.C.V)); err != nil {
+		return err
+	}
+	node := its.findNthTarget(op.Pos + 1)
+	for i := 0; i < len(op.C.V); i++ {
+
+	}
+}
+
 func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, error) {
 	if err := its.validateRange(pos, numOfNodes); err != nil {
 		return nil, nil, err
@@ -790,26 +825,31 @@ func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp)
 	var deletedValues []interface{}
 	node := its.findNthTarget(pos + 1)
 	for i := 0; i < numOfNodes; i++ {
-		switch cast := node.timedValue.(type) {
-		case *jsonElement:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-				deletedTargets = append(deletedTargets, cast.getKey())
-				deletedValues = append(deletedValues, cast.getValue())
-			}
-		case *jsonObject:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-				deletedTargets = append(deletedTargets, cast.getKey())
-				deletedValues = append(deletedValues, cast.getValue())
-			}
-		case *jsonArray:
-			if !cast.isTomb() {
-				cast.makeTomb(ts)
-				deletedTargets = append(deletedTargets, cast.getKey())
-				deletedValues = append(deletedValues, cast.getValue())
-			}
+		cast := node.timedValue.(jsonPrimitive)
+		if cast.makeTomb(ts) {
+			deletedTargets = append(deletedTargets, cast.getKey())
+			deletedValues = append(deletedValues, cast)
 		}
+		// switch cast := node.timedValue.(type) {
+		// case *jsonElement:
+		// 	if !cast.isTomb() {
+		// 		cast.makeTomb(ts)
+		// 		deletedTargets = append(deletedTargets, cast.getKey())
+		// 		deletedValues = append(deletedValues, cast.getValue())
+		// 	}
+		// case *jsonObject:
+		// 	if !cast.isTomb() {
+		// 		cast.makeTomb(ts)
+		// 		deletedTargets = append(deletedTargets, cast.getKey())
+		// 		deletedValues = append(deletedValues, cast.getValue())
+		// 	}
+		// case *jsonArray:
+		// 	if !cast.isTomb() {
+		// 		cast.makeTomb(ts)
+		// 		deletedTargets = append(deletedTargets, cast.getKey())
+		// 		deletedValues = append(deletedValues, cast.getValue())
+		// 	}
+		// }
 		node = node.getNextLiveNode()
 	}
 	return deletedTargets, deletedValues, nil

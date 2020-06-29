@@ -166,6 +166,60 @@ func (its *DelInObjectOperation) String() string {
 	return sb.String()
 }
 
+// ////////////////// UpdInObjectOperation ////////////////////
+
+func NewUpdInArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *UpdInArrayOperation {
+	return &UpdInArrayOperation{
+		baseOperation: newBaseOperation(nil),
+		Pos:           pos,
+		C: updInArrayContent{
+			P: parent,
+			V: values,
+		},
+	}
+}
+
+type updInArrayContent struct {
+	P *model.Timestamp
+	T []*model.Timestamp
+	V []interface{}
+}
+
+type UpdInArrayOperation struct {
+	*baseOperation
+	Pos int // for local
+	C   updInArrayContent
+}
+
+func (its *UpdInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+	return datatype.ExecuteLocal(its)
+}
+
+func (its *UpdInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+	return datatype.ExecuteRemote(its)
+}
+
+func (its *UpdInArrayOperation) ToModelOperation() *model.Operation {
+	return &model.Operation{
+		ID:     its.ID,
+		OpType: model.TypeOfOperation_DOCUMENT_UPD_ARR,
+		Json:   marshalContent(its.C),
+	}
+}
+
+func (its *UpdInArrayOperation) GetType() model.TypeOfOperation {
+	return model.TypeOfOperation_DOCUMENT_UPD_ARR
+}
+
+func (its *UpdInArrayOperation) String() string {
+	var sb strings.Builder
+	sb.WriteString(its.GetType().String())
+	sb.WriteString("[")
+
+	sb.WriteString("]")
+	return sb.String()
+}
+
 // ////////////////// DelInObjectOperation ////////////////////
 
 func NewDelInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) *DelInArrayOperation {
@@ -186,8 +240,8 @@ type delInArrayContent struct {
 
 type DelInArrayOperation struct {
 	*baseOperation
-	Pos        int
-	NumOfNodes int
+	Pos        int // for local
+	NumOfNodes int // for local
 	C          delInArrayContent
 }
 

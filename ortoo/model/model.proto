@@ -50,6 +50,7 @@ enum TypeOfOperation {
     DOCUMENT_DEL_OBJ = 42;
     DOCUMENT_INS_ARR = 43;
     DOCUMENT_DEL_ARR = 44;
+    DOCUMENT_UPD_ARR = 45;
 }
 
 enum TypeOfDatatype {

@@ -25,7 +25,7 @@ type ListInTxn interface {
 	GetMany(pos int, numOfNodes int) ([]interface{}, error)
 	Delete(pos int) (interface{}, error)
 	DeleteMany(pos int, numOfNodes int) ([]interface{}, error)
-	Update(pos int, value ...interface{}) ([]interface{}, error)
+	Update(pos int, values ...interface{}) ([]interface{}, error)
 	Size() int
 }
 
@@ -200,6 +200,9 @@ func (its *list) Delete(pos int) (interface{}, error) {
 
 // DeleteMany deletes the nodes at index pos in sequence.
 func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
+	if numOfNode < 1 {
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one node should be deleted")
+	}
 	if err := its.snapshot.validateRange(pos, numOfNode); err != nil {
 		return nil, err
 	}
