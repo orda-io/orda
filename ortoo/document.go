@@ -70,7 +70,7 @@ func (its *document) DoTransaction(tag string, txnFunc func(document DocumentInT
 
 func (its *document) PutToObject(key string, value interface{}) (interface{}, error) {
 	if its.typeOfDoc == TypeJSONObject {
-		op := operations.NewPutObjectOperation(its.root, key, value)
+		op := operations.NewDocPutInObjectOperation(its.root, key, value)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -82,7 +82,7 @@ func (its *document) PutToObject(key string, value interface{}) (interface{}, er
 
 func (its *document) InsertToArray(pos int, values ...interface{}) (interface{}, error) {
 	if its.typeOfDoc == TypeJSONArray {
-		op := operations.NewInsArrayOperation(its.root, pos, values)
+		op := operations.NewDocInsToArrayOperation(its.root, pos, values)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -94,28 +94,30 @@ func (its *document) InsertToArray(pos int, values ...interface{}) (interface{},
 
 func (its *document) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
-	case *operations.PutObjectOperation:
-		its.snapshot.AddCommon(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
-		return nil, nil
-	case *operations.InsArrayOperation:
+	case *operations.DocPutInObjectOperation:
+		if _, err := its.snapshot.PutInObjectCommon(cast); err != nil {
+			return nil, err
+		}
+		return its, nil
+	case *operations.DocInsertToArrayOperation:
 		target, ret, err := its.snapshot.InsertLocal(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = target
 		return ret, nil
-	case *operations.DelInObjectOperation:
+	case *operations.DocDeleteInObjectOperation:
 		its.snapshot.DeleteCommonInObject(cast.C.P, cast.C.Key, cast.ID.GetTimestamp())
 		return nil, nil
-	case *operations.DelInArrayOperation:
+	case *operations.DocDeleteInArrayOperation:
 		deletedTargets, deletedValues, err := its.snapshot.DeleteLocalInArray(cast.C.P, cast.Pos, cast.NumOfNodes, cast.ID.GetTimestamp())
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = deletedTargets
 		return deletedValues, nil
-	case *operations.UpdInArrayOperation:
-		its.snapshot.UpdateLocaInArray()
+	case *operations.DocUpdateInArrayOperation:
+		// its.snapshot.UpdateLocaInArray()
 		return nil, nil
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op.(iface.Operation).GetType())
@@ -130,16 +132,18 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, error) {
 		}
 		its.snapshot = newSnap
 		return nil, nil
-	case *operations.PutObjectOperation:
-		its.snapshot.AddCommon(cast.C.P, cast.C.K, cast.C.V, cast.ID.GetTimestamp())
+	case *operations.DocPutInObjectOperation:
+		if _, err := its.snapshot.PutInObjectCommon(cast); err != nil {
+			return nil, err
+		}
 		return nil, nil
-	case *operations.InsArrayOperation:
+	case *operations.DocInsertToArrayOperation:
 		its.snapshot.InsertRemote(cast.C.P, cast.C.T, cast.ID.GetTimestamp(), cast.C.V...)
 		return nil, nil
-	case *operations.DelInObjectOperation:
+	case *operations.DocDeleteInObjectOperation:
 		its.snapshot.DeleteCommonInObject(cast.C.P, cast.C.Key, cast.ID.GetTimestamp())
 		return nil, nil
-	case *operations.DelInArrayOperation:
+	case *operations.DocDeleteInArrayOperation:
 		its.snapshot.DeleteRemoteInArray(cast.C.P, cast.C.T, cast.ID.GetTimestamp())
 		return nil, nil
 	}
@@ -153,16 +157,20 @@ func (its *document) GetFromObject(key string) (Document, error) {
 			if child == nil {
 				return nil, errors.NewDatatypeError(errors.ErrDatatypeNotExistChildDocument)
 			}
-			return &document{
-				datatype:  its.datatype,
-				root:      child.getKey(),
-				typeOfDoc: child.getType(),
-				snapshot:  its.snapshot,
-			}, nil
+			return its.getChildDocument(child), nil
 		}
 
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
+}
+
+func (its *document) getChildDocument(child jsonPrimitive) *document {
+	return &document{
+		datatype:  its.datatype,
+		root:      child.getKey(),
+		typeOfDoc: child.getType(),
+		snapshot:  its.snapshot,
+	}
 }
 
 func (its *document) GetFromArray(pos int) (Document, error) {
@@ -173,12 +181,7 @@ func (its *document) GetFromArray(pos int) (Document, error) {
 				return nil, err
 			}
 			child := c.(jsonPrimitive)
-			return &document{
-				datatype:  its.datatype,
-				root:      child.getKey(),
-				typeOfDoc: child.getType(),
-				snapshot:  its.snapshot,
-			}, nil
+			return its.getChildDocument(child), nil
 		}
 
 	}
@@ -187,7 +190,7 @@ func (its *document) GetFromArray(pos int) (Document, error) {
 
 func (its *document) DeleteInObject(key string) (interface{}, error) {
 	if its.typeOfDoc == TypeJSONObject {
-		op := operations.NewDelInObjectOperation(its.root, key)
+		op := operations.NewDocDeleteInObjectOperation(its.root, key)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -204,7 +207,7 @@ func (its *document) DeleteInArray(pos int) (interface{}, error) {
 
 func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, error) {
 	if its.typeOfDoc == TypeJSONArray {
-		op := operations.NewDelInArrayOperation(its.root, pos, numOfNodes)
+		op := operations.NewDocDeleteInArrayOperation(its.root, pos, numOfNodes)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -220,7 +223,7 @@ func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{
 			return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
 		}
 
-		op := operations.NewUpdInArrayOperation(its.root, pos, values)
+		op := operations.NewDocUpdateInArrayOperation(its.root, pos, values)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err
@@ -264,7 +267,13 @@ func (its *document) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
 }
 
 func (its *document) SetMetaAndSnapshot(meta []byte, snapshot string) error {
-	panic("implement me")
+	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
+		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+	return nil
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -300,15 +309,17 @@ type jsonPrimitive interface {
 	findJSONArray(ts *model.Timestamp) (j *jsonArray, ok bool)
 	getParent() jsonPrimitive
 	getKey() *model.Timestamp
-	putInNodeMap(tv jsonPrimitive)
+	addToNodeMap(primitive jsonPrimitive)
+	addToCemetery(primitive jsonPrimitive)
 	getParentAsJSONObject() *jsonObject
 	createJSONObject(parent jsonPrimitive, value interface{}, ts *model.Timestamp) *jsonObject
 	createJSONArray(parent jsonPrimitive, value interface{}, ts *model.Timestamp) *jsonArray
 }
 
 type jsonRoot struct {
-	nodeMap map[string]jsonPrimitive
-	root    *jsonObject
+	nodeMap  map[string]jsonPrimitive
+	cemetery map[string]jsonPrimitive
+	root     *jsonObject
 }
 
 type jsonPrimitiveImpl struct {
@@ -381,8 +392,12 @@ func (its *jsonPrimitiveImpl) findJSONArray(ts *model.Timestamp) (json *jsonArra
 	return nil, false
 }
 
-func (its *jsonPrimitiveImpl) putInNodeMap(primitive jsonPrimitive) {
+func (its *jsonPrimitiveImpl) addToNodeMap(primitive jsonPrimitive) {
 	its.getRoot().nodeMap[primitive.getKey().Hash()] = primitive
+}
+
+func (its *jsonPrimitiveImpl) addToCemetery(primitive jsonPrimitive) {
+	its.getRoot().cemetery[primitive.getKey().Hash()] = primitive
 }
 
 func (its *jsonPrimitiveImpl) getValue() types.JSONValue {
@@ -442,7 +457,7 @@ func (its *jsonPrimitiveImpl) createJSONArray(parent jsonPrimitive, value interf
 	if appendValues != nil {
 		ja.insertLocalWithTimedValue(0, appendValues...)
 		for _, v := range appendValues {
-			its.putInNodeMap(v.(jsonPrimitive))
+			its.addToNodeMap(v.(jsonPrimitive))
 		}
 	}
 	// log.Logger.Infof("%v", ja.String())
@@ -475,18 +490,18 @@ func (its *jsonPrimitiveImpl) addValueToJSONObject(jo *jsonObject, key string, v
 	case reflect.Slice, reflect.Array:
 		ja := its.createJSONArray(jo, value.Interface(), ts)
 		jo.putCommonWithTimedValue(key, ja)
-		its.putInNodeMap(ja)
+		its.addToNodeMap(ja)
 	case reflect.Struct:
 		childJO := its.createJSONObject(jo, value.Interface(), ts)
 		jo.putCommonWithTimedValue(key, childJO)
-		its.putInNodeMap(childJO)
+		its.addToNodeMap(childJO)
 	case reflect.Ptr:
 		val := value.Elem()
 		its.createJSONObject(jo, val.Interface(), ts)
 	default:
 		element := newJSONElement(jo, types.ConvertToJSONSupportedValue(value.Interface()), ts.NextDeliminator())
 		jo.putCommonWithTimedValue(key, element)
-		its.putInNodeMap(element)
+		its.addToNodeMap(element)
 	}
 }
 
@@ -545,8 +560,9 @@ func newJSONObject(parent jsonPrimitive, ts *model.Timestamp) *jsonObject {
 	var root *jsonRoot
 	if parent == nil {
 		root = &jsonRoot{
-			nodeMap: make(map[string]jsonPrimitive),
-			root:    nil,
+			nodeMap:  make(map[string]jsonPrimitive),
+			cemetery: make(map[string]jsonPrimitive),
+			root:     nil,
 		}
 	} else {
 		root = parent.getRoot()
@@ -569,12 +585,11 @@ func (its *jsonObject) CloneSnapshot() iface.Snapshot {
 	return &jsonObject{}
 }
 
-func (its *jsonObject) AddCommon(parent *model.Timestamp, key string, value interface{}, ts *model.Timestamp) {
-	if parentObj, ok := its.findJSONObject(parent); ok {
-		parentObj.objAdd(key, value, ts)
-		return
+func (its *jsonObject) PutInObjectCommon(op *operations.DocPutInObjectOperation) (jsonPrimitive, error) {
+	if parentObj, ok := its.findJSONObject(op.C.P); ok {
+		return parentObj.put(op.C.K, op.C.V, op.GetTimestamp()), nil
 	}
-	_ = errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
+	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
 
 func (its *jsonObject) InsertLocal(parent *model.Timestamp, pos int, ts *model.Timestamp, values ...interface{}) (*model.Timestamp, []interface{}, error) {
@@ -600,10 +615,10 @@ func (its *jsonObject) DeleteCommonInObject(parent *model.Timestamp, key string,
 	_ = errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
 
-func (its *jsonObject) UpdateLocalInArray(op *operations.UpdInArrayOperation) {
-	if parentArray, ok := its.findJSONArray(op.C.P); ok {
-		return parentArray.arrayUpdateLocal(op)
-	}
+func (its *jsonObject) UpdateLocalInArray(op *operations.DocUpdateInArrayOperation) {
+	// if parentArray, ok := its.findJSONArray(op.C.P); ok {
+	// 	return parentArray.arrayUpdateLocal(op)
+	// }
 	// return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
 
@@ -669,26 +684,27 @@ func (its *jsonObject) objDeleteCommon(key string, ts *model.Timestamp) interfac
 	return nil
 }
 
-func (its *jsonObject) objAdd(key string, value interface{}, ts *model.Timestamp) {
+func (its *jsonObject) put(key string, value interface{}, ts *model.Timestamp) jsonPrimitive {
 	rt := reflect.ValueOf(value)
+	var primitive jsonPrimitive
 	switch rt.Kind() {
 	case reflect.Slice, reflect.Array:
-		ja := its.createJSONArray(its, value, ts) // in jsonObject
-		its.putCommonWithTimedValue(key, ja)      // in hash map
-		its.putInNodeMap(ja)
+		primitive = its.createJSONArray(its, value, ts)
 	case reflect.Struct, reflect.Map:
-		jo := its.createJSONObject(its, value, ts)
-		its.putCommonWithTimedValue(key, jo) // in hash map
-		its.putInNodeMap(jo)
+		primitive = its.createJSONObject(its, value, ts)
 	case reflect.Ptr:
 		val := rt.Elem()
 		log.Logger.Infof("%+v", val.Interface())
-		its.objAdd(key, val.Interface(), ts) // recursively
+		its.put(key, val.Interface(), ts) // recursively
 	default:
-		je := newJSONElement(its, types.ConvertToJSONSupportedValue(value), ts.NextDeliminator())
-		its.putCommonWithTimedValue(key, je) // in hash map
-		its.putInNodeMap(je)
+		primitive = newJSONElement(its, types.ConvertToJSONSupportedValue(value), ts.NextDeliminator())
 	}
+	removed, _ := its.putCommonWithTimedValue(key, primitive) // in hash map
+	if removed != nil {
+		its.addToCemetery(removed.(jsonPrimitive))
+	}
+	its.addToNodeMap(primitive)
+	return primitive
 }
 
 func (its *jsonObject) getChildAsJSONElement(key string) *jsonElement {
@@ -807,14 +823,15 @@ func (its *jsonArray) arrayDeleteRemote(targets []*model.Timestamp, ts *model.Ti
 	// return nil, nil
 }
 
-func (its *jsonArray) arrayUpdateLocal(op *operations.UpdInArrayOperation) error {
+func (its *jsonArray) arrayUpdateLocal(op *operations.DocUpdateInArrayOperation) error {
 	if err := its.validateRange(op.Pos, len(op.C.V)); err != nil {
 		return err
 	}
-	node := its.findNthTarget(op.Pos + 1)
-	for i := 0; i < len(op.C.V); i++ {
-
-	}
+	// node := its.findNthTarget(op.Pos + 1)
+	// for i := 0; i < len(op.C.V); i++ {
+	//
+	// }
+	return nil
 }
 
 func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, error) {
@@ -864,18 +881,18 @@ func (its *jsonArray) arrayInsertCommon(pos int, target, ts *model.Timestamp, va
 		case reflect.Slice, reflect.Array:
 			ja := its.createJSONArray(its, v, ts)
 			tvs = append(tvs, ja)
-			its.putInNodeMap(ja)
+			its.addToNodeMap(ja)
 		case reflect.Struct, reflect.Map:
 			jo := its.createJSONObject(its, v, ts)
 			tvs = append(tvs, jo)
-			its.putInNodeMap(jo)
+			its.addToNodeMap(jo)
 		case reflect.Ptr:
 			ptrVal := rt.Elem()
 			its.arrayInsertCommon(pos, target, ts, ptrVal)
 		default:
 			je := newJSONElement(its, types.ConvertToJSONSupportedValue(v), ts.NextDeliminator())
 			tvs = append(tvs, je)
-			its.putInNodeMap(je)
+			its.addToNodeMap(je)
 		}
 	}
 	if target == nil {

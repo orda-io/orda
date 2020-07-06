@@ -49,7 +49,7 @@ func (m *MongoCollections) InsertSnapshot(ctx context.Context, collectionNum uin
 		return log.OrtooError(err)
 	}
 	if result.InsertedID == snap.ID {
-		log.Logger.Infof("insert snapshot: %s", result.InsertedID)
+		log.Logger.Infof("[MONGO] insert snapshot: %s", result.InsertedID)
 	}
 	return nil
 }

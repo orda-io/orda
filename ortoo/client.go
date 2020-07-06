@@ -104,7 +104,7 @@ func (c *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, han
 
 func (c *clientImpl) Connect() (err error) {
 	defer func() {
-		if err != nil {
+		if err == nil {
 			c.state = connected
 		}
 	}()
@@ -258,7 +258,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 }
 
 func (c *clientImpl) Sync() error {
-	if c.state == notConnected {
+	if c.state == connected {
 		return c.datatypeManager.SyncAll()
 	}
 	return errors.NewClientError(errors.ErrClientNotConnected, "fail to sync")

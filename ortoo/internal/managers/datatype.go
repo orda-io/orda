@@ -23,33 +23,33 @@ type DatatypeManager struct {
 }
 
 // DeliverTransaction delivers a transaction
-func (d *DatatypeManager) DeliverTransaction(wired iface.WiredDatatype) {
+func (its *DatatypeManager) DeliverTransaction(wired iface.WiredDatatype) {
 	// panic("implement me")
 }
 
 // ReceiveNotification enables datatype to sync when it receive notification
-func (d *DatatypeManager) ReceiveNotification(topic string, notification model.NotificationPushPull) {
-	if d.cuid == notification.CUID {
-		d.ctx.Logger.Infof("drain own notification")
+func (its *DatatypeManager) ReceiveNotification(topic string, notification model.NotificationPushPull) {
+	if its.cuid == notification.CUID {
+		its.ctx.Logger.Infof("drain own notification")
 		return
 	}
 	splitTopic := strings.Split(topic, "/")
 	datatypeKey := splitTopic[1]
-	if err := d.SyncIfNeeded(datatypeKey, notification.DUID, notification.Sseq); err != nil {
+	if err := its.SyncIfNeeded(datatypeKey, notification.DUID, notification.Sseq); err != nil {
 		_ = log.OrtooError(err)
 	}
 }
 
 // OnChangeDatatypeState deals with what datatypeManager has to do when the state of datatype changes.
-func (d *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model.StateOfDatatype) error {
+func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model.StateOfDatatype) error {
 	switch state {
 	case model.StateOfDatatype_SUBSCRIBED:
-		topic := fmt.Sprintf("%s/%s", d.collectionName, dt.GetKey())
-		if d.notificationManager != nil {
-			if err := d.notificationManager.SubscribeNotification(topic); err != nil {
+		topic := fmt.Sprintf("%s/%s", its.collectionName, dt.GetKey())
+		if its.notificationManager != nil {
+			if err := its.notificationManager.SubscribeNotification(topic); err != nil {
 				return errors.NewDatatypeError(errors.ErrDatatypeSubscribe, err.Error())
 			}
-			d.ctx.Logger.Infof("subscribe datatype topic: %s", topic)
+			its.ctx.Logger.Infof("subscribe datatype topic: %s", topic)
 		}
 	}
 	return nil
@@ -72,8 +72,8 @@ func NewDatatypeManager(ctx *context.OrtooContext, mm *MessageManager, nm *Notif
 }
 
 // Get returns a datatype for the specified key
-func (d *DatatypeManager) Get(key string) iface.Datatype {
-	dt, ok := d.dataMap[key]
+func (its *DatatypeManager) Get(key string) iface.Datatype {
+	dt, ok := its.dataMap[key]
 	if ok {
 		return dt.GetDatatype()
 	}
@@ -81,9 +81,9 @@ func (d *DatatypeManager) Get(key string) iface.Datatype {
 }
 
 // SubscribeOrCreate links a datatype with the datatype
-func (d *DatatypeManager) SubscribeOrCreate(dt iface.Datatype, state model.StateOfDatatype) error {
-	if _, ok := d.dataMap[dt.GetKey()]; !ok {
-		d.dataMap[dt.GetKey()] = dt
+func (its *DatatypeManager) SubscribeOrCreate(dt iface.Datatype, state model.StateOfDatatype) error {
+	if _, ok := its.dataMap[dt.GetKey()]; !ok {
+		its.dataMap[dt.GetKey()] = dt
 		if err := dt.SubscribeOrCreate(state); err != nil {
 			return log.OrtooErrorf(err, "fail to subscribe")
 		}
@@ -92,10 +92,10 @@ func (d *DatatypeManager) SubscribeOrCreate(dt iface.Datatype, state model.State
 }
 
 // Sync enables a datatype of the specified key to be synchronized.
-func (d *DatatypeManager) Sync(key string) error {
-	data := d.dataMap[key]
+func (its *DatatypeManager) Sync(key string) error {
+	data := its.dataMap[key]
 	ppp := data.CreatePushPullPack()
-	pushPullResponse, err := d.messageManager.Sync(ppp)
+	pushPullResponse, err := its.messageManager.Sync(ppp)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to sync")
 	}
@@ -108,34 +108,34 @@ func (d *DatatypeManager) Sync(key string) error {
 }
 
 // SyncIfNeeded enables the datatype of the specified key and sseq to be synchronized if needed.
-func (d *DatatypeManager) SyncIfNeeded(key, duid string, sseq uint64) error {
-	data, ok := d.dataMap[key]
+func (its *DatatypeManager) SyncIfNeeded(key, duid string, sseq uint64) error {
+	data, ok := its.dataMap[key]
 	if ok {
-		d.ctx.Logger.Infof("receive a notification for datatype %s(%s) sseq:%d", key, duid, sseq)
+		its.ctx.Logger.Infof("receive a notification for datatype %s(%s) sseq:%d", key, duid[0:8], sseq)
 		if hex.EncodeToString(data.GetDUID()) == duid && data.NeedSync(sseq) {
-			d.ctx.Logger.Infof("need to sync after notification: %s (sseq:%d)", key, sseq)
-			return d.Sync(key)
+			its.ctx.Logger.Infof("need to sync after notification: %s (sseq:%d)", key, sseq)
+			return its.Sync(key)
 		}
 	} else {
-		d.ctx.Logger.Warnf("receive a notification for not subscribed datatype %s(%s) sseq:%d", key, duid, sseq)
+		its.ctx.Logger.Warnf("receive a notification for not subscribed datatype %s(%s) sseq:%d", key, duid, sseq)
 	}
 
 	return nil
 }
 
 // SyncAll enables all the subscribed datatypes to be synchronized.
-func (d *DatatypeManager) SyncAll() error {
+func (its *DatatypeManager) SyncAll() error {
 	var pushPullPacks []*model.PushPullPack
-	for _, data := range d.dataMap {
+	for _, data := range its.dataMap {
 		ppp := data.CreatePushPullPack()
 		pushPullPacks = append(pushPullPacks, ppp)
 	}
-	pushPullResponse, err := d.messageManager.Sync(pushPullPacks...)
+	pushPullResponse, err := its.messageManager.Sync(pushPullPacks...)
 	if err != nil {
 		return log.OrtooError(err)
 	}
 	for _, ppp := range pushPullResponse.PushPullPacks {
-		if data, ok := d.dataMap[ppp.GetKey()]; ok {
+		if data, ok := its.dataMap[ppp.GetKey()]; ok {
 			data.ApplyPushPullPack(ppp)
 		}
 	}

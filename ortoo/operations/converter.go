@@ -74,30 +74,30 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 			C:             c,
 		}
 	case model.TypeOfOperation_DOCUMENT_PUT_OBJ:
-		var c putObjectContent
+		var c docPutInObjectContent
 		unmarshalContent(op.Json, &c)
-		return &PutObjectOperation{
+		return &DocPutInObjectOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	case model.TypeOfOperation_DOCUMENT_INS_ARR:
-		var c insArrayContent
+		var c docInsertToArrayContent
 		unmarshalContent(op.Json, &c)
-		return &InsArrayOperation{
+		return &DocInsertToArrayOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	case model.TypeOfOperation_DOCUMENT_DEL_OBJ:
-		var c delInObjectContent
+		var c docDeleteInObjectContent
 		unmarshalContent(op.Json, &c)
-		return &DelInObjectOperation{
+		return &DocDeleteInObjectOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
 	case model.TypeOfOperation_DOCUMENT_DEL_ARR:
-		var c delInArrayContent
+		var c docDeleteInArrayContent
 		unmarshalContent(op.Json, &c)
-		return &DelInArrayOperation{
+		return &DocDeleteInArrayOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}

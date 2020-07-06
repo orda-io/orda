@@ -2,6 +2,7 @@ package ortoo
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
@@ -10,6 +11,10 @@ import (
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/ortoo/types"
 	"strings"
+)
+
+var (
+	noOp = fmt.Errorf("noOp")
 )
 
 // HashMap is an Ortoo datatype which provides hash map interfaces.
@@ -63,9 +68,9 @@ func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) erro
 func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
 	case *operations.PutOperation:
-		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.ID.GetTimestamp())
+		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
 	case *operations.RemoveOperation:
-		return its.snapshot.removeCommon(cast.C.Key, cast.ID.GetTimestamp()), nil
+		return its.snapshot.removeCommon(cast.C.Key, cast.GetTimestamp()), nil
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
@@ -80,9 +85,9 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
 		its.snapshot = newSnap
 		return nil, nil
 	case *operations.PutOperation:
-		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.ID.GetTimestamp())
+		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
 	case *operations.RemoveOperation:
-		return its.snapshot.removeCommon(cast.C.Key, cast.ID.GetTimestamp()), nil
+		return its.snapshot.removeCommon(cast.C.Key, cast.GetTimestamp()), nil
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
 }
@@ -177,28 +182,29 @@ func (its *hashMapSnapshot) get(key string) interface{} {
 }
 
 func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
-	return its.putCommonWithTimedValue(key, &timedValueImpl{
+	removed, _ := its.putCommonWithTimedValue(key, &timedValueImpl{
 		V: value,
 		T: ts,
 	})
+	return removed, nil
 }
 
-func (its *hashMapSnapshot) putCommonWithTimedValue(key string, tv timedValue) (interface{}, error) {
-	oldObj, ok := its.Map[key]
-	if !ok {
+func (its *hashMapSnapshot) putCommonWithTimedValue(key string, tv timedValue) (removed timedValue, put timedValue) {
+	removed, ok := its.Map[key]
+	if !ok { // empty
 		its.Map[key] = tv
 		its.Size++
-		return nil, nil
+		return nil, tv
 	}
 	defer func() {
-		log.Logger.Infof("putCommon value: %v => %v for key: %s", oldObj, its.Map[key], key)
+		log.Logger.Infof("putCommon value: %v => %v for key: %s", removed, its.Map[key], key)
 	}()
 
-	if oldObj.getTime().Compare(tv.getTime()) <= 0 {
+	if removed.getTime().Compare(tv.getTime()) <= 0 {
 		its.Map[key] = tv
+		return removed, tv
 	}
-
-	return oldObj.getValue(), nil
+	return tv, removed
 }
 
 func (its *hashMapSnapshot) GetAsJSON() interface{} {

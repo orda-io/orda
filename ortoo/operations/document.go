@@ -6,12 +6,12 @@ import (
 	"strings"
 )
 
-// ////////////////// PutObjectOperation ////////////////////
+// ////////////////// DocPutInObjectOperation ////////////////////
 
-func NewPutObjectOperation(parent *model.Timestamp, key string, value interface{}) *PutObjectOperation {
-	return &PutObjectOperation{
+func NewDocPutInObjectOperation(parent *model.Timestamp, key string, value interface{}) *DocPutInObjectOperation {
+	return &DocPutInObjectOperation{
 		baseOperation: newBaseOperation(nil),
-		C: putObjectContent{
+		C: docPutInObjectContent{
 			P: parent,
 			K: key,
 			V: value,
@@ -19,26 +19,26 @@ func NewPutObjectOperation(parent *model.Timestamp, key string, value interface{
 	}
 }
 
-type putObjectContent struct {
+type docPutInObjectContent struct {
 	P *model.Timestamp
 	K string
 	V interface{}
 }
 
-type PutObjectOperation struct {
+type DocPutInObjectOperation struct {
 	*baseOperation
-	C putObjectContent
+	C docPutInObjectContent
 }
 
-func (its *PutObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocPutInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *PutObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocPutInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
-func (its *PutObjectOperation) ToModelOperation() *model.Operation {
+func (its *DocPutInObjectOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_PUT_OBJ,
@@ -46,11 +46,11 @@ func (its *PutObjectOperation) ToModelOperation() *model.Operation {
 	}
 }
 
-func (its *PutObjectOperation) GetType() model.TypeOfOperation {
+func (its *DocPutInObjectOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_PUT_OBJ
 }
 
-func (its *PutObjectOperation) String() string {
+func (its *DocPutInObjectOperation) String() string {
 	var sb strings.Builder
 	sb.WriteString(its.GetType().String())
 	sb.WriteString("[ID")
@@ -60,40 +60,40 @@ func (its *PutObjectOperation) String() string {
 	return sb.String()
 }
 
-// ////////////////// InsArrayOperation ////////////////////
+// ////////////////// DocInsertToArrayOperation ////////////////////
 
-func NewInsArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *InsArrayOperation {
-	return &InsArrayOperation{
+func NewDocInsToArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocInsertToArrayOperation {
+	return &DocInsertToArrayOperation{
 		baseOperation: newBaseOperation(nil),
 		Pos:           pos,
-		C: insArrayContent{
+		C: docInsertToArrayContent{
 			P: parent,
 			V: values,
 		},
 	}
 }
 
-type insArrayContent struct {
+type docInsertToArrayContent struct {
 	P *model.Timestamp
 	T *model.Timestamp
 	V []interface{}
 }
 
-type InsArrayOperation struct {
+type DocInsertToArrayOperation struct {
 	*baseOperation
 	Pos int
-	C   insArrayContent
+	C   docInsertToArrayContent
 }
 
-func (its *InsArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocInsertToArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *InsArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocInsertToArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
-func (its *InsArrayOperation) ToModelOperation() *model.Operation {
+func (its *DocInsertToArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_INS_ARR,
@@ -101,11 +101,11 @@ func (its *InsArrayOperation) ToModelOperation() *model.Operation {
 	}
 }
 
-func (its *InsArrayOperation) GetType() model.TypeOfOperation {
+func (its *DocInsertToArrayOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_INS_ARR
 }
 
-func (its *InsArrayOperation) String() string {
+func (its *DocInsertToArrayOperation) String() string {
 	var sb strings.Builder
 	sb.WriteString(its.GetType().String())
 	sb.WriteString("[")
@@ -116,37 +116,37 @@ func (its *InsArrayOperation) String() string {
 	return sb.String()
 }
 
-// ////////////////// DelInObjectOperation ////////////////////
+// ////////////////// DocDeleteInObjectOperation ////////////////////
 
-func NewDelInObjectOperation(parent *model.Timestamp, key string) *DelInObjectOperation {
-	return &DelInObjectOperation{
+func NewDocDeleteInObjectOperation(parent *model.Timestamp, key string) *DocDeleteInObjectOperation {
+	return &DocDeleteInObjectOperation{
 		baseOperation: newBaseOperation(nil),
-		C: delInObjectContent{
+		C: docDeleteInObjectContent{
 			P:   parent,
 			Key: key,
 		},
 	}
 }
 
-type delInObjectContent struct {
+type docDeleteInObjectContent struct {
 	P   *model.Timestamp
 	Key string
 }
 
-type DelInObjectOperation struct {
+type DocDeleteInObjectOperation struct {
 	*baseOperation
-	C delInObjectContent
+	C docDeleteInObjectContent
 }
 
-func (its *DelInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocDeleteInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *DelInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocDeleteInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
-func (its *DelInObjectOperation) ToModelOperation() *model.Operation {
+func (its *DocDeleteInObjectOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_DEL_OBJ,
@@ -154,11 +154,11 @@ func (its *DelInObjectOperation) ToModelOperation() *model.Operation {
 	}
 }
 
-func (its *DelInObjectOperation) GetType() model.TypeOfOperation {
+func (its *DocDeleteInObjectOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_DEL_OBJ
 }
 
-func (its *DelInObjectOperation) String() string {
+func (its *DocDeleteInObjectOperation) String() string {
 	var sb strings.Builder
 	sb.WriteString(its.GetType().String())
 	sb.WriteString("[")
@@ -168,38 +168,38 @@ func (its *DelInObjectOperation) String() string {
 
 // ////////////////// UpdInObjectOperation ////////////////////
 
-func NewUpdInArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *UpdInArrayOperation {
-	return &UpdInArrayOperation{
+func NewDocUpdateInArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocUpdateInArrayOperation {
+	return &DocUpdateInArrayOperation{
 		baseOperation: newBaseOperation(nil),
 		Pos:           pos,
-		C: updInArrayContent{
+		C: docUpdateInArrayContent{
 			P: parent,
 			V: values,
 		},
 	}
 }
 
-type updInArrayContent struct {
+type docUpdateInArrayContent struct {
 	P *model.Timestamp
 	T []*model.Timestamp
 	V []interface{}
 }
 
-type UpdInArrayOperation struct {
+type DocUpdateInArrayOperation struct {
 	*baseOperation
 	Pos int // for local
-	C   updInArrayContent
+	C   docUpdateInArrayContent
 }
 
-func (its *UpdInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocUpdateInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *UpdInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocUpdateInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
-func (its *UpdInArrayOperation) ToModelOperation() *model.Operation {
+func (its *DocUpdateInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_UPD_ARR,
@@ -207,11 +207,11 @@ func (its *UpdInArrayOperation) ToModelOperation() *model.Operation {
 	}
 }
 
-func (its *UpdInArrayOperation) GetType() model.TypeOfOperation {
+func (its *DocUpdateInArrayOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_UPD_ARR
 }
 
-func (its *UpdInArrayOperation) String() string {
+func (its *DocUpdateInArrayOperation) String() string {
 	var sb strings.Builder
 	sb.WriteString(its.GetType().String())
 	sb.WriteString("[")
@@ -220,40 +220,40 @@ func (its *UpdInArrayOperation) String() string {
 	return sb.String()
 }
 
-// ////////////////// DelInObjectOperation ////////////////////
+// ////////////////// DocDeleteInArrayOperation ////////////////////
 
-func NewDelInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) *DelInArrayOperation {
-	return &DelInArrayOperation{
+func NewDocDeleteInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) *DocDeleteInArrayOperation {
+	return &DocDeleteInArrayOperation{
 		baseOperation: newBaseOperation(nil),
 		Pos:           pos,
 		NumOfNodes:    numOfNodes,
-		C: delInArrayContent{
+		C: docDeleteInArrayContent{
 			P: parent,
 		},
 	}
 }
 
-type delInArrayContent struct {
+type docDeleteInArrayContent struct {
 	P *model.Timestamp
 	T []*model.Timestamp
 }
 
-type DelInArrayOperation struct {
+type DocDeleteInArrayOperation struct {
 	*baseOperation
 	Pos        int // for local
 	NumOfNodes int // for local
-	C          delInArrayContent
+	C          docDeleteInArrayContent
 }
 
-func (its *DelInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocDeleteInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *DelInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocDeleteInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
 	return datatype.ExecuteRemote(its)
 }
 
-func (its *DelInArrayOperation) ToModelOperation() *model.Operation {
+func (its *DocDeleteInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_DEL_ARR,
@@ -261,11 +261,11 @@ func (its *DelInArrayOperation) ToModelOperation() *model.Operation {
 	}
 }
 
-func (its *DelInArrayOperation) GetType() model.TypeOfOperation {
+func (its *DocDeleteInArrayOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_DEL_ARR
 }
 
-func (its *DelInArrayOperation) String() string {
+func (its *DocDeleteInArrayOperation) String() string {
 	var sb strings.Builder
 	sb.WriteString(its.GetType().String())
 	sb.WriteString("[")

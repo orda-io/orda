@@ -124,9 +124,15 @@ func (w *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error {
 			case errors.PushPullErrMissingOperations:
 			}
 		} else {
-
+			panic("Not implemented yet")
 		}
+	} else if ppp.GetPushPullPackOption().HasSubscribeBit() {
 
+		// modelOp := ppp.GetOperations()[0]
+		// snapOp, ok := operations.ModelToOperation(modelOp).(*operations.SnapshotOperation)
+		// if ok {
+		// 	w.checkPoint = ppp.CheckPoint
+		// }
 	}
 	return nil
 }
@@ -161,8 +167,13 @@ func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPu
 	case model.StateOfDatatype_DUE_TO_CREATE,
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE,
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE:
+		if w.state == model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE && ppp.GetPushPullPackOption().HasSubscribeBit() {
+			w.buffer = make([]*model.Operation, 0, constants.OperationBufferSize)
+		}
+
 		w.state = model.StateOfDatatype_SUBSCRIBED
 		w.id = ppp.DUID
+
 		err = w.wire.OnChangeDatatypeState(w.datatype, w.state)
 	case model.StateOfDatatype_SUBSCRIBED:
 	case model.StateOfDatatype_DUE_TO_UNSUBSCRIBE:

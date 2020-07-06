@@ -68,23 +68,23 @@ func (m *MessageManager) Close() error {
 // Sync exchanges PUSHPULL_REQUEST and PUSHPULL_RESPONSE
 func (m *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, error) {
 	request := model.NewPushPullRequest(m.nextSeq(), m.client, pppList...)
-	m.ctx.Logger.Infof("send PUSHPULL REQUEST:%s", request.ToString())
+	m.ctx.Logger.Infof("send %s", request.ToString())
 	response, err := m.serviceClient.ProcessPushPull(m.ctx, request)
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to sync push pull")
 	}
-	m.ctx.Logger.Infof("receive PUSHPULL RESPONSE:%v", response.ToString())
+	m.ctx.Logger.Infof("receive %v", response.ToString())
 	return response, nil
 }
 
 // ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
 func (m *MessageManager) ExchangeClientRequestResponse() error {
 	request := model.NewClientRequest(m.nextSeq(), m.client)
-	m.ctx.Logger.Infof("send CLIENT REQUEST:%s", request.ToString())
+	m.ctx.Logger.Infof("send %s", request.ToString())
 	response, err := m.serviceClient.ProcessClient(m.ctx, request)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to exchange clientRequestReply")
 	}
-	m.ctx.Logger.Infof("receive CLIENT RESPONSE: %s", response.ToString())
+	m.ctx.Logger.Infof("receive %s", response.ToString())
 	return nil
 }

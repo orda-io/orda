@@ -22,8 +22,8 @@ var pushPullBitString = []string{"cr", "sb", "un", "de", "sn", "er"}
 // PushPullPackOption denotes an option implied in a PushPullPack.
 type PushPullPackOption uint32
 
-func (p *PushPullPackOption) String() string {
-	var bit = uint32(*p)
+func (its *PushPullPackOption) String() string {
+	var bit = uint32(*its)
 	var ret = "[ "
 	for i := 0; i < len(pushPullBitString); i++ {
 		b := bit & 0x01
@@ -39,98 +39,104 @@ func (p *PushPullPackOption) String() string {
 }
 
 // SetCreateBit sets CreateBit.
-func (p *PushPullPackOption) SetCreateBit() *PushPullPackOption {
-	*p |= PushPullBitCreate
-	return p
+func (its *PushPullPackOption) SetCreateBit() *PushPullPackOption {
+	*its |= PushPullBitCreate
+	return its
 }
 
 // SetSubscribeBit sets SubscribeBit.
-func (p *PushPullPackOption) SetSubscribeBit() *PushPullPackOption {
-	*p |= PushPullBitSubscribe
-	return p
+func (its *PushPullPackOption) SetSubscribeBit() *PushPullPackOption {
+	*its |= PushPullBitSubscribe
+	return its
 }
 
 // SetUnsubscribeBit sets UnsubscribeBit.
-func (p *PushPullPackOption) SetUnsubscribeBit() *PushPullPackOption {
-	*p |= PushPullBitUnsubscribe
-	return p
+func (its *PushPullPackOption) SetUnsubscribeBit() *PushPullPackOption {
+	*its |= PushPullBitUnsubscribe
+	return its
 }
 
 // SetDeleteBit sets DeleteBit.
-func (p *PushPullPackOption) SetDeleteBit() *PushPullPackOption {
-	*p |= PushPullBitDelete
-	return p
+func (its *PushPullPackOption) SetDeleteBit() *PushPullPackOption {
+	*its |= PushPullBitDelete
+	return its
 }
 
 // SetSnapshotBit sets SnapshotBit.
-func (p *PushPullPackOption) SetSnapshotBit() *PushPullPackOption {
-	*p |= PushPullBitSnapshot
-	return p
+func (its *PushPullPackOption) SetSnapshotBit() *PushPullPackOption {
+	*its |= PushPullBitSnapshot
+	return its
 }
 
 // SetErrorBit sets ErrorBit.
-func (p *PushPullPackOption) SetErrorBit() *PushPullPackOption {
-	*p |= PushPullBitError
-	return p
+func (its *PushPullPackOption) SetErrorBit() *PushPullPackOption {
+	*its |= PushPullBitError
+	return its
 }
 
 // HasCreateBit examines CreateBit.
-func (p *PushPullPackOption) HasCreateBit() bool {
-	return (*p & PushPullBitCreate) == PushPullBitCreate
+func (its *PushPullPackOption) HasCreateBit() bool {
+	return (*its & PushPullBitCreate) == PushPullBitCreate
 }
 
 // HasSubscribeBit examines SubscribeBit.
-func (p *PushPullPackOption) HasSubscribeBit() bool {
-	return (*p & PushPullBitSubscribe) == PushPullBitSubscribe
+func (its *PushPullPackOption) HasSubscribeBit() bool {
+	return (*its & PushPullBitSubscribe) == PushPullBitSubscribe
 }
 
 // HasUnsubscribeBit examines UnsubscribeBit.
-func (p *PushPullPackOption) HasUnsubscribeBit() bool {
-	return (*p & PushPullBitUnsubscribe) == PushPullBitUnsubscribe
+func (its *PushPullPackOption) HasUnsubscribeBit() bool {
+	return (*its & PushPullBitUnsubscribe) == PushPullBitUnsubscribe
 }
 
 // HasDeleteBit examines DeleteBit.
-func (p *PushPullPackOption) HasDeleteBit() bool {
-	return (*p & PushPullBitDelete) == PushPullBitDelete
+func (its *PushPullPackOption) HasDeleteBit() bool {
+	return (*its & PushPullBitDelete) == PushPullBitDelete
 }
 
 // HasSnapshotBit examines SnapshotBit.
-func (p *PushPullPackOption) HasSnapshotBit() bool {
-	return (*p & PushPullBitSnapshot) == PushPullBitSnapshot
+func (its *PushPullPackOption) HasSnapshotBit() bool {
+	return (*its & PushPullBitSnapshot) == PushPullBitSnapshot
 }
 
 // HasErrorBit examines ErrorBit.
-func (p *PushPullPackOption) HasErrorBit() bool {
-	return (*p & PushPullBitError) == PushPullBitError
+func (its *PushPullPackOption) HasErrorBit() bool {
+	return (*its & PushPullBitError) == PushPullBitError
 }
 
 // GetPushPullPackOption returns PushPullOption.
-func (p *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
-	var option = (*PushPullPackOption)(&p.Option)
+func (its *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
+	var option = (*PushPullPackOption)(&its.Option)
 	return option
 }
 
 // GetResponsePushPullPack returns the PushPullPack that can be used for response.
-func (p *PushPullPack) GetResponsePushPullPack() *PushPullPack {
+func (its *PushPullPack) GetResponsePushPullPack() *PushPullPack {
 	return &PushPullPack{
-		Key:        p.Key,
-		DUID:       p.DUID,
-		Option:     p.Option,
-		Era:        p.Era,
-		Type:       p.Type,
-		CheckPoint: p.CheckPoint.Clone(),
+		Key:        its.Key,
+		DUID:       its.DUID,
+		Option:     its.Option,
+		Era:        its.Era,
+		Type:       its.Type,
+		CheckPoint: its.CheckPoint.Clone(),
 	}
 }
 
 // ToString returns customized string.
-func (p *PushPullPack) ToString() string {
+func (its *PushPullPack) ToString() string {
 	var b strings.Builder
-	var option = PushPullPackOption(p.Option)
+	var option = PushPullPackOption(its.Option)
 
-	_, _ = fmt.Fprintf(&b, "%s(%s) %s CP(%v) OP(%d){", p.Key, hex.EncodeToString(p.DUID), option.String(), p.CheckPoint.String(), len(p.Operations))
-	for _, op := range p.Operations {
-		b.WriteString(op.String())
-		b.WriteString(" =>")
+	_, _ = fmt.Fprintf(&b, "%s(%s) %s CP(%v) OP(%d){",
+		its.Key, hex.EncodeToString(its.DUID)[0:8], option.String(), its.CheckPoint.String(), len(its.Operations))
+	init := true
+	for _, op := range its.Operations {
+		if !init {
+			b.WriteString(" => ")
+			init = false
+		}
+		b.WriteString(op.OpType.String())
+		b.WriteString(op.ID.ToString())
 	}
 	b.WriteString("}")
 	return b.String()

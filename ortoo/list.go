@@ -73,21 +73,21 @@ func (its *list) GetAsJSON() interface{} {
 func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
 	switch cast := op.(type) {
 	case *operations.InsertOperation:
-		target, ret, err := its.snapshot.insertLocal(cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
+		target, ret, err := its.snapshot.insertLocal(cast.Pos, cast.GetTimestamp(), cast.C.V...)
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = target
 		return ret, nil
 	case *operations.DeleteOperation:
-		deletedTargets, deletedValues, err := its.snapshot.deleteLocal(cast.Pos, cast.NumOfNodes, cast.ID.GetTimestamp())
+		deletedTargets, deletedValues, err := its.snapshot.deleteLocal(cast.Pos, cast.NumOfNodes, cast.GetTimestamp())
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = deletedTargets
 		return deletedValues, nil
 	case *operations.UpdateOperation:
-		updatedTargets, updatedValues, err := its.snapshot.updateLocal(cast.Pos, cast.ID.GetTimestamp(), cast.C.V)
+		updatedTargets, updatedValues, err := its.snapshot.updateLocal(cast.Pos, cast.GetTimestamp(), cast.C.V)
 		if err != nil {
 			return nil, err
 		}

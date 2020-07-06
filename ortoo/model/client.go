@@ -12,5 +12,5 @@ func (c *Client) GetCUIDString() string {
 
 // ToString returns customized string
 func (c *Client) ToString() string {
-	return fmt.Sprintf("%s(%s)|%s|%s", c.Alias, hex.EncodeToString(c.CUID), c.SyncType.String(), c.Collection)
+	return fmt.Sprintf("%s(%s)|%s|%s", c.Alias, hex.EncodeToString(c.CUID)[0:8], c.SyncType.String(), c.Collection)
 }

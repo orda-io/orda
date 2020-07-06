@@ -30,6 +30,10 @@ func (its *baseOperation) GetID() *model.OperationID {
 	return its.ID
 }
 
+func (its *baseOperation) GetTimestamp() *model.Timestamp {
+	return its.ID.GetTimestamp()
+}
+
 // GetAsJSON returns the operation in the format of JSON compatible struct.
 func (its *baseOperation) GetAsJSON() interface{} {
 	return struct {

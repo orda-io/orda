@@ -6,6 +6,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/server/mongodb/schema"
 )
 
 // Notifier is a struct that takes responsibility for notification
@@ -24,11 +25,11 @@ func NewNotifier(pubSubAddr string) (*Notifier, error) {
 }
 
 // NotifyAfterPushPull enables server to send a notification to MQTT server
-func (n *Notifier) NotifyAfterPushPull(collectionName, key, cuid, duid string, sseq uint64) error {
-	topic := fmt.Sprintf("%s/%s", collectionName, key)
+func (n *Notifier) NotifyAfterPushPull(collectionName string, client *schema.ClientDoc, datatype *schema.DatatypeDoc, sseq uint64) error {
+	topic := fmt.Sprintf("%s/%s", collectionName, datatype.Key)
 	msg := model.NotificationPushPull{
-		CUID: cuid,
-		DUID: duid,
+		CUID: client.CUID,
+		DUID: datatype.DUID,
 		Sseq: sseq,
 	}
 	bMsg, err := proto.Marshal(&msg)
@@ -38,6 +39,6 @@ func (n *Notifier) NotifyAfterPushPull(collectionName, key, cuid, duid string, s
 	if token := n.pubSubClient.Publish(topic, 0, false, bMsg); token.Wait() && token.Error() != nil {
 		return log.OrtooError(token.Error())
 	}
-	log.Logger.Infof("notify %+v", msg)
+	log.Logger.Infof("notify %s with sseq:%d by %s", datatype, sseq, client)
 	return nil
 }
