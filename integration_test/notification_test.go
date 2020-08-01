@@ -38,7 +38,7 @@ func (its *OrtooIntegrationTestSuite) TestNotification() {
 		wg.Add(3)
 		intCounter2 := client2.SubscribeIntCounter(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
-				intCounter := dt.(ortoo.IntCounter)
+				intCounter := dt.(ortoo.Counter)
 				log.Logger.Infof("STATE: %s -> %s %d", old, new, intCounter.Get())
 				require.Equal(its.T(), int32(1), intCounter.Get())
 				wg.Done() // one time

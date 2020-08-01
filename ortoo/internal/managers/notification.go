@@ -48,17 +48,17 @@ type notificationMsg struct {
 }
 
 // SubscribeNotification subscribes notification for a topic.
-func (n *NotificationManager) SubscribeNotification(topic string) error {
-	if token := n.client.Subscribe(topic, 0, n.notificationSubscribeFunc); token.Wait() && token.Error() != nil {
+func (its *NotificationManager) SubscribeNotification(topic string) error {
+	if token := its.client.Subscribe(topic, 0, its.notificationSubscribeFunc); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
 	return nil
 }
 
-func (n *NotificationManager) notificationSubscribeFunc(client mqtt.Client, msg mqtt.Message) {
+func (its *NotificationManager) notificationSubscribeFunc(client mqtt.Client, msg mqtt.Message) {
 	notification := model.NotificationPushPull{}
 	if err := proto.Unmarshal(msg.Payload(), &notification); err != nil {
-		n.channel <- &notificationMsg{
+		its.channel <- &notificationMsg{
 			typeOf: notificationError,
 			msg:    err,
 		}
@@ -70,45 +70,47 @@ func (n *NotificationManager) notificationSubscribeFunc(client mqtt.Client, msg 
 		topic:  msg.Topic(),
 		msg:    notification,
 	}
-	n.channel <- notificationPushPull
+	its.channel <- notificationPushPull
 }
 
 // Connect make a connection with Ortoo notification server.
-func (n *NotificationManager) Connect() error {
-	if token := n.client.Connect(); token.Wait() && token.Error() != nil {
+func (its *NotificationManager) Connect() error {
+	if token := its.client.Connect(); token.Wait() && token.Error() != nil {
 		return errors.NewClientError(errors.ErrClientConnect, "notification server")
 	}
-	n.ctx.Logger.Infof("connect to notification server")
-	go n.notificationLoop()
+	its.ctx.Logger.Infof("connect to notification server")
+	go its.notificationLoop()
 	return nil
 }
 
 // Close closes a connection with Ortoo notification server.
-func (n *NotificationManager) Close() {
-	n.client.Disconnect(0)
-	n.channel <- &notificationMsg{
+func (its *NotificationManager) Close() {
+	its.channel <- &notificationMsg{
 		typeOf: notificationQuit,
 	}
+	its.client.Disconnect(0)
 }
 
 // SetReceiver sets receiver which is going to receive notifications, i.e., DatatypeManager
-func (n *NotificationManager) SetReceiver(receiver notificationReceiver) {
-	n.receiver = receiver
+func (its *NotificationManager) SetReceiver(receiver notificationReceiver) {
+	its.receiver = receiver
 }
 
-func (n *NotificationManager) notificationLoop() {
+func (its *NotificationManager) notificationLoop() {
 	for {
-		note := <-n.channel
+		note := <-its.channel
 		switch note.typeOf {
 		case notificationError:
 			err := note.msg.(error)
 			_ = log.OrtooError(err)
+			break
 		case notificationQuit:
-			n.ctx.Logger.Infof("Quit notification loop")
+			its.ctx.Logger.Infof("Quit notification loop")
 			return
 		case notificationPushPull:
 			notification := note.msg.(model.NotificationPushPull)
-			n.receiver.ReceiveNotification(note.topic, notification)
+			its.receiver.ReceiveNotification(note.topic, notification)
+			break
 		}
 	}
 }

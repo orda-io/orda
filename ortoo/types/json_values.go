@@ -2,8 +2,6 @@ package types
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/ortoo/log"
-	"math"
 )
 
 // JSONValue is an internal type used in storing various types, for converting any type to JSON supported type.
@@ -26,56 +24,56 @@ func ConvertToJSONSupportedValue(t interface{}) JSONValue {
 	// all number types are stored as float64, i.e., IEEE 754 64 bits floating point type.
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
 		*int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64:
-		var i64 int64
+		var f64 float64
 		switch vv := v.(type) {
 		case int:
-			i64 = int64(vv)
+			f64 = float64(vv)
 		case int8:
-			i64 = int64(vv)
+			f64 = float64(vv)
 		case int16:
-			i64 = int64(vv)
+			f64 = float64(vv)
 		case int32:
-			i64 = int64(vv)
+			f64 = float64(vv)
 		case int64:
-			i64 = vv
+			f64 = float64(vv)
 		case uint:
-			i64 = int64(vv)
+			f64 = float64(vv)
 		case uint8:
-			i64 = int64(vv)
+			f64 = float64(vv)
 		case uint16:
-			i64 = int64(vv)
+			f64 = float64(vv)
 		case uint32:
-			i64 = int64(vv)
+			f64 = float64(vv)
 		case uint64:
-			if vv > math.MaxInt64 {
-				log.Logger.Warnf("overflow: cannot store an integer more than int64.Max (%d)", math.MaxInt64)
-			}
-			i64 = int64(vv)
+			// if vv > math.MaxFloat64 {
+			// 	log.Logger.Warnf("overflow: cannot store an integer more than int64.Max (%d)", math.MaxInt64)
+			// }
+			f64 = float64(vv)
 		case *int:
-			i64 = int64(*vv)
+			f64 = float64(*vv)
 		case *int8:
-			i64 = int64(*vv)
+			f64 = float64(*vv)
 		case *int16:
-			i64 = int64(*vv)
+			f64 = float64(*vv)
 		case *int32:
-			i64 = int64(*vv)
+			f64 = float64(*vv)
 		case *int64:
-			i64 = *vv
+			f64 = float64(*vv)
 		case *uint:
-			i64 = int64(*vv)
+			f64 = float64(*vv)
 		case *uint8:
-			i64 = int64(*vv)
+			f64 = float64(*vv)
 		case *uint16:
-			i64 = int64(*vv)
+			f64 = float64(*vv)
 		case *uint32:
-			i64 = int64(*vv)
+			f64 = float64(*vv)
 		case *uint64:
-			if *vv > math.MaxInt64 {
-				log.Logger.Warnf("overflow: cannot store an integer more than int64.Max (%d)", math.MaxInt64)
-			}
-			i64 = int64(*vv)
+			// if *vv > math.MaxInt64 {
+			// 	log.Logger.Warnf("overflow: cannot store an integer more than int64.Max (%d)", math.MaxInt64)
+			// }
+			f64 = float64(*vv)
 		}
-		return i64
+		return f64
 	case float32, float64, *float32, *float64:
 		var f64 float64
 		switch vv := v.(type) {

@@ -13,7 +13,7 @@ import (
 
 // ProcessClient processes ClientRequest and returns ClientResponse
 func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
-	log.Logger.Infof("receive Client REQUEST: %s", in.ToString())
+	log.Logger.Infof("receive %s", in.ToString())
 	collectionDoc, err := o.mongo.GetCollection(ctx, in.Client.Collection)
 	if err != nil {
 		return nil, errors.NewRPCError(errors.RPCErrMongoDB)

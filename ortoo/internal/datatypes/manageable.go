@@ -17,7 +17,7 @@ type ManageableDatatype struct {
 }
 
 // Initialize is a method for initialization
-func (c *ManageableDatatype) Initialize(
+func (its *ManageableDatatype) Initialize(
 	key string,
 	typeOf model.TypeOfDatatype,
 	cuid types.CUID,
@@ -29,19 +29,19 @@ func (c *ManageableDatatype) Initialize(
 	wiredDatatype := newWiredDatatype(baseDatatype, w)
 	transactionDatatype := newTransactionDatatype(wiredDatatype, snapshot)
 
-	c.TransactionDatatype = transactionDatatype
-	c.TransactionCtx = nil
-	c.SetDatatype(datatype)
+	its.TransactionDatatype = transactionDatatype
+	its.TransactionCtx = nil
+	its.SetDatatype(datatype)
 }
 
 // GetMeta returns the binary of metadata of the datatype.
-func (c *ManageableDatatype) GetMeta() ([]byte, error) {
+func (its *ManageableDatatype) GetMeta() ([]byte, error) {
 	meta := model.DatatypeMeta{
-		Key:    c.Key,
-		DUID:   c.id,
-		OpID:   c.opID,
-		TypeOf: c.TypeOf,
-		State:  c.state,
+		Key:    its.Key,
+		DUID:   its.id,
+		OpID:   its.opID,
+		TypeOf: its.TypeOf,
+		State:  its.state,
 	}
 	metab, err := json.Marshal(&meta)
 	if err != nil {
@@ -51,48 +51,48 @@ func (c *ManageableDatatype) GetMeta() ([]byte, error) {
 }
 
 // SetMeta sets the metadata with binary metadata.
-func (c *ManageableDatatype) SetMeta(meta []byte) error {
+func (its *ManageableDatatype) SetMeta(meta []byte) error {
 	m := model.DatatypeMeta{}
 	if err := json.Unmarshal(meta, &m); err != nil {
 		return log.OrtooError(err)
 	}
-	c.Key = m.Key
-	c.id = m.DUID
-	c.opID = m.OpID
-	c.TypeOf = m.TypeOf
-	c.state = m.State
+	its.Key = m.Key
+	its.id = m.DUID
+	its.opID = m.OpID
+	its.TypeOf = m.TypeOf
+	its.state = m.State
 	return nil
 }
 
 // DoTransaction enables datatypes to perform a transaction.
-func (c *ManageableDatatype) DoTransaction(tag string, fn func(txnCtx *TransactionContext) error) error {
-	txnCtx, err := c.BeginTransaction(tag, c.TransactionCtx, true)
+func (its *ManageableDatatype) DoTransaction(tag string, fn func(txnCtx *TransactionContext) error) error {
+	txnCtx, err := its.BeginTransaction(tag, its.TransactionCtx, true)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		if err := c.EndTransaction(txnCtx, true, true); err != nil {
+		if err := its.EndTransaction(txnCtx, true, true); err != nil {
 			_ = log.OrtooError(err)
 		}
 	}()
 	if err := fn(txnCtx); err != nil {
-		c.SetTransactionFail()
+		its.SetTransactionFail()
 		return errors.NewDatatypeError(errors.ErrDatatypeTransaction, err.Error())
 	}
 	return nil
 }
 
 // SubscribeOrCreate enables a datatype to subscribe and create itself.
-func (c *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
+func (its *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) error {
 	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
-		c.state = state
+		its.state = state
 		return nil
 	}
-	subscribeOp, err := operations.NewSnapshotOperation(c.TypeOf, state, c.datatype.GetSnapshot())
+	subscribeOp, err := operations.NewSnapshotOperation(its.TypeOf, state, its.datatype.GetSnapshot())
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to subscribe")
 	}
-	_, err = c.ExecuteOperationWithTransaction(c.TransactionCtx, subscribeOp, true)
+	_, err = its.ExecuteOperationWithTransaction(its.TransactionCtx, subscribeOp, true)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to execute SubscribeOperation")
 	}
@@ -100,7 +100,7 @@ func (c *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) erro
 }
 
 // ExecuteTransactionRemote is a method to execute a transaction of remote operations
-func (c ManageableDatatype) ExecuteTransactionRemote(transaction []*model.Operation, obtainList bool) ([]interface{}, error) {
+func (its ManageableDatatype) ExecuteTransactionRemote(transaction []*model.Operation, obtainList bool) ([]interface{}, error) {
 	var trxCtx *TransactionContext
 	var err error
 	if len(transaction) > 1 {
@@ -111,12 +111,12 @@ func (c ManageableDatatype) ExecuteTransactionRemote(transaction []*model.Operat
 		if int(trxOp.GetNumOfOps()) != len(transaction) {
 			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, "not matched number of operations")
 		}
-		trxCtx, err = c.BeginTransaction(trxOp.C.Tag, c.TransactionCtx, false)
+		trxCtx, err = its.BeginTransaction(trxOp.C.Tag, its.TransactionCtx, false)
 		if err != nil {
 			return nil, log.OrtooError(err)
 		}
 		defer func() {
-			if err := c.EndTransaction(trxCtx, false, false); err != nil {
+			if err := its.EndTransaction(trxCtx, false, false); err != nil {
 				_ = log.OrtooError(err)
 			}
 		}()
@@ -128,7 +128,7 @@ func (c ManageableDatatype) ExecuteTransactionRemote(transaction []*model.Operat
 		if obtainList {
 			opList = append(opList, op.GetAsJSON())
 		}
-		_, err := c.ExecuteOperationWithTransaction(trxCtx, op, false)
+		_, err := its.ExecuteOperationWithTransaction(trxCtx, op, false)
 		if err != nil {
 			return nil, errors.NewDatatypeError(errors.ErrDatatypeTransaction, err.Error())
 		}

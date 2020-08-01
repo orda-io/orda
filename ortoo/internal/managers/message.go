@@ -31,23 +31,23 @@ func NewMessageManager(ctx *context.OrtooContext, client *model.Client, host str
 	}
 }
 
-func (m *MessageManager) nextSeq() uint32 {
-	currentSeq := m.seq
-	m.seq++
+func (its *MessageManager) nextSeq() uint32 {
+	currentSeq := its.seq
+	its.seq++
 	return currentSeq
 }
 
 // Connect makes connections with Ortoo GRPC and notification servers.
-func (m *MessageManager) Connect() error {
-	conn, err := grpc.Dial(m.host, grpc.WithInsecure())
+func (its *MessageManager) Connect() error {
+	conn, err := grpc.Dial(its.host, grpc.WithInsecure())
 	if err != nil {
 		return errors.NewClientError(errors.ErrClientConnect, err.Error())
 	}
-	m.conn = conn
-	m.serviceClient = model.NewOrtooServiceClient(m.conn)
-	m.ctx.Logger.Info("connect to grpc server")
-	if m.notificationManager != nil {
-		if err := m.notificationManager.Connect(); err != nil {
+	its.conn = conn
+	its.serviceClient = model.NewOrtooServiceClient(its.conn)
+	its.ctx.Logger.Info("connect to grpc server")
+	if its.notificationManager != nil {
+		if err := its.notificationManager.Connect(); err != nil {
 			return err
 		}
 	}
@@ -55,36 +55,37 @@ func (m *MessageManager) Connect() error {
 }
 
 // Close closes connections with Ortoo GRPC and notification servers.
-func (m *MessageManager) Close() error {
-	if err := m.conn.Close(); err != nil {
-		return errors.NewClientError(errors.ErrClientClose, err.Error())
+func (its *MessageManager) Close() error {
+
+	if its.notificationManager != nil {
+		its.notificationManager.Close()
 	}
-	if m.notificationManager != nil {
-		m.notificationManager.Close()
+	if err := its.conn.Close(); err != nil {
+		return errors.NewClientError(errors.ErrClientClose, err.Error())
 	}
 	return nil
 }
 
 // Sync exchanges PUSHPULL_REQUEST and PUSHPULL_RESPONSE
-func (m *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, error) {
-	request := model.NewPushPullRequest(m.nextSeq(), m.client, pppList...)
-	m.ctx.Logger.Infof("send %s", request.ToString())
-	response, err := m.serviceClient.ProcessPushPull(m.ctx, request)
+func (its *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, error) {
+	request := model.NewPushPullRequest(its.nextSeq(), its.client, pppList...)
+	its.ctx.Logger.Infof("SEND %s", request.ToString())
+	response, err := its.serviceClient.ProcessPushPull(its.ctx, request)
 	if err != nil {
 		return nil, log.OrtooErrorf(err, "fail to sync push pull")
 	}
-	m.ctx.Logger.Infof("receive %v", response.ToString())
+	its.ctx.Logger.Infof("RECV %v", response.ToString())
 	return response, nil
 }
 
 // ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
-func (m *MessageManager) ExchangeClientRequestResponse() error {
-	request := model.NewClientRequest(m.nextSeq(), m.client)
-	m.ctx.Logger.Infof("send %s", request.ToString())
-	response, err := m.serviceClient.ProcessClient(m.ctx, request)
+func (its *MessageManager) ExchangeClientRequestResponse() error {
+	request := model.NewClientRequest(its.nextSeq(), its.client)
+	its.ctx.Logger.Infof("SEND %s", request.ToString())
+	response, err := its.serviceClient.ProcessClient(its.ctx, request)
 	if err != nil {
 		return log.OrtooErrorf(err, "fail to exchange clientRequestReply")
 	}
-	m.ctx.Logger.Infof("receive %s", response.ToString())
+	its.ctx.Logger.Infof("RECV %s", response.ToString())
 	return nil
 }

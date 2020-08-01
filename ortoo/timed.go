@@ -6,7 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
-type timedValue interface {
+type timedType interface {
 	getValue() types.JSONValue
 	setValue(v types.JSONValue)
 	getTime() *model.Timestamp
@@ -16,43 +16,42 @@ type timedValue interface {
 	String() string
 }
 
-type timedValueImpl struct {
-	V types.JSONValue
-	T *model.Timestamp
-	P *model.Timestamp
+type timedNode struct {
+	V types.JSONValue  `json:"v"`
+	T *model.Timestamp `json:"t"`
 }
 
-func (its *timedValueImpl) getValue() types.JSONValue {
+func (its *timedNode) getValue() types.JSONValue {
 	return its.V
 }
 
-func (its *timedValueImpl) setValue(v types.JSONValue) {
+func (its *timedNode) setValue(v types.JSONValue) {
 	its.V = v
 }
 
-func (its *timedValueImpl) getTime() *model.Timestamp {
+func (its *timedNode) getTime() *model.Timestamp {
 	return its.T
 }
 
-func (its *timedValueImpl) setTime(ts *model.Timestamp) {
+func (its *timedNode) setTime(ts *model.Timestamp) {
 	its.T = ts
 }
 
 // this is for hash_map
-func (its *timedValueImpl) makeTomb(ts *model.Timestamp) bool {
+func (its *timedNode) makeTomb(ts *model.Timestamp) bool {
 	its.V = nil
 	its.T = ts
 	return true
 }
 
-func (its *timedValueImpl) isTomb() bool {
+func (its *timedNode) isTomb() bool {
 	if its.V == nil {
 		return true
 	}
 	return false
 }
 
-func (its *timedValueImpl) String() string {
+func (its *timedNode) String() string {
 	if its.V == nil {
 		return fmt.Sprintf("Φ|%s", its.T.ToString())
 	}

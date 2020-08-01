@@ -21,7 +21,7 @@ func (its *OrtooIntegrationTestSuite) TestClientServer() {
 		wg.Add(1)
 		client1.CreateIntCounter(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, oldState, newState model.StateOfDatatype) {
-				intCounter := dt.(ortoo.IntCounter)
+				intCounter := dt.(ortoo.Counter)
 				_, _ = intCounter.Increase()
 				_, _ = intCounter.Increase()
 				_, _ = intCounter.Increase()
@@ -45,7 +45,7 @@ func (its *OrtooIntegrationTestSuite) TestClientServer() {
 		wg.Add(1)
 		client2.SubscribeIntCounter(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, oldState, newState model.StateOfDatatype) {
-				intCounter := dt.(ortoo.IntCounter)
+				intCounter := dt.(ortoo.Counter)
 				log.Logger.Infof("%d", intCounter.Get())
 				_, _ = intCounter.IncreaseBy(3)
 				require.NoError(its.T(), client2.Sync())

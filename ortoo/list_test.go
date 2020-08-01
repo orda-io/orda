@@ -25,16 +25,18 @@ func TestList(t *testing.T) {
 		list2 := newList("key2", types.NewCUID(), tw, nil)
 		tw.SetDatatypes(list1.(*list).ManageableDatatype, list2.(*list).ManageableDatatype)
 
+		// list1: x -> y
 		inserted1, _ := list1.InsertMany(0, "x", "y")
 		require.Equal(t, []interface{}{"x", "y"}, inserted1)
 		json1 := marshal(t, list1.GetAsJSON())
-		require.Equal(t, `{"Value":["x","y"]}`, json1)
+		require.Equal(t, `{"List":["x","y"]}`, json1)
 		log.Logger.Infof("%s", json1)
 
+		// list2: a -> b
 		inserted2, _ := list2.InsertMany(0, "a", "b")
 		require.Equal(t, []interface{}{"a", "b"}, inserted2)
 		json2 := marshal(t, list2.GetAsJSON())
-		require.Equal(t, `{"Value":["a","b"]}`, json2)
+		require.Equal(t, `{"List":["a","b"]}`, json2)
 		log.Logger.Infof("%s", json2)
 
 		tw.Sync()
@@ -93,6 +95,18 @@ func TestList(t *testing.T) {
 
 		_, err = list2.DeleteMany(0, 0)
 		require.Error(t, err)
+
+		marshaled, err := json.Marshal(list1.(*list).snapshot)
+		require.NoError(t, err)
+		log.Logger.Infof("%v", string(marshaled))
+		clone := listSnapshot{}
+		err = json.Unmarshal(marshaled, &clone)
+		require.NoError(t, err)
+		marshaled2, err := json.Marshal(&clone)
+		require.NoError(t, err)
+		log.Logger.Infof("%v", string(marshaled2))
+		log.Logger.Infof("%+v", list1.(*list).snapshot.GetAsJSONCompatible())
+		log.Logger.Infof("%+v", clone.GetAsJSONCompatible())
 
 	})
 

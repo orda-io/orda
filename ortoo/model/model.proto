@@ -40,7 +40,7 @@ enum TypeOfOperation {
     DELETE = 2;
     ERROR = 3;
     TRANSACTION = 5;
-    INT_COUNTER_INCREASE = 11;
+    COUNTER_INCREASE = 11;
     HASH_MAP_PUT = 21;
     HASH_MAP_REMOVE = 22;
     LIST_INSERT = 31;
@@ -54,7 +54,7 @@ enum TypeOfOperation {
 }
 
 enum TypeOfDatatype {
-    INT_COUNTER = 0;
+    COUNTER = 0;
     HASH_MAP = 1;
     LIST = 2;
     DOCUMENT = 3;

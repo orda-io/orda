@@ -29,7 +29,7 @@ func newBaseDatatype(key string, t model.TypeOfDatatype, cuid types.CUID) *BaseD
 		TypeOf: t,
 		opID:   model.NewOperationIDWithCUID(cuid),
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
-		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s", duid)[:8]),
+		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s:%s", key, hex.EncodeToString(cuid)[:8])),
 	}
 }
 

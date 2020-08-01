@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	pushPullHeadFormat = "|HEAD:[%s] ID=%d LEN=%d|"
-	clientHeadFormat   = "|HEAD:[%s]|"
+	pushPullHeadFormat = "|(%d)[%s][%d]|"
+	clientHeadFormat   = "|[%s]|"
 )
 
 // NewMessageHeader generates a message header.
@@ -32,7 +32,7 @@ func NewPushPullRequest(seq uint32, client *Client, pushPullPackList ...*PushPul
 // ToString returns customized string
 func (p *PushPullRequest) ToString() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, pushPullHeadFormat, p.Header.ToString(), p.ID, len(p.PushPullPacks))
+	_, _ = fmt.Fprintf(&b, pushPullHeadFormat, p.ID, p.Header.ToString(), len(p.PushPullPacks))
 	for _, ppp := range p.PushPullPacks {
 		b.WriteString(" ")
 		b.WriteString(ppp.ToString())

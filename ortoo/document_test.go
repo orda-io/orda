@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
@@ -22,23 +23,29 @@ func TestJSONSnapshot(t *testing.T) {
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
 		opID1 := model.NewOperationID()
 		jsonObj := newJSONObject(nil, model.OldestTimestamp)
-		jsonObj.put("key1", int64(1234), opID1.Next().GetTimestamp())
-		jsonObj.put("key2", 3.14, opID1.Next().GetTimestamp())
+		jsonObj.put("K1", 1234, opID1.Next().GetTimestamp())
+		jsonObj.put("K2", 3.14, opID1.Next().GetTimestamp())
 
-		je1 := jsonObj.getChildAsJSONElement("key1")
+		je1 := jsonObj.getChildAsJSONElement("K1")
 		log.Logger.Infof("%+v", je1.String())
-		require.Equal(t, int64(1234), je1.getValue())
+		require.Equal(t, float64(1234), je1.getValue())
 
 		require.Equal(t, TypeJSONObject, je1.getParent().getType())
 		parent := je1.getParentAsJSONObject()
 		require.Equal(t, jsonObj, parent)
 		log.Logger.Infof("%+v", parent.String())
 
-		je2 := parent.getChildAsJSONElement("key2")
+		je2 := parent.getChildAsJSONElement("K2")
 		log.Logger.Infof("%+v", je2.String())
 		require.Equal(t, 3.14, je2.getValue())
 
-		log.Logger.Infof("%v", jsonObj.GetAsJSON())
+		log.Logger.Infof("%v", jsonObj.GetAsJSONCompatible())
+
+		m, err := json.Marshal(jsonObj)
+		require.NoError(t, err)
+		unmarshaled := newJSONObject(nil, model.OldestTimestamp)
+		err = json.Unmarshal(m, unmarshaled)
+		require.NoError(t, err)
 	})
 
 	t.Run("Can put nested JSONObject to JSONObject", func(t *testing.T) {
@@ -47,25 +54,25 @@ func TestJSONSnapshot(t *testing.T) {
 
 		jsonObj.put("K1", strt1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
-		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSONCompatible()))
 		k1JSONObj := jsonObj.getChildAsJSONObject("K1")
 		log.Logger.Infof("%v", k1JSONObj)
-		log.Logger.Infof("%v", marshal(t, k1JSONObj.GetAsJSON()))
+		log.Logger.Infof("%v", marshal(t, k1JSONObj.GetAsJSONCompatible()))
 
 		// add struct ptr
 		k1JSONObj.put("K3", &strt1, opID1.Next().GetTimestamp())
-		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSONCompatible()))
 
 		parent := k1JSONObj.getParentAsJSONObject()
 		require.Equal(t, jsonObj, parent)
 
 		jsonObj.put("K2", arr1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
-		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSONCompatible()))
 
 		jsonObj.put("K3", &arr1, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
-		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSONCompatible()))
 
 		// map is put in bundle.
 		mp := make(map[string]interface{})
@@ -73,12 +80,39 @@ func TestJSONSnapshot(t *testing.T) {
 		mp["Y"] = []interface{}{"hi", strt1}
 		jsonObj.put("K4", mp, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj)
-		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSONCompatible()))
 
 		require.Equal(t, "hello", jsonObj.getChildAsJSONObject("K1").getChildAsJSONElement("K1").getValue())
 		// jsonObj.getAsJSONArray("K2").get(1)
 		// require.Equal(t, "world", )
 
+	})
+
+	t.Run("Can marshal and unmarshal snapshots ", func(t *testing.T) {
+		opID1 := model.NewOperationID()
+		jsonObj := newJSONObject(nil, model.OldestTimestamp)
+		jsonObj.put("A1", arr1, opID1.Next().GetTimestamp())
+
+		jsonObj.put("K2", 3.14, opID1.Next().GetTimestamp())
+		jsonObj.put("K3", "willBeDeleted", opID1.Next().GetTimestamp())
+		jsonObj.DeleteCommonInObject(jsonObj.getTime(), "K3", opID1.Next().GetTimestamp())
+
+		// m, err := json.Marshal(jsonObj)
+		// require.NoError(t, err)
+		// log.Logger.Infof("%+v", string(m))
+		// clone := jsonObject{}
+		// err = json.Unmarshal(m, &clone)
+		// require.NoError(t, err)
+
+		// a1 := jsonObj.getChildAsJSONArray("A1")
+		// a1.arrayDeleteLocal(1, 1, opID1.GetTimestamp())
+		// log.Logger.Infof("%v", jsonObj.String())
+		// a1.arrayInsertCommon(0, nil, opID1.Next().GetTimestamp(), strt1)
+		// log.Logger.Infof("%v", jsonObj)
+
+		// unmarshaled := newJSONObject(nil, model.OldestTimestamp)
+		// err = json.Unmarshal(m, unmarshaled)
+		// require.NoError(t, err)
 	})
 
 	t.Run("Can put JSONArray to JSONObject", func(t *testing.T) {
@@ -88,16 +122,17 @@ func TestJSONSnapshot(t *testing.T) {
 		array := []interface{}{1234, 3.14, "hello"}
 		jsonObj.put("K1", array, opID1.Next().GetTimestamp())
 		log.Logger.Infof("%v", jsonObj.String())
-		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSON()))
+		log.Logger.Infof("%v", marshal(t, jsonObj.GetAsJSONCompatible()))
 		arr := jsonObj.getChildAsJSONArray("K1")
+		log.Logger.Infof("%v", arr.String())
 		val1, err := arr.getAsJSONElement(0)
 		require.NoError(t, err)
 		log.Logger.Infof("%v", val1)
-		require.Equal(t, int64(1234), val1.getValue())
+		require.Equal(t, float64(1234), val1.getValue())
 
-		arr.arrayInsertCommon(0, opID1.Next().GetTimestamp(), "hi", "there")
-		log.Logger.Infof("%v", arr.String())
-		log.Logger.Infof("%v", marshal(t, arr.GetAsJSON()))
+		// arr.arrayInsertCommon(0, opID1.Next().GetTimestamp(), "hi", "there")
+		// log.Logger.Infof("%v", arr.String())
+		// log.Logger.Infof("%v", marshal(t, arr.GetAsJSON()))
 
 	})
 }

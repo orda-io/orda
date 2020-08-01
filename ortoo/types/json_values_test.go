@@ -12,15 +12,15 @@ func TestConvertToJSONSupportedType(t *testing.T) {
 	t.Run("Can convert JSON supported types", func(t *testing.T) {
 		i64Max := ConvertToJSONSupportedValue(math.MaxInt64) // 9223372036854775807
 		log.Logger.Infof("%v", reflect.TypeOf(i64Max))
-		require.Equal(t, int64(math.MaxInt64), i64Max)
+		require.Equal(t, float64(math.MaxInt64), i64Max)
 		log.Logger.Infof("[%v vs. %v]", i64Max, math.MaxInt64)
 
 		i64Min := ConvertToJSONSupportedValue(math.MinInt64) // -9223372036854775808
-		require.Equal(t, int64(math.MinInt64), i64Min)
+		require.Equal(t, float64(math.MinInt64), i64Min)
 		log.Logger.Infof("[%v vs. %v]", i64Min, math.MinInt64)
 
 		u64Max := ConvertToJSONSupportedValue(uint64(math.MaxUint64)) // 18446744073709551615
-		require.Equal(t, int64(-1), u64Max)
+		require.Equal(t, float64(math.MaxUint64), u64Max)
 
 		log.Logger.Infof("%v %v", reflect.TypeOf(u64Max), u64Max)
 

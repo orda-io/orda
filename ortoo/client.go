@@ -18,9 +18,9 @@ type Client interface {
 	IsConnected() bool
 	CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype
 
-	CreateIntCounter(key string, handlers *Handlers) IntCounter
-	SubscribeOrCreateIntCounter(key string, handlers *Handlers) IntCounter
-	SubscribeIntCounter(key string, handlers *Handlers) IntCounter
+	CreateIntCounter(key string, handlers *Handlers) Counter
+	SubscribeOrCreateIntCounter(key string, handlers *Handlers) Counter
+	SubscribeIntCounter(key string, handlers *Handlers) Counter
 
 	CreateHashMap(key string, handlers *Handlers) HashMap
 	SubscribeOrCreateHashMap(key string, handlers *Handlers) HashMap
@@ -90,7 +90,7 @@ func (c *clientImpl) IsConnected() bool {
 
 func (c *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype {
 	switch typeOf {
-	case model.TypeOfDatatype_INT_COUNTER:
+	case model.TypeOfDatatype_COUNTER:
 		return c.CreateIntCounter(key, handlers).(Datatype)
 	case model.TypeOfDatatype_HASH_MAP:
 		return c.CreateHashMap(key, handlers).(Datatype)
@@ -189,24 +189,24 @@ func (c *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfDat
 	return nil
 }
 
-// methods for IntCounter
+// methods for Counter
 
-func (c *clientImpl) CreateIntCounter(key string, handlers *Handlers) IntCounter {
+func (c *clientImpl) CreateIntCounter(key string, handlers *Handlers) Counter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (c *clientImpl) SubscribeIntCounter(key string, handlers *Handlers) IntCounter {
+func (c *clientImpl) SubscribeIntCounter(key string, handlers *Handlers) Counter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (c *clientImpl) SubscribeOrCreateIntCounter(key string, handlers *Handlers) IntCounter {
+func (c *clientImpl) SubscribeOrCreateIntCounter(key string, handlers *Handlers) Counter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype, handlers *Handlers) IntCounter {
-	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_INT_COUNTER, state, handlers)
+func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype, handlers *Handlers) Counter {
+	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_COUNTER, state, handlers)
 	if datatype != nil {
-		return datatype.(IntCounter)
+		return datatype.(Counter)
 	}
 	return nil
 }
@@ -235,8 +235,8 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 	var impl interface{}
 
 	switch typeOf {
-	case model.TypeOfDatatype_INT_COUNTER:
-		impl = newIntCounter(key, c.model.CUID, c.datatypeManager, handler)
+	case model.TypeOfDatatype_COUNTER:
+		impl = newCounter(key, c.model.CUID, c.datatypeManager, handler)
 	case model.TypeOfDatatype_HASH_MAP:
 		impl = newHashMap(key, c.model.CUID, c.datatypeManager, handler)
 	case model.TypeOfDatatype_LIST:

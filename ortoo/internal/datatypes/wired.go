@@ -169,6 +169,10 @@ func (w *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPu
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE:
 		if w.state == model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE && ppp.GetPushPullPackOption().HasSubscribeBit() {
 			w.buffer = make([]*model.Operation, 0, constants.OperationBufferSize)
+			newOpID := model.NewOperationIDWithCUID(w.opID.CUID)
+			newOpID.Lamport = 1 // Because of SnapshotOperation
+			w.SetOpID(newOpID)
+			log.Logger.Infof("reset buffer and opID:%s because DUE_TO_SUBSCRIBE_CREATE = > SUBSCRIBE", w.opID.ToString())
 		}
 
 		w.state = model.StateOfDatatype_SUBSCRIBED
@@ -229,7 +233,7 @@ func (w *WiredDatatype) getModelOperations(cseq uint64) []*model.Operation {
 	op := w.buffer[0]
 	startCseq := op.ID.GetSeq()
 	var start = int(cseq - startCseq)
-	if len(w.buffer) > start {
+	if start >= 0 && len(w.buffer) > start {
 		return w.buffer[start:]
 	}
 	return []*model.Operation{}

@@ -97,6 +97,7 @@ func (m *Manager) UpdateSnapshot() error {
 		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 	snapb, err := json.Marshal(snap)
+	log.Logger.Infof("snapB: %v", string(snapb))
 	if err != nil {
 		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
@@ -104,7 +105,7 @@ func (m *Manager) UpdateSnapshot() error {
 		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}
 
-	data := snap.GetAsJSON()
+	data := snap.GetAsJSONCompatible()
 	if err := m.mongo.InsertRealSnapshot(m.ctx, m.collectionDoc.Name, m.datatypeDoc.Key, data, sseq); err != nil {
 		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 	}

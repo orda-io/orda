@@ -64,9 +64,9 @@ func (its *list) DoTransaction(tag string, txnFunc func(list ListInTxn) error) e
 
 func (its *list) GetAsJSON() interface{} {
 	return struct {
-		Value []interface{}
+		List []interface{}
 	}{
-		Value: its.snapshot.GetAsJSON().([]interface{}),
+		List: its.snapshot.GetAsJSONCompatible().([]interface{}),
 	}
 }
 
@@ -192,7 +192,7 @@ func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, error) {
 	return its.snapshot.getMany(pos, numOfNodes)
 }
 
-// Delete deletes one node at index pos.
+// Delete deletes one orderedType at index pos.
 func (its *list) Delete(pos int) (interface{}, error) {
 	ret, err := its.DeleteMany(pos, 1)
 	return ret[0], err
@@ -201,7 +201,7 @@ func (its *list) Delete(pos int) (interface{}, error) {
 // DeleteMany deletes the nodes at index pos in sequence.
 func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
 	if numOfNode < 1 {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one node should be deleted")
+		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one orderedType should be deleted")
 	}
 	if err := its.snapshot.validateRange(pos, numOfNode); err != nil {
 		return nil, err
@@ -218,62 +218,14 @@ func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
 //  listSnapshot
 // ////////////////////////////////////////////////////////////////
 
-type node struct {
-	timedValue
-	P    *model.Timestamp
-	next *node
-	prev *node
-}
-
-func (its *node) hash() string {
-	return its.getTime().Hash()
-}
-
-// override makeTomb() for list
-func (its *node) makeTomb(ts *model.Timestamp) bool {
-	its.setValue(nil)
-	its.P = ts
-	return true
-}
-
-func (its *node) isTomb() bool {
-	return its.getValue() == nil && its.P != nil
-}
-
-func (its *node) String() string {
-	var sb strings.Builder
-	sb.WriteString(its.getTime().ToString())
-	if its.P != nil {
-		sb.WriteString(its.P.ToString())
-	}
-	if its.getValue() == nil {
-		sb.WriteString(":DELETED")
-	} else {
-		_, _ = fmt.Fprintf(&sb, ":%v", its.getValue())
-	}
-
-	return sb.String()
-}
-
-func (its *node) getNextLiveNode() *node {
-	ret := its.next
-	for ret != nil {
-		if ret.getValue() != nil {
-			return ret
-		}
-		ret = ret.next
-	}
-	return nil
-}
-
 type listSnapshot struct {
-	head *node
+	head orderedType
 	size int
-	Map  map[string]*node
+	Map  map[string]orderedType
 }
 
 func (its *listSnapshot) CloneSnapshot() iface.Snapshot {
-	var cloneMap = make(map[string]*node)
+	var cloneMap = make(map[string]orderedType)
 	for k, v := range its.Map {
 		cloneMap[k] = v
 	}
@@ -285,16 +237,18 @@ func (its *listSnapshot) CloneSnapshot() iface.Snapshot {
 }
 
 func newListSnapshot() *listSnapshot {
-	head := &node{
-		timedValue: &timedValueImpl{
-			V: nil,
-			T: model.OldestTimestamp,
+	head := &orderedNode{
+		precededType: &precededNode{
+			timedType: &timedNode{
+				V: nil,
+				T: model.OldestTimestamp,
+			},
+			P: nil,
 		},
-		P:    nil,
 		prev: nil,
 		next: nil,
 	}
-	m := make(map[string]*node)
+	m := make(map[string]orderedType)
 	m[head.hash()] = head
 	return &listSnapshot{
 		head: head,
@@ -304,31 +258,27 @@ func newListSnapshot() *listSnapshot {
 }
 
 func (its *listSnapshot) insertRemote(pos *model.Timestamp, ts *model.Timestamp, values ...interface{}) (interface{}, error) {
-	var tvs []timedValue
+	var pts []precededType
 	for _, v := range values {
-		tvs = append(tvs, &timedValueImpl{
-			V: v,
-			T: ts.NextDeliminator(),
-		})
+		pts = append(pts, newPrecededNode(v, ts.NextDeliminator(), nil))
 	}
-	return its.insertRemoteWithTimedValue(pos, ts, tvs...)
+	return its.insertRemoteWithPrecededTypes(pos, ts, pts...)
 }
 
-func (its *listSnapshot) insertRemoteWithTimedValue(pos *model.Timestamp, ts *model.Timestamp, tvs ...timedValue) (interface{}, error) {
+func (its *listSnapshot) insertRemoteWithPrecededTypes(pos *model.Timestamp, ts *model.Timestamp, pts ...precededType) (interface{}, error) {
 	if target, ok := its.Map[pos.Hash()]; ok {
-		for _, val := range tvs {
-			nextTarget := target.next
+		for _, pt := range pts {
+			nextTarget := target.getNext()
 			for nextTarget != nil && nextTarget.getTime().Compare(ts) > 0 {
-				target = target.next
-				nextTarget = nextTarget.next
+				target = target.getNext()
+				nextTarget = nextTarget.getNext()
 			}
-			newNode := &node{
-				timedValue: val,
-				P:          nil,
-				next:       target.next,
-				prev:       target,
+			newNode := &orderedNode{
+				precededType: pt,
+				prev:         target,
+				next:         target.getNext(),
 			}
-			target.next = newNode
+			target.setNext(newNode)
 			its.Map[newNode.hash()] = newNode
 			its.size++
 			target = newNode
@@ -344,32 +294,29 @@ func (its *listSnapshot) appendLocal(ts *model.Timestamp, values ...interface{})
 }
 
 func (its *listSnapshot) insertLocal(pos int, ts *model.Timestamp, values ...interface{}) (*model.Timestamp, []interface{}, error) {
-	var tvs []timedValue
+	var pts []precededType
 	for _, v := range values {
-		tvs = append(tvs, &timedValueImpl{
-			V: v,
-			T: ts.NextDeliminator(),
-		})
+		pts = append(pts, newPrecededNode(v, ts.NextDeliminator(), nil))
 	}
-	return its.insertLocalWithTimedValue(pos, tvs...)
+	return its.insertLocalWithPrecededTypes(pos, pts...)
 }
 
-func (its *listSnapshot) insertLocalWithTimedValue(pos int, tvs ...timedValue) (*model.Timestamp, []interface{}, error) {
+func (its *listSnapshot) insertLocalWithPrecededTypes(pos int, pts ...precededType) (*model.Timestamp, []interface{}, error) {
 	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
 		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
 	var inserted []interface{}
 	target := its.findNthTarget(pos)
 	targetTs := target.getTime()
-	for _, v := range tvs {
-		newNode := &node{
-			timedValue: v,
-			next:       target.next,
-			prev:       target,
+	for _, pt := range pts {
+		newNode := &orderedNode{
+			precededType: pt,
+			prev:         target,
+			next:         target.getNext(),
 		}
-		target.next = newNode
+		target.setNext(newNode)
 		its.Map[newNode.hash()] = newNode
-		inserted = append(inserted, v.getValue())
+		inserted = append(inserted, pt.getValue())
 		its.size++
 		target = newNode
 	}
@@ -386,9 +333,9 @@ func (its *listSnapshot) updateLocal(pos int, ts *model.Timestamp, values []inte
 	for _, v := range values {
 		updatedValues = append(updatedValues, target.getValue())
 		updatedTargets = append(updatedTargets, target.getTime())
-		target.timedValue.setValue(v)
-		target.P = ts
-		target = target.getNextLiveNode()
+		target.setValue(v)
+		target.setPrecedence(ts)
+		target = target.getNextLive()
 	}
 	return updatedTargets, updatedValues, nil
 }
@@ -399,9 +346,9 @@ func (its *listSnapshot) updateRemote(targets []*model.Timestamp, values []inter
 			if node.isTomb() {
 				continue
 			}
-			if node.P == nil || node.P.Compare(ts) < 0 {
+			if node.getPrecedence() == nil || node.getPrecedence().Compare(ts) < 0 {
 				node.setValue(values[i])
-				node.P = ts
+				node.setPrecedence(ts)
 			}
 		}
 	}
@@ -415,8 +362,8 @@ func (its *listSnapshot) deleteRemote(targets []*model.Timestamp, ts *model.Time
 				node.makeTomb(ts)
 				its.size--
 			} else { // concurrent deletes
-				if node.P.Compare(ts) < 0 {
-					node.P = ts
+				if node.getPrecedence().Compare(ts) < 0 {
+					node.setPrecedence(ts)
 				}
 			}
 		} else {
@@ -444,31 +391,31 @@ func (its *listSnapshot) deleteLocal(pos, numOfNodes int, ts *model.Timestamp) (
 	}
 	var deletedTargets []*model.Timestamp
 	var deletedValues []interface{}
-	target := its.findNthTarget(pos + 1) // no head, but live node
+	target := its.findNthTarget(pos + 1) // no head, but live orderedType
 	for i := 0; i < numOfNodes; i++ {
 		deletedValues = append(deletedValues, target.getValue())
 		deletedTargets = append(deletedTargets, target.getTime())
 		target.makeTomb(ts)
 		its.size--
-		target = target.getNextLiveNode()
+		target = target.getNextLive()
 	}
 	return deletedTargets, deletedValues, nil
 }
 
-// for example: h t1 n1 n2 t2 t3 n3 t4 (h:head, n:node, t: tombstone) size==3
-// pos : 0 => h : when tombstones follows, the node before them is returned.
+// for example: h t1 n1 n2 t2 t3 n3 t4 (h:head, n:orderedType, t: tombstone) size==3
+// pos : 0 => h : when tombstones follows, the orderedType before them is returned.
 // pos : 1 => n1
 // pos : 2 => n2
 // pos : 3 => n3
-func (its *listSnapshot) findNthTarget(pos int) *node {
+func (its *listSnapshot) findNthTarget(pos int) orderedType {
 	ret := its.head
 	for i := 1; i <= pos; {
-		ret = ret.next
+		ret = ret.getNext()
 		if !ret.isTomb() { // not tombstone
 			i++
 		} else { // if tombstone
-			for ret.next != nil && ret.next.isTomb() { // while next is tombstone
-				ret = ret.next
+			for ret.getNext() != nil && ret.getNext().isTomb() { // while next is tombstone
+				ret = ret.getNext()
 			}
 		}
 	}
@@ -483,12 +430,12 @@ func (its *listSnapshot) get(pos int) (interface{}, error) {
 	return tv.getValue(), nil
 }
 
-func (its *listSnapshot) getTimedValue(pos int) (timedValue, error) {
+func (its *listSnapshot) getTimedValue(pos int) (timedType, error) {
 	// size == 3, pos can be 0, 1, 2
 	if its.size <= pos {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
-	return its.findNthTarget(pos + 1).timedValue, nil
+	return its.findNthTarget(pos + 1).(timedType), nil
 }
 
 func (its *listSnapshot) getMany(pos int, numOfNodes int) ([]interface{}, error) {
@@ -506,10 +453,10 @@ func (its *listSnapshot) getMany(pos int, numOfNodes int) ([]interface{}, error)
 func (its *listSnapshot) String() string {
 	sb := strings.Builder{}
 	_, _ = fmt.Fprintf(&sb, "(SIZE:%d) HEAD =>", its.size)
-	n := its.head.next
+	n := its.head.getNext()
 	for n != nil {
 		sb.WriteString(n.String())
-		n = n.next
+		n = n.getNext()
 		if n != nil {
 			sb.WriteString(" => ")
 		}
@@ -517,16 +464,107 @@ func (its *listSnapshot) String() string {
 	return sb.String()
 }
 
-func (its *listSnapshot) GetAsJSON() interface{} {
+func (its *listSnapshot) GetAsJSONCompatible() interface{} {
 	var l []interface{}
-	n := its.head.getNextLiveNode()
+	n := its.head.getNextLive()
 	for n != nil {
-		l = append(l, n.timedValue.getValue())
-		n = n.getNextLiveNode()
+		l = append(l, n.getValue())
+		n = n.getNextLive()
 	}
 	return l
 }
 
 func (its *listSnapshot) Size() int {
 	return its.size
+}
+
+// ////////////////////////////////////////////////////
+// For marshaling
+// ////////////////////////////////////////////////////
+
+type nodeForMarshal struct {
+	V    types.JSONValue
+	T    *model.Timestamp
+	P    *model.Timestamp
+	Prev *model.Timestamp
+	Next *model.Timestamp
+}
+
+type listSnapshotForMarshal struct {
+	Nodes []*nodeForMarshal
+	Size  int
+}
+
+func (its *listSnapshot) MarshalJSON() ([]byte, error) {
+	forMarshal := listSnapshotForMarshal{
+		Size: its.size,
+	}
+	n := its.head
+	for n != nil {
+		forMarshal.Nodes = append(forMarshal.Nodes, n.toNodeForMarshal())
+		n = n.getNext()
+	}
+	return json.Marshal(forMarshal)
+}
+
+func (its *listSnapshot) UnmarshalJSON(bytes []byte) error {
+	forUnmarshal := listSnapshotForMarshal{}
+	err := json.Unmarshal(bytes, &forUnmarshal)
+	if err != nil {
+		return err
+	}
+	nodeMap := make(map[string]orderedType)
+
+	for _, n := range forUnmarshal.Nodes {
+		node := n.toNode()
+		nodeMap[node.getTime().Hash()] = node
+	}
+	for _, n := range forUnmarshal.Nodes {
+		node := nodeMap[n.T.Hash()]
+		if n.Prev != nil {
+			prevNode := nodeMap[n.Prev.Hash()]
+			node.setPrev(prevNode)
+		}
+		if n.Next != nil {
+			nextNode := nodeMap[n.Next.Hash()]
+			node.setNext(nextNode)
+		}
+	}
+	its.Map = nodeMap
+	its.head = nodeMap[model.OldestTimestamp.Hash()]
+	its.size = forUnmarshal.Size
+	return nil
+}
+
+func (its *nodeForMarshal) toNode() orderedType {
+	return &orderedNode{
+		precededType: newPrecededNode(its.V, its.T, its.P),
+		next:         nil,
+		prev:         nil,
+	}
+}
+
+func (its *orderedNode) toNodeForMarshal() *nodeForMarshal {
+	var prev, next *model.Timestamp
+	if its.prev != nil {
+		prev = its.prev.getTime()
+	}
+	if its.next != nil {
+		next = its.next.getTime()
+	}
+	return &nodeForMarshal{
+		V:    its.getValue(),
+		T:    its.getTime(),
+		P:    its.getPrecedence(),
+		Prev: prev,
+		Next: next,
+	}
+}
+
+func (its *orderedNode) UnmarshalJSON(bytes []byte) error {
+	panic("not supported")
+}
+
+func (its *orderedNode) MarshalJSON() ([]byte, error) {
+	return json.Marshal(its.toNodeForMarshal())
 }

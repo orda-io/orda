@@ -2,7 +2,6 @@ package ortoo
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
@@ -11,10 +10,6 @@ import (
 	operations "github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/ortoo/types"
 	"strings"
-)
-
-var (
-	noOp = fmt.Errorf("noOp")
 )
 
 // HashMap is an Ortoo datatype which provides hash map interfaces.
@@ -101,7 +96,7 @@ func (its *hashMap) SetSnapshot(snapshot iface.Snapshot) {
 }
 
 func (its *hashMap) GetAsJSON() interface{} {
-	return its.snapshot.GetAsJSON()
+	return its.snapshot.GetAsJSONCompatible()
 }
 
 func (its *hashMap) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
@@ -116,8 +111,13 @@ func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
 		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
 	}
-	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
+
+	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
 		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+	}
+
+	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
+
 	}
 	return nil
 }
@@ -156,19 +156,36 @@ func (its *hashMap) Size() int {
 // ////////////////////////////////////////////////////////////////
 
 type hashMapSnapshot struct {
-	Map  map[string]timedValue
-	Size int
+	Map  map[string]timedType `json:"map"`
+	Size int                  `json:"size"`
+}
+
+func (its *hashMapSnapshot) UnmarshalJSON(bytes []byte) error {
+	var temp = struct {
+		Map  map[string]*timedNode `json:"map"`
+		Size int                   `json:"size"`
+	}{}
+	err := json.Unmarshal(bytes, &temp)
+	if err != nil {
+		return log.OrtooError(err)
+	}
+	its.Map = make(map[string]timedType)
+	for k, v := range temp.Map {
+		its.Map[k] = v
+	}
+	its.Size = temp.Size
+	return nil
 }
 
 func newHashMapSnapshot() *hashMapSnapshot {
 	return &hashMapSnapshot{
-		Map:  make(map[string]timedValue),
+		Map:  make(map[string]timedType),
 		Size: 0,
 	}
 }
 
 func (its *hashMapSnapshot) CloneSnapshot() iface.Snapshot {
-	var cloneMap = make(map[string]timedValue)
+	var cloneMap = make(map[string]timedType)
 	for k, v := range its.Map {
 		cloneMap[k] = v
 	}
@@ -182,14 +199,17 @@ func (its *hashMapSnapshot) get(key string) interface{} {
 }
 
 func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
-	removed, _ := its.putCommonWithTimedValue(key, &timedValueImpl{
+	removed, _ := its.putCommonWithTimedValue(key, &timedNode{
 		V: value,
 		T: ts,
 	})
-	return removed, nil
+	if removed != nil {
+		return removed.getValue(), nil
+	}
+	return nil, nil
 }
 
-func (its *hashMapSnapshot) putCommonWithTimedValue(key string, tv timedValue) (removed timedValue, put timedValue) {
+func (its *hashMapSnapshot) putCommonWithTimedValue(key string, tv timedType) (removed timedType, put timedType) {
 	removed, ok := its.Map[key]
 	if !ok { // empty
 		its.Map[key] = tv
@@ -207,7 +227,7 @@ func (its *hashMapSnapshot) putCommonWithTimedValue(key string, tv timedValue) (
 	return tv, removed
 }
 
-func (its *hashMapSnapshot) GetAsJSON() interface{} {
+func (its *hashMapSnapshot) GetAsJSONCompatible() interface{} {
 	m := make(map[string]interface{})
 	for k, v := range its.Map {
 		if v.getValue() != nil {

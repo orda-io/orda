@@ -23,6 +23,18 @@ func (its *OrtooIntegrationTestSuite) TestDocument() {
 	//
 	// var arr1 = []interface{}{"world", 1234, 3.14}
 
+	var json1 = struct {
+		K1_1 struct {
+			K1_1_1 string
+		}
+	}{
+		K1_1: struct {
+			K1_1_1 string
+		}{
+			K1_1_1: "E1_1_1",
+		},
+	}
+
 	handler := ortoo.NewHandlers(
 		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 
@@ -49,16 +61,27 @@ func (its *OrtooIntegrationTestSuite) TestDocument() {
 		}()
 
 		doc1 := client1.SubscribeOrCreateDocument(key+"1", handler)
+		_, _ = doc1.PutToObject("K1", json1)
 		require.NoError(its.T(), client1.Sync())
 		doc2 := client2.SubscribeOrCreateDocument(key+"1", handler)
 		require.NoError(its.T(), client2.Sync())
 
-		doc1.PutToObject("K1", "hello")
-		// doc2.PutToObject("K1", "world")
-		require.NoError(its.T(), client1.Sync())
-		require.NoError(its.T(), client2.Sync())
 		log.Logger.Infof("DOC1:%v", doc1.GetAsJSON())
 		log.Logger.Infof("DOC2:%v", doc2.GetAsJSON())
+		require.Equal(its.T(), doc1.GetAsJSON(), doc2.GetAsJSON())
+
+		_, _ = doc1.PutToObject("K1", "hello")
+		_, _ = doc2.PutToObject("K1", "world")
+		log.Logger.Infof("sync1")
+		require.NoError(its.T(), client1.Sync())
+
+		// log.Logger.Infof("sync2")
+		// require.NoError(its.T(), client2.Sync())
+		// log.Logger.Infof("sync3")
+		// require.NoError(its.T(), client1.Sync())
+		// log.Logger.Infof("DOC1:%v", doc1.GetAsJSON())
+		// log.Logger.Infof("DOC2:%v", doc2.GetAsJSON())
+		// require.Equal(its.T(), doc1.GetAsJSON(), doc2.GetAsJSON())
 	})
 
 	// its.Run("Can update snapshot for document", func() {

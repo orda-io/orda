@@ -39,14 +39,14 @@ func (its *IncreaseOperation) ExecuteRemote(datatype iface.Datatype) (interface{
 func (its *IncreaseOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
-		OpType: model.TypeOfOperation_INT_COUNTER_INCREASE,
+		OpType: model.TypeOfOperation_COUNTER_INCREASE,
 		Json:   marshalContent(its.C),
 	}
 }
 
 // GetType returns the type of operation.
 func (its *IncreaseOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_INT_COUNTER_INCREASE
+	return model.TypeOfOperation_COUNTER_INCREASE
 }
 
 func (its *IncreaseOperation) String() string {
@@ -61,7 +61,7 @@ func (its *IncreaseOperation) GetAsJSON() interface{} {
 		increaseContent
 	}{
 		ID:              its.baseOperation.GetAsJSON(),
-		Type:            model.TypeOfOperation_INT_COUNTER_INCREASE.String(),
+		Type:            model.TypeOfOperation_COUNTER_INCREASE.String(),
 		increaseContent: its.C,
 	}
 }

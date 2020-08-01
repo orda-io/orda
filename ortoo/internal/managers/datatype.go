@@ -35,6 +35,7 @@ func (its *DatatypeManager) ReceiveNotification(topic string, notification model
 	}
 	splitTopic := strings.Split(topic, "/")
 	datatypeKey := splitTopic[1]
+
 	if err := its.SyncIfNeeded(datatypeKey, notification.DUID, notification.Sseq); err != nil {
 		_ = log.OrtooError(err)
 	}

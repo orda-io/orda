@@ -31,7 +31,7 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
-	case model.TypeOfOperation_INT_COUNTER_INCREASE:
+	case model.TypeOfOperation_COUNTER_INCREASE:
 		var c increaseContent
 		unmarshalContent(op.Json, &c)
 		return &IncreaseOperation{
