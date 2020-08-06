@@ -41,6 +41,8 @@ func (its *Timestamp) ToString() string {
 	return b.String()
 }
 
+// Hash returns the string hash of timestamp.
+// DON'T change this because protocol can be broken : TODO: this can be improved.
 func (its *Timestamp) Hash() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "%d%d%s%d", its.Era, its.Lamport, hex.EncodeToString(its.CUID), its.Delimiter)

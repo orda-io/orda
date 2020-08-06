@@ -16,16 +16,24 @@ enum SyncType {
 }
 
 message Timestamp {
+    // @inject_tag: json:"e,omitempty"
     uint32 era = 1;
+    // @inject_tag: json:"l,omitempty"
     uint64 lamport = 2;
+    // @inject_tag: json:"c,omitempty"
     bytes CUID = 3;
+    // @inject_tag: json:"d,omitempty"
     uint32 delimiter = 4;
 }
 
 message OperationID {
+    // @inject_tag: json:"e,omitempty"
     uint32 era = 1;
+    // @inject_tag: json:"l,omitempty"
     uint64 lamport = 2;
+    // @inject_tag: json:"c,omitempty"
     bytes CUID = 3;
+    // @inject_tag: json:"s,omitempty"
     uint64 seq = 4;
 }
 
@@ -81,10 +89,10 @@ message PushPullPack {
 }
 
 message CheckPoint {
-    // @inject_tag: bson:"s"
-    uint64 sseq = 1 [json_name = "s"];
-    // @inject_tag: bson:"c"
-    uint64 cseq = 2 [json_name = "c"];
+    // @inject_tag: bson:"s",json:"s"
+    uint64 sseq = 1;
+    // @inject_tag: bson:"c",json:"c"
+    uint64 cseq = 2;
 }
 
 message NotificationPushPull {

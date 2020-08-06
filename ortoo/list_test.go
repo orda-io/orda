@@ -137,5 +137,4 @@ func TestList(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, []interface{}{"a", "b"}, gets2)
 	})
-
 }

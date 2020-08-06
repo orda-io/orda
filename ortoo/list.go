@@ -237,17 +237,7 @@ func (its *listSnapshot) CloneSnapshot() iface.Snapshot {
 }
 
 func newListSnapshot() *listSnapshot {
-	head := &orderedNode{
-		precededType: &precededNode{
-			timedType: &timedNode{
-				V: nil,
-				T: model.OldestTimestamp,
-			},
-			P: nil,
-		},
-		prev: nil,
-		next: nil,
-	}
+	head := newHead()
 	m := make(map[string]orderedType)
 	m[head.hash()] = head
 	return &listSnapshot{
@@ -482,61 +472,51 @@ func (its *listSnapshot) Size() int {
 // For marshaling
 // ////////////////////////////////////////////////////
 
-type nodeForMarshal struct {
-	V    types.JSONValue
-	T    *model.Timestamp
-	P    *model.Timestamp
-	Prev *model.Timestamp
-	Next *model.Timestamp
+type marshaledNode struct {
+	V types.JSONValue
+	T *model.Timestamp
+	P *model.Timestamp
 }
 
-type listSnapshotForMarshal struct {
-	Nodes []*nodeForMarshal
+type marshaledList struct {
+	Nodes []*marshaledNode
 	Size  int
 }
 
 func (its *listSnapshot) MarshalJSON() ([]byte, error) {
-	forMarshal := listSnapshotForMarshal{
+	forMarshal := marshaledList{
 		Size: its.size,
 	}
-	n := its.head
+	n := its.head.getNext()
 	for n != nil {
-		forMarshal.Nodes = append(forMarshal.Nodes, n.toNodeForMarshal())
+		forMarshal.Nodes = append(forMarshal.Nodes, n.marshal())
 		n = n.getNext()
 	}
 	return json.Marshal(forMarshal)
 }
 
 func (its *listSnapshot) UnmarshalJSON(bytes []byte) error {
-	forUnmarshal := listSnapshotForMarshal{}
+	forUnmarshal := marshaledList{}
 	err := json.Unmarshal(bytes, &forUnmarshal)
 	if err != nil {
 		return err
 	}
-	nodeMap := make(map[string]orderedType)
-
-	for _, n := range forUnmarshal.Nodes {
-		node := n.toNode()
-		nodeMap[node.getTime().Hash()] = node
-	}
-	for _, n := range forUnmarshal.Nodes {
-		node := nodeMap[n.T.Hash()]
-		if n.Prev != nil {
-			prevNode := nodeMap[n.Prev.Hash()]
-			node.setPrev(prevNode)
-		}
-		if n.Next != nil {
-			nextNode := nodeMap[n.Next.Hash()]
-			node.setNext(nextNode)
-		}
-	}
-	its.Map = nodeMap
-	its.head = nodeMap[model.OldestTimestamp.Hash()]
+	its.head = newHead()
 	its.size = forUnmarshal.Size
+	its.Map = make(map[string]orderedType)
+	its.Map[its.head.hash()] = its.head
+
+	prev := its.head
+	for _, n := range forUnmarshal.Nodes {
+		node := n.unmarshalAsNode()
+		prev.setNext(node)
+		node.setPrev(prev)
+		prev = node
+	}
 	return nil
 }
 
-func (its *nodeForMarshal) toNode() orderedType {
+func (its *marshaledNode) unmarshalAsNode() orderedType {
 	return &orderedNode{
 		precededType: newPrecededNode(its.V, its.T, its.P),
 		next:         nil,
@@ -544,20 +524,11 @@ func (its *nodeForMarshal) toNode() orderedType {
 	}
 }
 
-func (its *orderedNode) toNodeForMarshal() *nodeForMarshal {
-	var prev, next *model.Timestamp
-	if its.prev != nil {
-		prev = its.prev.getTime()
-	}
-	if its.next != nil {
-		next = its.next.getTime()
-	}
-	return &nodeForMarshal{
-		V:    its.getValue(),
-		T:    its.getTime(),
-		P:    its.getPrecedence(),
-		Prev: prev,
-		Next: next,
+func (its *orderedNode) marshal() *marshaledNode {
+	return &marshaledNode{
+		V: its.getValue(),
+		T: its.getTime(),
+		P: its.getPrecedence(),
 	}
 }
 
@@ -566,5 +537,5 @@ func (its *orderedNode) UnmarshalJSON(bytes []byte) error {
 }
 
 func (its *orderedNode) MarshalJSON() ([]byte, error) {
-	return json.Marshal(its.toNodeForMarshal())
+	return json.Marshal(its.marshal())
 }

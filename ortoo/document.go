@@ -184,7 +184,6 @@ func (its *document) GetFromArray(pos int) (Document, error) {
 			child := c.(jsonType)
 			return its.getChildDocument(child), nil
 		}
-
 	}
 	return nil, errors.NewDatatypeError(errors.ErrDatatypeInvalidParent)
 }
@@ -295,7 +294,7 @@ func newJSONElement(parent jsonType, value interface{}, ts *model.Timestamp) *js
 	return &jsonElement{
 		jsonType: &jsonPrimitive{
 			parent: parent,
-			root:   parent.getRoot(),
+			common: parent.getRoot(),
 			K:      ts,
 			P:      ts,
 		},
@@ -338,19 +337,19 @@ type jsonObject struct {
 }
 
 func newJSONObject(parent jsonType, ts *model.Timestamp) *jsonObject {
-	var root *jsonRoot
+	var root *jsonCommon
 	if parent == nil {
-		root = &jsonRoot{
+		root = &jsonCommon{
+			root:     nil,
 			nodeMap:  make(map[string]jsonType),
 			cemetery: make(map[string]jsonType),
-			root:     nil,
 		}
 	} else {
 		root = parent.getRoot()
 	}
 	obj := &jsonObject{
 		jsonType: &jsonPrimitive{
-			root:   root,
+			common: root,
 			parent: parent,
 			K:      ts,
 			P:      ts,
@@ -360,17 +359,6 @@ func newJSONObject(parent jsonType, ts *model.Timestamp) *jsonObject {
 	obj.jsonType.setRoot(obj)
 	return obj
 }
-
-// func (its *jsonObject) Marshal() error {
-// 	// m := make(map[string]interface{})
-// 	// m["nodeMap"] = its.getRoot().nodeMap
-// 	j, err := json.Marshal(its.hashMapSnapshot)
-// 	if err != nil {
-// 		return log.OrtooError(err)
-// 	}
-// 	log.Logger.Infof("%+v", string(j))
-// 	return nil
-// }
 
 func (its *jsonObject) CloneSnapshot() iface.Snapshot {
 	// TODO: implement CloneSnapshot()
@@ -560,7 +548,7 @@ func newJSONArray(parent jsonType, ts *model.Timestamp) *jsonArray {
 	return &jsonArray{
 		jsonType: &jsonPrimitive{
 			parent: parent,
-			root:   parent.getRoot(),
+			common: parent.getRoot(),
 			K:      ts,
 			P:      ts,
 		},

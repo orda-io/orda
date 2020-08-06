@@ -29,33 +29,39 @@ const (
 type jsonType interface {
 	precededType
 	getType() TypeOfJSON
-	getRoot() *jsonRoot
+	getRoot() *jsonCommon
 	setRoot(r *jsonObject)
 	getParent() jsonType
+	setParent(j jsonType)
 	getParentAsJSONObject() *jsonObject
 	findJSONArray(ts *model.Timestamp) (j *jsonArray, ok bool)
 	findJSONObject(ts *model.Timestamp) (j *jsonObject, ok bool)
 	findJSONElement(ts *model.Timestamp) (j *jsonElement, ok bool)
 	findJSONPrimitive(ts *model.Timestamp) (j jsonType, ok bool)
-	addToNodeMap(primitive jsonType)
-	addToCemetery(primitive jsonType)
+	addToNodeMap(j jsonType)
+	addToCemetery(j jsonType)
 	createJSONObject(parent jsonType, value interface{}, ts *model.Timestamp) *jsonObject
 	createJSONArray(parent jsonType, value interface{}, ts *model.Timestamp) *jsonArray
-	toJSONPrimitiveForMarshal() *jsonPrimitiveForMarshal
+	marshal() *marshaledJSONType
+	unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType)
 }
 
-type jsonRoot struct {
+type jsonCommon struct {
 	root     *jsonObject
-	nodeMap  map[string]jsonType
-	cemetery map[string]jsonType
+	nodeMap  map[string]jsonType // store all jsonPrimitive.K.hash => jsonType
+	cemetery map[string]jsonType // store all jsonPrimitive.K.hash => deleted jsonType
 }
 
 type jsonPrimitive struct {
-	root    *jsonRoot
+	common  *jsonCommon
 	parent  jsonType
-	K       *model.Timestamp // used for key that is immutable and used in the root
-	P       *model.Timestamp // used for precedence; for example makeTomb
 	deleted bool
+	K       *model.Timestamp // used for key that is immutable and used in the common
+	P       *model.Timestamp // used for precedence; for example makeTomb
+}
+
+func (its *jsonPrimitive) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
+
 }
 
 func (its *jsonPrimitive) getType() TypeOfJSON {
@@ -143,17 +149,21 @@ func (its *jsonPrimitive) setValue(v types.JSONValue) {
 	panic("should be overridden")
 }
 
-func (its *jsonPrimitive) getRoot() *jsonRoot {
-	return its.root
+func (its *jsonPrimitive) getRoot() *jsonCommon {
+	return its.common
 }
 
 func (its *jsonPrimitive) setRoot(r *jsonObject) {
-	its.root.root = r
-	its.root.nodeMap[r.getTime().Hash()] = r
+	its.common.root = r
+	its.common.nodeMap[r.getTime().Hash()] = r
 }
 
 func (its *jsonPrimitive) getParent() jsonType {
 	return its.parent
+}
+
+func (its *jsonPrimitive) setParent(j jsonType) {
+	its.parent = j
 }
 
 func (its *jsonPrimitive) getParentAsJSONObject() *jsonObject {

@@ -1,5 +1,7 @@
 package ortoo
 
+import "github.com/knowhunger/ortoo/ortoo/model"
+
 type orderedType interface {
 	precededType
 	getPrev() orderedType
@@ -7,15 +9,29 @@ type orderedType interface {
 	getNext() orderedType
 	setNext(n orderedType)
 	getNextLive() orderedType
-	hash() string
-	toNodeForMarshal() *nodeForMarshal
 	getPrecededType() precededType
+	hash() string
+	marshal() *marshaledNode
 }
 
 type orderedNode struct {
 	precededType
-	next orderedType
 	prev orderedType
+	next orderedType
+}
+
+func newHead() *orderedNode {
+	return &orderedNode{
+		precededType: &precededNode{
+			timedType: &timedNode{
+				V: nil,
+				T: model.OldestTimestamp,
+			},
+			P: nil,
+		},
+		prev: nil,
+		next: nil,
+	}
 }
 
 func (its *orderedNode) hash() string {

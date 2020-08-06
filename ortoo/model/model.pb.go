@@ -258,10 +258,14 @@ func (m *Client) GetSyncType() SyncType {
 }
 
 type Timestamp struct {
-	Era                  uint32   `protobuf:"varint,1,opt,name=era,proto3" json:"era,omitempty"`
-	Lamport              uint64   `protobuf:"varint,2,opt,name=lamport,proto3" json:"lamport,omitempty"`
-	CUID                 []byte   `protobuf:"bytes,3,opt,name=CUID,proto3" json:"CUID,omitempty"`
-	Delimiter            uint32   `protobuf:"varint,4,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	// @inject_tag: json:"e,omitempty"
+	Era uint32 `protobuf:"varint,1,opt,name=era,proto3" json:"e,omitempty"`
+	// @inject_tag: json:"l,omitempty"
+	Lamport uint64 `protobuf:"varint,2,opt,name=lamport,proto3" json:"l,omitempty"`
+	// @inject_tag: json:"c,omitempty"
+	CUID []byte `protobuf:"bytes,3,opt,name=CUID,proto3" json:"c,omitempty"`
+	// @inject_tag: json:"d,omitempty"
+	Delimiter            uint32   `protobuf:"varint,4,opt,name=delimiter,proto3" json:"d,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -329,10 +333,14 @@ func (m *Timestamp) GetDelimiter() uint32 {
 }
 
 type OperationID struct {
-	Era                  uint32   `protobuf:"varint,1,opt,name=era,proto3" json:"era,omitempty"`
-	Lamport              uint64   `protobuf:"varint,2,opt,name=lamport,proto3" json:"lamport,omitempty"`
-	CUID                 []byte   `protobuf:"bytes,3,opt,name=CUID,proto3" json:"CUID,omitempty"`
-	Seq                  uint64   `protobuf:"varint,4,opt,name=seq,proto3" json:"seq,omitempty"`
+	// @inject_tag: json:"e,omitempty"
+	Era uint32 `protobuf:"varint,1,opt,name=era,proto3" json:"e,omitempty"`
+	// @inject_tag: json:"l,omitempty"
+	Lamport uint64 `protobuf:"varint,2,opt,name=lamport,proto3" json:"l,omitempty"`
+	// @inject_tag: json:"c,omitempty"
+	CUID []byte `protobuf:"bytes,3,opt,name=CUID,proto3" json:"c,omitempty"`
+	// @inject_tag: json:"s,omitempty"
+	Seq                  uint64   `protobuf:"varint,4,opt,name=seq,proto3" json:"s,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -558,10 +566,10 @@ func (m *PushPullPack) GetOperations() []*Operation {
 }
 
 type CheckPoint struct {
-	// @inject_tag: bson:"s"
-	Sseq uint64 `protobuf:"varint,1,opt,name=sseq,json=s,proto3" json:"sseq,omitempty" bson:"s"`
-	// @inject_tag: bson:"c"
-	Cseq                 uint64   `protobuf:"varint,2,opt,name=cseq,json=c,proto3" json:"cseq,omitempty" bson:"c"`
+	// @inject_tag: bson:"s",json:"s"
+	Sseq uint64 `protobuf:"varint,1,opt,name=sseq,json=s,proto3" json:"s" bson:"s"`
+	// @inject_tag: bson:"c",json:"c"
+	Cseq                 uint64   `protobuf:"varint,2,opt,name=cseq,json=c,proto3" json:"c" bson:"c"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

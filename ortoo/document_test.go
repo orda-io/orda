@@ -23,29 +23,35 @@ func TestJSONSnapshot(t *testing.T) {
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
 		opID1 := model.NewOperationID()
 		jsonObj := newJSONObject(nil, model.OldestTimestamp)
+
+		// { "K1": 1234, "K2": 3.14 }
 		jsonObj.put("K1", 1234, opID1.Next().GetTimestamp())
 		jsonObj.put("K2", 3.14, opID1.Next().GetTimestamp())
 
+		// get the child "K1"
 		je1 := jsonObj.getChildAsJSONElement("K1")
 		log.Logger.Infof("%+v", je1.String())
 		require.Equal(t, float64(1234), je1.getValue())
 
+		// get parent of K1
 		require.Equal(t, TypeJSONObject, je1.getParent().getType())
 		parent := je1.getParentAsJSONObject()
 		require.Equal(t, jsonObj, parent)
 		log.Logger.Infof("%+v", parent.String())
 
+		// get the child "K2"
 		je2 := parent.getChildAsJSONElement("K2")
 		log.Logger.Infof("%+v", je2.String())
 		require.Equal(t, 3.14, je2.getValue())
 
 		log.Logger.Infof("%v", jsonObj.GetAsJSONCompatible())
 
-		m, err := json.Marshal(jsonObj)
+		m, err := json.Marshal(jsonObj) // ==> jsonObject.MarshalJSON
 		require.NoError(t, err)
-		unmarshaled := newJSONObject(nil, model.OldestTimestamp)
-		err = json.Unmarshal(m, unmarshaled)
-		require.NoError(t, err)
+		log.Logger.Infof("%s", string(m))
+		// unmarshaled := newJSONObject(nil, model.OldestTimestamp)
+		// err = json.Unmarshal(m, unmarshaled)
+		// require.NoError(t, err)
 	})
 
 	t.Run("Can put nested JSONObject to JSONObject", func(t *testing.T) {
@@ -97,13 +103,13 @@ func TestJSONSnapshot(t *testing.T) {
 		jsonObj.put("K3", "willBeDeleted", opID1.Next().GetTimestamp())
 		jsonObj.DeleteCommonInObject(jsonObj.getTime(), "K3", opID1.Next().GetTimestamp())
 
-		// m, err := json.Marshal(jsonObj)
-		// require.NoError(t, err)
-		// log.Logger.Infof("%+v", string(m))
-		// clone := jsonObject{}
-		// err = json.Unmarshal(m, &clone)
-		// require.NoError(t, err)
-
+		m, err := json.Marshal(jsonObj)
+		require.NoError(t, err)
+		log.Logger.Infof("%+v", string(m))
+		clone := jsonObject{}
+		err = json.Unmarshal(m, &clone)
+		require.NoError(t, err)
+		log.Logger.Infof("%+v", clone)
 		// a1 := jsonObj.getChildAsJSONArray("A1")
 		// a1.arrayDeleteLocal(1, 1, opID1.GetTimestamp())
 		// log.Logger.Infof("%v", jsonObj.String())
