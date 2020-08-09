@@ -130,104 +130,12 @@ func (its *jsonArray) marshal() *marshaledJSONType {
 	return marshal
 }
 
-//
-// func (its *jsonElement) MarshalJSON() ([]byte, error) {
-// 	j := its.marshal()
-// 	return json.Marshal(j)
-// }
-//
-// func (its *jsonElement) UnmarshalJSON(bytes []byte) error {
-// 	// forMarshal := marshaledJSONType{}
-// 	// if err := json.Unmarshal(bytes, &forMarshal); err != nil {
-// 	// 	return log.OrtooError(err)
-// 	// }
-// 	//
-// 	// its.V = forMarshal.V
-// 	// its.jsonType = &jsonPrimitive{
-// 	// 	parent:  nil,
-// 	// 	common:    nil,
-// 	// 	K:       forMarshal.K,
-// 	// 	P:       forMarshal.P,
-// 	// 	deleted: false,
-// 	// }
-// 	return nil
-// }
-//
-// func (its *jsonElement) marshalDocument(forMarshal *marshaledDocument) {
-// 	k := its.jsonType.getTime()
-// 	if k != nil {
-// 		forMarshal.TS[k.Hash()] = k
-// 	}
-// 	p := its.jsonType.getPrecedence()
-// 	if p != nil {
-// 		forMarshal.TS[p.Hash()] = p
-// 	}
-// 	m := its.marshal()
-// 	forMarshal.JSONTypes[m.K.Hash()] = m
-// }
-//
-// func (its *jsonArray) marshalDocument(forMarshal *marshaledDocument) {
-// 	var sb strings.Builder
-// 	n := its.head
-// 	for n != nil {
-// 		if n.getPrev() != nil {
-// 			sb.WriteString(n.getPrev().hash())
-// 		}
-// 		if n.getNext() != nil {
-// 			sb.WriteString(n.getNext().hash())
-// 		}
-// 		// switch cast:= n.(type) {
-// 		// case *jsonObject:
-// 		// case *jsonElement:
-// 		// case *jsonArray:
-// 		// }
-// 		n = n.getNext()
-// 	}
-// }
-//
-// func (its *jsonObject) marshalDocument(forMarshal *marshaledDocument) {
-// 	var sb strings.Builder
-//
-// 	for k, v := range its.Map {
-// 		if v != nil {
-// 			switch cast := v.(type) {
-// 			case *jsonObject:
-// 				cast.marshalDocument(forMarshal)
-// 			case *jsonElement:
-// 				cast.marshalDocument(forMarshal)
-// 				// kts := cast.jsonType.getKey()
-// 				// pts := cast.jsonType.getTime()
-// 				//
-// 				sb.WriteString(k)
-// 				sb.WriteString(" ")
-// 				j, err := json.Marshal(cast)
-// 				if err != nil {
-// 					return
-// 				}
-// 				sb.WriteString(string(j))
-// 			case *jsonArray:
-// 				cast.marshalDocument(forMarshal)
-//
-// 			}
-// 		}
-// 		sb.WriteString("\n")
-// 	}
-// 	log.Logger.Infof("%v", sb.String())
-// 	// b, err := json.Marshal(forMarshal)
-// 	// if err != nil {
-// 	// 	return
-// 	// }
-// 	return
-// }
-
 // //////////////////////////////
 // Unmarshal functions
 // //////////////////////////////
 
 func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
 	var forUnmarshal marshaledDocument
-
-	// jsonTypeMap := make(map[string]jsonType)
 
 	if err := json.Unmarshal(bytes, &forUnmarshal); err != nil {
 		return log.OrtooError(err)
@@ -271,7 +179,6 @@ func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
 }
 
 func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
-
 	jo := marshaled.O
 
 	its.hashMapSnapshot = &hashMapSnapshot{
@@ -299,6 +206,7 @@ func (its *jsonArray) unmarshal(marshaled *marshaledJSONType, jsonMap map[string
 		prev.setNext(node)
 		prev = node
 	}
+	its.size = marshaled.A.S
 }
 
 func (its *marshaledJSONType) unmarshalAsJSONPrimitive(doc *marshaledDocument, common *jsonCommon, parent jsonType) *jsonPrimitive {

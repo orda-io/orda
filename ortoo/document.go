@@ -177,7 +177,7 @@ func (its *document) getChildDocument(child jsonType) *document {
 func (its *document) GetFromArray(pos int) (Document, error) {
 	if its.typeOfDoc == TypeJSONArray {
 		if currentRoot, ok := its.snapshot.findJSONArray(its.root); ok {
-			c, err := currentRoot.getTimedValue(pos)
+			c, err := currentRoot.getPrecededType(pos)
 			if err != nil {
 				return nil, err
 			}
@@ -474,7 +474,6 @@ func (its *jsonObject) put(key string, value interface{}, ts *model.Timestamp) j
 		primitive = its.createJSONObject(its, value, ts)
 	case reflect.Ptr:
 		val := rt.Elem()
-		// log.Logger.Infof("%+v", val.Interface())
 		primitive = its.put(key, val.Interface(), ts) // recursively
 	default:
 		primitive = newJSONElement(its, types.ConvertToJSONSupportedValue(value), ts.NextDeliminator())
@@ -489,6 +488,9 @@ func (its *jsonObject) put(key string, value interface{}, ts *model.Timestamp) j
 
 func (its *jsonObject) getChildAsJSONElement(key string) *jsonElement {
 	value := its.get(key)
+	if value == nil {
+		return nil
+	}
 	return value.(*jsonElement)
 }
 
@@ -594,45 +596,60 @@ func (its *jsonArray) arrayUpdateLocal(op *operations.DocUpdateInArrayOperation)
 }
 
 func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, error) {
-	if err := its.validateRange(pos, numOfNodes); err != nil {
+	targets, values, err := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
+	if err != nil {
 		return nil, nil, err
 	}
-	var deletedTargets []*model.Timestamp
-	var deletedValues []interface{}
-	node := its.findNthTarget(pos + 1)
-	for i := 0; i < numOfNodes; i++ {
-		cast := node.getPrecededType().(jsonType)
-		if cast.makeTomb(ts) {
-			deletedTargets = append(deletedTargets, cast.getTime())
-			deletedValues = append(deletedValues, cast)
+	for _, v := range targets {
+		if jt, ok := its.findJSONPrimitive(v); ok {
+			its.addToCemetery(jt)
 		}
-		// switch cast := orderedType.timedType.(type) {
-		// case *jsonElement:
-		// 	if !cast.isTomb() {
-		// 		cast.makeTomb(ts)
-		// 		deletedTargets = append(deletedTargets, cast.getKey())
-		// 		deletedValues = append(deletedValues, cast.getValue())
-		// 	}
-		// case *jsonObject:
-		// 	if !cast.isTomb() {
-		// 		cast.makeTomb(ts)
-		// 		deletedTargets = append(deletedTargets, cast.getKey())
-		// 		deletedValues = append(deletedValues, cast.getValue())
-		// 	}
-		// case *jsonArray:
-		// 	if !cast.isTomb() {
-		// 		cast.makeTomb(ts)
-		// 		deletedTargets = append(deletedTargets, cast.getKey())
-		// 		deletedValues = append(deletedValues, cast.getValue())
-		// 	}
-		// }
-		node = node.getNextLive()
 	}
-	return deletedTargets, deletedValues, nil
+	return targets, values, err
+	// if err := its.validateRange(pos, numOfNodes); err != nil {
+	// 	return nil, nil, err
+	// }
+	// var deletedTargets []*model.Timestamp
+	// var deletedValues []interface{}
+	// node := its.findNthTarget(pos + 1)
+	// for i := 0; i < numOfNodes; i++ {
+	// 	cast := node.getPrecededType().(jsonType)
+	// 	if cast.makeTomb(ts) {
+	// 		deletedTargets = append(deletedTargets, cast.getTime())
+	// 		deletedValues = append(deletedValues, cast)
+	// 	}
+	// 	// switch cast := orderedType.timedType.(type) {
+	// 	// case *jsonElement:
+	// 	// 	if !cast.isTomb() {
+	// 	// 		cast.makeTomb(ts)
+	// 	// 		deletedTargets = append(deletedTargets, cast.getKey())
+	// 	// 		deletedValues = append(deletedValues, cast.getValue())
+	// 	// 	}
+	// 	// case *jsonObject:
+	// 	// 	if !cast.isTomb() {
+	// 	// 		cast.makeTomb(ts)
+	// 	// 		deletedTargets = append(deletedTargets, cast.getKey())
+	// 	// 		deletedValues = append(deletedValues, cast.getValue())
+	// 	// 	}
+	// 	// case *jsonArray:
+	// 	// 	if !cast.isTomb() {
+	// 	// 		cast.makeTomb(ts)
+	// 	// 		deletedTargets = append(deletedTargets, cast.getKey())
+	// 	// 		deletedValues = append(deletedValues, cast.getValue())
+	// 	// 	}
+	// 	// }
+	// 	node = node.getNextLive()
+	// }
+	// return deletedTargets, deletedValues, nil
 
 }
 
-func (its *jsonArray) arrayInsertCommon(pos int, target, ts *model.Timestamp, values ...interface{}) (*model.Timestamp, []interface{}, error) {
+func (its *jsonArray) arrayInsertCommon(
+	pos int, // in the case of the local insert
+	target *model.Timestamp, // in the case of the remote insert
+	ts *model.Timestamp,
+	values ...interface{},
+) (*model.Timestamp, []interface{}, error) {
 	var pts []precededType
 	for _, v := range values {
 		rt := reflect.ValueOf(v)
@@ -663,7 +680,7 @@ func (its *jsonArray) arrayInsertCommon(pos int, target, ts *model.Timestamp, va
 }
 
 func (its *jsonArray) getAsJSONElement(pos int) (*jsonElement, error) {
-	val, err := its.listSnapshot.getTimedValue(pos)
+	val, err := its.listSnapshot.getPrecededType(pos)
 	if err != nil {
 		return nil, log.OrtooError(err)
 	}
@@ -695,13 +712,15 @@ func (its *jsonArray) GetAsJSONCompatible() interface{} {
 	var list []interface{}
 	n := its.listSnapshot.head.getNextLive()
 	for n != nil {
-		switch cast := n.getPrecededType().(type) {
-		case *jsonObject:
-			list = append(list, cast.GetAsJSONCompatible())
-		case *jsonElement:
-			list = append(list, cast.getValue())
-		case *jsonArray:
-			list = append(list, cast.GetAsJSONCompatible())
+		if !n.isTomb() {
+			switch cast := n.getPrecededType().(type) {
+			case *jsonObject:
+				list = append(list, cast.GetAsJSONCompatible())
+			case *jsonElement:
+				list = append(list, cast.getValue())
+			case *jsonArray:
+				list = append(list, cast.GetAsJSONCompatible())
+			}
 		}
 		n = n.getNextLive()
 	}

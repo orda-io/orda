@@ -413,19 +413,19 @@ func (its *listSnapshot) findNthTarget(pos int) orderedType {
 }
 
 func (its *listSnapshot) get(pos int) (interface{}, error) {
-	tv, err := its.getTimedValue(pos)
+	pt, err := its.getPrecededType(pos)
 	if err != nil {
 		return nil, err
 	}
-	return tv.getValue(), nil
+	return pt.getValue(), nil
 }
 
-func (its *listSnapshot) getTimedValue(pos int) (timedType, error) {
+func (its *listSnapshot) getPrecededType(pos int) (precededType, error) {
 	// size == 3, pos can be 0, 1, 2
 	if its.size <= pos {
 		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
-	return its.findNthTarget(pos + 1).(timedType), nil
+	return its.findNthTarget(pos + 1).getPrecededType(), nil
 }
 
 func (its *listSnapshot) getMany(pos int, numOfNodes int) ([]interface{}, error) {

@@ -15,8 +15,6 @@ type SnapshotDatatype interface {
 
 // Snapshot defines the interface for snapshot used in a datatype.
 type Snapshot interface {
-	// json.Unmarshaler
-	// json.Marshaler
 	CloneSnapshot() Snapshot
 	GetAsJSONCompatible() interface{}
 }
