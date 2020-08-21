@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/model"
 )
@@ -26,12 +27,12 @@ type IncreaseOperation struct {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *IncreaseOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *IncreaseOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *IncreaseOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *IncreaseOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 

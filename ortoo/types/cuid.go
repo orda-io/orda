@@ -1,7 +1,7 @@
 package types
 
 // CUID is a uniqueID for a client.
-type CUID UniqueID
+type CUID UID
 
 // NewCUID creates a new CUID
 func NewCUID() CUID {
@@ -15,5 +15,9 @@ func NewNilCUID() CUID {
 }
 
 func (its *CUID) String() string {
-	return UniqueID(*its).String()
+	return ToUID(*its)
+}
+
+func (its *CUID) ShortString() string {
+	return ToShortUID(*its)
 }

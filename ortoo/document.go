@@ -75,7 +75,7 @@ func (its *document) PutToObject(key string, value interface{}) (interface{}, er
 		}
 		return ret, nil
 	}
-	return nil, errors.New(errors.ErrDatatypeInvalidParent)
+	return nil, errors.ErrDatatypeInvalidParent.New()
 }
 
 func (its *document) InsertToArray(pos int, values ...interface{}) (interface{}, error) {
@@ -87,10 +87,10 @@ func (its *document) InsertToArray(pos int, values ...interface{}) (interface{},
 		}
 		return ret, nil
 	}
-	return nil, errors.New(errors.ErrDatatypeInvalidParent)
+	return nil, errors.ErrDatatypeInvalidParent.New()
 }
 
-func (its *document) ExecuteLocal(op interface{}) (interface{}, error) {
+func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.DocPutInObjectOperation:
 		if _, err := its.snapshot.PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp()); err != nil {
@@ -121,15 +121,15 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, error) {
 		// its.snapshot.UpdateLocalInArray()
 		return nil, nil
 	}
-	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op.(iface.Operation).GetType())
+	return nil, errors.ErrDatatypeIllegalOperation.New(op.(iface.Operation).GetType())
 }
 
-func (its *document) ExecuteRemote(op interface{}) (interface{}, error) {
+func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
 		var newSnap = newJSONObject(nil, model.OldestTimestamp)
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
+			return nil, errors.ErrDatatypeSnapshot.New(err.Error())
 		}
 		its.snapshot = newSnap
 		// its.datatype.SetOpID()
@@ -151,7 +151,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, error) {
 		its.snapshot.DeleteRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp())
 		return nil, nil
 	}
-	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.ErrDatatypeIllegalOperation.New(op)
 }
 
 func (its *document) GetFromObject(key string) (Document, error) {
@@ -159,13 +159,13 @@ func (its *document) GetFromObject(key string) (Document, error) {
 		if currentRoot, ok := its.snapshot.findJSONObject(its.root); ok {
 			child := currentRoot.get(key).(jsonType)
 			if child == nil {
-				return nil, errors.New(errors.ErrDatatypeNotExistChildDocument)
+				return nil, errors.ErrDatatypeNotExistChildDocument.New()
 			}
 			return its.getChildDocument(child), nil
 		}
 
 	}
-	return nil, errors.New(errors.ErrDatatypeInvalidParent)
+	return nil, errors.ErrDatatypeInvalidParent.New()
 }
 
 func (its *document) getChildDocument(child jsonType) *document {
@@ -188,7 +188,7 @@ func (its *document) GetFromArray(pos int) (Document, error) {
 			return its.getChildDocument(child), nil
 		}
 	}
-	return nil, errors.New(errors.ErrDatatypeInvalidParent)
+	return nil, errors.ErrDatatypeInvalidParent.New()
 }
 
 func (its *document) DeleteInObject(key string) (interface{}, error) {
@@ -200,7 +200,7 @@ func (its *document) DeleteInObject(key string) (interface{}, error) {
 		}
 		return ret, nil
 	}
-	return nil, errors.New(errors.ErrDatatypeInvalidParent)
+	return nil, errors.ErrDatatypeInvalidParent.New()
 }
 
 func (its *document) DeleteInArray(pos int) (interface{}, error) {
@@ -217,13 +217,13 @@ func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, 
 		}
 		return ret.([]interface{}), nil
 	}
-	return nil, errors.New(errors.ErrDatatypeInvalidParent)
+	return nil, errors.ErrDatatypeInvalidParent.New()
 }
 
 func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{}, error) {
 	if its.typeOfDoc == TypeJSONArray {
 		if len(values) < 1 {
-			return nil, errors.New(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
+			return nil, errors.ErrDatatypeIllegalOperation.New("at least one value should be inserted")
 		}
 
 		op := operations.NewDocUpdateInArrayOperation(its.root, pos, values)
@@ -233,7 +233,7 @@ func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{
 		}
 		return ret.([]interface{}), nil
 	}
-	return nil, errors.New(errors.ErrDatatypeInvalidParent)
+	return nil, errors.ErrDatatypeInvalidParent.New()
 }
 
 func (its *document) GetDocumentType() TypeOfJSON {
@@ -264,7 +264,7 @@ func (its *document) GetSnapshot() iface.Snapshot {
 func (its *document) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
+		return nil, nil, errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 	return meta, its.snapshot, nil
 }
@@ -272,10 +272,10 @@ func (its *document) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
 func (its *document) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	log.Logger.Infof("SetMetaAndSnapshot:%v", snapshot)
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
-		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 	return nil
 }

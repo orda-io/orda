@@ -1,13 +1,13 @@
 package operations
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // ////////////////// baseOperation ////////////////////
@@ -44,7 +44,7 @@ func (its *baseOperation) GetAsJSON() interface{} {
 	}{
 		Era:     its.ID.Era,
 		Lamport: its.ID.Lamport,
-		CUID:    hex.EncodeToString(its.ID.CUID),
+		CUID:    types.ToUID(its.ID.CUID),
 		Seq:     its.ID.Seq,
 	}
 }
@@ -82,12 +82,12 @@ func (its *TransactionOperation) GetType() model.TypeOfOperation {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *TransactionOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *TransactionOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return nil, nil
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *TransactionOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *TransactionOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return nil, nil
 }
 
@@ -153,12 +153,12 @@ type ErrorOperation struct {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *ErrorOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *ErrorOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	panic("should not be called")
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *ErrorOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *ErrorOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	panic("should not be called")
 }
 
@@ -233,13 +233,13 @@ type SnapshotOperation struct {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *SnapshotOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *SnapshotOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	datatype.SetState(its.C.State)
 	return nil, nil
 }
 
 // ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *SnapshotOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *SnapshotOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 

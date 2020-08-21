@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"encoding/hex"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"reflect"
 )
 
@@ -17,7 +17,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 		return nil, errors.NewRPCError(errors.RPCErrMongoDB)
 	}
 
-	clientDoc, err := o.mongo.GetClient(ctx, hex.EncodeToString(in.Header.GetCuid()))
+	clientDoc, err := o.mongo.GetClient(ctx, types.ToUID(in.Header.GetCuid()))
 	if err != nil {
 		return nil, errors.NewRPCError(errors.RPCErrMongoDB)
 	}
@@ -31,7 +31,7 @@ func (o *OrtooService) ProcessPushPull(ctx context.Context, in *model.PushPullRe
 	for _, ppp := range in.PushPullPacks {
 		handler := &PushPullHandler{
 			Key:             ppp.Key,
-			DUID:            hex.EncodeToString(ppp.DUID),
+			DUID:            types.ToUID(ppp.DUID),
 			CUID:            clientDoc.CUID,
 			ctx:             ctx,
 			mongo:           o.mongo,

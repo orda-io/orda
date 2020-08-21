@@ -2,7 +2,6 @@ package datatypes
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/log"
@@ -29,94 +28,94 @@ func newBaseDatatype(key string, t model.TypeOfDatatype, cuid types.CUID) *BaseD
 		TypeOf: t,
 		opID:   model.NewOperationIDWithCUID(cuid),
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
-		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s:%s", key, hex.EncodeToString(cuid)[:8])),
+		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s:%s:%s", t, key, cuid.ShortString())),
 	}
 }
 
 // GetCUID returns CUID of the client which this datatype subecribes to.
-func (b *BaseDatatype) GetCUID() string {
-	return hex.EncodeToString(b.opID.CUID)
+func (its *BaseDatatype) GetCUID() string {
+	return types.ToUID(its.opID.CUID)
 }
 
 // GetEra returns the era of operation ID.
-func (b *BaseDatatype) GetEra() uint32 {
-	return b.opID.GetEra()
+func (its *BaseDatatype) GetEra() uint32 {
+	return its.opID.GetEra()
 }
 
-func (b *BaseDatatype) String() string {
-	return fmt.Sprintf("%s", b.id)
+func (its *BaseDatatype) String() string {
+	return fmt.Sprintf("%s", its.id)
 }
 
-func (b *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, error) {
-	b.SetNextOpID(op)
+func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, error) {
+	its.SetNextOpID(op)
 	// TODO: should deal with NO_OP
-	return op.ExecuteLocal(b.datatype)
+	return op.ExecuteLocal(its.datatype)
 
 }
 
 // Replay replays an already executed operation.
-func (b *BaseDatatype) Replay(op iface.Operation) error {
-	if bytes.Compare(b.opID.CUID, op.GetID().CUID) == 0 {
-		_, err := b.executeLocalBase(op)
+func (its *BaseDatatype) Replay(op iface.Operation) error {
+	if bytes.Compare(its.opID.CUID, op.GetID().CUID) == 0 {
+		_, err := its.executeLocalBase(op)
 		if err != nil { // TODO: if an operation fails to be executed, opID should be rollbacked.
 			return log.OrtooErrorf(err, "fail to replay local operation")
 		}
 	} else {
-		b.executeRemoteBase(op)
+		its.executeRemoteBase(op)
 	}
 	return nil
 }
 
 // SetNextOpID proceeds the operation ID next.
-func (b *BaseDatatype) SetNextOpID(op iface.Operation) {
-	op.SetOperationID(b.opID.Next())
+func (its *BaseDatatype) SetNextOpID(op iface.Operation) {
+	op.SetOperationID(its.opID.Next())
 }
 
-func (b *BaseDatatype) executeRemoteBase(op iface.Operation) {
-	op.ExecuteRemote(b.datatype)
+func (its *BaseDatatype) executeRemoteBase(op iface.Operation) {
+	op.ExecuteRemote(its.datatype)
 }
 
 // GetType returns the type of this datatype.
-func (b *BaseDatatype) GetType() model.TypeOfDatatype {
-	return b.TypeOf
+func (its *BaseDatatype) GetType() model.TypeOfDatatype {
+	return its.TypeOf
 }
 
 // GetState returns the state of this datatype.
-func (b *BaseDatatype) GetState() model.StateOfDatatype {
-	return b.state
+func (its *BaseDatatype) GetState() model.StateOfDatatype {
+	return its.state
 }
 
 // SetDatatype sets the Datatype which implements this BaseDatatype.
-func (b *BaseDatatype) SetDatatype(datatype iface.Datatype) {
-	b.datatype = datatype
+func (its *BaseDatatype) SetDatatype(datatype iface.Datatype) {
+	its.datatype = datatype
 }
 
 // GetDatatype returns the Datatype which implements this BaseDatatype.
-func (b *BaseDatatype) GetDatatype() iface.Datatype {
-	return b.datatype
+func (its *BaseDatatype) GetDatatype() iface.Datatype {
+	return its.datatype
 }
 
 // SetOpID sets the operation ID.
-func (b *BaseDatatype) SetOpID(opID *model.OperationID) {
-	b.opID = opID
+func (its *BaseDatatype) SetOpID(opID *model.OperationID) {
+	its.opID = opID
 }
 
 // GetKey returns the key.
-func (b *BaseDatatype) GetKey() string {
-	return b.Key
+func (its *BaseDatatype) GetKey() string {
+	return its.Key
 }
 
 // GetDUID returns DUID.
-func (b *BaseDatatype) GetDUID() types.DUID {
-	return b.id
+func (its *BaseDatatype) GetDUID() types.DUID {
+	return its.id
 }
 
 // SetDUID sets the DUID.
-func (b *BaseDatatype) SetDUID(duid types.DUID) {
-	b.id = duid
+func (its *BaseDatatype) SetDUID(duid types.DUID) {
+	its.id = duid
 }
 
 // SetState sets the state of this datatype.
-func (b *BaseDatatype) SetState(state model.StateOfDatatype) {
-	b.state = state
+func (its *BaseDatatype) SetState(state model.StateOfDatatype) {
+	its.state = state
 }

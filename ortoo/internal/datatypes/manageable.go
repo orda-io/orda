@@ -77,7 +77,7 @@ func (its *ManageableDatatype) DoTransaction(tag string, fn func(txnCtx *Transac
 	}()
 	if err := fn(txnCtx); err != nil {
 		its.SetTransactionFail()
-		return errors.New(errors.ErrDatatypeTransaction, err.Error())
+		return errors.ErrDatatypeTransaction.New(err.Error())
 	}
 	return nil
 }
@@ -106,10 +106,10 @@ func (its ManageableDatatype) ExecuteTransactionRemote(transaction []*model.Oper
 	if len(transaction) > 1 {
 		trxOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
 		if !ok {
-			return nil, errors.New(errors.ErrDatatypeTransaction, "no transaction operation")
+			return nil, errors.ErrDatatypeTransaction.New("no transaction operation")
 		}
 		if int(trxOp.GetNumOfOps()) != len(transaction) {
-			return nil, errors.New(errors.ErrDatatypeTransaction, "not matched number of operations")
+			return nil, errors.ErrDatatypeTransaction.New("not matched number of operations")
 		}
 		trxCtx, err = its.BeginTransaction(trxOp.C.Tag, its.TransactionCtx, false)
 		if err != nil {
@@ -130,7 +130,7 @@ func (its ManageableDatatype) ExecuteTransactionRemote(transaction []*model.Oper
 		}
 		_, err := its.ExecuteOperationWithTransaction(trxCtx, op, false)
 		if err != nil {
-			return nil, errors.New(errors.ErrDatatypeTransaction, err.Error())
+			return nil, errors.ErrDatatypeTransaction.New(err.Error())
 		}
 	}
 	return opList, nil

@@ -2,6 +2,7 @@ package ortoo
 
 import (
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
@@ -74,7 +75,7 @@ func (its *jsonArray) arrayUpdateLocal(op *operations.DocUpdateInArrayOperation)
 	return nil
 }
 
-func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, error) {
+func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
 	targets, values, err := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
 	if err != nil {
 		return nil, nil, err
@@ -92,7 +93,7 @@ func (its *jsonArray) arrayInsertCommon(
 	target *model.Timestamp, // in the case of the remote insert
 	ts *model.Timestamp,
 	values ...interface{},
-) (*model.Timestamp, []interface{}, error) {
+) (*model.Timestamp, []interface{}, errors.OrtooError) {
 	var pts []precededType
 	for _, v := range values {
 		rt := reflect.ValueOf(v)

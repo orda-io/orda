@@ -2,8 +2,8 @@ package model
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"strings"
 )
 
@@ -87,7 +87,7 @@ func (o *OperationID) Clone() *OperationID {
 func (o *OperationID) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]",
-		o.Era, o.Lamport, hex.EncodeToString(o.CUID)[0:8], o.Seq)
+		o.Era, o.Lamport, types.UID(o.CUID).ShortString(), o.Seq)
 	return b.String()
 }
 

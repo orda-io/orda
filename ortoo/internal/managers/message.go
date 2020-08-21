@@ -41,7 +41,7 @@ func (its *MessageManager) nextSeq() uint32 {
 func (its *MessageManager) Connect() error {
 	conn, err := grpc.Dial(its.host, grpc.WithInsecure())
 	if err != nil {
-		return errors.NewClientError(errors.ErrClientConnect, err.Error())
+		return errors.ErrClientConnect.New(err.Error())
 	}
 	its.conn = conn
 	its.serviceClient = model.NewOrtooServiceClient(its.conn)
@@ -61,7 +61,7 @@ func (its *MessageManager) Close() error {
 		its.notificationManager.Close()
 	}
 	if err := its.conn.Close(); err != nil {
-		return errors.NewClientError(errors.ErrClientClose, err.Error())
+		return errors.ErrClientClose.New(err.Error())
 	}
 	return nil
 }

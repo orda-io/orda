@@ -109,7 +109,7 @@ func (c *clientImpl) Connect() (err error) {
 		}
 	}()
 	if err = c.messageManager.Connect(); err != nil {
-		return errors.NewClientError(errors.ErrClientConnect, err.Error())
+		return errors.ErrClientConnect.New(err.Error())
 	}
 
 	err = c.messageManager.ExchangeClientRequestResponse()
@@ -224,7 +224,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 				c.ctx.Logger.Warnf("already subscribed datatype '%s'", key)
 				return datatypeFromDM
 			}
-			err := errors.New(errors.ErrDatatypeSubscribe,
+			err := errors.ErrDatatypeSubscribe.New(
 				fmt.Sprintf("not matched type: %s vs %s", typeOf.String(), datatypeFromDM.GetType().String()))
 			if handler != nil {
 				handler.errorHandler(nil, err)
@@ -248,7 +248,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 
 	if c.datatypeManager != nil {
 		if err := c.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {
-			err := errors.New(errors.ErrDatatypeSubscribe, err.Error())
+			err := errors.ErrDatatypeSubscribe.New(err.Error())
 			if handler != nil {
 				handler.errorHandler(nil, err)
 			}
@@ -261,5 +261,5 @@ func (c *clientImpl) Sync() error {
 	if c.state == connected {
 		return c.datatypeManager.SyncAll()
 	}
-	return errors.NewClientError(errors.ErrClientNotConnected, "fail to sync")
+	return errors.ErrClientNotConnected.New("fail to sync")
 }

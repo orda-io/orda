@@ -76,7 +76,7 @@ func (its *NotificationManager) notificationSubscribeFunc(client mqtt.Client, ms
 // Connect make a connection with Ortoo notification server.
 func (its *NotificationManager) Connect() error {
 	if token := its.client.Connect(); token.Wait() && token.Error() != nil {
-		return errors.NewClientError(errors.ErrClientConnect, "notification server")
+		return errors.ErrClientConnect.New("notification server")
 	}
 	its.ctx.Logger.Infof("connect to notification server")
 	go its.notificationLoop()

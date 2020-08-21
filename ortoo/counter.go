@@ -3,10 +3,9 @@ package ortoo
 import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo/iface"
-	operations "github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/ortoo/operations"
 	"github.com/knowhunger/ortoo/ortoo/types"
 
-	// "errors"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
@@ -69,18 +68,18 @@ func (its *counter) GetFinal() *datatypes.ManageableDatatype {
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *counter) ExecuteLocal(op interface{}) (interface{}, error) {
+func (its *counter) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	iop := op.(*operations.IncreaseOperation)
 	return its.snapshot.increaseCommon(iop.C.Delta), nil
 }
 
 // ExecuteRemote is called by operation.ExecuteRemote()
-func (its *counter) ExecuteRemote(op interface{}) (interface{}, error) {
+func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
 		newSnap := counterSnapshot{}
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), &newSnap); err != nil {
-			return nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
+			return nil, errors.ErrDatatypeSnapshot.New(err.Error())
 		}
 		its.snapshot = &newSnap
 		return nil, nil
@@ -88,7 +87,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, error) {
 		return its.snapshot.increaseCommon(cast.C.Delta), nil
 	}
 
-	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.ErrDatatypeIllegalOperation.New(op)
 }
 
 func (its *counter) Get() int32 {
@@ -123,18 +122,18 @@ func (its *counter) GetAsJSON() interface{} {
 func (its *counter) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
+		return nil, nil, errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 	return meta, its.snapshot, nil
 }
 
 func (its *counter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 
-	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
-		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
+	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
+		return errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 	return nil
 }
@@ -145,13 +144,6 @@ func (its *counter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 
 type counterSnapshot struct {
 	Value int32 `json:"value"`
-}
-
-func (its *counterSnapshot) UnmarshalJSON(bytes []byte) error {
-	if err := json.Unmarshal(bytes, its); err != nil {
-		return log.OrtooError(err)
-	}
-	return nil
 }
 
 func (its *counterSnapshot) CloneSnapshot() iface.Snapshot {
@@ -165,9 +157,7 @@ func (its *counterSnapshot) GetAsJSONCompatible() interface{} {
 }
 
 func (its *counterSnapshot) increaseCommon(delta int32) int32 {
-	temp := its.Value
 	its.Value = its.Value + delta
-	log.Logger.Infof("increaseCommon: %d + %d = %d", temp, delta, its.Value)
 	return its.Value
 }
 

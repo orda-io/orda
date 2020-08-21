@@ -60,22 +60,22 @@ func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) erro
 	})
 }
 
-func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
+func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.PutOperation:
 		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
 	case *operations.RemoveOperation:
 		return its.snapshot.removeLocal(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.ErrDatatypeIllegalOperation.New(op)
 }
 
-func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
+func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
 		var newSnap = newHashMapSnapshot()
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
+			return nil, errors.ErrDatatypeSnapshot.New(err.Error())
 		}
 		its.snapshot = newSnap
 		return nil, nil
@@ -84,7 +84,7 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
 	case *operations.RemoveOperation:
 		return its.snapshot.removeRemote(cast.C.Key, cast.GetTimestamp()), nil
 	}
-	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.ErrDatatypeIllegalOperation.New(op)
 }
 
 func (its *hashMap) GetSnapshot() iface.Snapshot {
@@ -102,18 +102,18 @@ func (its *hashMap) GetAsJSON() interface{} {
 func (its *hashMap) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
+		return nil, nil, errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 	return meta, its.snapshot, nil
 }
 
 func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 
 	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
-		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.ErrDatatypeSnapshot.New(err.Error())
 	}
 
 	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
@@ -124,7 +124,7 @@ func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 
 func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
 	if key == "" || value == nil {
-		return nil, errors.New(errors.ErrDatatypeIllegalOperation, "empty key or nil value is not allowed")
+		return nil, errors.ErrDatatypeIllegalOperation.New("empty key or nil value is not allowed")
 	}
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
@@ -141,7 +141,7 @@ func (its *hashMap) Get(key string) interface{} {
 
 func (its *hashMap) Remove(key string) (interface{}, error) {
 	if key == "" {
-		return nil, errors.New(errors.ErrDatatypeIllegalOperation, "empty key is not allowed")
+		return nil, errors.ErrDatatypeIllegalOperation.New("empty key is not allowed")
 	}
 	op := operations.NewRemoveOperation(key)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -198,7 +198,7 @@ func (its *hashMapSnapshot) get(key string) interface{} {
 	return its.Map[key]
 }
 
-func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, error) {
+func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, errors.OrtooError) {
 	removed, _ := its.putCommonWithTimedValue(key, &timedNode{
 		V: value,
 		T: ts,
@@ -234,7 +234,7 @@ func (its *hashMapSnapshot) GetAsJSONCompatible() interface{} {
 	return m
 }
 
-func (its *hashMapSnapshot) removeLocal(key string, ts *model.Timestamp) (interface{}, error) {
+func (its *hashMapSnapshot) removeLocal(key string, ts *model.Timestamp) (interface{}, errors.OrtooError) {
 	if tv, ok := its.Map[key]; ok {
 		if !tv.isTomb() {
 			oldVal := tv.getValue()

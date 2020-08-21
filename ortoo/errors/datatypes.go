@@ -5,18 +5,9 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/log"
 )
 
-type ErrorCode uint32
+type DatatypeErrorCode ErrorCode
 
-const baseDatatypeCode ErrorCode = 200
-
-func (its ErrorCode) New(args ...interface{}) *OrtooError {
-	err := &OrtooError{
-		Code: its,
-		Msg:  fmt.Sprintf(datatypeErrFormats[its], args...),
-	}
-	_ = log.OrtooErrorWithSkip(err, 3, err.Msg)
-	return err
-}
+const baseDatatypeCode DatatypeErrorCode = 200
 
 // ErrDatatypeXXX defines an error related to Datatype
 const (
@@ -31,7 +22,7 @@ const (
 	ErrDatatypeNoOp
 )
 
-var datatypeErrFormats = map[ErrorCode]string{
+var datatypeErrFormats = map[DatatypeErrorCode]string{
 	ErrDatatypeCreate:                "fail to create datatype: %s",
 	ErrDatatypeSubscribe:             "fail to subscribe datatype: %s",
 	ErrDatatypeTransaction:           "fail to proceed transaction: %s",
@@ -43,30 +34,16 @@ var datatypeErrFormats = map[ErrorCode]string{
 	ErrDatatypeNoOp:                  "fail to issue operation",
 }
 
-// OrtooError is an error related to Datatype
-type OrtooError struct {
-	Code ErrorCode
-	Msg  string
-}
-
-func ToOrtooError(err error) *OrtooError {
-	if dErr, ok := err.(*OrtooError); ok {
-		return dErr
-	}
-	return nil
-}
-
-func (d *OrtooError) Error() string {
-	return d.Msg
-}
-
-// New creates an error related to the datatype
-func New(code ErrorCode, args ...interface{}) *OrtooError {
-	format := fmt.Sprintf("[OrtooError: %d] %s", code, datatypeErrFormats[code])
-	err := &OrtooError{
-		Code: code,
+func (its DatatypeErrorCode) New(args ...interface{}) OrtooError {
+	format := fmt.Sprintf("[DatatypeError: %d] %s", its, datatypeErrFormats[its])
+	err := &OrtooErrorImpl{
+		Code: ErrorCode(its),
 		Msg:  fmt.Sprintf(format, args...),
 	}
 	_ = log.OrtooErrorWithSkip(err, 3, err.Msg)
 	return err
+}
+
+func (its DatatypeErrorCode) ToErrorCode() ErrorCode {
+	return ErrorCode(its)
 }

@@ -2,13 +2,18 @@ package types
 
 import (
 	"bytes"
+	"encoding/hex"
 	"github.com/google/uuid"
 )
 
-// UniqueID is unique ID in the format of UUID.
-type UniqueID []byte
+const (
+	shortStringLength = 10
+)
 
-func newUniqueID() UniqueID {
+// UID is unique ID in the format of UUID.
+type UID []byte
+
+func newUniqueID() UID {
 	u, err := uuid.NewUUID()
 	if err != nil {
 		panic(err) // panic because it cannot happen
@@ -20,15 +25,23 @@ func newUniqueID() UniqueID {
 	return b
 }
 
-func (its UniqueID) String() string {
-	uid, err := uuid.FromBytes(its)
-	if err != nil {
-		return "fail to make string to uuid"
-	}
-	return uid.String()
+func (its UID) String() string {
+	return ToUID(its)
+}
+
+func (its UID) ShortString() string {
+	return ToShortUID(its)
 }
 
 // CompareUID compares two UIDs.
-func CompareUID(a, b UniqueID) int {
+func CompareUID(a, b UID) int {
 	return bytes.Compare(a, b)
+}
+
+func ToShortUID(uid []byte) string {
+	return hex.EncodeToString(uid)[:shortStringLength]
+}
+
+func ToUID(uid []byte) string {
+	return hex.EncodeToString(uid)
 }

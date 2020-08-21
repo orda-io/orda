@@ -1,12 +1,12 @@
 package model
 
 import (
-	"encoding/hex"
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/types"
 )
 
 // ToString returns customized string
 func (m *MessageHeader) ToString() string {
 	return fmt.Sprintf("v%s|%d|%s|%s|%s",
-		m.Version, m.Seq, m.TypeOf.String(), m.Collection, hex.EncodeToString(m.Cuid)[0:8])
+		m.Version, m.Seq, m.TypeOf.String(), m.Collection, types.UID(m.Cuid).ShortString())
 }

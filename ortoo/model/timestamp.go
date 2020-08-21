@@ -2,8 +2,8 @@ package model
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"strings"
 )
 
@@ -37,7 +37,7 @@ func (its *Timestamp) Compare(o *Timestamp) int {
 func (its *Timestamp) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]", its.Era, its.Lamport,
-		hex.EncodeToString(its.CUID)[0:8], its.Delimiter)
+		types.ToShortUID(its.CUID), its.Delimiter)
 	return b.String()
 }
 
@@ -45,7 +45,7 @@ func (its *Timestamp) ToString() string {
 // DON'T change this because protocol can be broken : TODO: this can be improved.
 func (its *Timestamp) Hash() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, "%d%d%s%d", its.Era, its.Lamport, hex.EncodeToString(its.CUID), its.Delimiter)
+	_, _ = fmt.Fprintf(&b, "%d%d%s%d", its.Era, its.Lamport, types.ToUID(its.CUID), its.Delimiter)
 	return b.String()
 }
 

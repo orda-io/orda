@@ -1,8 +1,8 @@
 package model
 
 import (
-	"encoding/hex"
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"strings"
 )
 
@@ -128,7 +128,7 @@ func (its *PushPullPack) ToString() string {
 	var option = PushPullPackOption(its.Option)
 
 	_, _ = fmt.Fprintf(&b, "%s(%s) %s CP(%v) OP(%d){",
-		its.Key, hex.EncodeToString(its.DUID)[0:8], option.String(), its.CheckPoint.String(), len(its.Operations))
+		its.Key, types.UID(its.DUID).ShortString(), option.String(), its.CheckPoint.String(), len(its.Operations))
 	init := true
 	for _, op := range its.Operations {
 		if !init {

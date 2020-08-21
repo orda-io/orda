@@ -7,7 +7,7 @@ import (
 )
 
 // DUID is the unique ID of a datatype.
-type DUID UniqueID
+type DUID UID
 
 // NewDUID creates a new DUID.
 func NewDUID() DUID {
@@ -27,8 +27,12 @@ func DUIDFromString(duidString string) (DUID, error) {
 	return b, nil
 }
 
-func (its *DUID) String() string {
-	return UniqueID(*its).String()
+func (its DUID) String() string {
+	return ToUID(its)
+}
+
+func (its DUID) ShortString() string {
+	return ToShortUID(its)
 }
 
 // Compare compares a DUID with another.

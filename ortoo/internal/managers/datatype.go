@@ -1,7 +1,6 @@
 package managers
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/context"
 	"github.com/knowhunger/ortoo/ortoo/errors"
@@ -48,7 +47,7 @@ func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model
 		topic := fmt.Sprintf("%s/%s", its.collectionName, dt.GetKey())
 		if its.notificationManager != nil {
 			if err := its.notificationManager.SubscribeNotification(topic); err != nil {
-				return errors.New(errors.ErrDatatypeSubscribe, err.Error())
+				return errors.ErrDatatypeSubscribe.New(err.Error())
 			}
 			its.ctx.Logger.Infof("subscribe datatype topic: %s", topic)
 		}
@@ -60,7 +59,7 @@ func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model
 func NewDatatypeManager(ctx *context.OrtooContext, mm *MessageManager, nm *NotificationManager, collectionName string, cuid types.CUID) *DatatypeManager {
 	dm := &DatatypeManager{
 		ctx:                 ctx,
-		cuid:                hex.EncodeToString(cuid),
+		cuid:                cuid.String(),
 		collectionName:      collectionName,
 		dataMap:             make(map[string]iface.Datatype),
 		messageManager:      mm,
@@ -113,7 +112,7 @@ func (its *DatatypeManager) SyncIfNeeded(key, duid string, sseq uint64) error {
 	data, ok := its.dataMap[key]
 	if ok {
 		its.ctx.Logger.Infof("receive a notification for datatype %s(%s) sseq:%d", key, duid[0:8], sseq)
-		if hex.EncodeToString(data.GetDUID()) == duid && data.NeedSync(sseq) {
+		if data.GetDUID().String() == duid && data.NeedSync(sseq) {
 			its.ctx.Logger.Infof("need to sync after notification: %s (sseq:%d)", key, sseq)
 			return its.Sync(key)
 		}

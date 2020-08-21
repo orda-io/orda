@@ -5,9 +5,9 @@ import (
 	"github.com/knowhunger/ortoo/ortoo/log"
 )
 
-type errorCodeClient uint32
+type ClientErrorCode ErrorCode
 
-const baseClientCode errorCodeClient = 100
+const baseClientCode ClientErrorCode = 100
 
 // ErrClientXXXX defines the error related to client
 const (
@@ -16,29 +16,19 @@ const (
 	ErrClientClose
 )
 
-var clientErrFormats = map[errorCodeClient]string{
+var clientErrFormats = map[ClientErrorCode]string{
 	ErrClientNotConnected: "%s: client is not connected",
 	ErrClientConnect:      "fail to connect: %s ",
 	ErrClientClose:        "fail to close: %s",
 }
 
-// ClientError is an error for Client
-type ClientError struct {
-	code errorCodeClient
-	msg  string
-}
-
-func (c *ClientError) Error() string {
-	return c.msg
-}
-
 // NewClientError creates an error related to the client
-func NewClientError(code errorCodeClient, args ...interface{}) *ClientError {
-	format := fmt.Sprintf("[ClientError: %d] %s", code, clientErrFormats[code])
-	err := &ClientError{
-		code: code,
-		msg:  fmt.Sprintf(format, args...),
+func (its ClientErrorCode) New(args ...interface{}) OrtooError {
+	format := fmt.Sprintf("[ClientError: %d] %s", its, clientErrFormats[its])
+	err := &OrtooErrorImpl{
+		Code: ErrorCode(its),
+		Msg:  fmt.Sprintf(format, args...),
 	}
-	_ = log.OrtooErrorWithSkip(err, 3, err.msg)
+	_ = log.OrtooErrorWithSkip(err, 3, err.Msg)
 	return err
 }

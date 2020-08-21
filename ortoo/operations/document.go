@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"strings"
@@ -30,11 +31,11 @@ type DocPutInObjectOperation struct {
 	C docPutInObjectContent
 }
 
-func (its *DocPutInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocPutInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *DocPutInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocPutInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
@@ -85,11 +86,11 @@ type DocInsertToArrayOperation struct {
 	C   docInsertToArrayContent
 }
 
-func (its *DocInsertToArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocInsertToArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *DocInsertToArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocInsertToArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
@@ -138,11 +139,11 @@ type DocDeleteInObjectOperation struct {
 	C docDeleteInObjectContent
 }
 
-func (its *DocDeleteInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocDeleteInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *DocDeleteInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocDeleteInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
@@ -191,11 +192,11 @@ type DocUpdateInArrayOperation struct {
 	C   docUpdateInArrayContent
 }
 
-func (its *DocUpdateInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocUpdateInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *DocUpdateInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocUpdateInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
@@ -245,11 +246,11 @@ type DocDeleteInArrayOperation struct {
 	C          docDeleteInArrayContent
 }
 
-func (its *DocDeleteInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, error) {
+func (its *DocDeleteInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
-func (its *DocDeleteInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, error) {
+func (its *DocDeleteInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 

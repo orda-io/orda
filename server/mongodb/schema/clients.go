@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
@@ -96,7 +97,7 @@ func (its *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
 // ClientModelToBson returns a ClientDoc from a model.Client
 func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	return &ClientDoc{
-		CUID:          model.GetCUIDString(),
+		CUID:          types.ToUID(model.CUID),
 		Alias:         model.Alias,
 		CollectionNum: collectionNum,
 		SyncType:      model.SyncType.String(),

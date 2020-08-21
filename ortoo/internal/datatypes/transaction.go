@@ -50,46 +50,46 @@ func newTransactionDatatype(w *WiredDatatype, snapshot iface.Snapshot) *Transact
 }
 
 // GetWired returns WiredDatatype
-func (t *TransactionDatatype) GetWired() *WiredDatatype {
-	return t.WiredDatatype
+func (its *TransactionDatatype) GetWired() *WiredDatatype {
+	return its.WiredDatatype
 }
 
 // ExecuteOperationWithTransaction is a method to execute an operation with a transaction.
 // an operation can be either local or remote
-func (t *TransactionDatatype) ExecuteOperationWithTransaction(ctx *TransactionContext, op iface.Operation, isLocal bool) (interface{}, error) {
-	transactionCtx, err := t.BeginTransaction(NotUserTransactionTag, ctx, false)
+func (its *TransactionDatatype) ExecuteOperationWithTransaction(ctx *TransactionContext, op iface.Operation, isLocal bool) (interface{}, error) {
+	transactionCtx, err := its.BeginTransaction(NotUserTransactionTag, ctx, false)
 	if err != nil {
-		return 0, t.Logger.OrtooErrorf(err, "fail to execute transaction")
+		return 0, its.Logger.OrtooErrorf(err, "fail to execute transaction")
 	}
 	defer func() {
-		if err := t.EndTransaction(transactionCtx, false, isLocal); err != nil {
+		if err := its.EndTransaction(transactionCtx, false, isLocal); err != nil {
 			_ = log.OrtooError(err)
 		}
 	}()
 
 	if isLocal {
-		ret, err := t.executeLocalBase(op)
+		ret, err := its.executeLocalBase(op)
 		if err != nil {
-			return 0, t.Logger.OrtooErrorf(err, "fail to execute operation")
+			return 0, its.Logger.OrtooErrorf(err, "fail to execute operation")
 		}
-		t.currentTrxCtx.appendOperation(op)
+		its.currentTrxCtx.appendOperation(op)
 		return ret, nil
 	}
-	t.executeRemoteBase(op)
+	its.executeRemoteBase(op)
 	return nil, nil
 }
 
 // make a transaction and lock
-func (t *TransactionDatatype) setTransactionContextAndLock(tag string) *TransactionContext {
+func (its *TransactionDatatype) setTransactionContextAndLock(tag string) *TransactionContext {
 	if tag != NotUserTransactionTag {
-		t.Logger.Infof("Begin the transaction: `%s`", tag)
+		its.Logger.Infof("Begin the transaction: `%s`", tag)
 	}
-	t.mutex.Lock()
-	t.isLocked = true
+	its.mutex.Lock()
+	its.isLocked = true
 	transactionCtx := &TransactionContext{
 		tag:          tag,
 		opBuffer:     nil,
-		rollbackOpID: t.opID.Clone(),
+		rollbackOpID: its.opID.Clone(),
 	}
 	return transactionCtx
 }
@@ -98,68 +98,68 @@ func (t *TransactionDatatype) setTransactionContextAndLock(tag string) *Transact
 // This sets TransactionDatatype.currentTrxCtx, lock, and generates a transaction operation
 // This is called in either DoTransaction() or ExecuteOperationWithTransaction().
 // Note that TransactionDatatype.currentTrxCtx is currently working transaction context.
-func (t *TransactionDatatype) BeginTransaction(tag string, tnxCtx *TransactionContext, withOp bool) (*TransactionContext, error) {
-	if t.isLocked && t.currentTrxCtx == tnxCtx {
+func (its *TransactionDatatype) BeginTransaction(tag string, tnxCtx *TransactionContext, withOp bool) (*TransactionContext, error) {
+	if its.isLocked && its.currentTrxCtx == tnxCtx {
 		return nil, nil // called after DoTransaction() succeeds.
 	}
-	t.currentTrxCtx = t.setTransactionContextAndLock(tag)
+	its.currentTrxCtx = its.setTransactionContextAndLock(tag)
 	if withOp {
 		op := operations.NewTransactionOperation(tag)
-		t.SetNextOpID(op)
-		t.currentTrxCtx.appendOperation(op)
+		its.SetNextOpID(op)
+		its.currentTrxCtx.appendOperation(op)
 	}
-	return t.currentTrxCtx, nil
+	return its.currentTrxCtx, nil
 }
 
 // Rollback is called to rollback a transaction
-func (t *TransactionDatatype) Rollback() error {
-	t.Logger.Infof("Begin the rollback: '%s'", t.currentTrxCtx.tag)
-	snapshotDatatype, _ := t.datatype.(iface.SnapshotDatatype)
-	redoOpID := t.opID
+func (its *TransactionDatatype) Rollback() error {
+	its.Logger.Infof("Begin the rollback: '%s'", its.currentTrxCtx.tag)
+	snapshotDatatype, _ := its.datatype.(iface.SnapshotDatatype)
+	redoOpID := its.opID
 	redoSnapshot := snapshotDatatype.GetSnapshot().CloneSnapshot()
-	t.SetOpID(t.currentTrxCtx.rollbackOpID)
-	snapshotDatatype.SetSnapshot(t.rollbackSnapshot)
-	for _, op := range t.rollbackOps {
-		err := t.Replay(op)
+	its.SetOpID(its.currentTrxCtx.rollbackOpID)
+	snapshotDatatype.SetSnapshot(its.rollbackSnapshot)
+	for _, op := range its.rollbackOps {
+		err := its.Replay(op)
 		if err != nil {
-			t.SetOpID(redoOpID)
+			its.SetOpID(redoOpID)
 			snapshotDatatype.SetSnapshot(redoSnapshot)
-			return t.Logger.OrtooErrorf(err, "fail to replay operations")
+			return its.Logger.OrtooErrorf(err, "fail to replay operations")
 		}
 	}
-	t.rollbackOpID = t.opID.Clone()
-	t.rollbackSnapshot = snapshotDatatype.GetSnapshot().CloneSnapshot()
-	t.rollbackOps = nil
-	t.Logger.Infof("End the rollback: '%s'", t.currentTrxCtx.tag)
+	its.rollbackOpID = its.opID.Clone()
+	its.rollbackSnapshot = snapshotDatatype.GetSnapshot().CloneSnapshot()
+	its.rollbackOps = nil
+	its.Logger.Infof("End the rollback: '%s'", its.currentTrxCtx.tag)
 	return nil
 }
 
 // SetTransactionFail is called when a transaction fails
-func (t *TransactionDatatype) SetTransactionFail() {
-	t.success = false
+func (its *TransactionDatatype) SetTransactionFail() {
+	its.success = false
 }
 
 // EndTransaction is called when a transaction ends
-func (t *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp, isLocal bool) error {
-	if trxCtx == t.currentTrxCtx {
-		defer t.unlock()
-		if t.success {
+func (its *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp, isLocal bool) error {
+	if trxCtx == its.currentTrxCtx {
+		defer its.unlock()
+		if its.success {
 			if withOp {
-				beginOp, ok := t.currentTrxCtx.opBuffer[0].(*operations.TransactionOperation)
+				beginOp, ok := its.currentTrxCtx.opBuffer[0].(*operations.TransactionOperation)
 				if !ok {
-					return errors.New(errors.ErrDatatypeTransaction, "no transaction operation")
+					return errors.ErrDatatypeTransaction.New("no transaction operation")
 				}
-				beginOp.SetNumOfOps(len(t.currentTrxCtx.opBuffer))
+				beginOp.SetNumOfOps(len(its.currentTrxCtx.opBuffer))
 			}
-			t.rollbackOps = append(t.rollbackOps, t.currentTrxCtx.opBuffer...)
+			its.rollbackOps = append(its.rollbackOps, its.currentTrxCtx.opBuffer...)
 			if isLocal {
-				t.deliverTransaction(t.currentTrxCtx.opBuffer)
+				its.deliverTransaction(its.currentTrxCtx.opBuffer)
 			}
-			if t.currentTrxCtx.tag != NotUserTransactionTag {
-				t.Logger.Infof("End the transaction: `%s`", t.currentTrxCtx.tag)
+			if its.currentTrxCtx.tag != NotUserTransactionTag {
+				its.Logger.Infof("End the transaction: `%s`", its.currentTrxCtx.tag)
 			}
 		} else {
-			if err := t.Rollback(); err != nil {
+			if err := its.Rollback(); err != nil {
 				panic(err)
 			}
 
@@ -168,11 +168,11 @@ func (t *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp,
 	return nil
 }
 
-func (t *TransactionDatatype) unlock() {
-	if t.isLocked {
-		t.currentTrxCtx = nil
-		t.success = true
-		t.mutex.Unlock()
-		t.isLocked = false
+func (its *TransactionDatatype) unlock() {
+	if its.isLocked {
+		its.currentTrxCtx = nil
+		its.success = true
+		its.mutex.Unlock()
+		its.isLocked = false
 	}
 }

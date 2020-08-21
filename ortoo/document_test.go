@@ -93,11 +93,11 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", old4)
 		require.Equal(t, arr1, old4)
 
-		m, err := json.Marshal(root) // ==> jsonObject.MarshalJSON
-		require.NoError(t, err)
+		m, err2 := json.Marshal(root) // ==> jsonObject.MarshalJSON
+		require.NoError(t, err2)
 		unmarshaled := newJSONObject(nil, model.OldestTimestamp)
-		err = json.Unmarshal(m, unmarshaled)
-		require.NoError(t, err)
+		err2 = json.Unmarshal(m, unmarshaled)
+		require.NoError(t, err2)
 		log.Logger.Infof("%v", marshal(t, unmarshaled.GetAsJSONCompatible()))
 		require.Equal(t, marshal(t, root.GetAsJSONCompatible()), marshal(t, unmarshaled.GetAsJSONCompatible()))
 	})
@@ -116,7 +116,7 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		old0, err := root.DeleteLocalInObject(root.getKey(), "NOT_EXISTING", opID.Next().GetTimestamp())
-		require.Equal(t, errors.ErrDatatypeNoOp, errors.ToOrtooError(err).Code)
+		require.Equal(t, errors.ErrDatatypeNoOp.ToErrorCode(), errors.ToOrtooError(err).GetCode())
 		require.Nil(t, old0)
 
 		old1, err := root.DeleteLocalInObject(root.getKey(), "K1", opID.Next().GetTimestamp())
@@ -125,7 +125,7 @@ func TestJSONSnapshot(t *testing.T) {
 
 		// delete again: it should do nothing
 		old2, err := root.DeleteLocalInObject(root.getKey(), "K1", opID.Next().GetTimestamp())
-		require.Equal(t, errors.ErrDatatypeNoOp, errors.ToOrtooError(err).Code)
+		require.Equal(t, errors.ErrDatatypeNoOp.ToErrorCode(), errors.ToOrtooError(err).GetCode())
 		require.Nil(t, old2)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
@@ -139,11 +139,11 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", old4)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
-		m, err := json.Marshal(root) // ==> jsonObject.MarshalJSON
-		require.NoError(t, err)
+		m, err2 := json.Marshal(root) // ==> jsonObject.MarshalJSON
+		require.NoError(t, err2)
 		unmarshaled := newJSONObject(nil, model.OldestTimestamp)
-		err = json.Unmarshal(m, unmarshaled)
-		require.NoError(t, err)
+		err2 = json.Unmarshal(m, unmarshaled)
+		require.NoError(t, err2)
 		log.Logger.Infof("%v", marshal(t, unmarshaled.GetAsJSONCompatible()))
 		require.Equal(t, marshal(t, root.GetAsJSONCompatible()), marshal(t, unmarshaled.GetAsJSONCompatible()))
 	})
