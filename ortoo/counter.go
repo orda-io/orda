@@ -80,7 +80,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, error) {
 	case *operations.SnapshotOperation:
 		newSnap := counterSnapshot{}
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), &newSnap); err != nil {
-			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+			return nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
 		}
 		its.snapshot = &newSnap
 		return nil, nil
@@ -88,7 +88,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, error) {
 		return its.snapshot.increaseCommon(cast.C.Delta), nil
 	}
 
-	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
 }
 
 func (its *counter) Get() int32 {
@@ -123,18 +123,18 @@ func (its *counter) GetAsJSON() interface{} {
 func (its *counter) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return nil, nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	return meta, its.snapshot, nil
 }
 
 func (its *counter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 
 	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
-		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	return nil
 }

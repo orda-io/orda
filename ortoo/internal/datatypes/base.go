@@ -49,7 +49,9 @@ func (b *BaseDatatype) String() string {
 
 func (b *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, error) {
 	b.SetNextOpID(op)
+	// TODO: should deal with NO_OP
 	return op.ExecuteLocal(b.datatype)
+
 }
 
 // Replay replays an already executed operation.

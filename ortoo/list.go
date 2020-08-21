@@ -93,11 +93,11 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, error) {
 		}
 		cast.C.T = updatedTargets
 		if len(cast.C.T) != len(cast.C.V) {
-			return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "not matched")
+			return nil, errors.New(errors.ErrDatatypeIllegalOperation, "not matched")
 		}
 		return updatedValues, nil
 	}
-	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
 }
 
 func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
@@ -105,7 +105,7 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
 	case *operations.SnapshotOperation:
 		var newSnap = newListSnapshot()
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+			return nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
 		}
 		its.snapshot = newSnap
 		return nil, nil
@@ -116,7 +116,7 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, error) {
 	case *operations.UpdateOperation:
 		return its.snapshot.updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
 	}
-	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
 }
 
 func (its *list) Size() int {
@@ -134,31 +134,31 @@ func (its *list) SetSnapshot(snapshot iface.Snapshot) {
 func (its *list) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return nil, nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	return meta, its.snapshot, nil
 }
 
 func (its *list) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
-		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	return nil
 }
 
 func (its *list) Update(pos int, values ...interface{}) ([]interface{}, error) {
 	if len(values) < 1 {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
+		return nil, errors.New(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
 	}
 	if err := its.snapshot.validateRange(pos, len(values)); err != nil {
 		return nil, err
 	}
 	jsonValues, err := types.ConvertValueList(values)
 	if err != nil {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, err.Error())
+		return nil, errors.New(errors.ErrDatatypeIllegalOperation, err.Error())
 	}
 	op := operations.NewUpdateOperation(pos, jsonValues)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -170,11 +170,11 @@ func (its *list) Update(pos int, values ...interface{}) ([]interface{}, error) {
 
 func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, error) {
 	if len(values) < 1 {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
+		return nil, errors.New(errors.ErrDatatypeIllegalOperation, "at least one value should be inserted")
 	}
 	jsonValues, err := types.ConvertValueList(values)
 	if err != nil {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, err.Error())
+		return nil, errors.New(errors.ErrDatatypeIllegalOperation, err.Error())
 	}
 	op := operations.NewInsertOperation(pos, jsonValues)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -201,7 +201,7 @@ func (its *list) Delete(pos int) (interface{}, error) {
 // DeleteMany deletes the nodes at index pos in sequence.
 func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
 	if numOfNode < 1 {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "at least one orderedType should be deleted")
+		return nil, errors.New(errors.ErrDatatypeIllegalOperation, "at least one orderedType should be deleted")
 	}
 	if err := its.snapshot.validateRange(pos, numOfNode); err != nil {
 		return nil, err
@@ -293,7 +293,7 @@ func (its *listSnapshot) insertLocal(pos int, ts *model.Timestamp, values ...int
 
 func (its *listSnapshot) insertLocalWithPrecededTypes(pos int, pts ...precededType) (*model.Timestamp, []interface{}, error) {
 	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
-		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
+		return nil, nil, errors.New(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
 	var inserted []interface{}
 	target := its.findNthTarget(pos)
@@ -367,10 +367,10 @@ func (its *listSnapshot) validateRange(pos int, numOfNodes int) error {
 	// 1st condition: if size==4, pos==3 is ok, but 4 is not ok
 	// 2nd condition: if size==4, (pos==3, numOfNodes==1) is ok, (pos==3, numOfNodes=2) is not ok.
 	if numOfNodes < 1 {
-		return errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "numOfNodes should be more than 0")
+		return errors.New(errors.ErrDatatypeIllegalOperation, "numOfNodes should be more than 0")
 	}
 	if its.size-1 < pos || pos+numOfNodes > its.size {
-		return errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
+		return errors.New(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
 	return nil
 }
@@ -423,7 +423,7 @@ func (its *listSnapshot) get(pos int) (interface{}, error) {
 func (its *listSnapshot) getPrecededType(pos int) (precededType, error) {
 	// size == 3, pos can be 0, 1, 2
 	if its.size <= pos {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "out of bound index")
+		return nil, errors.New(errors.ErrDatatypeIllegalOperation, "out of bound index")
 	}
 	return its.findNthTarget(pos + 1).getPrecededType(), nil
 }

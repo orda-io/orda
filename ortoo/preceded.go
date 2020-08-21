@@ -13,6 +13,7 @@ type precededType interface {
 	setPrecedence(ts *model.Timestamp)
 }
 
+// precededNode is used in list
 type precededNode struct {
 	timedType
 	P *model.Timestamp
@@ -26,6 +27,17 @@ func newPrecededNode(v types.JSONValue, t *model.Timestamp, p *model.Timestamp) 
 		},
 		P: p,
 	}
+}
+
+func (its *precededNode) getKey() *model.Timestamp {
+	return its.timedType.getKey()
+}
+
+func (its *precededNode) getTime() *model.Timestamp {
+	if its.P != nil {
+		return its.P
+	}
+	return its.timedType.getTime()
 }
 
 func (its *precededNode) getPrecedence() *model.Timestamp {

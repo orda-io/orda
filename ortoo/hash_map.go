@@ -65,9 +65,9 @@ func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, error) {
 	case *operations.PutOperation:
 		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
 	case *operations.RemoveOperation:
-		return its.snapshot.removeCommon(cast.C.Key, cast.GetTimestamp()), nil
+		return its.snapshot.removeLocal(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
 }
 
 func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
@@ -75,16 +75,16 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, error) {
 	case *operations.SnapshotOperation:
 		var newSnap = newHashMapSnapshot()
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+			return nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
 		}
 		its.snapshot = newSnap
 		return nil, nil
 	case *operations.PutOperation:
 		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
 	case *operations.RemoveOperation:
-		return its.snapshot.removeCommon(cast.C.Key, cast.GetTimestamp()), nil
+		return its.snapshot.removeRemote(cast.C.Key, cast.GetTimestamp()), nil
 	}
-	return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, op)
+	return nil, errors.New(errors.ErrDatatypeIllegalOperation, op)
 }
 
 func (its *hashMap) GetSnapshot() iface.Snapshot {
@@ -102,18 +102,18 @@ func (its *hashMap) GetAsJSON() interface{} {
 func (its *hashMap) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return nil, nil, errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 	return meta, its.snapshot, nil
 }
 
 func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 
 	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
-		return errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+		return errors.New(errors.ErrDatatypeSnapshot, err.Error())
 	}
 
 	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
@@ -124,7 +124,7 @@ func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 
 func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
 	if key == "" || value == nil {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "empty key or nil value is not allowed")
+		return nil, errors.New(errors.ErrDatatypeIllegalOperation, "empty key or nil value is not allowed")
 	}
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
@@ -141,7 +141,7 @@ func (its *hashMap) Get(key string) interface{} {
 
 func (its *hashMap) Remove(key string) (interface{}, error) {
 	if key == "" {
-		return nil, errors.NewDatatypeError(errors.ErrDatatypeIllegalOperation, "empty key is not allowed")
+		return nil, errors.New(errors.ErrDatatypeIllegalOperation, "empty key is not allowed")
 	}
 	op := operations.NewRemoveOperation(key)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -216,9 +216,6 @@ func (its *hashMapSnapshot) putCommonWithTimedValue(key string, tv timedType) (r
 		its.Size++
 		return nil, tv
 	}
-	defer func() {
-		log.Logger.Infof("putCommon value: %v => %v for key: %s", removed, its.Map[key], key)
-	}()
 
 	if removed.getTime().Compare(tv.getTime()) <= 0 {
 		its.Map[key] = tv
@@ -237,17 +234,29 @@ func (its *hashMapSnapshot) GetAsJSONCompatible() interface{} {
 	return m
 }
 
-func (its *hashMapSnapshot) removeCommon(key string, ts *model.Timestamp) interface{} {
+func (its *hashMapSnapshot) removeLocal(key string, ts *model.Timestamp) (interface{}, error) {
 	if tv, ok := its.Map[key]; ok {
-		if tv.getTime().Compare(ts) <= 0 {
+		if !tv.isTomb() {
 			oldVal := tv.getValue()
-			tv.makeTomb(ts)
-			if tv.isTomb() {
+			if tv.makeTomb(ts) {
 				its.Size--
+				return oldVal, nil
 			}
-			return oldVal
 		}
 	}
+	return nil, errors.ErrDatatypeNoOp.New()
+}
+
+func (its *hashMapSnapshot) removeRemote(key string, ts *model.Timestamp) interface{} {
+	if tv, ok := its.Map[key]; ok {
+		oldVal := tv.getValue()
+		if tv.makeTomb(ts) {
+			its.Size--
+			return oldVal
+		}
+		return nil
+	}
+	log.Logger.Errorf("No key '%s' exists", key)
 	return nil
 }
 

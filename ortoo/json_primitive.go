@@ -28,12 +28,14 @@ const (
 
 type jsonType interface {
 	precededType
+	// getKey() *model.Timestamp
 	getType() TypeOfJSON
 	getRoot() *jsonCommon
 	setRoot(r *jsonObject)
 	getParent() jsonType
 	setParent(j jsonType)
-	getParentAsJSONObject() *jsonObject
+	// makeTombAsChild() makes tomb when it is not a tomb
+	makeTombAsChild(ts *model.Timestamp) bool
 	findJSONArray(ts *model.Timestamp) (j *jsonArray, ok bool)
 	findJSONObject(ts *model.Timestamp) (j *jsonObject, ok bool)
 	findJSONElement(ts *model.Timestamp) (j *jsonElement, ok bool)
@@ -61,11 +63,20 @@ type jsonPrimitive struct {
 }
 
 func (its *jsonPrimitive) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
-
+	// do nothing
 }
 
 func (its *jsonPrimitive) getType() TypeOfJSON {
 	return typeJSONPrimitive
+}
+
+func (its *jsonPrimitive) makeTombAsChild(ts *model.Timestamp) bool {
+	if !its.isTomb() {
+		its.P = ts
+		its.deleted = true
+		return true
+	}
+	return false
 }
 
 func (its *jsonPrimitive) isTomb() bool {
@@ -73,20 +84,26 @@ func (its *jsonPrimitive) isTomb() bool {
 }
 
 func (its *jsonPrimitive) makeTomb(ts *model.Timestamp) bool {
-	if its.deleted {
-		if its.P.Compare(ts) > 0 { // This condition makes newer timestamps remain in nodes.
+	if its.deleted { // already deleted
+		if its.P.Compare(ts) > 0 { // if current deletion is older, then ignored.
 			log.Logger.Infof("fail to makeTomb() of jsonPrimitive:%v", its.K.ToString())
 			return false
 		}
 	}
 	its.P = ts
 	its.deleted = true
-	log.Logger.Infof("makeTomb() of jsonPrimitive:%v", its.K.ToString())
 	return true
 }
 
-func (its *jsonPrimitive) getTime() *model.Timestamp {
+func (its *jsonPrimitive) getKey() *model.Timestamp {
 	return its.K
+}
+
+func (its *jsonPrimitive) getTime() *model.Timestamp {
+	if its.P == nil {
+		return its.K
+	}
+	return its.P
 }
 
 func (its *jsonPrimitive) setTime(ts *model.Timestamp) {
@@ -134,11 +151,11 @@ func (its *jsonPrimitive) findJSONArray(ts *model.Timestamp) (json *jsonArray, o
 }
 
 func (its *jsonPrimitive) addToNodeMap(primitive jsonType) {
-	its.getRoot().nodeMap[primitive.getTime().Hash()] = primitive
+	its.getRoot().nodeMap[primitive.getKey().Hash()] = primitive
 }
 
 func (its *jsonPrimitive) addToCemetery(primitive jsonType) {
-	its.getRoot().cemetery[primitive.getTime().Hash()] = primitive
+	its.getRoot().cemetery[primitive.getKey().Hash()] = primitive
 }
 
 func (its *jsonPrimitive) getValue() types.JSONValue {
@@ -164,10 +181,6 @@ func (its *jsonPrimitive) getParent() jsonType {
 
 func (its *jsonPrimitive) setParent(j jsonType) {
 	its.parent = j
-}
-
-func (its *jsonPrimitive) getParentAsJSONObject() *jsonObject {
-	return its.parent.(*jsonObject)
 }
 
 func (its *jsonPrimitive) String() string {

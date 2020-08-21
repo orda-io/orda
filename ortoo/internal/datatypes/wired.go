@@ -117,7 +117,7 @@ func (w *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error {
 			case errors.PushPullErrQueryToDB:
 			case errors.PushPullErrIllegalFormat:
 			case errors.PushPullErrDuplicateDatatypeKey:
-				err := errors.NewDatatypeError(errors.ErrDatatypeCreate, fmt.Sprintf("duplicated key:'%s'", w.Key))
+				err := errors.New(errors.ErrDatatypeCreate, fmt.Sprintf("duplicated key:'%s'", w.Key))
 				return err
 			case errors.PushPullErrPullOperations:
 			case errors.PushPullErrPushOperations:

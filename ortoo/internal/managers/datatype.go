@@ -48,7 +48,7 @@ func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model
 		topic := fmt.Sprintf("%s/%s", its.collectionName, dt.GetKey())
 		if its.notificationManager != nil {
 			if err := its.notificationManager.SubscribeNotification(topic); err != nil {
-				return errors.NewDatatypeError(errors.ErrDatatypeSubscribe, err.Error())
+				return errors.New(errors.ErrDatatypeSubscribe, err.Error())
 			}
 			its.ctx.Logger.Infof("subscribe datatype topic: %s", topic)
 		}

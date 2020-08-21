@@ -224,7 +224,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 				c.ctx.Logger.Warnf("already subscribed datatype '%s'", key)
 				return datatypeFromDM
 			}
-			err := errors.NewDatatypeError(errors.ErrDatatypeSubscribe,
+			err := errors.New(errors.ErrDatatypeSubscribe,
 				fmt.Sprintf("not matched type: %s vs %s", typeOf.String(), datatypeFromDM.GetType().String()))
 			if handler != nil {
 				handler.errorHandler(nil, err)
@@ -248,7 +248,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 
 	if c.datatypeManager != nil {
 		if err := c.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {
-			err := errors.NewDatatypeError(errors.ErrDatatypeSubscribe, err.Error())
+			err := errors.New(errors.ErrDatatypeSubscribe, err.Error())
 			if handler != nil {
 				handler.errorHandler(nil, err)
 			}

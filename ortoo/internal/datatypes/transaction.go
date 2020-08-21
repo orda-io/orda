@@ -147,7 +147,7 @@ func (t *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp,
 			if withOp {
 				beginOp, ok := t.currentTrxCtx.opBuffer[0].(*operations.TransactionOperation)
 				if !ok {
-					return errors.NewDatatypeError(errors.ErrDatatypeTransaction, "no transaction operation")
+					return errors.New(errors.ErrDatatypeTransaction, "no transaction operation")
 				}
 				beginOp.SetNumOfOps(len(t.currentTrxCtx.opBuffer))
 			}

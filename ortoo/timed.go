@@ -9,6 +9,10 @@ import (
 type timedType interface {
 	getValue() types.JSONValue
 	setValue(v types.JSONValue)
+	// getKey is a timestamp which is used as key because it is immutable
+	getKey() *model.Timestamp
+	// getTime is a current timestamp which is used to resolve conflict.
+	// It can be overridden.
 	getTime() *model.Timestamp
 	setTime(ts *model.Timestamp)
 	makeTomb(ts *model.Timestamp) bool
@@ -27,6 +31,10 @@ func (its *timedNode) getValue() types.JSONValue {
 
 func (its *timedNode) setValue(v types.JSONValue) {
 	its.V = v
+}
+
+func (its *timedNode) getKey() *model.Timestamp {
+	return its.T
 }
 
 func (its *timedNode) getTime() *model.Timestamp {
