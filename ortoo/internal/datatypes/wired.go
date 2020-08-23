@@ -43,7 +43,9 @@ func (its *WiredDatatype) ExecuteRemote(op iface.Operation) {
 }
 
 // ReceiveRemoteModelOperations ...
-func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation) ([]interface{}, error) {
+func (its *WiredDatatype) ReceiveRemoteModelOperations(
+	ops []*model.Operation,
+) ([]interface{}, errors.OrtooError) {
 
 	datatype := its.datatype
 	var opList []interface{}
@@ -60,16 +62,16 @@ func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation) (
 			transaction = []*model.Operation{modelOp}
 			i++
 		}
-		trxList, err := datatype.ExecuteTransactionRemote(transaction, true)
+		trxList, err := datatype.ExecuteRemoteTransaction(transaction, true)
 		if err != nil {
-			return nil, its.Logger.OrtooErrorf(err, "fail to execute Transaction")
+			return nil, err
 		}
 		opList = append(opList, trxList)
 	}
 	return opList, nil
 }
 
-func (its *WiredDatatype) applyPushPullPackExecuteOperations(operations []*model.Operation) ([]interface{}, error) {
+func (its *WiredDatatype) applyPushPullPackExecuteOperations(operations []*model.Operation) ([]interface{}, errors.OrtooError) {
 	return its.ReceiveRemoteModelOperations(operations)
 }
 
@@ -107,7 +109,7 @@ func (its *WiredDatatype) calculatePullingOperations(newCheckPoint *model.CheckP
 	return int((newCheckPoint.Sseq - its.checkPoint.Sseq) - (newCheckPoint.Cseq - its.checkPoint.Cseq))
 }
 
-func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error {
+func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) errors.OrtooError {
 	if ppp.GetPushPullPackOption().HasErrorBit() {
 		modelOp := ppp.GetOperations()[0]
 		errOp, ok := operations.ModelToOperation(modelOp).(*operations.ErrorOperation)
@@ -116,8 +118,7 @@ func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error
 			case errors.PushPullErrQueryToDB:
 			case errors.PushPullErrIllegalFormat:
 			case errors.PushPullErrDuplicateDatatypeKey:
-				err := errors.ErrDatatypeCreate.New(fmt.Sprintf("duplicated key:'%s'", its.Key))
-				return err
+				return errors.ErrDatatypeCreate.New(its.Logger, fmt.Sprintf("duplicated key:'%s'", its.Key))
 			case errors.PushPullErrPullOperations:
 			case errors.PushPullErrPushOperations:
 			case errors.PushPullErrMissingOperations:
@@ -160,8 +161,10 @@ func (its *WiredDatatype) applyPushPullPackSyncCheckPoint(newCheckPoint *model.C
 	its.Logger.Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, its.checkPoint)
 }
 
-func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.PushPullPack) (model.StateOfDatatype, model.StateOfDatatype, error) {
-	var err error = nil
+func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
+	ppp *model.PushPullPack,
+) (model.StateOfDatatype, model.StateOfDatatype, errors.OrtooError) {
+	var err errors.OrtooError = nil
 	oldState := its.state
 	switch its.state {
 	case model.StateOfDatatype_DUE_TO_CREATE,
@@ -193,7 +196,7 @@ func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(ppp *model.Push
 // ApplyPushPullPack ...
 func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	var oldState, newState model.StateOfDatatype
-	var errs []error
+	var errs []errors.OrtooError
 	var opList []interface{}
 	err := its.checkPushPullPackOption(ppp)
 	if err == nil {
@@ -213,7 +216,12 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	its.applyPushPullPackCallHandler(errs, oldState, newState, opList)
 }
 
-func (its *WiredDatatype) applyPushPullPackCallHandler(errs []error, oldState, newState model.StateOfDatatype, opList []interface{}) {
+func (its *WiredDatatype) applyPushPullPackCallHandler(
+	errs []errors.OrtooError,
+	oldState,
+	newState model.StateOfDatatype,
+	opList []interface{},
+) {
 	if oldState != newState {
 		its.datatype.HandleStateChange(oldState, newState)
 	}

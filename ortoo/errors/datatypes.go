@@ -14,12 +14,15 @@ const (
 	ErrDatatypeCreate = baseDatatypeCode + iota
 	ErrDatatypeSubscribe
 	ErrDatatypeTransaction
+	ErrDatatypeTransactionRollback
 	ErrDatatypeSnapshot
 	ErrDatatypeInvalidType
 	ErrDatatypeIllegalOperation
 	ErrDatatypeInvalidParent
 	ErrDatatypeNotExistChildDocument
 	ErrDatatypeNoOp
+	ErrDatatypeMarshal
+	ErrDatatypeUnmarshal
 )
 
 var datatypeErrFormats = map[DatatypeErrorCode]string{
@@ -32,15 +35,21 @@ var datatypeErrFormats = map[DatatypeErrorCode]string{
 	ErrDatatypeNotExistChildDocument: "fail to retrieve child due to absence",
 	ErrDatatypeInvalidParent:         "fail to access child with invalid parent",
 	ErrDatatypeNoOp:                  "fail to issue operation",
+	ErrDatatypeMarshal:               "fail to marshal:%v",
+	ErrDatatypeUnmarshal:             "fail to unmarshal:%v",
 }
 
-func (its DatatypeErrorCode) New(args ...interface{}) OrtooError {
+func (its DatatypeErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooError {
 	format := fmt.Sprintf("[DatatypeError: %d] %s", its, datatypeErrFormats[its])
 	err := &OrtooErrorImpl{
 		Code: ErrorCode(its),
 		Msg:  fmt.Sprintf(format, args...),
 	}
-	_ = log.OrtooErrorWithSkip(err, 3, err.Msg)
+	if l != nil {
+		_ = l.OrtooSkipErrorf(err, 3, err.Msg)
+	} else {
+		_ = log.OrtooErrorWithSkip(err, 3, err.Msg)
+	}
 	return err
 }
 

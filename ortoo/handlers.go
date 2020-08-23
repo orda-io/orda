@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/model"
 )
 
@@ -8,14 +9,14 @@ import (
 type Handlers struct {
 	stateChangeHandler     func(dt Datatype, old model.StateOfDatatype, new model.StateOfDatatype)
 	remoteOperationHandler func(dt Datatype, opList []interface{})
-	errorHandler           func(dt Datatype, errs ...error)
+	errorHandler           func(dt Datatype, errs ...errors.OrtooError)
 }
 
 // NewHandlers creates a set of handlers for a datatype.
 func NewHandlers(
 	stateChangeHandler func(dt Datatype, old model.StateOfDatatype, new model.StateOfDatatype),
 	remoteOperationHandler func(dt Datatype, opList []interface{}),
-	errorHandler func(dt Datatype, errs ...error)) *Handlers {
+	errorHandler func(dt Datatype, errs ...errors.OrtooError)) *Handlers {
 	return &Handlers{
 		stateChangeHandler:     stateChangeHandler,
 		remoteOperationHandler: remoteOperationHandler,
@@ -27,7 +28,7 @@ func NewHandlers(
 func (its *Handlers) SetHandlers(
 	stateChangeHandler func(dt Datatype, old model.StateOfDatatype, new model.StateOfDatatype),
 	remoteOperationHandler func(dt Datatype, opList []interface{}),
-	errorHandler func(dt Datatype, errs ...error)) {
+	errorHandler func(dt Datatype, errs ...errors.OrtooError)) {
 	if stateChangeHandler != nil {
 		its.stateChangeHandler = stateChangeHandler
 	}

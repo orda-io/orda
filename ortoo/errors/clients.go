@@ -14,12 +14,16 @@ const (
 	ErrClientNotConnected = baseClientCode + iota
 	ErrClientConnect
 	ErrClientClose
+	ErrClientConnectNotification
+	ErrClientSync
 )
 
 var clientErrFormats = map[ClientErrorCode]string{
-	ErrClientNotConnected: "%s: client is not connected",
-	ErrClientConnect:      "fail to connect: %s ",
-	ErrClientClose:        "fail to close: %s",
+	ErrClientNotConnected:        "%s: client is not connected",
+	ErrClientConnect:             "fail to connect: %s ",
+	ErrClientClose:               "fail to close: %s",
+	ErrClientConnectNotification: "fail to connect notification: %s",
+	ErrClientSync:                "fail to sync:%v",
 }
 
 // NewClientError creates an error related to the client

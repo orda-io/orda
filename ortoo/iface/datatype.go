@@ -1,6 +1,7 @@
 package iface
 
 import (
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/model"
 )
 
@@ -15,6 +16,6 @@ type Datatype interface {
 
 type Handler interface {
 	HandleStateChange(oldState, newState model.StateOfDatatype)
-	HandleErrors(err ...error)
+	HandleErrors(err ...errors.OrtooError)
 	HandleRemoteOperations(operations []interface{})
 }

@@ -18,9 +18,9 @@ type Client interface {
 	IsConnected() bool
 	CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype
 
-	CreateIntCounter(key string, handlers *Handlers) Counter
-	SubscribeOrCreateIntCounter(key string, handlers *Handlers) Counter
-	SubscribeIntCounter(key string, handlers *Handlers) Counter
+	CreateCounter(key string, handlers *Handlers) Counter
+	SubscribeOrCreateCounter(key string, handlers *Handlers) Counter
+	SubscribeCounter(key string, handlers *Handlers) Counter
 
 	CreateHashMap(key string, handlers *Handlers) HashMap
 	SubscribeOrCreateHashMap(key string, handlers *Handlers) HashMap
@@ -91,7 +91,7 @@ func (c *clientImpl) IsConnected() bool {
 func (c *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype {
 	switch typeOf {
 	case model.TypeOfDatatype_COUNTER:
-		return c.CreateIntCounter(key, handlers).(Datatype)
+		return c.CreateCounter(key, handlers).(Datatype)
 	case model.TypeOfDatatype_HASH_MAP:
 		return c.CreateHashMap(key, handlers).(Datatype)
 	case model.TypeOfDatatype_LIST:
@@ -191,15 +191,15 @@ func (c *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfDat
 
 // methods for Counter
 
-func (c *clientImpl) CreateIntCounter(key string, handlers *Handlers) Counter {
+func (c *clientImpl) CreateCounter(key string, handlers *Handlers) Counter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (c *clientImpl) SubscribeIntCounter(key string, handlers *Handlers) Counter {
+func (c *clientImpl) SubscribeCounter(key string, handlers *Handlers) Counter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (c *clientImpl) SubscribeOrCreateIntCounter(key string, handlers *Handlers) Counter {
+func (c *clientImpl) SubscribeOrCreateCounter(key string, handlers *Handlers) Counter {
 	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
@@ -224,7 +224,7 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 				c.ctx.Logger.Warnf("already subscribed datatype '%s'", key)
 				return datatypeFromDM
 			}
-			err := errors.ErrDatatypeSubscribe.New(
+			err := errors.ErrDatatypeSubscribe.New(nil,
 				fmt.Sprintf("not matched type: %s vs %s", typeOf.String(), datatypeFromDM.GetType().String()))
 			if handler != nil {
 				handler.errorHandler(nil, err)
@@ -248,7 +248,6 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 
 	if c.datatypeManager != nil {
 		if err := c.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {
-			err := errors.ErrDatatypeSubscribe.New(err.Error())
 			if handler != nil {
 				handler.errorHandler(nil, err)
 			}

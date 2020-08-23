@@ -3,6 +3,7 @@ package ortoo
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
@@ -19,7 +20,7 @@ type jsonArray struct {
 	*listSnapshot
 }
 
-func newJSONArray(parent jsonType, ts *model.Timestamp) *jsonArray {
+func newJSONArray(base *datatypes.BaseDatatype, parent jsonType, ts *model.Timestamp) *jsonArray {
 	return &jsonArray{
 		jsonType: &jsonPrimitive{
 			parent: parent,
@@ -27,7 +28,7 @@ func newJSONArray(parent jsonType, ts *model.Timestamp) *jsonArray {
 			K:      ts,
 			P:      ts,
 		},
-		listSnapshot: newListSnapshot(),
+		listSnapshot: newListSnapshot(base),
 	}
 }
 

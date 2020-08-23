@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"sync"
 )
@@ -64,7 +65,7 @@ func closeClient(client ortoo.Client) {
 }
 
 func createIntCounter(client ortoo.Client) {
-	intCounter := client.CreateIntCounter(intCounterKey, ortoo.NewHandlers(
+	intCounter := client.CreateCounter(intCounterKey, ortoo.NewHandlers(
 		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
@@ -74,7 +75,7 @@ func createIntCounter(client ortoo.Client) {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt ortoo.Datatype, errs ...error) {
+		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err := client.Sync(); err != nil {
@@ -92,7 +93,7 @@ func createIntCounter(client ortoo.Client) {
 }
 
 func createOrSubscribeIntCounter(client ortoo.Client) {
-	intCounter := client.SubscribeOrCreateIntCounter(intCounterKey, ortoo.NewHandlers(
+	intCounter := client.SubscribeOrCreateCounter(intCounterKey, ortoo.NewHandlers(
 		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
@@ -102,7 +103,7 @@ func createOrSubscribeIntCounter(client ortoo.Client) {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt ortoo.Datatype, errs ...error) {
+		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err := client.Sync(); err != nil {
@@ -120,7 +121,7 @@ func createOrSubscribeIntCounter(client ortoo.Client) {
 }
 
 func subscribeIntCounter(client ortoo.Client) {
-	intCounter := client.SubscribeIntCounter(intCounterKey, ortoo.NewHandlers(
+	intCounter := client.SubscribeCounter(intCounterKey, ortoo.NewHandlers(
 		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
@@ -130,7 +131,7 @@ func subscribeIntCounter(client ortoo.Client) {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt ortoo.Datatype, errs ...error) {
+		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err := client.Sync(); err != nil {

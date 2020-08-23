@@ -3,6 +3,7 @@ package datatypes
 import (
 	"bytes"
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -20,7 +21,7 @@ type BaseDatatype struct {
 	Logger   *log.OrtooLog
 }
 
-func newBaseDatatype(key string, t model.TypeOfDatatype, cuid types.CUID) *BaseDatatype {
+func NewBaseDatatype(key string, t model.TypeOfDatatype, cuid types.CUID) *BaseDatatype {
 	duid := types.NewDUID()
 	return &BaseDatatype{
 		Key:    key,
@@ -46,7 +47,7 @@ func (its *BaseDatatype) String() string {
 	return fmt.Sprintf("%s", its.id)
 }
 
-func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, error) {
+func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, errors.OrtooError) {
 	its.SetNextOpID(op)
 	// TODO: should deal with NO_OP
 	return op.ExecuteLocal(its.datatype)
@@ -54,11 +55,11 @@ func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, erro
 }
 
 // Replay replays an already executed operation.
-func (its *BaseDatatype) Replay(op iface.Operation) error {
+func (its *BaseDatatype) Replay(op iface.Operation) errors.OrtooError {
 	if bytes.Compare(its.opID.CUID, op.GetID().CUID) == 0 {
 		_, err := its.executeLocalBase(op)
 		if err != nil { // TODO: if an operation fails to be executed, opID should be rollbacked.
-			return log.OrtooErrorf(err, "fail to replay local operation")
+			return err
 		}
 	} else {
 		its.executeRemoteBase(op)

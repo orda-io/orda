@@ -2,6 +2,7 @@ package integration
 
 import (
 	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
@@ -28,19 +29,19 @@ func (its *OrtooIntegrationTestSuite) TestProtocol() {
 			_ = client2.Close()
 		}()
 
-		_ = client1.CreateIntCounter(key, ortoo.NewHandlers(
+		_ = client1.CreateCounter(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 				require.Equal(its.T(), model.StateOfDatatype_DUE_TO_CREATE, old)
 				require.Equal(its.T(), model.StateOfDatatype_SUBSCRIBED, new)
 			}, nil,
-			func(dt ortoo.Datatype, errs ...error) {
+			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 				require.NoError(its.T(), errs[0])
 			}))
 		require.NoError(its.T(), client1.Sync())
 
-		_ = client2.CreateIntCounter(key, ortoo.NewHandlers(
+		_ = client2.CreateCounter(key, ortoo.NewHandlers(
 			nil, nil,
-			func(dt ortoo.Datatype, errs ...error) {
+			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 				log.Logger.Errorf("should be duplicate error:%v", errs[0])
 				require.Error(its.T(), errs[0])
 			}))

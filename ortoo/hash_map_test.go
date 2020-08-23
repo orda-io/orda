@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/iface"
+	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/testonly"
@@ -64,13 +65,14 @@ func TestHashMap(t *testing.T) {
 		clone := newHashMap("key2", types.NewCUID(), nil, nil)
 		meta1, snap1, err := hashMap1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
-		snapA, err := json.Marshal(snap1)
-		require.NoError(t, err)
+		snapA, err2 := json.Marshal(snap1)
+		require.NoError(t, err2)
 		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, string(snapA))
 		require.NoError(t, err)
 		_, snap2, err := clone.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
-		snapB, err := json.Marshal(snap2)
+		snapB, err2 := json.Marshal(snap2)
+		require.NoError(t, err)
 		require.Equal(t, snapA, snapB)
 
 		log.Logger.Infof("%v", string(snapA))
@@ -84,8 +86,8 @@ func TestHashMap(t *testing.T) {
 		opID2.Lamport++
 		opID3 := model.NewOperationID()
 		opID3.Era++
-
-		snap := newHashMapSnapshot()
+		base := datatypes.NewBaseDatatype("test", model.TypeOfDatatype_HASH_MAP, types.NewCUID())
+		snap := newHashMapSnapshot(base)
 		_, _ = snap.putCommon("key1", "value1-1", opID1.GetTimestamp())
 		_, _ = snap.putCommon("key1", "value1-2", opID2.GetTimestamp())
 
@@ -100,7 +102,7 @@ func TestHashMap(t *testing.T) {
 		require.Equal(t, 2, snap.size())
 
 		removed1 := snap.removeRemote("key1", opID3.GetTimestamp())
-		removed2 := snap.removeRemote("key2", opID1.GetTimestamp()) // remove with older timestamp; no op
+		removed2 := snap.removeRemote("key1", opID1.GetTimestamp()) // remove with older timestamp; no op
 		require.Equal(t, "value1-2", removed1)
 		require.Nil(t, removed2)
 		json2 := snap.GetAsJSONCompatible()
@@ -113,7 +115,7 @@ func TestHashMap(t *testing.T) {
 		snap1, err := json.Marshal(snap)
 		require.NoError(t, err)
 		log.Logger.Infof("%v", string(snap1))
-		clone := newHashMapSnapshot()
+		clone := newHashMapSnapshot(base)
 		err = json.Unmarshal(snap1, clone)
 		require.NoError(t, err)
 		snap2, err := json.Marshal(clone)

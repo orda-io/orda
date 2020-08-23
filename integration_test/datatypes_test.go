@@ -2,6 +2,7 @@ package integration
 
 import (
 	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ func (its *OrtooIntegrationTestSuite) TestClientServer() {
 		defer client1.Close()
 		wg := sync.WaitGroup{}
 		wg.Add(1)
-		client1.CreateIntCounter(key, ortoo.NewHandlers(
+		client1.CreateCounter(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, oldState, newState model.StateOfDatatype) {
 				intCounter := dt.(ortoo.Counter)
 				_, _ = intCounter.Increase()
@@ -28,7 +29,7 @@ func (its *OrtooIntegrationTestSuite) TestClientServer() {
 				require.NoError(its.T(), client1.Sync())
 				wg.Done()
 			}, nil,
-			func(dt ortoo.Datatype, errs ...error) {
+			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 				its.T().Fatal(errs[0])
 			}))
 		require.NoError(its.T(), client1.Sync())
@@ -43,7 +44,7 @@ func (its *OrtooIntegrationTestSuite) TestClientServer() {
 		defer client2.Close()
 		wg := sync.WaitGroup{}
 		wg.Add(1)
-		client2.SubscribeIntCounter(key, ortoo.NewHandlers(
+		client2.SubscribeCounter(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, oldState, newState model.StateOfDatatype) {
 				intCounter := dt.(ortoo.Counter)
 				log.Logger.Infof("%d", intCounter.Get())
@@ -51,7 +52,7 @@ func (its *OrtooIntegrationTestSuite) TestClientServer() {
 				require.NoError(its.T(), client2.Sync())
 				wg.Done()
 			}, nil,
-			func(dt ortoo.Datatype, errs ...error) {
+			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 				its.T().Fatal(errs[0])
 			}))
 		require.NoError(its.T(), client2.Sync())

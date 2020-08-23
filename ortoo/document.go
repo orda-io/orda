@@ -30,6 +30,7 @@ type DocumentInTxn interface {
 }
 
 func newDocument(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) Document {
+	base := datatypes.NewBaseDatatype(key, model.TypeOfDatatype_DOCUMENT, cuid)
 	doc := &document{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
@@ -37,9 +38,9 @@ func newDocument(key string, cuid types.CUID, wire iface.Wire, handlers *Handler
 		},
 		root:      model.OldestTimestamp,
 		typeOfDoc: TypeJSONObject,
-		snapshot:  newJSONObject(nil, model.OldestTimestamp),
+		snapshot:  newJSONObject(base, nil, model.OldestTimestamp),
 	}
-	doc.Initialize(key, model.TypeOfDatatype_DOCUMENT, cuid, wire, doc.snapshot, doc)
+	doc.Initialize(base, wire, doc.snapshot, doc)
 	return doc
 }
 
@@ -75,7 +76,7 @@ func (its *document) PutToObject(key string, value interface{}) (interface{}, er
 		}
 		return ret, nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New()
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
 }
 
 func (its *document) InsertToArray(pos int, values ...interface{}) (interface{}, error) {
@@ -87,7 +88,7 @@ func (its *document) InsertToArray(pos int, values ...interface{}) (interface{},
 		}
 		return ret, nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New()
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
 }
 
 func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
@@ -121,15 +122,15 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 		// its.snapshot.UpdateLocalInArray()
 		return nil, nil
 	}
-	return nil, errors.ErrDatatypeIllegalOperation.New(op.(iface.Operation).GetType())
+	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op.(iface.Operation).GetType())
 }
 
 func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		var newSnap = newJSONObject(nil, model.OldestTimestamp)
+		var newSnap = newJSONObject(its.BaseDatatype, nil, model.OldestTimestamp)
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.ErrDatatypeSnapshot.New(err.Error())
+			return nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 		}
 		its.snapshot = newSnap
 		// its.datatype.SetOpID()
@@ -151,7 +152,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 		its.snapshot.DeleteRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp())
 		return nil, nil
 	}
-	return nil, errors.ErrDatatypeIllegalOperation.New(op)
+	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
 }
 
 func (its *document) GetFromObject(key string) (Document, error) {
@@ -159,13 +160,13 @@ func (its *document) GetFromObject(key string) (Document, error) {
 		if currentRoot, ok := its.snapshot.findJSONObject(its.root); ok {
 			child := currentRoot.get(key).(jsonType)
 			if child == nil {
-				return nil, errors.ErrDatatypeNotExistChildDocument.New()
+				return nil, errors.ErrDatatypeNotExistChildDocument.New(its.Logger)
 			}
 			return its.getChildDocument(child), nil
 		}
 
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New()
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
 }
 
 func (its *document) getChildDocument(child jsonType) *document {
@@ -188,7 +189,7 @@ func (its *document) GetFromArray(pos int) (Document, error) {
 			return its.getChildDocument(child), nil
 		}
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New()
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
 }
 
 func (its *document) DeleteInObject(key string) (interface{}, error) {
@@ -200,7 +201,7 @@ func (its *document) DeleteInObject(key string) (interface{}, error) {
 		}
 		return ret, nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New()
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
 }
 
 func (its *document) DeleteInArray(pos int) (interface{}, error) {
@@ -217,13 +218,13 @@ func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, 
 		}
 		return ret.([]interface{}), nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New()
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
 }
 
 func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{}, error) {
 	if its.typeOfDoc == TypeJSONArray {
 		if len(values) < 1 {
-			return nil, errors.ErrDatatypeIllegalOperation.New("at least one value should be inserted")
+			return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, "at least one value should be inserted")
 		}
 
 		op := operations.NewDocUpdateInArrayOperation(its.root, pos, values)
@@ -233,7 +234,7 @@ func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{
 		}
 		return ret.([]interface{}), nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New()
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
 }
 
 func (its *document) GetDocumentType() TypeOfJSON {
@@ -261,21 +262,21 @@ func (its *document) GetSnapshot() iface.Snapshot {
 	return its.snapshot
 }
 
-func (its *document) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
+func (its *document) GetMetaAndSnapshot() ([]byte, iface.Snapshot, errors.OrtooError) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.ErrDatatypeSnapshot.New(err.Error())
+		return nil, nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	return meta, its.snapshot, nil
 }
 
-func (its *document) SetMetaAndSnapshot(meta []byte, snapshot string) error {
+func (its *document) SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooError {
 	log.Logger.Infof("SetMetaAndSnapshot:%v", snapshot)
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.ErrDatatypeSnapshot.New(err.Error())
+		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
-		return errors.ErrDatatypeSnapshot.New(err.Error())
+		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	return nil
 }

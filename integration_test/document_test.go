@@ -2,6 +2,7 @@ package integration
 
 import (
 	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
@@ -42,7 +43,7 @@ func (its *OrtooIntegrationTestSuite) TestDocument() {
 		func(dt ortoo.Datatype, opList []interface{}) {
 
 		},
-		func(dt ortoo.Datatype, errs ...error) {
+		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 
 		})
 

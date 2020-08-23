@@ -34,17 +34,19 @@ type counter struct {
 
 // newCounter creates a new int counter
 func newCounter(key string, cuid types.CUID, wire iface.Wire, handler *Handlers) Counter {
-	intCounter := &counter{
+	base := datatypes.NewBaseDatatype(key, model.TypeOfDatatype_COUNTER, cuid)
+	counter := &counter{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
 			handlers:           handler,
 		},
 		snapshot: &counterSnapshot{
+			base:  base,
 			Value: 0,
 		},
 	}
-	intCounter.Initialize(key, model.TypeOfDatatype_COUNTER, cuid, wire, intCounter.snapshot, intCounter)
-	return intCounter
+	counter.Initialize(base, wire, counter.snapshot, counter)
+	return counter
 }
 
 func (its *counter) DoTransaction(tag string, txnFunc func(intCounter CounterInTxn) error) error {
@@ -79,7 +81,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 	case *operations.SnapshotOperation:
 		newSnap := counterSnapshot{}
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), &newSnap); err != nil {
-			return nil, errors.ErrDatatypeSnapshot.New(err.Error())
+			return nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 		}
 		its.snapshot = &newSnap
 		return nil, nil
@@ -87,7 +89,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 		return its.snapshot.increaseCommon(cast.C.Delta), nil
 	}
 
-	return nil, errors.ErrDatatypeIllegalOperation.New(op)
+	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
 }
 
 func (its *counter) Get() int32 {
@@ -119,21 +121,21 @@ func (its *counter) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSONCompatible()
 }
 
-func (its *counter) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
+func (its *counter) GetMetaAndSnapshot() ([]byte, iface.Snapshot, errors.OrtooError) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.ErrDatatypeSnapshot.New(err.Error())
+		return nil, nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	return meta, its.snapshot, nil
 }
 
-func (its *counter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
+func (its *counter) SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooError {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.ErrDatatypeSnapshot.New(err.Error())
+		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 
 	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
-		return errors.ErrDatatypeSnapshot.New(err.Error())
+		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	return nil
 }
@@ -143,6 +145,7 @@ func (its *counter) SetMetaAndSnapshot(meta []byte, snapshot string) error {
 // ////////////////////////////////////////////////////////////////
 
 type counterSnapshot struct {
+	base  *datatypes.BaseDatatype
 	Value int32 `json:"value"`
 }
 

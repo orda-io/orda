@@ -149,7 +149,7 @@ func TestMongo(t *testing.T) {
 
 	t.Run("Can manipulate operationDoc", func(t *testing.T) {
 		op, err := operations.NewSnapshotOperation(
-			model.TypeOfDatatype_INT_COUNTER,
+			model.TypeOfDatatype_COUNTER,
 			model.StateOfDatatype_DUE_TO_CREATE,
 			&testSnapshot{Value: 1})
 		if err != nil {
@@ -202,6 +202,10 @@ func TestMongo(t *testing.T) {
 
 type testSnapshot struct {
 	Value int32 `json:"value"`
+}
+
+func (its *testSnapshot) GetAsJSONCompatible() interface{} {
+	panic("implement me")
 }
 
 func (its *testSnapshot) GetAsJSON() interface{} {

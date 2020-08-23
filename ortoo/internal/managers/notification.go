@@ -48,9 +48,10 @@ type notificationMsg struct {
 }
 
 // SubscribeNotification subscribes notification for a topic.
-func (its *NotificationManager) SubscribeNotification(topic string) error {
-	if token := its.client.Subscribe(topic, 0, its.notificationSubscribeFunc); token.Wait() && token.Error() != nil {
-		return token.Error()
+func (its *NotificationManager) SubscribeNotification(topic string) errors.OrtooError {
+	token := its.client.Subscribe(topic, 0, its.notificationSubscribeFunc)
+	if token.Wait() && token.Error() != nil {
+		return errors.ErrClientConnectNotification.New(token.Error())
 	}
 	return nil
 }
@@ -74,7 +75,7 @@ func (its *NotificationManager) notificationSubscribeFunc(client mqtt.Client, ms
 }
 
 // Connect make a connection with Ortoo notification server.
-func (its *NotificationManager) Connect() error {
+func (its *NotificationManager) Connect() errors.OrtooError {
 	if token := its.client.Connect(); token.Wait() && token.Error() != nil {
 		return errors.ErrClientConnect.New("notification server")
 	}

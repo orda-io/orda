@@ -2,6 +2,7 @@ package ortoo
 
 import (
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/types"
@@ -34,6 +35,8 @@ type jsonType interface {
 	setRoot(r *jsonObject)
 	getParent() jsonType
 	setParent(j jsonType)
+	getBase() *datatypes.BaseDatatype
+	getLogger() *log.OrtooLog
 	// makeTombAsChild() makes tomb when it is not a tomb
 	makeTombAsChild(ts *model.Timestamp) bool
 	findJSONArray(ts *model.Timestamp) (j *jsonArray, ok bool)
@@ -50,6 +53,7 @@ type jsonType interface {
 
 type jsonCommon struct {
 	root     *jsonObject
+	base     *datatypes.BaseDatatype
 	nodeMap  map[string]jsonType // store all jsonPrimitive.K.hash => jsonType
 	cemetery map[string]jsonType // store all jsonPrimitive.K.hash => deleted jsonType
 }
@@ -68,6 +72,10 @@ func (its *jsonPrimitive) unmarshal(marshaled *marshaledJSONType, jsonMap map[st
 
 func (its *jsonPrimitive) getType() TypeOfJSON {
 	return typeJSONPrimitive
+}
+
+func (its *jsonPrimitive) getBase() *datatypes.BaseDatatype {
+	return its.common.base
 }
 
 func (its *jsonPrimitive) makeTombAsChild(ts *model.Timestamp) bool {
@@ -116,6 +124,10 @@ func (its *jsonPrimitive) getPrecedence() *model.Timestamp {
 
 func (its *jsonPrimitive) setPrecedence(ts *model.Timestamp) {
 	its.P = ts
+}
+
+func (its *jsonPrimitive) getLogger() *log.OrtooLog {
+	return its.common.base.Logger
 }
 
 func (its *jsonPrimitive) findJSONPrimitive(ts *model.Timestamp) (j jsonType, ok bool) {
@@ -188,7 +200,7 @@ func (its *jsonPrimitive) String() string {
 }
 
 func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts *model.Timestamp) *jsonArray {
-	ja := newJSONArray(parent, ts.NextDeliminator())
+	ja := newJSONArray(its.getBase(), parent, ts.NextDeliminator())
 	target := reflect.ValueOf(value)
 	var appendValues []precededType
 	for i := 0; i < target.Len(); i++ {
@@ -219,7 +231,7 @@ func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts
 }
 
 func (its *jsonPrimitive) createJSONObject(parent jsonType, value interface{}, ts *model.Timestamp) *jsonObject {
-	jo := newJSONObject(parent, ts.NextDeliminator())
+	jo := newJSONObject(its.getBase(), parent, ts.NextDeliminator())
 	target := reflect.ValueOf(value)
 	fields := reflect.TypeOf(value)
 

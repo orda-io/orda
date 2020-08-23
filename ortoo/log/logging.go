@@ -103,10 +103,10 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 // OrtooErrorf is a method to present a error log.
 func (o *OrtooLog) OrtooErrorf(err error, format string, args ...interface{}) error {
-	return o.ortooErrorf(err, 3, format, args...)
+	return o.OrtooSkipErrorf(err, 3, format, args...)
 }
 
-func (o *OrtooLog) ortooErrorf(err error, skip int, format string, args ...interface{}) error {
+func (o *OrtooLog) OrtooSkipErrorf(err error, skip int, format string, args ...interface{}) error {
 	_, file, line, _ := runtime.Caller(skip)
 	relativeCallFile := strings.Replace(file, basepath, "", 1)
 	errorPlace := fmt.Sprintf("%s:%d", relativeCallFile, line)
@@ -124,7 +124,7 @@ func (o *OrtooLog) ortooErrorf(err error, skip int, format string, args ...inter
 
 // OrtooErrorf is a method wrapping Logger.OrtooErrorf()
 func OrtooErrorf(err error, format string, args ...interface{}) error {
-	return Logger.ortooErrorf(err, 2, format, args...)
+	return Logger.OrtooSkipErrorf(err, 2, format, args...)
 }
 
 // OrtooError prints out the error message with the location where an error occur.
@@ -148,5 +148,5 @@ func OrtooError(err error) error {
 
 // OrtooErrorWithSkip is a method wrapping Logger.OrtooErrorf()
 func OrtooErrorWithSkip(err error, skip int, format string, args ...interface{}) error {
-	return Logger.ortooErrorf(err, skip, format, args...)
+	return Logger.OrtooSkipErrorf(err, skip, format, args...)
 }

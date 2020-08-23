@@ -3,8 +3,10 @@ package ortoo
 import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/ortoo/errors"
+	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -27,7 +29,8 @@ func TestJSONSnapshot(t *testing.T) {
 
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
 		opID1 := model.NewOperationID()
-		jsonObj := newJSONObject(nil, model.OldestTimestamp)
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		jsonObj := newJSONObject(base, nil, model.OldestTimestamp)
 
 		// { "K1": 1234, "K2": 3.14 }
 		jsonObj.putCommon("K1", 1234, opID1.Next().GetTimestamp())
@@ -54,14 +57,15 @@ func TestJSONSnapshot(t *testing.T) {
 		m, err := json.Marshal(jsonObj) // ==> jsonObject.MarshalJSON
 		require.NoError(t, err)
 		log.Logger.Infof("%s", string(m))
-		unmarshaled := newJSONObject(nil, model.OldestTimestamp)
+		unmarshaled := newJSONObject(base, nil, model.OldestTimestamp)
 		err = json.Unmarshal(m, unmarshaled)
 		require.NoError(t, err)
 	})
 
 	t.Run("Can remove something remotely in JSONObject", func(t *testing.T) {
 		opID := model.NewOperationID()
-		root := newJSONObject(nil, model.OldestTimestamp)
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		root := newJSONObject(base, nil, model.OldestTimestamp)
 
 		// { "K1": "hello" }
 		root.putCommon("K1", "hello", opID.Next().GetTimestamp())
@@ -95,7 +99,7 @@ func TestJSONSnapshot(t *testing.T) {
 
 		m, err2 := json.Marshal(root) // ==> jsonObject.MarshalJSON
 		require.NoError(t, err2)
-		unmarshaled := newJSONObject(nil, model.OldestTimestamp)
+		unmarshaled := newJSONObject(base, nil, model.OldestTimestamp)
 		err2 = json.Unmarshal(m, unmarshaled)
 		require.NoError(t, err2)
 		log.Logger.Infof("%v", marshal(t, unmarshaled.GetAsJSONCompatible()))
@@ -104,7 +108,8 @@ func TestJSONSnapshot(t *testing.T) {
 
 	t.Run("Can remove something locally in JSONObject", func(t *testing.T) {
 		opID := model.NewOperationID()
-		root := newJSONObject(nil, model.OldestTimestamp)
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		root := newJSONObject(base, nil, model.OldestTimestamp)
 
 		// { "K1": "hello" }
 		root.putCommon("K1", "hello", opID.Next().GetTimestamp())
@@ -141,7 +146,7 @@ func TestJSONSnapshot(t *testing.T) {
 
 		m, err2 := json.Marshal(root) // ==> jsonObject.MarshalJSON
 		require.NoError(t, err2)
-		unmarshaled := newJSONObject(nil, model.OldestTimestamp)
+		unmarshaled := newJSONObject(base, nil, model.OldestTimestamp)
 		err2 = json.Unmarshal(m, unmarshaled)
 		require.NoError(t, err2)
 		log.Logger.Infof("%v", marshal(t, unmarshaled.GetAsJSONCompatible()))
@@ -150,7 +155,8 @@ func TestJSONSnapshot(t *testing.T) {
 
 	t.Run("Can remove something locally in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
-		root := newJSONObject(nil, model.OldestTimestamp)
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		root := newJSONObject(base, nil, model.OldestTimestamp)
 
 		// {"K1":["world",1234,3.14]}
 		root.putCommon("K1", arr1, opID.Next().GetTimestamp())
@@ -165,7 +171,8 @@ func TestJSONSnapshot(t *testing.T) {
 
 	t.Run("Can put nested JSONObject to JSONObject", func(t *testing.T) {
 		opID1 := model.NewOperationID()
-		root := newJSONObject(nil, model.OldestTimestamp)
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		root := newJSONObject(base, nil, model.OldestTimestamp)
 
 		// add struct
 		root.putCommon("K1", strt1, opID1.Next().GetTimestamp())
@@ -206,7 +213,8 @@ func TestJSONSnapshot(t *testing.T) {
 
 	t.Run("Can marshal and unmarshal snapshots ", func(t *testing.T) {
 		opID1 := model.NewOperationID()
-		jsonObj := newJSONObject(nil, model.OldestTimestamp)
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		jsonObj := newJSONObject(base, nil, model.OldestTimestamp)
 
 		// { "A1": ["world", 1234, 3.14] }
 		jsonObj.putCommon("A1", arr1, opID1.Next().GetTimestamp())
@@ -246,7 +254,8 @@ func TestJSONSnapshot(t *testing.T) {
 
 	t.Run("Can put JSONArray to JSONObject", func(t *testing.T) {
 		opID1 := model.NewOperationID()
-		jsonObj := newJSONObject(nil, model.OldestTimestamp)
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		jsonObj := newJSONObject(base, nil, model.OldestTimestamp)
 
 		// put array for K1
 		array := []interface{}{1234, 3.14, "hello"}

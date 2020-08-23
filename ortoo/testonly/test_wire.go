@@ -1,6 +1,7 @@
 package testonly
 
 import (
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/log"
@@ -33,7 +34,7 @@ func (its *TestWire) DeliverTransaction(wired iface.WiredDatatype) {
 }
 
 // OnChangeDatatypeState ...
-func (its *TestWire) OnChangeDatatypeState(dt iface.Datatype, state model.StateOfDatatype) error {
+func (its *TestWire) OnChangeDatatypeState(dt iface.Datatype, state model.StateOfDatatype) errors.OrtooError {
 	return nil
 }
 

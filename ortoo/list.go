@@ -30,14 +30,15 @@ type ListInTxn interface {
 }
 
 func newList(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) List {
+	base := datatypes.NewBaseDatatype(key, model.TypeOfDatatype_LIST, cuid)
 	list := &list{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
 			handlers:           handlers,
 		},
-		snapshot: newListSnapshot(),
+		snapshot: newListSnapshot(base),
 	}
-	list.Initialize(key, model.TypeOfDatatype_LIST, cuid, wire, list.snapshot, list)
+	list.Initialize(base, wire, list.snapshot, list)
 	return list
 }
 
@@ -93,19 +94,19 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 		}
 		cast.C.T = updatedTargets
 		if len(cast.C.T) != len(cast.C.V) {
-			return nil, errors.ErrDatatypeIllegalOperation.New("not matched")
+			return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, "not matched")
 		}
 		return updatedValues, nil
 	}
-	return nil, errors.ErrDatatypeIllegalOperation.New(op)
+	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
 }
 
 func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		var newSnap = newListSnapshot()
+		var newSnap = newListSnapshot(its.BaseDatatype)
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.ErrDatatypeSnapshot.New(err.Error())
+			return nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 		}
 		its.snapshot = newSnap
 		return nil, nil
@@ -116,7 +117,7 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) 
 	case *operations.UpdateOperation:
 		return its.snapshot.updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
 	}
-	return nil, errors.ErrDatatypeIllegalOperation.New(op)
+	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
 }
 
 func (its *list) Size() int {
@@ -131,34 +132,34 @@ func (its *list) SetSnapshot(snapshot iface.Snapshot) {
 	its.snapshot = snapshot.(*listSnapshot)
 }
 
-func (its *list) GetMetaAndSnapshot() ([]byte, iface.Snapshot, error) {
+func (its *list) GetMetaAndSnapshot() ([]byte, iface.Snapshot, errors.OrtooError) {
 	meta, err := its.ManageableDatatype.GetMeta()
 	if err != nil {
-		return nil, nil, errors.ErrDatatypeSnapshot.New(err.Error())
+		return nil, nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	return meta, its.snapshot, nil
 }
 
-func (its *list) SetMetaAndSnapshot(meta []byte, snapshot string) error {
+func (its *list) SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooError {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.ErrDatatypeSnapshot.New(err.Error())
+		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
-		return errors.ErrDatatypeSnapshot.New(err.Error())
+		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	return nil
 }
 
 func (its *list) Update(pos int, values ...interface{}) ([]interface{}, error) {
 	if len(values) < 1 {
-		return nil, errors.ErrDatatypeIllegalOperation.New("at least one value should be inserted")
+		return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, "at least one value should be inserted")
 	}
 	if err := its.snapshot.validateRange(pos, len(values)); err != nil {
 		return nil, err
 	}
 	jsonValues, err := types.ConvertValueList(values)
 	if err != nil {
-		return nil, errors.ErrDatatypeIllegalOperation.New(err.Error())
+		return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, err.Error())
 	}
 	op := operations.NewUpdateOperation(pos, jsonValues)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -170,11 +171,11 @@ func (its *list) Update(pos int, values ...interface{}) ([]interface{}, error) {
 
 func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, error) {
 	if len(values) < 1 {
-		return nil, errors.ErrDatatypeIllegalOperation.New("at least one value should be inserted")
+		return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, "at least one value should be inserted")
 	}
 	jsonValues, err := types.ConvertValueList(values)
 	if err != nil {
-		return nil, errors.ErrDatatypeIllegalOperation.New(err.Error())
+		return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, err.Error())
 	}
 	op := operations.NewInsertOperation(pos, jsonValues)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -201,7 +202,7 @@ func (its *list) Delete(pos int) (interface{}, error) {
 // DeleteMany deletes the nodes at index pos in sequence.
 func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
 	if numOfNode < 1 {
-		return nil, errors.ErrDatatypeIllegalOperation.New("at least one orderedType should be deleted")
+		return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, "at least one orderedType should be deleted")
 	}
 	if err := its.snapshot.validateRange(pos, numOfNode); err != nil {
 		return nil, err
@@ -219,6 +220,7 @@ func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
 // ////////////////////////////////////////////////////////////////
 
 type listSnapshot struct {
+	base *datatypes.BaseDatatype
 	head orderedType
 	size int
 	Map  map[string]orderedType
@@ -236,11 +238,12 @@ func (its *listSnapshot) CloneSnapshot() iface.Snapshot {
 	}
 }
 
-func newListSnapshot() *listSnapshot {
+func newListSnapshot(base *datatypes.BaseDatatype) *listSnapshot {
 	head := newHead()
 	m := make(map[string]orderedType)
 	m[head.hash()] = head
 	return &listSnapshot{
+		base: base,
 		head: head,
 		Map:  m,
 		size: 0,
@@ -293,7 +296,7 @@ func (its *listSnapshot) insertLocal(pos int, ts *model.Timestamp, values ...int
 
 func (its *listSnapshot) insertLocalWithPrecededTypes(pos int, pts ...precededType) (*model.Timestamp, []interface{}, errors.OrtooError) {
 	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
-		return nil, nil, errors.ErrDatatypeIllegalOperation.New("out of bound index")
+		return nil, nil, errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "out of bound index")
 	}
 	var inserted []interface{}
 	target := its.findNthTarget(pos)
@@ -367,10 +370,10 @@ func (its *listSnapshot) validateRange(pos int, numOfNodes int) errors.OrtooErro
 	// 1st condition: if size==4, pos==3 is ok, but 4 is not ok
 	// 2nd condition: if size==4, (pos==3, numOfNodes==1) is ok, (pos==3, numOfNodes=2) is not ok.
 	if numOfNodes < 1 {
-		return errors.ErrDatatypeIllegalOperation.New("numOfNodes should be more than 0")
+		return errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "numOfNodes should be more than 0")
 	}
 	if its.size-1 < pos || pos+numOfNodes > its.size {
-		return errors.ErrDatatypeIllegalOperation.New("out of bound index")
+		return errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "out of bound index")
 	}
 	return nil
 }
@@ -423,7 +426,7 @@ func (its *listSnapshot) get(pos int) (interface{}, error) {
 func (its *listSnapshot) getPrecededType(pos int) (precededType, error) {
 	// size == 3, pos can be 0, 1, 2
 	if its.size <= pos {
-		return nil, errors.ErrDatatypeIllegalOperation.New("out of bound index")
+		return nil, errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "out of bound index")
 	}
 	return its.findNthTarget(pos + 1).getPrecededType(), nil
 }

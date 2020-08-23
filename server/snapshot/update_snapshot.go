@@ -72,7 +72,7 @@ func (m *Manager) UpdateSnapshot() error {
 				transaction = append(transaction, modelOp)
 				remainOfTransaction--
 				if remainOfTransaction == 0 {
-					_, err := datatype.ExecuteTransactionRemote(transaction, false)
+					_, err := datatype.ExecuteRemoteTransaction(transaction, false)
 					if err != nil {
 						return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
 					}

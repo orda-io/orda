@@ -2,6 +2,7 @@ package integration
 
 import (
 	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
 	"time"
@@ -27,7 +28,7 @@ func (its *OrtooIntegrationTestSuite) TestList() {
 			func(dt ortoo.Datatype, opList []interface{}) {
 
 			},
-			func(dt ortoo.Datatype, errs ...error) {
+			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 
 			}))
 		_, _ = list1.InsertMany(0, "a", 2, 3.141592, time.Now())

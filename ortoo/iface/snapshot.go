@@ -1,5 +1,7 @@
 package iface
 
+import "github.com/knowhunger/ortoo/ortoo/errors"
+
 type PublicSnapshotDatatype interface {
 	GetAsJSON() interface{}
 }
@@ -9,8 +11,8 @@ type SnapshotDatatype interface {
 	PublicSnapshotDatatype
 	SetSnapshot(snapshot Snapshot)
 	GetSnapshot() Snapshot
-	GetMetaAndSnapshot() ([]byte, Snapshot, error)         // @Real datatype
-	SetMetaAndSnapshot(meta []byte, snapshot string) error // @Real datatype
+	GetMetaAndSnapshot() ([]byte, Snapshot, errors.OrtooError)         // @Real datatype
+	SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooError // @Real datatype
 }
 
 // Snapshot defines the interface for snapshot used in a datatype.

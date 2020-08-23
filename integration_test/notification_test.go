@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo"
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/stretchr/testify/require"
@@ -29,14 +30,14 @@ func (its *OrtooIntegrationTestSuite) TestNotification() {
 			_ = client2.Close()
 		}()
 
-		intCounter1 := client1.CreateIntCounter(key, nil)
+		intCounter1 := client1.CreateCounter(key, nil)
 		_, _ = intCounter1.Increase()
 		require.NoError(its.T(), client1.Sync())
 
 		fmt.Printf("Subscribed by client2\n")
 		wg := sync.WaitGroup{}
 		wg.Add(3)
-		intCounter2 := client2.SubscribeIntCounter(key, ortoo.NewHandlers(
+		intCounter2 := client2.SubscribeCounter(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 				intCounter := dt.(ortoo.Counter)
 				log.Logger.Infof("STATE: %s -> %s %d", old, new, intCounter.Get())
@@ -49,7 +50,7 @@ func (its *OrtooIntegrationTestSuite) TestNotification() {
 				}
 				wg.Done() // two times
 			},
-			func(dt ortoo.Datatype, err ...error) {
+			func(dt ortoo.Datatype, err ...errors.OrtooError) {
 				require.NoError(its.T(), err[0])
 			}))
 		require.NoError(its.T(), client2.Sync())

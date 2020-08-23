@@ -197,9 +197,7 @@ func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, jsonMap map[strin
 
 func (its *jsonArray) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
 	ja := marshaled.A
-
-	its.listSnapshot = newListSnapshot()
-
+	its.listSnapshot = newListSnapshot(its.getBase())
 	prev := its.listSnapshot.head
 	for _, ts := range ja.N {
 		node := &orderedNode{

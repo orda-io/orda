@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
 	"github.com/knowhunger/ortoo/ortoo/internal/datatypes"
 	"github.com/knowhunger/ortoo/ortoo/model"
@@ -23,7 +24,7 @@ func (its *datatype) HandleStateChange(old, new model.StateOfDatatype) {
 	}
 }
 
-func (its *datatype) HandleErrors(errs ...error) {
+func (its *datatype) HandleErrors(errs ...errors.OrtooError) {
 	if its.handlers != nil && its.handlers.errorHandler != nil {
 		go its.handlers.errorHandler(its.ManageableDatatype.GetDatatype().(Datatype), errs...)
 	}
