@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/ortoo/version"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/notification"
 	"github.com/knowhunger/ortoo/server/restful"
@@ -80,7 +81,11 @@ func (its *OrtooServer) Start() error {
 	model.RegisterOrtooServiceServer(its.rpcServer, its.service)
 
 	its.httpServer = restful.NewServer(its.conf.RestfulPort, its.Mongo)
-	fmt.Printf("%sStarted at %s\n", banner, time.Now().String())
+	fmt.Printf("%s %s(%s) Started at %s\n",
+		banner,
+		version.Version,
+		version.GitCommit,
+		time.Now().String())
 	go func() {
 		if err := its.rpcServer.Serve(lis); err != nil {
 			_ = log.OrtooErrorf(err, "fail to serve grpc")

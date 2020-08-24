@@ -2,9 +2,9 @@ package datatypes
 
 import (
 	"fmt"
+	"github.com/knowhunger/ortoo/ortoo/constants"
 	"github.com/knowhunger/ortoo/ortoo/errors"
 	"github.com/knowhunger/ortoo/ortoo/iface"
-	"github.com/knowhunger/ortoo/ortoo/internal/constants"
 	"github.com/knowhunger/ortoo/ortoo/model"
 	"github.com/knowhunger/ortoo/ortoo/operations"
 )

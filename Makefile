@@ -1,5 +1,15 @@
-BUILD_DIR = build
+VERSION = 0.0.1
+BUILD_DIR = bin
+
+GIT_COMMIT := $(shell git rev-parse --short HEAD)
+
 GOSRCS := $(shell find . -path ./vendor -prune -o -type f -name '*.go' -print)
+
+GO_PROJECT = github.com/knowhunger/ortoo
+
+GO_LDFLAGS ?=
+GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.GitCommit=${GIT_COMMIT}
+GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.Version=${VERSION}
 
 .PHONY: protoc-gen
 protoc-gen:
@@ -12,7 +22,7 @@ protoc-gen:
 .PHONY: server
 server:
 	mkdir -p $(BUILD_DIR)
-	cd server && go build -gcflags='all=-N -l' -o ../$(BUILD_DIR)
+	cd server && go build -gcflags='all=-N -l' -ldflags "${GO_LDFLAGS}" -o ../$(BUILD_DIR)
 
 .PHONY: dependency
 dependency:
@@ -51,7 +61,7 @@ docker-down:
 
 .PHONY: run-local-server
 run-local-server: docker-up server
-	build/server --conf examples/local-config.json
+	$(BUILD_DIR)/server --conf examples/local-config.json
 
 .PHONY: clear
 clear: docker-down
