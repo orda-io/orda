@@ -4,8 +4,8 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
-	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 )
 

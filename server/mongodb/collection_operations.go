@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"

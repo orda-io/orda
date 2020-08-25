@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/ortoo/model"
-	"github.com/knowhunger/ortoo/ortoo/version"
+	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/pkg/version"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/notification"
 	"github.com/knowhunger/ortoo/server/restful"

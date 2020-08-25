@@ -53,11 +53,11 @@ unit-test: dependency
 
 .PHONY: docker-up
 docker-up:
-	@docker-compose up -d
+	@cd deployments; docker-compose up -d
 
 .PHONY: docker-down
 docker-down:
-	@docker-compose down
+	@cd deployments; docker-compose down
 
 .PHONY: run-local-server
 run-local-server: docker-up server

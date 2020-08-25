@@ -2,7 +2,7 @@ package restful
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"net/http"
 	"strings"

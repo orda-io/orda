@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/ortoo/errors"
-	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/ortoo/model"
-	"github.com/knowhunger/ortoo/ortoo/types"
+	"github.com/knowhunger/ortoo/pkg/errors"
+	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/pkg/types"
 	"reflect"
 )
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/server/server"
 	"os"
 
