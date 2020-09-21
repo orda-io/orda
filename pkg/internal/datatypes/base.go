@@ -21,6 +21,7 @@ type BaseDatatype struct {
 	Logger   *log.OrtooLog
 }
 
+// NewBaseDatatype creates a new base datatype
 func NewBaseDatatype(key string, t model.TypeOfDatatype, cuid types.CUID) *BaseDatatype {
 	duid := types.NewDUID()
 	return &BaseDatatype{

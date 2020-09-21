@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// HashMap is an Ortoo datatype which provides hash map interfaces.
+// HashMap is an Ortoo datatype which provides the hash map interfaces.
 type HashMap interface {
 	Datatype
 	HashMapInTxn

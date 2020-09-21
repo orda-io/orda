@@ -101,11 +101,12 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// OrtooErrorf is a method to present a error log.
+// OrtooErrorf is a method to present a error log
 func (o *OrtooLog) OrtooErrorf(err error, format string, args ...interface{}) error {
 	return o.OrtooSkipErrorf(err, 3, format, args...)
 }
 
+// OrtooSkipErrorf is used to print an error with skipping callers
 func (o *OrtooLog) OrtooSkipErrorf(err error, skip int, format string, args ...interface{}) error {
 	_, file, line, _ := runtime.Caller(skip)
 	relativeCallFile := strings.Replace(file, basepath, "", 1)

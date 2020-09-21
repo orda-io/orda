@@ -36,7 +36,7 @@ type OrtooServer struct {
 	mutex      sync.Mutex
 	closedCh   chan struct{}
 	rpcServer  *grpc.Server
-	httpServer *restful.Server
+	httpServer *restful.ControlServer
 	ctx        context.Context
 	conf       *OrtooServerConfig
 	service    *service.OrtooService
@@ -80,7 +80,7 @@ func (its *OrtooServer) Start() error {
 	}
 	model.RegisterOrtooServiceServer(its.rpcServer, its.service)
 
-	its.httpServer = restful.NewServer(its.conf.RestfulPort, its.Mongo)
+	its.httpServer = restful.New(its.conf.RestfulPort, its.Mongo)
 	fmt.Printf("%s %s(%s) Started at %s\n",
 		banner,
 		version.Version,
@@ -103,6 +103,7 @@ func (its *OrtooServer) Start() error {
 	return nil
 }
 
+// Close closes all the server threads.
 func (its *OrtooServer) Close(graceful bool) {
 	its.mutex.Lock()
 	defer func() {
@@ -119,6 +120,7 @@ func (its *OrtooServer) Close(graceful bool) {
 	}
 }
 
+// HandleSignals can handle signals to the server.
 func (its *OrtooServer) HandleSignals() int {
 	log.Logger.Infof("ready to handle signals")
 	signalCh := make(chan os.Signal, 1)

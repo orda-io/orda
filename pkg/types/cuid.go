@@ -18,6 +18,7 @@ func (its *CUID) String() string {
 	return ToUID(*its)
 }
 
+// ShortString returns a short string.
 func (its *CUID) ShortString() string {
 	return ToShortUID(*its)
 }

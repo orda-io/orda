@@ -3,7 +3,7 @@ BUILD_DIR = bin
 
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
 
-GOSRCS := $(shell find . -path ./vendor -prune -o -type f -name '*.go' -print)
+GO_SRCS := $(shell find . -path ./vendor -prune -o -type f -name "*.go" -print)
 
 GO_PROJECT = github.com/knowhunger/ortoo
 
@@ -21,6 +21,7 @@ protoc-gen:
 
 .PHONY: server
 server:
+	echo $(GO_SRCS)
 	mkdir -p $(BUILD_DIR)
 	cd server && go build -gcflags='all=-N -l' -ldflags "${GO_LDFLAGS}" -o ../$(BUILD_DIR)
 
@@ -40,8 +41,8 @@ dependency:
 
 .PHONY: fmt
 fmt:
-	gofmt -w $(GOSRCS)
-	goimports -w -local github.com/knowhunger $(GOSRCS)
+	gofmt -w $(GO_SRCS)
+	goimports -w -local github.com/knowhunger $(GO_SRCS)
 
 .PHONY: integration-test
 integration-test: docker-up dependency

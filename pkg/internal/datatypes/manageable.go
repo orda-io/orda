@@ -95,7 +95,7 @@ func (its *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) er
 	return nil
 }
 
-// ExecuteTransactionRemote is a method to execute a transaction of remote operations
+// ExecuteRemoteTransaction is a method to execute a transaction of remote operations
 func (its ManageableDatatype) ExecuteRemoteTransaction(
 	transaction []*model.Operation,
 	obtainList bool,

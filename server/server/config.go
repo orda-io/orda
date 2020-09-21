@@ -16,6 +16,7 @@ type OrtooServerConfig struct {
 	Mongo         mongodb.Config `json:"Mongo"`
 }
 
+// LoadOrtooServerConfig loads config from file.
 func LoadOrtooServerConfig(filePath string) (*OrtooServerConfig, error) {
 	conf := &OrtooServerConfig{}
 	if err := conf.loadConfig(filePath); err != nil {

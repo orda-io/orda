@@ -118,10 +118,9 @@ func (its *jsonArray) arrayInsertCommon(
 	}
 	if target == nil { // InsertLocal
 		return its.listSnapshot.insertLocalWithPrecededTypes(pos, pts...)
-	} else { // InsertRemote
-		its.listSnapshot.insertRemoteWithPrecededTypes(target, ts, pts...)
-		return nil, nil, nil
-	}
+	} // InsertRemote
+	its.listSnapshot.insertRemoteWithPrecededTypes(target, ts, pts...)
+	return nil, nil, nil
 }
 
 func (its *jsonArray) getAsJSONElement(pos int) (*jsonElement, error) {

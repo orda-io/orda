@@ -7,6 +7,7 @@ import (
 // JSONValue is an internal type used in storing various types, for converting any type to JSON supported type.
 type JSONValue interface{}
 
+// ConvertValueList converts an array of values to JSONSupportedValue
 func ConvertValueList(values []interface{}) ([]interface{}, error) {
 	var jsonValues []interface{}
 	for _, val := range values {

@@ -12,6 +12,7 @@ type PublicBaseDatatype interface {
 	GetKey() string // @baseDatatype
 }
 
+// BaseDatatype defines a base operations for datatype
 type BaseDatatype interface {
 	PublicBaseDatatype
 	GetDatatype() Datatype                // @baseDatatype

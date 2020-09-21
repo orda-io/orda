@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/log"
 )
 
+// DatatypeErrorCode is a type for datatype errors
 type DatatypeErrorCode ErrorCode
 
 const baseDatatypeCode DatatypeErrorCode = 200
@@ -39,6 +40,7 @@ var datatypeErrFormats = map[DatatypeErrorCode]string{
 	ErrDatatypeUnmarshal:             "fail to unmarshal:%v",
 }
 
+// New creates an error related to the datatype
 func (its DatatypeErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooError {
 	format := fmt.Sprintf("[DatatypeError: %d] %s", its, datatypeErrFormats[its])
 	err := &OrtooErrorImpl{
@@ -53,6 +55,7 @@ func (its DatatypeErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooErro
 	return err
 }
 
+// ToErrorCode casts DatatypeErrorCode to ErrorCode
 func (its DatatypeErrorCode) ToErrorCode() ErrorCode {
 	return ErrorCode(its)
 }

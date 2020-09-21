@@ -74,7 +74,7 @@ func (its *jsonObject) MarshalJSON() ([]byte, error) {
 		marshaled := v.marshal()
 		marshalDoc.JSONTypes[k] = marshaled
 	}
-	for k, _ := range its.getRoot().cemetery {
+	for k := range its.getRoot().cemetery {
 		marshalDoc.Cemetery = append(marshalDoc.Cemetery, k)
 	}
 	return json.Marshal(marshalDoc)

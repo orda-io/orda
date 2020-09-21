@@ -46,6 +46,7 @@ func (its *TestWire) SetDatatypes(datatypeList ...*datatypes.ManageableDatatype)
 	}
 }
 
+// Sync can sync
 func (its *TestWire) Sync() {
 	for len(its.deliveredList) > 0 {
 		var wired iface.WiredDatatype
@@ -55,7 +56,7 @@ func (its *TestWire) Sync() {
 		sseq := its.sseqMap[wired.GetCUID()]
 		operations := pushPullPack.Operations[sseq:]
 
-		log.Logger.Infof("deliver transaction:%v", model.OperationsToString(operations))
+		log.Logger.Infof("deliver transaction:%v", OperationsToString(operations))
 		its.sseqMap[wired.GetCUID()] = len(pushPullPack.Operations)
 		for _, w := range its.datatypeList {
 			if wired != w.GetWired() {

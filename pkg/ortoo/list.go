@@ -13,12 +13,14 @@ import (
 	"strings"
 )
 
+// List is an Ortoo datatype which provides the list interfaces.
 type List interface {
 	Datatype
 	ListInTxn
 	DoTransaction(tag string, txnFunc func(listTxn ListInTxn) error) error
 }
 
+// ListInTxn is an Ortoo datatype which provides the list interfaces in a transaction.
 type ListInTxn interface {
 	InsertMany(pos int, value ...interface{}) (interface{}, error)
 	Get(pos int) (interface{}, error)

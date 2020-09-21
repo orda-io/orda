@@ -9,12 +9,17 @@ import (
 	"reflect"
 )
 
+// TypeOfJSON is a type to denote the type of JSON.
 type TypeOfJSON int
 
 const (
 	typeJSONPrimitive TypeOfJSON = iota
+
+	// TypeJSONElement denotes a JSON element type.
 	TypeJSONElement
+	// TypeJSONObject denotes a JSON object type.
 	TypeJSONObject
+	// TypeJSONArray denotes a JSON array type.
 	TypeJSONArray
 )
 

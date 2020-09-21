@@ -14,6 +14,7 @@ type Datatype interface {
 	Handler
 }
 
+// Handler defines handlers for Ortoo datatype
 type Handler interface {
 	HandleStateChange(oldState, newState model.StateOfDatatype)
 	HandleErrors(err ...errors.OrtooError)

@@ -31,6 +31,7 @@ func (its DUID) String() string {
 	return ToUID(its)
 }
 
+// ShortString returns a short string.
 func (its DUID) ShortString() string {
 	return ToShortUID(its)
 }

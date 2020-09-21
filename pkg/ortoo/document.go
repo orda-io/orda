@@ -11,12 +11,14 @@ import (
 	"github.com/knowhunger/ortoo/pkg/types"
 )
 
+// Document is an Ortoo datatype which provides document (JSON-like) interfaces.
 type Document interface {
 	Datatype
 	DocumentInTxn
 	DoTransaction(tag string, txnFunc func(document DocumentInTxn) error) error
 }
 
+// DocumentInTxn is an Ortoo datatype which provides document (JSON-like) interfaces in a transaction.
 type DocumentInTxn interface {
 	PutToObject(key string, value interface{}) (interface{}, error)
 	InsertToArray(pos int, value ...interface{}) (interface{}, error)
@@ -81,7 +83,7 @@ func (its *document) PutToObject(key string, value interface{}) (interface{}, er
 
 func (its *document) InsertToArray(pos int, values ...interface{}) (interface{}, error) {
 	if its.typeOfDoc == TypeJSONArray {
-		op := operations.NewDocInsToArrayOperation(its.root, pos, values)
+		op := operations.NewDocInsertToArrayOperation(its.root, pos, values)
 		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 		if err != nil {
 			return nil, err

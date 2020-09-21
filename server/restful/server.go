@@ -12,22 +12,25 @@ const (
 	collectionPath = "/collections/"
 )
 
-type Server struct {
+// ControlServer is a control server to set up Ortoo system.
+type ControlServer struct {
 	port  int
 	mongo *mongodb.RepositoryMongo
 }
 
-func NewServer(port int, mongo *mongodb.RepositoryMongo) *Server {
-	return &Server{
+// New creates a control server.
+func New(port int, mongo *mongodb.RepositoryMongo) *ControlServer {
+	return &ControlServer{
 		port:  port,
 		mongo: mongo,
 	}
 }
 
-func (its *Server) Start() error {
+// Start starts a ControlServer
+func (its *ControlServer) Start() error {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc(collectionPath, its.collections)
+	mux.HandleFunc(collectionPath, its.createCollections)
 
 	addr := fmt.Sprintf(":%d", its.port)
 	if err := http.ListenAndServe(addr, mux); err != nil {
@@ -37,7 +40,7 @@ func (its *Server) Start() error {
 	return nil
 }
 
-func (its *Server) collections(res http.ResponseWriter, req *http.Request) {
+func (its *ControlServer) createCollections(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		collectionName := strings.TrimPrefix(req.URL.Path, collectionPath)

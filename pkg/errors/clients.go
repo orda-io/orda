@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/log"
 )
 
+// ClientErrorCode is a type for client errors
 type ClientErrorCode ErrorCode
 
 const baseClientCode ClientErrorCode = 100
@@ -26,7 +27,7 @@ var clientErrFormats = map[ClientErrorCode]string{
 	ErrClientSync:                "fail to sync:%v",
 }
 
-// NewClientError creates an error related to the client
+// New creates an error related to the client
 func (its ClientErrorCode) New(args ...interface{}) OrtooError {
 	format := fmt.Sprintf("[ClientError: %d] %s", its, clientErrFormats[its])
 	err := &OrtooErrorImpl{

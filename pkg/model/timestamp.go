@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	// OldestTimestamp defines the oldest timestamp.
 	OldestTimestamp = &Timestamp{
 		Era:       0,
 		Lamport:   0,
@@ -49,6 +50,7 @@ func (its *Timestamp) Hash() string {
 	return b.String()
 }
 
+// Next returns a next Timestamp having increased Lamport.
 func (its *Timestamp) Next() *Timestamp {
 	return &Timestamp{
 		Era:       its.Era,
@@ -58,6 +60,7 @@ func (its *Timestamp) Next() *Timestamp {
 	}
 }
 
+// NextDeliminator returns a next Timestamp having increased deliminator.
 func (its *Timestamp) NextDeliminator() *Timestamp {
 
 	ts := &Timestamp{
@@ -70,6 +73,7 @@ func (its *Timestamp) NextDeliminator() *Timestamp {
 	return ts
 }
 
+// Clone returns clone of this Timestamp.
 func (its *Timestamp) Clone() *Timestamp {
 	return &Timestamp{
 		Era:       its.Era,

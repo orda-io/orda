@@ -9,6 +9,7 @@ import (
 
 // ////////////////// DocPutInObjectOperation ////////////////////
 
+// NewDocPutInObjectOperation creates a new DocPutInObjectOperation.
 func NewDocPutInObjectOperation(parent *model.Timestamp, key string, value interface{}) *DocPutInObjectOperation {
 	return &DocPutInObjectOperation{
 		baseOperation: newBaseOperation(nil),
@@ -26,19 +27,23 @@ type docPutInObjectContent struct {
 	V interface{}
 }
 
+// DocPutInObjectOperation is used to put a value into JSONObject.
 type DocPutInObjectOperation struct {
 	*baseOperation
 	C docPutInObjectContent
 }
 
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *DocPutInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
+// ExecuteRemote enables the operation to perform something at the remote clients.
 func (its *DocPutInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *DocPutInObjectOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
@@ -47,6 +52,7 @@ func (its *DocPutInObjectOperation) ToModelOperation() *model.Operation {
 	}
 }
 
+// GetType returns the type of operation.
 func (its *DocPutInObjectOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_PUT_OBJ
 }
@@ -63,7 +69,8 @@ func (its *DocPutInObjectOperation) String() string {
 
 // ////////////////// DocInsertToArrayOperation ////////////////////
 
-func NewDocInsToArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocInsertToArrayOperation {
+// NewDocInsertToArrayOperation creates a new DocInsertToArrayOperation.
+func NewDocInsertToArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocInsertToArrayOperation {
 	return &DocInsertToArrayOperation{
 		baseOperation: newBaseOperation(nil),
 		Pos:           pos,
@@ -80,20 +87,24 @@ type docInsertToArrayContent struct {
 	V []interface{}
 }
 
+// DocInsertToArrayOperation is used to put a value into JSONArray.
 type DocInsertToArrayOperation struct {
 	*baseOperation
 	Pos int
 	C   docInsertToArrayContent
 }
 
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *DocInsertToArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
+// ExecuteRemote enables the operation to perform something at the remote clients.
 func (its *DocInsertToArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *DocInsertToArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
@@ -102,10 +113,12 @@ func (its *DocInsertToArrayOperation) ToModelOperation() *model.Operation {
 	}
 }
 
+// GetType returns the type of operation.
 func (its *DocInsertToArrayOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_INS_ARR
 }
 
+// GetType returns the type of operation.
 func (its *DocInsertToArrayOperation) String() string {
 	var sb strings.Builder
 	sb.WriteString(its.GetType().String())
@@ -119,6 +132,7 @@ func (its *DocInsertToArrayOperation) String() string {
 
 // ////////////////// DocDeleteInObjectOperation ////////////////////
 
+// NewDocDeleteInObjectOperation creates a new DocDeleteInObjectOperation.
 func NewDocDeleteInObjectOperation(parent *model.Timestamp, key string) *DocDeleteInObjectOperation {
 	return &DocDeleteInObjectOperation{
 		baseOperation: newBaseOperation(nil),
@@ -134,19 +148,23 @@ type docDeleteInObjectContent struct {
 	Key string
 }
 
+// DocDeleteInObjectOperation is used to delete a value from JSONObject.
 type DocDeleteInObjectOperation struct {
 	*baseOperation
 	C docDeleteInObjectContent
 }
 
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *DocDeleteInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
+// ExecuteRemote enables the operation to perform something at the remote clients.
 func (its *DocDeleteInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *DocDeleteInObjectOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
@@ -155,6 +173,7 @@ func (its *DocDeleteInObjectOperation) ToModelOperation() *model.Operation {
 	}
 }
 
+// GetType returns the type of operation.
 func (its *DocDeleteInObjectOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_DEL_OBJ
 }
@@ -169,6 +188,7 @@ func (its *DocDeleteInObjectOperation) String() string {
 
 // ////////////////// UpdInObjectOperation ////////////////////
 
+// NewDocUpdateInArrayOperation creates a new DocUpdateInArrayOperation.
 func NewDocUpdateInArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocUpdateInArrayOperation {
 	return &DocUpdateInArrayOperation{
 		baseOperation: newBaseOperation(nil),
@@ -186,20 +206,24 @@ type docUpdateInArrayContent struct {
 	V []interface{}
 }
 
+// DocUpdateInArrayOperation is used to update a value into JSONArray.
 type DocUpdateInArrayOperation struct {
 	*baseOperation
 	Pos int // for local
 	C   docUpdateInArrayContent
 }
 
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *DocUpdateInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
+// ExecuteRemote enables the operation to perform something at the remote clients.
 func (its *DocUpdateInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *DocUpdateInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
@@ -208,6 +232,7 @@ func (its *DocUpdateInArrayOperation) ToModelOperation() *model.Operation {
 	}
 }
 
+// GetType returns the type of operation.
 func (its *DocUpdateInArrayOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_UPD_ARR
 }
@@ -223,6 +248,7 @@ func (its *DocUpdateInArrayOperation) String() string {
 
 // ////////////////// DocDeleteInArrayOperation ////////////////////
 
+// NewDocDeleteInArrayOperation creates a new DocDeleteInArrayOperation.
 func NewDocDeleteInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) *DocDeleteInArrayOperation {
 	return &DocDeleteInArrayOperation{
 		baseOperation: newBaseOperation(nil),
@@ -239,6 +265,7 @@ type docDeleteInArrayContent struct {
 	T []*model.Timestamp
 }
 
+// DocDeleteInArrayOperation is used to delete a value into JSONArray.
 type DocDeleteInArrayOperation struct {
 	*baseOperation
 	Pos        int // for local
@@ -246,14 +273,17 @@ type DocDeleteInArrayOperation struct {
 	C          docDeleteInArrayContent
 }
 
+// ExecuteLocal enables the operation to perform something at the local client.
 func (its *DocDeleteInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteLocal(its)
 }
 
+// ExecuteRemote enables the operation to perform something at the remote clients.
 func (its *DocDeleteInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
 	return datatype.ExecuteRemote(its)
 }
 
+// ToModelOperation transforms this operation to the model.Operation.
 func (its *DocDeleteInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
@@ -262,6 +292,7 @@ func (its *DocDeleteInArrayOperation) ToModelOperation() *model.Operation {
 	}
 }
 
+// GetType returns the type of operation.
 func (its *DocDeleteInArrayOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_DOCUMENT_DEL_ARR
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
-// Operation defines the interfaces of Operation
+// Operation defines the interfaces of any operation
 type Operation interface {
 	SetOperationID(opID *model.OperationID)
 	ExecuteLocal(datatype Datatype) (interface{}, errors.OrtooError)
@@ -17,6 +17,7 @@ type Operation interface {
 	GetAsJSON() interface{}
 }
 
+// OperationalDatatype defines interfaces related to executing operations.
 type OperationalDatatype interface {
 	ExecuteLocal(op interface{}) (interface{}, errors.OrtooError)  // @Real datatype
 	ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) // @Real datatype
