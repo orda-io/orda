@@ -151,7 +151,10 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 		}
 		return nil, nil
 	case *operations.DocDeleteInArrayOperation:
-		its.snapshot.DeleteRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp())
+		errs := its.snapshot.DeleteRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp())
+		if len(errs) > 0 {
+			// TODO: have to deliver handler
+		}
 		return nil, nil
 	}
 	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)

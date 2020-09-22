@@ -24,6 +24,7 @@ const (
 	ErrDatatypeNoOp
 	ErrDatatypeMarshal
 	ErrDatatypeUnmarshal
+	ErrDatatypeNoTarget
 )
 
 var datatypeErrFormats = map[DatatypeErrorCode]string{
@@ -38,6 +39,7 @@ var datatypeErrFormats = map[DatatypeErrorCode]string{
 	ErrDatatypeNoOp:                  "fail to issue operation",
 	ErrDatatypeMarshal:               "fail to marshal:%v",
 	ErrDatatypeUnmarshal:             "fail to unmarshal:%v",
+	ErrDatatypeNoTarget:              "fail to find target: %v",
 }
 
 // New creates an error related to the datatype

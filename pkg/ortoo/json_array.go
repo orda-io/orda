@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
 	"github.com/knowhunger/ortoo/pkg/types"
@@ -33,7 +32,6 @@ func newJSONArray(base *datatypes.BaseDatatype, parent jsonType, ts *model.Times
 }
 
 func (its *jsonArray) makeTomb(ts *model.Timestamp) bool {
-	log.Logger.Infof("makeTomb() of jsonArray")
 	if its.jsonType.makeTomb(ts) {
 		its.addToCemetery(its)
 		n := its.head.getNext()
@@ -47,7 +45,8 @@ func (its *jsonArray) makeTomb(ts *model.Timestamp) bool {
 	return false
 }
 
-func (its *jsonArray) arrayDeleteRemote(targets []*model.Timestamp, ts *model.Timestamp) {
+func (its *jsonArray) arrayDeleteRemote(targets []*model.Timestamp, ts *model.Timestamp) (errs []errors.OrtooError) {
+
 	for _, t := range targets {
 		if j, ok := its.findJSONPrimitive(t); ok {
 			if !j.isTomb() {
@@ -55,14 +54,14 @@ func (its *jsonArray) arrayDeleteRemote(targets []*model.Timestamp, ts *model.Ti
 				its.size--
 			} else { // concurrent deletes
 				if j.getPrecedence().Compare(ts) < 0 {
-					j.setTime(ts)
+					j.setPrecedence(ts)
 				}
 			}
 		} else {
-			log.Logger.Warnf("fail to find delete target: %v", t.ToString())
+			errs = append(errs, errors.ErrDatatypeNoTarget.New(its.getLogger(), t.ToString()))
 		}
 	}
-	// return nil, nil
+	return errs
 }
 
 func (its *jsonArray) arrayUpdateLocal(op *operations.DocUpdateInArrayOperation) error {
@@ -123,12 +122,12 @@ func (its *jsonArray) arrayInsertCommon(
 	return nil, nil, nil
 }
 
-func (its *jsonArray) getAsJSONElement(pos int) (*jsonElement, error) {
+func (its *jsonArray) getPrecedenceType(pos int) (precededType, errors.OrtooError) {
 	val, err := its.listSnapshot.getPrecededType(pos)
 	if err != nil {
-		return nil, log.OrtooError(err)
+		return nil, err
 	}
-	return val.(*jsonElement), nil
+	return val, nil
 }
 
 func (its *jsonArray) getValue() types.JSONValue {
@@ -152,6 +151,7 @@ func (its *jsonArray) String() string {
 	return fmt.Sprintf("JA(%v)[T%v|V%v", parentTS, its.getKey().ToString(), its.listSnapshot.String())
 }
 
+// GetAsJSONCompatible returns an interface type that contains all live objects.
 func (its *jsonArray) GetAsJSONCompatible() interface{} {
 	var list []interface{}
 	n := its.listSnapshot.head.getNextLive()

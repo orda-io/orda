@@ -11,21 +11,35 @@ import (
 	"testing"
 )
 
-func TestJSONSnapshot(t *testing.T) {
-	//
-	// var strt1 = struct {
-	// 	K1 string
-	// 	K2 int
-	// }{
-	// 	K1: "hello",
-	// 	K2: 1234,
-	// }
-	var strt1 = map[string]interface{}{
-		"K1": "hello",
-		"K2": float64(1234),
-	}
+var strt1 = map[string]interface{}{
+	"K1": "hello",
+	"K2": float64(1234),
+}
 
-	var arr1 = []interface{}{"world", float64(1234), 3.14}
+var arr1 = []interface{}{"world", float64(1234), 3.14}
+
+func initJSONObjectForJSONArrayOperations(t *testing.T, root *jsonObject, opID *model.OperationID) *jsonArray {
+	// {"K1":["world",1234,3.14]}
+	root.putCommon("K1", arr1, opID.Next().GetTimestamp())
+	log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+
+	array := root.getChildAsJSONArray("K1")
+	var err error
+
+	// {"K1":["world",{ "K1": "hello", "K2": 1234 }, 1234,3.14]}
+	_, _, err = root.InsertLocal(array.getKey(), 1, opID.Next().GetTimestamp(), strt1)
+	require.NoError(t, err)
+	log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+
+	// {"K1":["world",{ "K1": "hello", "K2": 1234 }, ["world", 1234, 3.14], 1234,3.14]}
+	_, _, err = root.InsertLocal(array.getKey(), 2, opID.Next().GetTimestamp(), arr1)
+	require.NoError(t, err)
+	log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+
+	return array
+}
+
+func TestJSONSnapshot(t *testing.T) {
 
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
 		opID1 := model.NewOperationID()
@@ -62,7 +76,7 @@ func TestJSONSnapshot(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("Can remove something remotely in JSONObject", func(t *testing.T) {
+	t.Run("Can delete something remotely in JSONObject", func(t *testing.T) {
 		opID := model.NewOperationID()
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
 		root := newJSONObject(base, nil, model.OldestTimestamp)
@@ -74,14 +88,16 @@ func TestJSONSnapshot(t *testing.T) {
 		// { "K1": "hello", "K2": { "K1": "hello", "K2": 1234 }, "K3": ["world", 1234, 3.14] }
 		root.putCommon("K3", arr1, opID.Next().GetTimestamp())
 
+		// delete NOT_EXISTING remotely
 		old0, err := root.DeleteRemoteInObject(root.getKey(), "NOT_EXISTING", opID.Next().GetTimestamp())
 		require.Nil(t, old0)
 
+		// delete a JSONElement remotely
 		old1, err := root.DeleteRemoteInObject(root.getKey(), "K1", opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Equal(t, "hello", old1)
 
-		// if remove again, newer timestamp should remain
+		// if deleting again, newer timestamp should remain
 		old2, err := root.DeleteRemoteInObject(root.getKey(), "K1", opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Equal(t, "hello", old2)
@@ -106,7 +122,65 @@ func TestJSONSnapshot(t *testing.T) {
 		require.Equal(t, marshal(t, root.GetAsJSONCompatible()), marshal(t, unmarshaled.GetAsJSONCompatible()))
 	})
 
-	t.Run("Can remove something locally in JSONObject", func(t *testing.T) {
+	t.Run("Can delete something remotely in JSONArray", func(t *testing.T) {
+		opID := model.NewOperationID()
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		root := newJSONObject(base, nil, model.OldestTimestamp)
+
+		// init JSONObject
+		// {"K1":["world",{ "K1": "hello", "K2": 1234 }, ["world", 1234, 3.14], 1234,3.14]}
+		array := initJSONObjectForJSONArrayOperations(t, root, opID)
+
+		// delete NOT_EXISTING remotely
+		tsNotExisting := &model.Timestamp{
+			Era:       0,
+			Lamport:   1,
+			CUID:      types.NewCUID(),
+			Delimiter: 0,
+		}
+		errs := root.DeleteRemoteInArray(array.getKey(), []*model.Timestamp{tsNotExisting}, opID.Next().GetTimestamp())
+		require.Equal(t, 1, len(errs))
+		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+
+		// delete a JSONElement, a JSONObject, a JSONArray
+		je, err := array.getPrecedenceType(0)
+		require.NoError(t, err)
+
+		jo, err := array.getPrecedenceType(1)
+		require.NoError(t, err)
+
+		ja, err := array.getPrecededType(2)
+		require.NoError(t, err)
+
+		// {"K1":[1234,3.14]}
+		ts1 := opID.Next().GetTimestamp()
+		errs = root.DeleteRemoteInArray(array.getKey(), []*model.Timestamp{je.getKey(), jo.getKey(), ja.getKey()}, ts1)
+		require.Equal(t, 0, len(errs))
+		require.True(t, je.isTomb())
+		require.True(t, jo.isTomb())
+		require.True(t, ja.isTomb())
+		require.Equal(t, ts1, je.getPrecedence())
+		require.Equal(t, ts1, jo.getPrecedence())
+		require.Equal(t, ts1, ja.getPrecedence())
+		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v %v %v", je.getPrecedence().ToString(), jo.getPrecedence().ToString(), ja.getPrecedence().ToString())
+
+		// if delete again with newer timestamp, then they should be deleted with newer timestamp
+		ts2 := opID.Next().GetTimestamp()
+		errs = root.DeleteRemoteInArray(array.getKey(), []*model.Timestamp{je.getKey(), jo.getKey(), ja.getKey()}, ts2)
+		require.Equal(t, 0, len(errs))
+		require.True(t, je.isTomb())
+		require.True(t, jo.isTomb())
+		require.True(t, ja.isTomb())
+		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v %v %v", je.getPrecedence().ToString(), jo.getPrecedence().ToString(), ja.getPrecedence().ToString())
+		require.Equal(t, ts2, je.getPrecedence())
+		require.Equal(t, ts2, jo.getPrecedence())
+		require.Equal(t, ts2, ja.getPrecedence())
+
+	})
+
+	t.Run("Can delete something locally in JSONObject", func(t *testing.T) {
 		opID := model.NewOperationID()
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
 		root := newJSONObject(base, nil, model.OldestTimestamp)
@@ -120,10 +194,12 @@ func TestJSONSnapshot(t *testing.T) {
 
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
+		// delete not existing
 		old0, err := root.DeleteLocalInObject(root.getKey(), "NOT_EXISTING", opID.Next().GetTimestamp())
 		require.Equal(t, errors.ErrDatatypeNoOp.ToErrorCode(), errors.ToOrtooError(err).GetCode())
 		require.Nil(t, old0)
 
+		// delete an element normal
 		old1, err := root.DeleteLocalInObject(root.getKey(), "K1", opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Equal(t, "hello", old1)
@@ -134,16 +210,19 @@ func TestJSONSnapshot(t *testing.T) {
 		require.Nil(t, old2)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
+		// delete a JSONObject
 		old3, err := root.DeleteLocalInObject(root.getKey(), "K2", opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		log.Logger.Infof("%v", old3)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
+		// delete a JSONArray
 		old4, err := root.DeleteLocalInObject(root.getKey(), "K3", opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		log.Logger.Infof("%v", old4)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
+		// marshal and unmarshal
 		m, err2 := json.Marshal(root) // ==> jsonObject.MarshalJSON
 		require.NoError(t, err2)
 		unmarshaled := newJSONObject(base, nil, model.OldestTimestamp)
@@ -153,20 +232,48 @@ func TestJSONSnapshot(t *testing.T) {
 		require.Equal(t, marshal(t, root.GetAsJSONCompatible()), marshal(t, unmarshaled.GetAsJSONCompatible()))
 	})
 
-	t.Run("Can remove something locally in JSONArray", func(t *testing.T) {
+	t.Run("Can delete something locally in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
 		root := newJSONObject(base, nil, model.OldestTimestamp)
+		var err error
+		array := initJSONObjectForJSONArrayOperations(t, root, opID)
 
-		// {"K1":["world",1234,3.14]}
-		root.putCommon("K1", arr1, opID.Next().GetTimestamp())
+		// delete out of index bound
+		_, _, err = root.DeleteLocalInArray(array.getKey(), 10, 1, opID.Next().GetTimestamp())
+		require.Error(t, err)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
-		array := root.getChildAsJSONArray("K1")
-		_, _, err := root.InsertLocal(array.getKey(), 0, opID.Next().GetTimestamp(), strt1)
+		// delete a JSONElement
+		// {"K1":[{ "K1": "hello", "K2": 1234 }, ["world", 1234, 3.14], 1234,3.14]}
+		_, _, err = root.DeleteLocalInArray(array.getKey(), 0, 1, opID.Next().GetTimestamp())
 		require.NoError(t, err)
-
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+
+		// delete a JSONObject
+		// {"K1":[["world", 1234, 3.14], 1234,3.14]}
+		_, _, err = root.DeleteLocalInArray(array.getKey(), 0, 1, opID.Next().GetTimestamp())
+		require.NoError(t, err)
+		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+
+		// delete a JSONArray
+		// {"K1":[1234,3.14]}
+		_, _, err = root.DeleteLocalInArray(array.getKey(), 0, 1, opID.Next().GetTimestamp())
+		require.NoError(t, err)
+		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+
+		// delete two values
+		_, _, err = root.DeleteLocalInArray(array.getKey(), 0, 2, opID.Next().GetTimestamp())
+		require.NoError(t, err)
+		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+		// marshal and unmarshal
+		m, err2 := json.Marshal(root) // ==> jsonObject.MarshalJSON
+		require.NoError(t, err2)
+		unmarshaled := newJSONObject(base, nil, model.OldestTimestamp)
+		err2 = json.Unmarshal(m, unmarshaled)
+		require.NoError(t, err2)
+		log.Logger.Infof("%v", marshal(t, unmarshaled.GetAsJSONCompatible()))
+		require.Equal(t, marshal(t, root.GetAsJSONCompatible()), marshal(t, unmarshaled.GetAsJSONCompatible()))
 	})
 
 	t.Run("Can put nested JSONObject to JSONObject", func(t *testing.T) {
@@ -268,7 +375,7 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", arr.String())
 
 		// get jsonElement from jsonArray
-		val1, err := arr.getAsJSONElement(0)
+		val1, err := arr.getPrecedenceType(0)
 		require.NoError(t, err)
 		log.Logger.Infof("%v", val1)
 		require.Equal(t, float64(1234), val1.getValue())

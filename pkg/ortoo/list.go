@@ -425,7 +425,7 @@ func (its *listSnapshot) get(pos int) (interface{}, error) {
 	return pt.getValue(), nil
 }
 
-func (its *listSnapshot) getPrecededType(pos int) (precededType, error) {
+func (its *listSnapshot) getPrecededType(pos int) (precededType, errors.OrtooError) {
 	// size == 3, pos can be 0, 1, 2
 	if its.size <= pos {
 		return nil, errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "out of bound index")
