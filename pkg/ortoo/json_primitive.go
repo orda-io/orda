@@ -49,6 +49,7 @@ type jsonType interface {
 	findJSONElement(ts *model.Timestamp) (j *jsonElement, ok bool)
 	findJSONPrimitive(ts *model.Timestamp) (j jsonType, ok bool)
 	addToNodeMap(j jsonType)
+	removeFromNodeMap(primitive jsonType)
 	addToCemetery(j jsonType)
 	createJSONObject(parent jsonType, value interface{}, ts *model.Timestamp) *jsonObject
 	createJSONArray(parent jsonType, value interface{}, ts *model.Timestamp) *jsonArray
@@ -169,6 +170,10 @@ func (its *jsonPrimitive) findJSONArray(ts *model.Timestamp) (json *jsonArray, o
 
 func (its *jsonPrimitive) addToNodeMap(primitive jsonType) {
 	its.getRoot().nodeMap[primitive.getKey().Hash()] = primitive
+}
+
+func (its *jsonPrimitive) removeFromNodeMap(primitive jsonType) {
+	delete(its.getRoot().nodeMap, primitive.getKey().Hash())
 }
 
 func (its *jsonPrimitive) addToCemetery(primitive jsonType) {

@@ -52,7 +52,12 @@ func (its *jsonObject) CloneSnapshot() iface.Snapshot {
 	return &jsonObject{}
 }
 
-func (its *jsonObject) PutCommonInObject(parent *model.Timestamp, key string, value interface{}, ts *model.Timestamp) (jsonType, errors.OrtooError) {
+func (its *jsonObject) PutCommonInObject(
+	parent *model.Timestamp,
+	key string,
+	value interface{},
+	ts *model.Timestamp,
+) (jsonType, errors.OrtooError) {
 	if parentObj, ok := its.findJSONObject(parent); ok {
 		return parentObj.putCommon(key, value, ts), nil
 	}
@@ -69,16 +74,28 @@ func (its *jsonObject) putCommon(key string, value interface{}, ts *model.Timest
 		newChild = its.createJSONObject(its, value, ts)
 	case reflect.Ptr:
 		val := rt.Elem()
-		newChild = its.putCommon(key, val.Interface(), ts) // recursively
+		return its.putCommon(key, val.Interface(), ts) // recursively
 	default:
 		newChild = newJSONElement(its, types.ConvertToJSONSupportedValue(value), ts.NextDeliminator())
 	}
 	removed, _ := its.putCommonWithTimedValue(key, newChild) // in hash map
-	if removed != nil {
-		its.addToCemetery(removed.(jsonType))
-	}
 	its.addToNodeMap(newChild)
-	return newChild
+	if removed != nil {
+		removedJSON := removed.(jsonType)
+		removedJSON.makeTomb(ts)
+		switch r := removed.(type) {
+		case *jsonElement:
+			// jsonElement is removed from NodeMap because it never accessed by timestamp key.
+			// therefore, it is not added to Cemetery.
+			its.removeFromNodeMap(r)
+		case *jsonObject, *jsonArray:
+			// jsonObject and jsonArray are not removed from NodeMap because their descendents can be accessed by other remote operations.
+			// instead, they are added to Cemetery in order to be removed from NodeMap during garbage collection.
+			its.addToCemetery(removedJSON)
+		}
+		return removedJSON
+	}
+	return nil
 }
 
 func (its *jsonObject) DeleteLocalInObject(parent *model.Timestamp, key string, ts *model.Timestamp) (interface{}, errors.OrtooError) {
@@ -180,10 +197,10 @@ func (its *jsonObject) makeTombAsChild(ts *model.Timestamp) bool {
 func (its *jsonObject) makeTomb(ts *model.Timestamp) bool {
 	if its.jsonType.makeTomb(ts) {
 		its.addToCemetery(its)
-		for _, v := range its.Map {
-			cast := v.(jsonType)
-			cast.makeTombAsChild(ts)
-		}
+		// for _, v := range its.Map {
+		// 	cast := v.(jsonType)
+		// 	cast.makeTombAsChild(ts)
+		// }
 		return true
 	}
 	return false

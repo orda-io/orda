@@ -34,12 +34,12 @@ func newJSONArray(base *datatypes.BaseDatatype, parent jsonType, ts *model.Times
 func (its *jsonArray) makeTomb(ts *model.Timestamp) bool {
 	if its.jsonType.makeTomb(ts) {
 		its.addToCemetery(its)
-		n := its.head.getNext()
-		for n != nil {
-			cast := n.getPrecededType().(jsonType)
-			cast.makeTombAsChild(ts)
-			n = n.getNextLive()
-		}
+		// n := its.head.getNext()
+		// for n != nil {
+		// 	cast := n.getPrecededType().(jsonType)
+		// 	cast.makeTombAsChild(ts)
+		// 	n = n.getNextLive()
+		// }
 		return true
 	}
 	return false
