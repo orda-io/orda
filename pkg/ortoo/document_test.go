@@ -39,36 +39,40 @@ func initJSONObjectForJSONArrayOperations(t *testing.T, root *jsonObject, opID *
 	return array
 }
 
-func TestJSONSnapshot(t *testing.T) {
+func TestDocument(t *testing.T) {
 
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
-		opID1 := model.NewOperationID()
+		opID := model.NewOperationID()
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
-		jsonObj := newJSONObject(base, nil, model.OldestTimestamp)
+		root := newJSONObject(base, nil, model.OldestTimestamp)
 
-		// { "K1": 1234, "K2": 3.14 }
-		jsonObj.putCommon("K1", 1234, opID1.Next().GetTimestamp())
-		jsonObj.putCommon("K2", 3.14, opID1.Next().GetTimestamp())
+		// {"K1":1234,"K2":{"K1":"hello","K2":1234},"K3":["world",1234,3.14]}
+		root.putCommon("K1", 1234, opID.Next().GetTimestamp())
+		root.putCommon("K2", strt1, opID.Next().GetTimestamp())
+		root.putCommon("K3", arr1, opID.Next().GetTimestamp())
+		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
-		// get the child "K1"
-		je1 := jsonObj.getChildAsJSONElement("K1")
-		log.Logger.Infof("%+v", je1.String())
-		require.Equal(t, float64(1234), je1.getValue())
+		// get the child K1
+		child1 := root.getAsJSONType("K1")
+		require.Equal(t, float64(1234), child1.getValue())
+		require.Equal(t, TypeJSONObject, child1.getParent().getType())
+		require.Equal(t, root, child1.getParent())
 
-		// get parent of K1
-		require.Equal(t, TypeJSONObject, je1.getParent().getType())
-		parent := je1.getParent().(*jsonObject)
-		require.Equal(t, jsonObj, parent)
-		log.Logger.Infof("%+v", parent.String())
+		// get parent of K2
+		child2 := root.getAsJSONType("K2").(*jsonObject)
+		require.Equal(t, TypeJSONObject, child2.getParent().getType())
+		require.Equal(t, root, child2.getParent())
+		require.Equal(t, child2, child2.getAsJSONType("K1").getParent())
 
-		// get the child "K2"
-		je2 := parent.getChildAsJSONElement("K2")
-		log.Logger.Infof("%+v", je2.String())
-		require.Equal(t, 3.14, je2.getValue())
+		// get parent of K3
+		child3 := root.getAsJSONType("K3").(*jsonArray)
+		require.Equal(t, TypeJSONObject, child3.getParent().getType())
+		require.Equal(t, root, child3.getParent())
+		grandChild3, oErr := child3.getPrecededType(0)
+		require.NoError(t, oErr)
+		require.Equal(t, child3, grandChild3.(*jsonElement).getParent())
 
-		log.Logger.Infof("%v", jsonObj.GetAsJSONCompatible())
-
-		m, err := json.Marshal(jsonObj) // ==> jsonObject.MarshalJSON
+		m, err := json.Marshal(root) // ==> jsonObject.MarshalJSON
 		require.NoError(t, err)
 		log.Logger.Infof("%s", string(m))
 		unmarshaled := newJSONObject(base, nil, model.OldestTimestamp)
@@ -141,10 +145,10 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// delete a JSONElement, a JSONObject, a JSONArray
-		je, err := array.getPrecedenceType(0)
+		je, err := array.getPrecededType(0)
 		require.NoError(t, err)
 
-		jo, err := array.getPrecedenceType(1)
+		jo, err := array.getPrecededType(1)
 		require.NoError(t, err)
 
 		ja, err := array.getPrecededType(2)
@@ -375,7 +379,7 @@ func TestJSONSnapshot(t *testing.T) {
 		log.Logger.Infof("%v", arr.String())
 
 		// get jsonElement from jsonArray
-		val1, err := arr.getPrecedenceType(0)
+		val1, err := arr.getPrecededType(0)
 		require.NoError(t, err)
 		log.Logger.Infof("%v", val1)
 		require.Equal(t, float64(1234), val1.getValue())
@@ -424,6 +428,17 @@ func TestJSONSnapshot(t *testing.T) {
 		old4, err := root.PutCommonInObject(root.getKey(), "K3", strt1, opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Equal(t, TypeJSONArray, old4.getType())
+		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+	})
+
+	t.Run("Can update values in JSONArray", func(t *testing.T) {
+		opID := model.NewOperationID()
+		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		root := newJSONObject(base, nil, model.OldestTimestamp)
+
+		array := initJSONObjectForJSONArrayOperations(t, root, opID)
+
+		root.UpdateLocalInArray(array.getKey(), 0, opID.Next().GetTimestamp(), "updated1", "updated2", "updated3")
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 	})
 }

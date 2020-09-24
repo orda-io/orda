@@ -49,10 +49,9 @@ type jsonType interface {
 	findJSONElement(ts *model.Timestamp) (j *jsonElement, ok bool)
 	findJSONPrimitive(ts *model.Timestamp) (j jsonType, ok bool)
 	addToNodeMap(j jsonType)
-	removeFromNodeMap(primitive jsonType)
 	addToCemetery(j jsonType)
-	createJSONObject(parent jsonType, value interface{}, ts *model.Timestamp) *jsonObject
-	createJSONArray(parent jsonType, value interface{}, ts *model.Timestamp) *jsonArray
+	removeFromNodeMap(j jsonType)
+	createJSONType(parent jsonType, v interface{}, ts *model.Timestamp) jsonType
 	marshal() *marshaledJSONType
 	unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType)
 }
@@ -64,6 +63,7 @@ type jsonCommon struct {
 	cemetery map[string]jsonType // store all jsonPrimitive.K.hash => deleted jsonType
 }
 
+// jsonPrimitive should implement timedType, precededType, and jsonType.
 type jsonPrimitive struct {
 	common  *jsonCommon
 	parent  jsonType
@@ -72,26 +72,25 @@ type jsonPrimitive struct {
 	P       *model.Timestamp // used for precedence; for example makeTomb
 }
 
-func (its *jsonPrimitive) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
-	// do nothing
+// ///////////////////// methods of precededType ///////////////////////////////////
+
+func (its *jsonPrimitive) getKey() *model.Timestamp {
+	return its.K
 }
 
-func (its *jsonPrimitive) getType() TypeOfJSON {
-	return typeJSONPrimitive
+func (its *jsonPrimitive) setKey(ts *model.Timestamp) {
+	its.K = ts
 }
 
-func (its *jsonPrimitive) getBase() *datatypes.BaseDatatype {
-	return its.common.base
+func (its *jsonPrimitive) getPrecedence() *model.Timestamp {
+	return its.P
 }
 
-func (its *jsonPrimitive) makeTombAsChild(ts *model.Timestamp) bool {
-	if !its.isTomb() {
-		its.P = ts
-		its.deleted = true
-		return true
-	}
-	return false
+func (its *jsonPrimitive) setPrecedence(ts *model.Timestamp) {
+	its.P = ts
 }
+
+// ///////////////////// methods of timedType ///////////////////////////////////////
 
 func (its *jsonPrimitive) isTomb() bool {
 	return its.deleted
@@ -109,10 +108,6 @@ func (its *jsonPrimitive) makeTomb(ts *model.Timestamp) bool {
 	return true
 }
 
-func (its *jsonPrimitive) getKey() *model.Timestamp {
-	return its.K
-}
-
 func (its *jsonPrimitive) getTime() *model.Timestamp {
 	if its.P == nil {
 		return its.K
@@ -124,12 +119,31 @@ func (its *jsonPrimitive) setTime(ts *model.Timestamp) {
 	its.K = ts
 }
 
-func (its *jsonPrimitive) getPrecedence() *model.Timestamp {
-	return its.P
+func (its *jsonPrimitive) getValue() types.JSONValue {
+	panic("should be overridden")
 }
 
-func (its *jsonPrimitive) setPrecedence(ts *model.Timestamp) {
-	its.P = ts
+func (its *jsonPrimitive) setValue(v types.JSONValue) {
+	panic("should be overridden")
+}
+
+// ///////////////////// methods of jsonType ///////////////////////////////////////
+
+func (its *jsonPrimitive) getType() TypeOfJSON {
+	return typeJSONPrimitive
+}
+
+func (its *jsonPrimitive) getBase() *datatypes.BaseDatatype {
+	return its.common.base
+}
+
+func (its *jsonPrimitive) makeTombAsChild(ts *model.Timestamp) bool {
+	if !its.isTomb() {
+		its.P = ts
+		its.deleted = true
+		return true
+	}
+	return false
 }
 
 func (its *jsonPrimitive) getLogger() *log.OrtooLog {
@@ -180,14 +194,6 @@ func (its *jsonPrimitive) addToCemetery(primitive jsonType) {
 	its.getRoot().cemetery[primitive.getKey().Hash()] = primitive
 }
 
-func (its *jsonPrimitive) getValue() types.JSONValue {
-	panic("should be overridden")
-}
-
-func (its *jsonPrimitive) setValue(v types.JSONValue) {
-	panic("should be overridden")
-}
-
 func (its *jsonPrimitive) getRoot() *jsonCommon {
 	return its.common
 }
@@ -209,34 +215,43 @@ func (its *jsonPrimitive) String() string {
 	return fmt.Sprintf("%x", &its.parent)
 }
 
+func (its *jsonPrimitive) createJSONTypeFromReflectValue(parent jsonType, rv reflect.Value, ts *model.Timestamp) jsonType {
+	switch rv.Kind() {
+	case reflect.Struct, reflect.Map:
+		return its.createJSONObject(parent, rv.Interface(), ts)
+	case reflect.Slice, reflect.Array:
+		return its.createJSONArray(parent, rv.Interface(), ts)
+	case reflect.Ptr:
+		ptrVal := rv.Elem()
+		return its.createJSONTypeFromReflectValue(parent, ptrVal, ts)
+	default:
+		return newJSONElement(parent, types.ConvertToJSONSupportedValue(rv.Interface()), ts.NextDeliminator())
+	}
+}
+
+func (its *jsonPrimitive) createJSONType(parent jsonType, v interface{}, ts *model.Timestamp) jsonType {
+	rv := reflect.ValueOf(v)
+	return its.createJSONTypeFromReflectValue(parent, rv, ts)
+}
+
 func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts *model.Timestamp) *jsonArray {
 	ja := newJSONArray(its.getBase(), parent, ts.NextDeliminator())
-	target := reflect.ValueOf(value)
 	var appendValues []precededType
-	for i := 0; i < target.Len(); i++ {
-		field := target.Index(i)
-		switch field.Kind() {
-		case reflect.Slice, reflect.Array:
-			ja := its.createJSONArray(ja, field.Interface(), ts)
-			appendValues = append(appendValues, ja)
-		case reflect.Struct, reflect.Map:
-			childJO := its.createJSONObject(ja, field.Interface(), ts)
-			appendValues = append(appendValues, childJO)
-		case reflect.Ptr:
-			val := field.Elem()
-			its.createJSONArray(parent, val.Interface(), ts)
-		default:
-			element := newJSONElement(ja, types.ConvertToJSONSupportedValue(field.Interface()), ts.NextDeliminator())
-			appendValues = append(appendValues, element)
-		}
+	elements := reflect.ValueOf(value)
+	for i := 0; i < elements.Len(); i++ {
+		rv := elements.Index(i)
+		jt := its.createJSONTypeFromReflectValue(ja, rv, ts)
+		appendValues = append(appendValues, jt)
 	}
 	if appendValues != nil {
-		ja.insertLocalWithPrecededTypes(0, appendValues...)
+		_, _, err := ja.insertLocalWithPrecededTypes(0, appendValues...)
+		if err != nil { // this cannot happen when inserted at position 0.
+			_ = log.OrtooError(err)
+		}
 		for _, v := range appendValues {
 			its.addToNodeMap(v.(jsonType))
 		}
 	}
-	// log.Logger.Infof("%v", ja.String())
 	return ja
 }
 
@@ -251,7 +266,7 @@ func (its *jsonPrimitive) createJSONObject(parent jsonType, value interface{}, t
 			val := reflect.ValueOf(v)
 			its.addValueToJSONObject(jo, k, val, ts)
 		}
-	} else {
+	} else { // reflect.Struct
 		for i := 0; i < target.NumField(); i++ {
 			value := target.Field(i)
 			its.addValueToJSONObject(jo, fields.Field(i).Name, value, ts)
@@ -262,21 +277,7 @@ func (its *jsonPrimitive) createJSONObject(parent jsonType, value interface{}, t
 }
 
 func (its *jsonPrimitive) addValueToJSONObject(jo *jsonObject, key string, value reflect.Value, ts *model.Timestamp) {
-	switch value.Kind() {
-	case reflect.Slice, reflect.Array:
-		ja := its.createJSONArray(jo, value.Interface(), ts)
-		jo.putCommonWithTimedValue(key, ja)
-		its.addToNodeMap(ja)
-	case reflect.Struct, reflect.Map:
-		childJO := its.createJSONObject(jo, value.Interface(), ts)
-		jo.putCommonWithTimedValue(key, childJO)
-		its.addToNodeMap(childJO)
-	case reflect.Ptr:
-		val := value.Elem()
-		its.createJSONObject(jo, val.Interface(), ts)
-	default:
-		element := newJSONElement(jo, types.ConvertToJSONSupportedValue(value.Interface()), ts.NextDeliminator())
-		jo.putCommonWithTimedValue(key, element)
-		its.addToNodeMap(element)
-	}
+	jt := its.createJSONTypeFromReflectValue(jo, value, ts)
+	jo.putCommonWithTimedValue(key, jt)
+	its.addToNodeMap(jt)
 }

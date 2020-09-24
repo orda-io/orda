@@ -93,6 +93,10 @@ func (its *jsonPrimitive) marshal() *marshaledJSONType {
 	}
 }
 
+func (its *jsonPrimitive) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
+	// do nothing
+}
+
 func (its *jsonElement) marshal() *marshaledJSONType {
 	forMarshal := its.jsonType.marshal()
 	forMarshal.T = mJSONElement

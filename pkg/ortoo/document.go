@@ -78,7 +78,7 @@ func (its *document) PutToObject(key string, value interface{}) (interface{}, er
 		}
 		return ret, nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "PutToObject not on JSONObject")
 }
 
 func (its *document) InsertToArray(pos int, values ...interface{}) (interface{}, error) {
@@ -90,7 +90,7 @@ func (its *document) InsertToArray(pos int, values ...interface{}) (interface{},
 		}
 		return ret, nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "InsertToArray not on JSONArray")
 }
 
 func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
@@ -171,7 +171,7 @@ func (its *document) GetFromObject(key string) (Document, error) {
 		}
 
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "GetFromObject not on JSONObject")
 }
 
 func (its *document) getChildDocument(child jsonType) *document {
@@ -194,7 +194,7 @@ func (its *document) GetFromArray(pos int) (Document, error) {
 			return its.getChildDocument(child), nil
 		}
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "GetFromArray not on JSONArray")
 }
 
 func (its *document) DeleteInObject(key string) (interface{}, error) {
@@ -206,7 +206,7 @@ func (its *document) DeleteInObject(key string) (interface{}, error) {
 		}
 		return ret, nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "DeleteInObject not on JSONObject")
 }
 
 func (its *document) DeleteInArray(pos int) (interface{}, error) {
@@ -223,7 +223,7 @@ func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, 
 		}
 		return ret.([]interface{}), nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "DeleteManyInArray not on JSONArray")
 }
 
 func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{}, error) {
@@ -239,7 +239,7 @@ func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{
 		}
 		return ret.([]interface{}), nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger)
+	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "UpdateInArray not on JSONArray")
 }
 
 func (its *document) GetDocumentType() TypeOfJSON {

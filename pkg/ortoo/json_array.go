@@ -5,9 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/operations"
 	"github.com/knowhunger/ortoo/pkg/types"
-	"reflect"
 )
 
 // ////////////////////////////////////
@@ -45,6 +43,38 @@ func (its *jsonArray) makeTomb(ts *model.Timestamp) bool {
 	return false
 }
 
+func (its *jsonArray) arrayInsertCommon(
+	pos int, // in the case of the local insert
+	target *model.Timestamp, // in the case of the remote insert
+	ts *model.Timestamp,
+	values ...interface{},
+) (*model.Timestamp, []interface{}, errors.OrtooError) {
+	var inserted []precededType
+	for _, v := range values {
+		element := its.createJSONType(its, v, ts)
+		inserted = append(inserted, element)
+		its.addToNodeMap(element)
+	}
+	if target == nil { // InsertLocal
+		return its.listSnapshot.insertLocalWithPrecededTypes(pos, inserted...)
+	} // InsertRemote
+	its.listSnapshot.insertRemoteWithPrecededTypes(target, ts, inserted...)
+	return nil, nil, nil
+}
+
+func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
+	targets, values, err := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, v := range targets {
+		if jt, ok := its.findJSONPrimitive(v); ok {
+			its.addToCemetery(jt)
+		}
+	}
+	return targets, values, err
+}
+
 func (its *jsonArray) arrayDeleteRemote(targets []*model.Timestamp, ts *model.Timestamp) (errs []errors.OrtooError) {
 
 	for _, t := range targets {
@@ -64,70 +94,46 @@ func (its *jsonArray) arrayDeleteRemote(targets []*model.Timestamp, ts *model.Ti
 	return errs
 }
 
-func (its *jsonArray) arrayUpdateLocal(op *operations.DocUpdateInArrayOperation) error {
-	if err := its.validateRange(op.Pos, len(op.C.V)); err != nil {
-		return err
-	}
+func (its *jsonArray) arrayUpdateLocal(pos int, ts *model.Timestamp, values ...interface{}) errors.OrtooError {
+	// if err := its.validateRange(pos, len(values)); err != nil {
+	// 	return err
+	// }
+	// var updated []*model.Timestamp
+	// n := its.findNthTarget(pos+1)
+	// for _, v := range values {
+	// 	old := n.getPrecededType()
+	// 	new := its.createJSONType(its, v, ts)
+	// 	new.setKey(old.getKey())
+	// 	switch cast := old.(type) {
+	// 	case *jsonElement:
+	// 		its.removeFromNodeMap(cast)
+	// 	case *jsonObject:
+	// 		its.addToCemetery(cast)
+	// 	case *jsonArray:
+	// 		its.addToCemetery(cast)
+	// 	}
+	// 	n.setPrecededType(new)
+	// 	its.addToNodeMap(new)
+	// 	n = n.getNextLive()
+	// }
+	// for n != nil {
+	// 	if !n.isTomb() {
+	// 		switch cast := n.getPrecededType().(type) {
+	// 		case *jsonObject:
+	// 			// list = append(list, cast.GetAsJSONCompatible())
+	// 		case *jsonElement:
+	// 			// list = append(list, cast.getValue())
+	// 		case *jsonArray:
+	// 			// list = append(list, cast.GetAsJSONCompatible())
+	// 		}
+	// 	}
+	// 	n = n.getNextLive()
+	// }
 	// orderedType := its.findNthTarget(op.Pos + 1)
 	// for i := 0; i < len(op.C.V); i++ {
 	//
 	// }
 	return nil
-}
-
-func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
-	targets, values, err := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, v := range targets {
-		if jt, ok := its.findJSONPrimitive(v); ok {
-			its.addToCemetery(jt)
-		}
-	}
-	return targets, values, err
-}
-
-func (its *jsonArray) arrayInsertCommon(
-	pos int, // in the case of the local insert
-	target *model.Timestamp, // in the case of the remote insert
-	ts *model.Timestamp,
-	values ...interface{},
-) (*model.Timestamp, []interface{}, errors.OrtooError) {
-	var pts []precededType
-	for _, v := range values {
-		rt := reflect.ValueOf(v)
-		switch rt.Kind() {
-		case reflect.Slice, reflect.Array:
-			ja := its.createJSONArray(its, v, ts)
-			pts = append(pts, ja)
-			its.addToNodeMap(ja)
-		case reflect.Struct, reflect.Map:
-			jo := its.createJSONObject(its, v, ts)
-			pts = append(pts, jo)
-			its.addToNodeMap(jo)
-		case reflect.Ptr:
-			ptrVal := rt.Elem()
-			its.arrayInsertCommon(pos, target, ts, ptrVal)
-		default:
-			je := newJSONElement(its, types.ConvertToJSONSupportedValue(v), ts.NextDeliminator())
-			pts = append(pts, je)
-			its.addToNodeMap(je)
-		}
-	}
-	if target == nil { // InsertLocal
-		return its.listSnapshot.insertLocalWithPrecededTypes(pos, pts...)
-	} // InsertRemote
-	its.listSnapshot.insertRemoteWithPrecededTypes(target, ts, pts...)
-	return nil, nil, nil
-}
-
-func (its *jsonArray) getPrecedenceType(pos int) (precededType, errors.OrtooError) {
-	val, err := its.listSnapshot.getPrecededType(pos)
-	if err != nil {
-		return nil, err
-	}
-	return val, nil
 }
 
 func (its *jsonArray) getValue() types.JSONValue {

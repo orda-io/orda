@@ -10,6 +10,7 @@ type orderedType interface {
 	setNext(n orderedType)
 	getNextLive() orderedType
 	getPrecededType() precededType
+	setPrecededType(pt precededType)
 	hash() string
 	marshal() *marshaledNode
 }
@@ -67,4 +68,8 @@ func (its *orderedNode) getNextLive() orderedType {
 
 func (its *orderedNode) getPrecededType() precededType {
 	return its.precededType
+}
+
+func (its *orderedNode) setPrecededType(pt precededType) {
+	its.precededType = pt
 }
