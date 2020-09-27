@@ -17,6 +17,15 @@ var (
 	}
 )
 
+func NewTimestamp(era uint32, lamport uint64, cuid []byte, delimiter uint32) *Timestamp {
+	return &Timestamp{
+		Era:       era,
+		Lamport:   lamport,
+		CUID:      cuid,
+		Delimiter: delimiter,
+	}
+}
+
 // Compare is used to compared with another Timestamp.
 func (its *Timestamp) Compare(o *Timestamp) int {
 	retEra := int32(its.Era - o.Era)
@@ -60,8 +69,8 @@ func (its *Timestamp) Next() *Timestamp {
 	}
 }
 
-// NextDeliminator returns a next Timestamp having increased deliminator.
-func (its *Timestamp) NextDeliminator() *Timestamp {
+// GetAndNextDelimiter returns a next Timestamp having increased deliminator.
+func (its *Timestamp) GetAndNextDelimiter() *Timestamp {
 
 	ts := &Timestamp{
 		Era:       its.Era,

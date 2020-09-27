@@ -107,7 +107,7 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 		}
 		return ret, nil
 	case *operations.DocInsertToArrayOperation:
-		target, ret, err := its.snapshot.InsertLocal(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
+		target, ret, err := its.snapshot.InsertLocalInArray(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +143,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 		}
 		return nil, nil
 	case *operations.DocInsertToArrayOperation:
-		its.snapshot.InsertRemote(cast.C.P, cast.C.T, cast.GetTimestamp(), cast.C.V...)
+		its.snapshot.InsertRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp(), cast.C.V...)
 		return nil, nil
 	case *operations.DocDeleteInObjectOperation:
 		if _, err := its.snapshot.DeleteRemoteInObject(cast.C.P, cast.C.Key, cast.GetTimestamp()); err != nil {
@@ -151,7 +151,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 		}
 		return nil, nil
 	case *operations.DocDeleteInArrayOperation:
-		errs := its.snapshot.DeleteRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp())
+		errs := its.snapshot.DeleteRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T)
 		if len(errs) > 0 {
 			// TODO: have to deliver handler
 		}
@@ -177,7 +177,7 @@ func (its *document) GetFromObject(key string) (Document, error) {
 func (its *document) getChildDocument(child jsonType) *document {
 	return &document{
 		datatype:  its.datatype,
-		root:      child.getKey(),
+		root:      child.getKeyTime(),
 		typeOfDoc: child.getType(),
 		snapshot:  its.snapshot,
 	}
@@ -186,7 +186,7 @@ func (its *document) getChildDocument(child jsonType) *document {
 func (its *document) GetFromArray(pos int) (Document, error) {
 	if its.typeOfDoc == TypeJSONArray {
 		if currentRoot, ok := its.snapshot.findJSONArray(its.root); ok {
-			c, err := currentRoot.getPrecededType(pos)
+			c, err := currentRoot.getTimedType(pos)
 			if err != nil {
 				return nil, err
 			}

@@ -50,9 +50,9 @@ func (its DatatypeErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooErro
 		Msg:  fmt.Sprintf(format, args...),
 	}
 	if l != nil {
-		_ = l.OrtooSkipErrorf(err, 3, err.Msg)
+		_ = l.OrtooSkipErrorf(err, 2, err.Msg)
 	} else {
-		_ = log.OrtooErrorWithSkip(err, 3, err.Msg)
+		_ = log.OrtooErrorWithSkip(err, 2, err.Msg)
 	}
 	return err
 }

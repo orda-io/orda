@@ -8,7 +8,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
-	"time"
 )
 
 func marshal(t *testing.T, j interface{}) string {
@@ -21,8 +20,8 @@ func TestList(t *testing.T) {
 
 	t.Run("Can perform list operations", func(t *testing.T) {
 		tw := testonly.NewTestWire(false)
-		list1 := newList("key1", types.NewCUID(), tw, nil)
-		list2 := newList("key2", types.NewCUID(), tw, nil)
+		list1 := newList("key1", types.NewNilCUID(), tw, nil)
+		list2 := newList("key2", types.NewCUID(), tw, nil) // list2 always wins
 		tw.SetDatatypes(list1.(*list).ManageableDatatype, list2.(*list).ManageableDatatype)
 
 		// list1: x -> y
@@ -44,13 +43,13 @@ func TestList(t *testing.T) {
 		json4 := marshal(t, list2.GetAsJSON())
 		require.Equal(t, json3, json4)
 		log.Logger.Infof("%s vs. %s", json3, json4)
-		log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
-		log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
+		// log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
+		// log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
 
 		_, _ = list1.InsertMany(2, 7479)
-		_, _ = list1.InsertMany(2, 3.141592)
-		log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
-		log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
+		_, _ = list2.InsertMany(2, 3.141592)
+		// log.Logger.Infof("SNAP1:%v", list1.(*list).snapshot)
+		// log.Logger.Infof("SNAP2:%v", list2.(*list).snapshot)
 		tw.Sync()
 		json5 := marshal(t, list1.GetAsJSON())
 		json6 := marshal(t, list2.GetAsJSON())
@@ -68,26 +67,34 @@ func TestList(t *testing.T) {
 		require.Equal(t, json7, json8)
 		log.Logger.Infof("SNAP1: %v => %v", json7, list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2: %v => %v", json8, list2.(*list).snapshot)
+
 		m := make(map[string]string)
 		m["a"] = "x"
 		m["b"] = "y"
-		time1 := time.Now()
+		time1 := "time.Now()" // TODO: should deal with time type
 		_, _ = list1.Update(2, time1, m)
 		_, _ = list2.Update(2, m, time1)
+		log.Logger.Infof("%v", marshal(t, list1.GetAsJSON()))
+		log.Logger.Infof("%v", marshal(t, list2.GetAsJSON()))
 		tw.Sync()
 		json9 := marshal(t, list1.GetAsJSON())
 		json10 := marshal(t, list2.GetAsJSON())
 		log.Logger.Infof("SNAP1: %v => %v", json9, list1.(*list).snapshot)
 		log.Logger.Infof("SNAP2: %v => %v", json10, list2.(*list).snapshot)
 		require.Equal(t, json9, json10)
-		time2, err := list1.Get(2)
+
+		time2, err := list1.Get(3)
 		require.NoError(t, err)
-		require.Equal(t, time1, time2.(time.Time))
+		require.Equal(t, time1, time2)
 
 		deleted1, _ := list1.DeleteMany(0, 2)
 		deleted2, _ := list2.DeleteMany(0, 2)
+		require.Equal(t, 4, list1.Size())
+		require.Equal(t, 4, list2.Size())
 		log.Logger.Infof("%v vs %v", deleted1, deleted2)
 		tw.Sync()
+		require.Equal(t, 4, list1.Size())
+		require.Equal(t, 4, list2.Size())
 		json11 := marshal(t, list1.GetAsJSON())
 		json12 := marshal(t, list2.GetAsJSON())
 		log.Logger.Infof("SNAP1: %v => %v", json11, list1.(*list).snapshot)

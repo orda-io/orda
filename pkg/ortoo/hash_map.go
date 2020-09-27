@@ -83,7 +83,7 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 	case *operations.PutOperation:
 		return its.snapshot.putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
 	case *operations.RemoveOperation:
-		return its.snapshot.removeRemote(cast.C.Key, cast.GetTimestamp()), nil
+		return its.snapshot.removeRemote(cast.C.Key, cast.GetTimestamp())
 	}
 	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
 }
@@ -202,29 +202,26 @@ func (its *hashMapSnapshot) get(key string) interface{} {
 }
 
 func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, errors.OrtooError) {
-	removed, _ := its.putCommonWithTimedValue(key, &timedNode{
-		V: value,
-		T: ts,
-	})
+	removed, _ := its.putCommonWithTimedType(key, newTimedNode(value, ts))
 	if removed != nil {
 		return removed.getValue(), nil
 	}
 	return nil, nil
 }
 
-func (its *hashMapSnapshot) putCommonWithTimedValue(key string, tv timedType) (removed timedType, put timedType) {
+func (its *hashMapSnapshot) putCommonWithTimedType(key string, tt timedType) (timedType, timedType) {
 	removed, ok := its.Map[key]
 	if !ok { // empty
-		its.Map[key] = tv
+		its.Map[key] = tt
 		its.Size++
-		return nil, tv
+		return nil, tt
 	}
 
-	if removed.getTime().Compare(tv.getTime()) <= 0 {
-		its.Map[key] = tv
-		return removed, tv
+	if removed.getTime().Compare(tt.getTime()) <= 0 {
+		its.Map[key] = tt
+		return removed, tt
 	}
-	return tv, removed
+	return tt, removed
 }
 
 func (its *hashMapSnapshot) GetAsJSONCompatible() interface{} {
@@ -238,29 +235,38 @@ func (its *hashMapSnapshot) GetAsJSONCompatible() interface{} {
 }
 
 func (its *hashMapSnapshot) removeLocal(key string, ts *model.Timestamp) (interface{}, errors.OrtooError) {
-	if tv, ok := its.Map[key]; ok {
-		if !tv.isTomb() {
-			oldVal := tv.getValue()
-			if tv.makeTomb(ts) {
+	_, oldV, err := its.removeLocalWithTimedType(key, ts)
+	return oldV, err
+}
+
+func (its *hashMapSnapshot) removeRemote(key string, ts *model.Timestamp) (interface{}, errors.OrtooError) {
+	_, oldV, err := its.removeRemoteWithTimedType(key, ts)
+	return oldV, err
+}
+
+func (its *hashMapSnapshot) removeLocalWithTimedType(key string, ts *model.Timestamp) (timedType, types.JSONValue, errors.OrtooError) {
+	if tt, ok := its.Map[key]; ok {
+		if !tt.isTomb() {
+			oldV := tt.getValue()
+			if tt.makeTomb(ts) { // makeTomb works differently according to implementations of timedType
 				its.Size--
-				return oldVal, nil
+				return tt, oldV, nil
 			}
 		}
 	}
-	return nil, errors.ErrDatatypeNoOp.New(its.base.Logger)
+	return nil, nil, errors.ErrDatatypeNoOp.New(its.base.Logger)
 }
 
-func (its *hashMapSnapshot) removeRemote(key string, ts *model.Timestamp) interface{} {
-	if tv, ok := its.Map[key]; ok {
-		oldVal := tv.getValue()
-		if tv.makeTomb(ts) {
+func (its *hashMapSnapshot) removeRemoteWithTimedType(key string, ts *model.Timestamp) (timedType, types.JSONValue, errors.OrtooError) {
+	if tt, ok := its.Map[key]; ok {
+		oldV := tt.getValue()
+		if tt.makeTomb(ts) {
 			its.Size--
-			return oldVal
+			return tt, oldV, nil
 		}
-		return nil
+		return nil, nil, nil
 	}
-	log.Logger.Errorf("No key '%s' exists", key)
-	return nil
+	return nil, nil, errors.ErrDatatypeNoTarget.New(its.base.Logger, key)
 }
 
 func (its *hashMapSnapshot) size() int {

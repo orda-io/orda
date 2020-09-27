@@ -56,7 +56,7 @@ func (its *TestWire) Sync() {
 		sseq := its.sseqMap[wired.GetCUID()]
 		operations := pushPullPack.Operations[sseq:]
 
-		log.Logger.Infof("deliver transaction:%v", OperationsToString(operations))
+		// log.Logger.Infof("deliver transaction:%v", OperationsToString(operations))
 		its.sseqMap[wired.GetCUID()] = len(pushPullPack.Operations)
 		for _, w := range its.datatypeList {
 			if wired != w.GetWired() {

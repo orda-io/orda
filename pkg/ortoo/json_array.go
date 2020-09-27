@@ -22,47 +22,43 @@ func newJSONArray(base *datatypes.BaseDatatype, parent jsonType, ts *model.Times
 		jsonType: &jsonPrimitive{
 			parent: parent,
 			common: parent.getRoot(),
-			K:      ts,
-			P:      ts,
+			T:      ts,
 		},
 		listSnapshot: newListSnapshot(base),
 	}
 }
 
-func (its *jsonArray) makeTomb(ts *model.Timestamp) bool {
-	if its.jsonType.makeTomb(ts) {
-		its.addToCemetery(its)
-		// n := its.head.getNext()
-		// for n != nil {
-		// 	cast := n.getPrecededType().(jsonType)
-		// 	cast.makeTombAsChild(ts)
-		// 	n = n.getNextLive()
-		// }
-		return true
+func (its *jsonArray) getJSONType(pos int) (jsonType, errors.OrtooError) {
+	tt, err := its.getTimedType(pos)
+	if err != nil {
+		return nil, err
 	}
-	return false
+	return tt.(jsonType), nil
 }
 
-func (its *jsonArray) arrayInsertCommon(
+func (its *jsonArray) insertCommon(
 	pos int, // in the case of the local insert
 	target *model.Timestamp, // in the case of the remote insert
 	ts *model.Timestamp,
 	values ...interface{},
 ) (*model.Timestamp, []interface{}, errors.OrtooError) {
-	var inserted []precededType
+	var inserted []timedType
 	for _, v := range values {
 		element := its.createJSONType(its, v, ts)
 		inserted = append(inserted, element)
 		its.addToNodeMap(element)
 	}
-	if target == nil { // InsertLocal
-		return its.listSnapshot.insertLocalWithPrecededTypes(pos, inserted...)
-	} // InsertRemote
-	its.listSnapshot.insertRemoteWithPrecededTypes(target, ts, inserted...)
-	return nil, nil, nil
+	if target == nil {
+		return its.listSnapshot.insertLocalWithTimedTypes(pos, inserted...)
+	}
+	return nil, nil, its.listSnapshot.insertRemoteWithTimedTypes(target, ts, inserted...)
 }
 
-func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
+func (its *jsonArray) deleteLocal(
+	pos int,
+	numOfNodes int,
+	ts *model.Timestamp,
+) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
 	targets, values, err := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
 	if err != nil {
 		return nil, nil, err
@@ -75,65 +71,84 @@ func (its *jsonArray) arrayDeleteLocal(pos, numOfNodes int, ts *model.Timestamp)
 	return targets, values, err
 }
 
-func (its *jsonArray) arrayDeleteRemote(targets []*model.Timestamp, ts *model.Timestamp) (errs []errors.OrtooError) {
-
-	for _, t := range targets {
-		if j, ok := its.findJSONPrimitive(t); ok {
-			if !j.isTomb() {
-				j.makeTomb(ts)
-				its.size--
-			} else { // concurrent deletes
-				if j.getPrecedence().Compare(ts) < 0 {
-					j.setPrecedence(ts)
-				}
-			}
-		} else {
-			errs = append(errs, errors.ErrDatatypeNoTarget.New(its.getLogger(), t.ToString()))
-		}
+func (its *jsonArray) deleteRemote(targets []*model.Timestamp, ts *model.Timestamp) (errs []errors.OrtooError) {
+	deleted, errs := its.listSnapshot.deleteRemote(targets, ts)
+	for _, t := range deleted {
+		its.addToCemetery(t.(jsonType))
 	}
 	return errs
 }
 
-func (its *jsonArray) arrayUpdateLocal(pos int, ts *model.Timestamp, values ...interface{}) errors.OrtooError {
-	// if err := its.validateRange(pos, len(values)); err != nil {
-	// 	return err
-	// }
-	// var updated []*model.Timestamp
-	// n := its.findNthTarget(pos+1)
-	// for _, v := range values {
-	// 	old := n.getPrecededType()
-	// 	new := its.createJSONType(its, v, ts)
-	// 	new.setKey(old.getKey())
-	// 	switch cast := old.(type) {
-	// 	case *jsonElement:
-	// 		its.removeFromNodeMap(cast)
-	// 	case *jsonObject:
-	// 		its.addToCemetery(cast)
-	// 	case *jsonArray:
-	// 		its.addToCemetery(cast)
-	// 	}
-	// 	n.setPrecededType(new)
-	// 	its.addToNodeMap(new)
-	// 	n = n.getNextLive()
-	// }
-	// for n != nil {
-	// 	if !n.isTomb() {
-	// 		switch cast := n.getPrecededType().(type) {
-	// 		case *jsonObject:
-	// 			// list = append(list, cast.GetAsJSONCompatible())
-	// 		case *jsonElement:
-	// 			// list = append(list, cast.getValue())
-	// 		case *jsonArray:
-	// 			// list = append(list, cast.GetAsJSONCompatible())
-	// 		}
-	// 	}
-	// 	n = n.getNextLive()
-	// }
-	// orderedType := its.findNthTarget(op.Pos + 1)
-	// for i := 0; i < len(op.C.V); i++ {
-	//
-	// }
-	return nil
+func (its *jsonArray) updateLocal(
+	pos int,
+	ts *model.Timestamp,
+	values ...interface{},
+) ([]*model.Timestamp, errors.OrtooError) {
+	if err := its.validateRange(pos, len(values)); err != nil {
+		return nil, err
+	}
+	var updatedTargets []*model.Timestamp
+	target := its.findNthTarget(pos + 1)
+	for _, v := range values {
+		/*
+			In the list, orderedType.K is used to resolve the order conflicts, and to find targets by remote operations.
+			The new node should preserve orderedType.K, and thus its timedType is replaced with the new jsonType.
+			In addition, the old jsonType except jsonElement should be accessible by some remote operations as a parent.
+			Thus, they are added to Cemetery.
+		*/
+		oldOne := target.getTimedType().(jsonType)
+		updatedTargets = append(updatedTargets, target.getOrderTime())
+		newOne := its.createJSONType(its, v, ts) // ts's delimiter can increase.
+		target.setTimedType(newOne)
+		its.addToNodeMap(newOne)
+		oldOne.makeTomb(newOne.getKeyTime()) // this should be always true.
+		if oldOne.getType() == TypeJSONElement {
+			its.removeFromNodeMap(oldOne) // jsonElement doesn't need to be accessed, thus is garbage-collected.
+		} else {
+			its.addToCemetery(oldOne)
+		}
+		target = target.getNextLive()
+	}
+	return updatedTargets, nil
+}
+
+func (its *jsonArray) updateRemote(
+	ts *model.Timestamp,
+	targets []*model.Timestamp,
+	values []interface{},
+) (errs []errors.OrtooError) {
+
+	for i, t := range targets {
+		newOne := its.createJSONType(its, values[i], ts)
+		its.addToNodeMap(newOne)
+		// thisTS := ts.GetAndNextDelimiter()
+		if node, ok := its.Map[t.Hash()]; ok {
+			var deleted, updated jsonType
+			oldOne := node.getTimedType().(jsonType)
+			if !node.isTomb() {
+				if node.getTime().Compare(newOne.getKeyTime()) < 0 {
+					node.setTimedType(newOne)
+					deleted = oldOne
+					updated = newOne
+				} else {
+					deleted = newOne
+					updated = oldOne
+				}
+			} else { // tombstone is not recovered.
+				deleted = newOne
+				updated = oldOne
+			}
+			deleted.makeTomb(updated.getKeyTime())
+			if deleted.getType() == TypeJSONElement {
+				its.removeFromNodeMap(deleted) // jsonElement doesn't need to be accessed, thus is garbage-collected.
+			} else {
+				its.addToCemetery(deleted)
+			}
+		} else {
+			errs = append(errs, errors.ErrDatatypeNoTarget.New(its.base.Logger, t.ToString()))
+		}
+	}
+	return
 }
 
 func (its *jsonArray) getValue() types.JSONValue {
@@ -152,18 +167,18 @@ func (its *jsonArray) String() string {
 	parent := its.getParent()
 	parentTS := "nil"
 	if parent != nil {
-		parentTS = parent.getKey().ToString()
+		parentTS = parent.getKeyTime().ToString()
 	}
-	return fmt.Sprintf("JA(%v)[T%v|V%v", parentTS, its.getKey().ToString(), its.listSnapshot.String())
+	return fmt.Sprintf("JA(%v)[T%v|V%v", parentTS, its.getKeyTime().ToString(), its.listSnapshot.String())
 }
 
 // GetAsJSONCompatible returns an interface type that contains all live objects.
 func (its *jsonArray) GetAsJSONCompatible() interface{} {
-	var list []interface{}
+	var list = make([]interface{}, 0)
 	n := its.listSnapshot.head.getNextLive()
 	for n != nil {
 		if !n.isTomb() {
-			switch cast := n.getPrecededType().(type) {
+			switch cast := n.getTimedType().(type) {
 			case *jsonObject:
 				list = append(list, cast.GetAsJSONCompatible())
 			case *jsonElement:

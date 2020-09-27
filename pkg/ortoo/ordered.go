@@ -3,40 +3,46 @@ package ortoo
 import "github.com/knowhunger/ortoo/pkg/model"
 
 type orderedType interface {
-	precededType
+	timedType
+	getOrderTime() *model.Timestamp
+	setOrderTime(ts *model.Timestamp)
 	getPrev() orderedType
 	setPrev(n orderedType)
 	getNext() orderedType
 	setNext(n orderedType)
 	getNextLive() orderedType
-	getPrecededType() precededType
-	setPrecededType(pt precededType)
+	getTimedType() timedType
+	setTimedType(tt timedType)
 	hash() string
 	marshal() *marshaledNode
 }
 
 type orderedNode struct {
-	precededType
+	timedType
+	O    *model.Timestamp
 	prev orderedType
 	next orderedType
 }
 
 func newHead() *orderedNode {
 	return &orderedNode{
-		precededType: &precededNode{
-			timedType: &timedNode{
-				V: nil,
-				T: model.OldestTimestamp,
-			},
-			P: nil,
-		},
-		prev: nil,
-		next: nil,
+		timedType: newTimedNode(nil, nil),
+		O:         model.OldestTimestamp,
+		prev:      nil,
+		next:      nil,
 	}
 }
 
+func (its *orderedNode) getOrderTime() *model.Timestamp {
+	return its.O
+}
+
+func (its *orderedNode) setOrderTime(ts *model.Timestamp) {
+	its.O = ts
+}
+
 func (its *orderedNode) hash() string {
-	return its.getTime().Hash()
+	return its.O.Hash()
 }
 
 func (its *orderedNode) getPrev() orderedType {
@@ -58,7 +64,7 @@ func (its *orderedNode) setNext(n orderedType) {
 func (its *orderedNode) getNextLive() orderedType {
 	ret := its.next
 	for ret != nil {
-		if ret.getValue() != nil {
+		if !ret.isTomb() {
 			return ret
 		}
 		ret = ret.getNext()
@@ -66,10 +72,10 @@ func (its *orderedNode) getNextLive() orderedType {
 	return nil
 }
 
-func (its *orderedNode) getPrecededType() precededType {
-	return its.precededType
+func (its *orderedNode) getTimedType() timedType {
+	return its.timedType
 }
 
-func (its *orderedNode) setPrecededType(pt precededType) {
-	its.precededType = pt
+func (its *orderedNode) setTimedType(tt timedType) {
+	its.timedType = tt
 }

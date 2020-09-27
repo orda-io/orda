@@ -20,19 +20,10 @@ func newJSONElement(parent jsonType, value interface{}, ts *model.Timestamp) *js
 		jsonType: &jsonPrimitive{
 			parent: parent,
 			common: parent.getRoot(),
-			K:      ts,
-			P:      ts,
+			T:      ts,
 		},
 		V: value,
 	}
-}
-
-func (its *jsonElement) makeTomb(ts *model.Timestamp) bool {
-	if its.jsonType.makeTomb(ts) {
-		its.addToCemetery(its)
-		return true
-	}
-	return false
 }
 
 func (its *jsonElement) getValue() types.JSONValue {
@@ -51,19 +42,19 @@ func (its *jsonElement) String() string {
 	parent := its.getParent()
 	parentTS := "nil"
 	if parent != nil {
-		parentTS = parent.getKey().ToString()
+		parentTS = parent.getKeyTime().ToString()
 	}
 	value := its.V
 	if its.isTomb() {
 		value = "#!DELETED"
 	}
-	return fmt.Sprintf("JE(P%v)[T%v|%v]", parentTS, its.getKey().ToString(), value)
+	return fmt.Sprintf("JE(P%v)[T%v|%v]", parentTS, its.getKeyTime().ToString(), value)
 }
 
-func (its *jsonElement) makeTombAsChild(ts *model.Timestamp) bool {
-	if its.jsonType.makeTombAsChild(ts) {
-		its.addToCemetery(its)
-		return true
-	}
-	return false
-}
+// func (its *jsonElement) makeTombAsChild(ts *model.Timestamp) bool {
+// 	if its.jsonType.makeTombAsChild(ts) {
+// 		its.addToCemetery(its)
+// 		return true
+// 	}
+// 	return false
+// }

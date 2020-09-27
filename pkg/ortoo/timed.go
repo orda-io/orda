@@ -24,6 +24,13 @@ type timedNode struct {
 	T *model.Timestamp `json:"t"`
 }
 
+func newTimedNode(v types.JSONValue, t *model.Timestamp) timedType {
+	return &timedNode{
+		V: v,
+		T: t,
+	}
+}
+
 func (its *timedNode) getValue() types.JSONValue {
 	return its.V
 }
@@ -40,11 +47,14 @@ func (its *timedNode) setTime(ts *model.Timestamp) {
 	its.T = ts
 }
 
-// this is for hash_map
+// this is for hashMap and list
 func (its *timedNode) makeTomb(ts *model.Timestamp) bool {
-	its.V = nil
-	its.T = ts
-	return true
+	if its.T.Compare(ts) <= 0 {
+		its.T = ts
+		its.V = nil
+		return true
+	}
+	return false
 }
 
 func (its *timedNode) isTomb() bool {

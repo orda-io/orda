@@ -23,7 +23,7 @@ const (
 	TypeJSONArray
 )
 
-// jsonType extends precededType
+// jsonType extends timedType
 // jsonElement extends jsonType
 // jsonObject extends jsonType
 // jsonArray extends jsonType
@@ -33,17 +33,17 @@ const (
 // ////////////////////////////////////
 
 type jsonType interface {
-	precededType
+	timedType
 	// getKey() *model.Timestamp
 	getType() TypeOfJSON
 	getRoot() *jsonCommon
 	setRoot(r *jsonObject)
 	getParent() jsonType
 	setParent(j jsonType)
+	getKeyTime() *model.Timestamp
+	getDelTime() *model.Timestamp
 	getBase() *datatypes.BaseDatatype
 	getLogger() *log.OrtooLog
-	// makeTombAsChild() makes tomb when it is not a tomb
-	makeTombAsChild(ts *model.Timestamp) bool
 	findJSONArray(ts *model.Timestamp) (j *jsonArray, ok bool)
 	findJSONObject(ts *model.Timestamp) (j *jsonObject, ok bool)
 	findJSONElement(ts *model.Timestamp) (j *jsonElement, ok bool)
@@ -60,63 +60,47 @@ type jsonCommon struct {
 	root     *jsonObject
 	base     *datatypes.BaseDatatype
 	nodeMap  map[string]jsonType // store all jsonPrimitive.K.hash => jsonType
-	cemetery map[string]jsonType // store all jsonPrimitive.K.hash => deleted jsonType
+	cemetery map[string]jsonType // store all deleted jsonType
 }
 
-// jsonPrimitive should implement timedType, precededType, and jsonType.
+// jsonPrimitive should implement timedType, and jsonType.
 type jsonPrimitive struct {
-	common  *jsonCommon
-	parent  jsonType
-	deleted bool
-	K       *model.Timestamp // used for key that is immutable and used in the common
-	P       *model.Timestamp // used for precedence; for example makeTomb
+	common *jsonCommon
+	parent jsonType
+	T      *model.Timestamp // a timestamp when this primitive is created. This is immutable.
+	D      *model.Timestamp // if D is not nil, it is tombstone.
 }
 
-// ///////////////////// methods of precededType ///////////////////////////////////
-
-func (its *jsonPrimitive) getKey() *model.Timestamp {
-	return its.K
-}
-
-func (its *jsonPrimitive) setKey(ts *model.Timestamp) {
-	its.K = ts
-}
-
-func (its *jsonPrimitive) getPrecedence() *model.Timestamp {
-	return its.P
-}
-
-func (its *jsonPrimitive) setPrecedence(ts *model.Timestamp) {
-	its.P = ts
-}
-
-// ///////////////////// methods of timedType ///////////////////////////////////////
-
-func (its *jsonPrimitive) isTomb() bool {
-	return its.deleted
-}
-
-func (its *jsonPrimitive) makeTomb(ts *model.Timestamp) bool {
-	if its.deleted { // already deleted
-		if its.P.Compare(ts) > 0 { // if current deletion is older, then ignored.
-			log.Logger.Infof("fail to makeTomb() of jsonPrimitive:%v", its.K.ToString())
-			return false
-		}
-	}
-	its.P = ts
-	its.deleted = true
-	return true
-}
+// ///////////////////// methods of timedType ///////////////////////////////////
 
 func (its *jsonPrimitive) getTime() *model.Timestamp {
-	if its.P == nil {
-		return its.K
+	if its.D != nil {
+		return its.D
 	}
-	return its.P
+	return its.T
 }
 
 func (its *jsonPrimitive) setTime(ts *model.Timestamp) {
-	its.K = ts
+	// since T is immutable and D is used for precedence, it updates D.
+	its.D = ts
+}
+
+func (its *jsonPrimitive) isTomb() bool {
+	return its.D != nil
+}
+
+func (its *jsonPrimitive) makeTomb(ts *model.Timestamp) bool {
+	if its.D != nil { // Already deleted. This condition meets when another remote delete operation arrives to tombstone.
+		if its.D.Compare(ts) > 0 { // if current deletion is older, then ignored.
+			return false
+		}
+		if tomb, ok := its.common.cemetery[its.D.Hash()]; ok {
+			delete(its.common.cemetery, its.D.Hash())
+			its.common.cemetery[ts.Hash()] = tomb
+		}
+	}
+	its.D = ts
+	return true
 }
 
 func (its *jsonPrimitive) getValue() types.JSONValue {
@@ -129,6 +113,10 @@ func (its *jsonPrimitive) setValue(v types.JSONValue) {
 
 // ///////////////////// methods of jsonType ///////////////////////////////////////
 
+func (its *jsonPrimitive) getKeyTime() *model.Timestamp {
+	return its.T
+}
+
 func (its *jsonPrimitive) getType() TypeOfJSON {
 	return typeJSONPrimitive
 }
@@ -137,14 +125,14 @@ func (its *jsonPrimitive) getBase() *datatypes.BaseDatatype {
 	return its.common.base
 }
 
-func (its *jsonPrimitive) makeTombAsChild(ts *model.Timestamp) bool {
-	if !its.isTomb() {
-		its.P = ts
-		its.deleted = true
-		return true
-	}
-	return false
-}
+// func (its *jsonPrimitive) makeTombAsChild(ts *model.Timestamp) bool {
+// 	if !its.isTomb() {
+// 		// its.P = ts
+// 		its.deleted = true
+// 		return true
+// 	}
+// 	return false
+// }
 
 func (its *jsonPrimitive) getLogger() *log.OrtooLog {
 	return its.common.base.Logger
@@ -183,15 +171,19 @@ func (its *jsonPrimitive) findJSONArray(ts *model.Timestamp) (json *jsonArray, o
 }
 
 func (its *jsonPrimitive) addToNodeMap(primitive jsonType) {
-	its.getRoot().nodeMap[primitive.getKey().Hash()] = primitive
+	its.getRoot().nodeMap[primitive.getKeyTime().Hash()] = primitive
 }
 
 func (its *jsonPrimitive) removeFromNodeMap(primitive jsonType) {
-	delete(its.getRoot().nodeMap, primitive.getKey().Hash())
+	delete(its.getRoot().nodeMap, primitive.getKeyTime().Hash())
+}
+
+func (its *jsonPrimitive) getDelTime() *model.Timestamp {
+	return its.D
 }
 
 func (its *jsonPrimitive) addToCemetery(primitive jsonType) {
-	its.getRoot().cemetery[primitive.getKey().Hash()] = primitive
+	its.common.cemetery[primitive.getDelTime().Hash()] = primitive
 }
 
 func (its *jsonPrimitive) getRoot() *jsonCommon {
@@ -200,7 +192,7 @@ func (its *jsonPrimitive) getRoot() *jsonCommon {
 
 func (its *jsonPrimitive) setRoot(r *jsonObject) {
 	its.common.root = r
-	its.common.nodeMap[r.getTime().Hash()] = r
+	its.common.nodeMap[r.getKeyTime().Hash()] = r
 }
 
 func (its *jsonPrimitive) getParent() jsonType {
@@ -225,7 +217,7 @@ func (its *jsonPrimitive) createJSONTypeFromReflectValue(parent jsonType, rv ref
 		ptrVal := rv.Elem()
 		return its.createJSONTypeFromReflectValue(parent, ptrVal, ts)
 	default:
-		return newJSONElement(parent, types.ConvertToJSONSupportedValue(rv.Interface()), ts.NextDeliminator())
+		return newJSONElement(parent, types.ConvertToJSONSupportedValue(rv.Interface()), ts.GetAndNextDelimiter())
 	}
 }
 
@@ -235,8 +227,8 @@ func (its *jsonPrimitive) createJSONType(parent jsonType, v interface{}, ts *mod
 }
 
 func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts *model.Timestamp) *jsonArray {
-	ja := newJSONArray(its.getBase(), parent, ts.NextDeliminator())
-	var appendValues []precededType
+	ja := newJSONArray(its.getBase(), parent, ts.GetAndNextDelimiter())
+	var appendValues []timedType
 	elements := reflect.ValueOf(value)
 	for i := 0; i < elements.Len(); i++ {
 		rv := elements.Index(i)
@@ -244,7 +236,7 @@ func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts
 		appendValues = append(appendValues, jt)
 	}
 	if appendValues != nil {
-		_, _, err := ja.insertLocalWithPrecededTypes(0, appendValues...)
+		_, _, err := ja.insertLocalWithTimedTypes(0, appendValues...)
 		if err != nil { // this cannot happen when inserted at position 0.
 			_ = log.OrtooError(err)
 		}
@@ -256,7 +248,7 @@ func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts
 }
 
 func (its *jsonPrimitive) createJSONObject(parent jsonType, value interface{}, ts *model.Timestamp) *jsonObject {
-	jo := newJSONObject(its.getBase(), parent, ts.NextDeliminator())
+	jo := newJSONObject(its.getBase(), parent, ts.GetAndNextDelimiter())
 	target := reflect.ValueOf(value)
 	fields := reflect.TypeOf(value)
 
@@ -278,6 +270,6 @@ func (its *jsonPrimitive) createJSONObject(parent jsonType, value interface{}, t
 
 func (its *jsonPrimitive) addValueToJSONObject(jo *jsonObject, key string, value reflect.Value, ts *model.Timestamp) {
 	jt := its.createJSONTypeFromReflectValue(jo, value, ts)
-	jo.putCommonWithTimedValue(key, jt)
+	jo.putCommonWithTimedType(key, jt)
 	its.addToNodeMap(jt)
 }
