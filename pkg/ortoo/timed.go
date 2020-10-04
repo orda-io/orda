@@ -14,7 +14,7 @@ type timedType interface {
 	// It can be overridden.
 	getTime() *model.Timestamp
 	setTime(ts *model.Timestamp)
-	makeTomb(ts *model.Timestamp) bool
+	makeTomb(ts *model.Timestamp)
 	isTomb() bool
 	String() string
 }
@@ -48,13 +48,9 @@ func (its *timedNode) setTime(ts *model.Timestamp) {
 }
 
 // this is for hashMap and list
-func (its *timedNode) makeTomb(ts *model.Timestamp) bool {
-	if its.T.Compare(ts) <= 0 {
-		its.T = ts
-		its.V = nil
-		return true
-	}
-	return false
+func (its *timedNode) makeTomb(ts *model.Timestamp) {
+	its.T = ts
+	its.V = nil
 }
 
 func (its *timedNode) isTomb() bool {

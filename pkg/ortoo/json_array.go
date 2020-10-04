@@ -29,7 +29,7 @@ func newJSONArray(base *datatypes.BaseDatatype, parent jsonType, ts *model.Times
 }
 
 func (its *jsonArray) getJSONType(pos int) (jsonType, errors.OrtooError) {
-	tt, err := its.getTimedType(pos)
+	tt, err := its.findTimedType(pos)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (its *jsonArray) updateLocal(
 		return nil, err
 	}
 	var updatedTargets []*model.Timestamp
-	target := its.findNthTarget(pos + 1)
+	target := its.retrieve(pos + 1)
 	for _, v := range values {
 		/*
 			In the list, orderedType.K is used to resolve the order conflicts, and to find targets by remote operations.
@@ -98,15 +98,10 @@ func (its *jsonArray) updateLocal(
 		*/
 		oldOne := target.getTimedType().(jsonType)
 		updatedTargets = append(updatedTargets, target.getOrderTime())
-		newOne := its.createJSONType(its, v, ts) // ts's delimiter can increase.
+		newOne := its.createJSONType(its, v, ts) // ts's delimiter might increase.
 		target.setTimedType(newOne)
 		its.addToNodeMap(newOne)
-		oldOne.makeTomb(newOne.getKeyTime()) // this should be always true.
-		if oldOne.getType() == TypeJSONElement {
-			its.removeFromNodeMap(oldOne) // jsonElement doesn't need to be accessed, thus is garbage-collected.
-		} else {
-			its.addToCemetery(oldOne)
-		}
+		its.funeral(oldOne, newOne.getTime())
 		target = target.getNextLive()
 	}
 	return updatedTargets, nil
@@ -138,12 +133,7 @@ func (its *jsonArray) updateRemote(
 				deleted = newOne
 				updated = oldOne
 			}
-			deleted.makeTomb(updated.getKeyTime())
-			if deleted.getType() == TypeJSONElement {
-				its.removeFromNodeMap(deleted) // jsonElement doesn't need to be accessed, thus is garbage-collected.
-			} else {
-				its.addToCemetery(deleted)
-			}
+			its.funeral(deleted, updated.getKeyTime())
 		} else {
 			errs = append(errs, errors.ErrDatatypeNoTarget.New(its.base.Logger, t.ToString()))
 		}

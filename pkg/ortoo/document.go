@@ -186,7 +186,7 @@ func (its *document) getChildDocument(child jsonType) *document {
 func (its *document) GetFromArray(pos int) (Document, error) {
 	if its.typeOfDoc == TypeJSONArray {
 		if currentRoot, ok := its.snapshot.findJSONArray(its.root); ok {
-			c, err := currentRoot.getTimedType(pos)
+			c, err := currentRoot.findTimedType(pos)
 			if err != nil {
 				return nil, err
 			}

@@ -117,7 +117,8 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) 
 		its.snapshot.deleteRemote(cast.C.T, cast.ID.GetTimestamp())
 		return nil, nil
 	case *operations.UpdateOperation:
-		return its.snapshot.updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
+		ret, _ := its.snapshot.updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
+		return ret, nil
 	}
 	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
 }
@@ -187,14 +188,6 @@ func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, error)
 	return ret, nil
 }
 
-func (its *list) Get(pos int) (interface{}, error) {
-	return its.snapshot.get(pos)
-}
-
-func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, error) {
-	return its.snapshot.getMany(pos, numOfNodes)
-}
-
 // Delete deletes one orderedType at index pos.
 func (its *list) Delete(pos int) (interface{}, error) {
 	ret, err := its.DeleteMany(pos, 1)
@@ -215,6 +208,14 @@ func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
 		return nil, err
 	}
 	return ret.([]interface{}), nil
+}
+
+func (its *list) Get(pos int) (interface{}, error) {
+	return its.snapshot.findValue(pos)
+}
+
+func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, error) {
+	return its.snapshot.findManyValues(pos, numOfNodes)
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -257,11 +258,11 @@ func (its *listSnapshot) insertRemote(
 	ts *model.Timestamp,
 	values ...interface{},
 ) errors.OrtooError {
-	var pts []timedType
+	var tts []timedType
 	for _, v := range values {
-		pts = append(pts, newTimedNode(v, ts.GetAndNextDelimiter()))
+		tts = append(tts, newTimedNode(v, ts.GetAndNextDelimiter()))
 	}
-	return its.insertRemoteWithTimedTypes(pos, ts, pts...)
+	return its.insertRemoteWithTimedTypes(pos, ts, tts...)
 }
 
 func (its *listSnapshot) insertRemoteWithTimedTypes(
@@ -293,13 +294,6 @@ func (its *listSnapshot) insertRemoteWithTimedTypes(
 	return errors.ErrDatatypeNoTarget.New(its.base.Logger, pos.Hash())
 }
 
-func (its *listSnapshot) appendLocal(
-	ts *model.Timestamp,
-	values ...interface{},
-) (*model.Timestamp, []interface{}, error) {
-	return its.insertLocal(its.size, ts, values...)
-}
-
 func (its *listSnapshot) insertLocal(
 	pos int,
 	ts *model.Timestamp,
@@ -316,11 +310,11 @@ func (its *listSnapshot) insertLocalWithTimedTypes(
 	pos int,
 	tts ...timedType,
 ) (*model.Timestamp, []interface{}, errors.OrtooError) {
-	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
-		return nil, nil, errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "out of bound index")
+	target, err := its.findOrderedTypeAsLink(pos)
+	if err != nil {
+		return nil, nil, err
 	}
 	var inserted []interface{}
-	target := its.findNthTarget(pos)
 	targetTs := target.getOrderTime()
 	for _, tt := range tts {
 		newNode := &orderedNode{
@@ -343,12 +337,12 @@ func (its *listSnapshot) updateLocal(
 	ts *model.Timestamp,
 	values []interface{},
 ) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
-	if err := its.validateRange(pos, len(values)); err != nil {
+	target, err := its.findOrderedTypeWithRange(pos, len(values))
+	if err != nil {
 		return nil, nil, err
 	}
 	var updatedValues []interface{}
 	var updatedTargets []*model.Timestamp
-	target := its.findNthTarget(pos + 1)
 	for _, v := range values {
 		updatedTargets = append(updatedTargets, target.getOrderTime())
 		updatedValues = append(updatedValues, target.getValue())
@@ -363,7 +357,7 @@ func (its *listSnapshot) updateRemote(
 	targets []*model.Timestamp,
 	values []interface{},
 	ts *model.Timestamp,
-) (interface{}, errors.OrtooError) {
+) (updated []interface{}, errs []errors.OrtooError) {
 	for i, t := range targets {
 		thisTS := ts.GetAndNextDelimiter()
 		if node, ok := its.Map[t.Hash()]; ok {
@@ -372,13 +366,15 @@ func (its *listSnapshot) updateRemote(
 				continue
 			}
 			if node.getTime() == nil || node.getTime().Compare(thisTS) < 0 {
+				updated = append(updated, node.getValue())
 				node.setValue(values[i])
 				node.setTime(thisTS)
 			}
+		} else {
+			errs = append(errs, errors.ErrDatatypeNoTarget.New(its.base.Logger, t.ToString()))
 		}
-
 	}
-	return nil, nil
+	return
 }
 
 func (its *listSnapshot) deleteLocal(
@@ -386,19 +382,18 @@ func (its *listSnapshot) deleteLocal(
 	numOfNodes int,
 	ts *model.Timestamp,
 ) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
-	if err := its.validateRange(pos, numOfNodes); err != nil {
+	target, err := its.findOrderedTypeWithRange(pos, numOfNodes)
+	if err != nil {
 		return nil, nil, err
 	}
 	var deletedTargets []*model.Timestamp
 	var deletedValues []interface{}
-	target := its.findNthTarget(pos + 1) // no head, but live orderedType
 	for i := 0; i < numOfNodes; i++ {
 		deletedValues = append(deletedValues, target.getValue())
 		deletedTargets = append(deletedTargets, target.getOrderTime())
 		// targets should be deleted with different timestamps because they can be inserted into Cemetery in Document
-		if target.makeTomb(ts.GetAndNextDelimiter()) { // always true
-			its.size--
-		}
+		target.makeTomb(ts.GetAndNextDelimiter())
+		its.size--
 		target = target.getNextLive()
 	}
 	return deletedTargets, deletedValues, nil
@@ -411,19 +406,52 @@ func (its *listSnapshot) deleteRemote(
 	var errs []errors.OrtooError
 	var deleted []timedType
 	for _, t := range targets {
+		thisTS := ts.GetAndNextDelimiter()
 		if node, ok := its.Map[t.Hash()]; ok {
-			if !node.isTomb() {
-				node.makeTomb(ts.GetAndNextDelimiter())
+			if !node.isTomb() { // if not tombstone
+				// A node should be deleted even if it has been updated by any update operation(s).
+				node.makeTomb(thisTS)
 				deleted = append(deleted, node.getTimedType())
 				its.size--
-			} else { // delete already deleted
-				node.makeTomb(ts.GetAndNextDelimiter())
+			} else { // if tombstone,
+				if node.getTime().Compare(thisTS) < 0 {
+					node.makeTomb(thisTS)
+				}
 			}
 		} else {
 			errs = append(errs, errors.ErrDatatypeNoTarget.New(its.base.Logger, t.ToString()))
 		}
 	}
 	return deleted, errs
+}
+
+// //////////////////////////////////////////////////////////////////////
+// For getting / finding / retrieving
+// //////////////////////////////////////////////////////////////////////
+
+// retrieve does not validate pos
+// it is assumed that always valid pos is passed.
+// for example: h t1 n1 n2 t2 t3 n3 t4 (h:head, n:orderedType, t: tombstone) size==3
+// pos : 0 => h : when tombstones follows, the orderedType before them is returned.
+// pos : 1 => n1
+// pos : 2 => n2
+// pos : 3 => n3
+func (its *listSnapshot) retrieve(pos int) orderedType {
+	ret := its.head
+	for i := 1; i <= pos; {
+		ret = ret.getNext()
+		if ret == nil {
+			return nil
+		}
+		if !ret.isTomb() { // not tombstone
+			i++
+		} else { // if tombstone
+			for ret.getNext() != nil && ret.getNext().isTomb() { // while next is tombstone
+				ret = ret.getNext()
+			}
+		}
+	}
+	return ret
 }
 
 func (its *listSnapshot) validateRange(pos int, numOfNodes int) errors.OrtooError {
@@ -438,50 +466,51 @@ func (its *listSnapshot) validateRange(pos int, numOfNodes int) errors.OrtooErro
 	return nil
 }
 
-// for example: h t1 n1 n2 t2 t3 n3 t4 (h:head, n:orderedType, t: tombstone) size==3
-// pos : 0 => h : when tombstones follows, the orderedType before them is returned.
-// pos : 1 => n1
-// pos : 2 => n2
-// pos : 3 => n3
-func (its *listSnapshot) findNthTarget(pos int) orderedType {
-	ret := its.head
-	for i := 1; i <= pos; {
-		ret = ret.getNext()
-		if !ret.isTomb() { // not tombstone
-			i++
-		} else { // if tombstone
-			for ret.getNext() != nil && ret.getNext().isTomb() { // while next is tombstone
-				ret = ret.getNext()
-			}
-		}
+func (its *listSnapshot) findOrderedTypeWithRange(pos int, numOfNodes int) (orderedType, errors.OrtooError) {
+	if err := its.validateRange(pos, numOfNodes); err != nil {
+		return nil, err
 	}
-	return ret
+	return its.retrieve(pos + 1), nil // no head, but live orderedType
 }
 
-func (its *listSnapshot) get(pos int) (interface{}, errors.OrtooError) {
-	pt, err := its.getTimedType(pos)
+func (its *listSnapshot) findOrderedType(pos int) (orderedType, errors.OrtooError) {
+	// size == 3, pos can be 0, 1, 2
+	if its.size <= pos {
+		return nil, errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "out of bound index")
+	}
+	return its.retrieve(pos + 1), nil
+}
+
+// findOrderedTypeAsLink finds a place next of which
+func (its *listSnapshot) findOrderedTypeAsLink(pos int) (orderedType, errors.OrtooError) {
+	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
+		return nil, errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "out of bound index")
+	}
+	return its.retrieve(pos), nil
+}
+
+func (its *listSnapshot) findTimedType(pos int) (timedType, errors.OrtooError) {
+	o, err := its.findOrderedType(pos)
+	return o.getTimedType(), err
+}
+
+func (its *listSnapshot) findValue(pos int) (interface{}, errors.OrtooError) {
+	pt, err := its.findTimedType(pos)
 	if err != nil {
 		return nil, err
 	}
 	return pt.getValue(), nil
 }
 
-func (its *listSnapshot) getTimedType(pos int) (timedType, errors.OrtooError) {
-	// size == 3, pos can be 0, 1, 2
-	if its.size <= pos {
-		return nil, errors.ErrDatatypeIllegalOperation.New(its.base.Logger, "out of bound index")
-	}
-	return its.findNthTarget(pos + 1).getTimedType(), nil
-}
-
-func (its *listSnapshot) getMany(pos int, numOfNodes int) ([]interface{}, error) {
-	if err := its.validateRange(pos, numOfNodes); err != nil {
+func (its *listSnapshot) findManyValues(pos int, numOfNodes int) ([]interface{}, errors.OrtooError) {
+	target, err := its.findOrderedTypeWithRange(pos, numOfNodes)
+	if err != nil {
 		return nil, err
 	}
 	var ret []interface{}
 	for i := 1; i <= numOfNodes; i++ {
-		target := its.findNthTarget(pos + i)
 		ret = append(ret, target.getValue())
+		target = target.getNextLive()
 	}
 	return ret, nil
 }

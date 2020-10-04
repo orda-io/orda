@@ -34,7 +34,6 @@ const (
 
 type jsonType interface {
 	timedType
-	// getKey() *model.Timestamp
 	getType() TypeOfJSON
 	getRoot() *jsonCommon
 	setRoot(r *jsonObject)
@@ -51,6 +50,7 @@ type jsonType interface {
 	addToNodeMap(j jsonType)
 	addToCemetery(j jsonType)
 	removeFromNodeMap(j jsonType)
+	funeral(j jsonType, ts *model.Timestamp)
 	createJSONType(parent jsonType, v interface{}, ts *model.Timestamp) jsonType
 	marshal() *marshaledJSONType
 	unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType)
@@ -89,18 +89,24 @@ func (its *jsonPrimitive) isTomb() bool {
 	return its.D != nil
 }
 
-func (its *jsonPrimitive) makeTomb(ts *model.Timestamp) bool {
-	if its.D != nil { // Already deleted. This condition meets when another remote delete operation arrives to tombstone.
-		if its.D.Compare(ts) > 0 { // if current deletion is older, then ignored.
-			return false
-		}
+func (its *jsonPrimitive) funeral(j jsonType, ts *model.Timestamp) {
+	j.makeTomb(ts)
+	if j.getType() == TypeJSONElement {
+		its.removeFromNodeMap(j) // jsonElement doesn't need to be accessed, thus is garbage-collected.
+	} else {
+		its.addToCemetery(j)
+	}
+}
+
+func (its *jsonPrimitive) makeTomb(ts *model.Timestamp) {
+	if its.D != nil { // Only when already tombstone.
+		// Since a tombstone is placed in the cemetery based on its.D, it should be adjusted.
 		if tomb, ok := its.common.cemetery[its.D.Hash()]; ok {
 			delete(its.common.cemetery, its.D.Hash())
 			its.common.cemetery[ts.Hash()] = tomb
 		}
 	}
 	its.D = ts
-	return true
 }
 
 func (its *jsonPrimitive) getValue() types.JSONValue {

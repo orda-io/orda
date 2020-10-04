@@ -209,19 +209,19 @@ func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.T
 	return nil, nil
 }
 
-func (its *hashMapSnapshot) putCommonWithTimedType(key string, tt timedType) (timedType, timedType) {
-	removed, ok := its.Map[key]
+func (its *hashMapSnapshot) putCommonWithTimedType(key string, newOne timedType) (o timedType, n timedType) {
+	oldOne, ok := its.Map[key]
 	if !ok { // empty
-		its.Map[key] = tt
+		its.Map[key] = newOne
 		its.Size++
-		return nil, tt
+		return nil, newOne
 	}
 
-	if removed.getTime().Compare(tt.getTime()) <= 0 {
-		its.Map[key] = tt
-		return removed, tt
+	if oldOne.getTime().Compare(newOne.getTime()) < 0 {
+		its.Map[key] = newOne
+		return oldOne, newOne
 	}
-	return tt, removed
+	return newOne, oldOne
 }
 
 func (its *hashMapSnapshot) GetAsJSONCompatible() interface{} {
@@ -244,11 +244,15 @@ func (its *hashMapSnapshot) removeRemote(key string, ts *model.Timestamp) (inter
 	return oldV, err
 }
 
-func (its *hashMapSnapshot) removeLocalWithTimedType(key string, ts *model.Timestamp) (timedType, types.JSONValue, errors.OrtooError) {
+func (its *hashMapSnapshot) removeLocalWithTimedType(
+	key string,
+	ts *model.Timestamp,
+) (timedType, types.JSONValue, errors.OrtooError) {
 	if tt, ok := its.Map[key]; ok {
 		if !tt.isTomb() {
 			oldV := tt.getValue()
-			if tt.makeTomb(ts) { // makeTomb works differently according to implementations of timedType
+			if tt.getTime().Compare(ts) < 0 {
+				tt.makeTomb(ts) // makeTomb works differently
 				its.Size--
 				return tt, oldV, nil
 			}
@@ -257,11 +261,17 @@ func (its *hashMapSnapshot) removeLocalWithTimedType(key string, ts *model.Times
 	return nil, nil, errors.ErrDatatypeNoOp.New(its.base.Logger)
 }
 
-func (its *hashMapSnapshot) removeRemoteWithTimedType(key string, ts *model.Timestamp) (timedType, types.JSONValue, errors.OrtooError) {
+func (its *hashMapSnapshot) removeRemoteWithTimedType(
+	key string,
+	ts *model.Timestamp,
+) (timedType, types.JSONValue, errors.OrtooError) {
 	if tt, ok := its.Map[key]; ok {
 		oldV := tt.getValue()
-		if tt.makeTomb(ts) {
-			its.Size--
+		if tt.getTime().Compare(ts) < 0 {
+			if !tt.isTomb() {
+				its.Size--
+			}
+			tt.makeTomb(ts)
 			return tt, oldV, nil
 		}
 		return nil, nil, nil

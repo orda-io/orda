@@ -269,7 +269,7 @@ func TestJSONArray(t *testing.T) {
 		ck3 := clone.getChildAsJSONElement("K3")
 		require.True(t, ck3.isTomb())
 		ca1 := clone.getChildAsJSONArray("A1")
-		v314, err := ca1.get(2)
+		v314, err := ca1.findValue(2)
 		require.NoError(t, err)
 		require.Equal(t, 3.14, v314)
 	})

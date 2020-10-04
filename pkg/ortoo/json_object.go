@@ -65,10 +65,11 @@ func (its *jsonObject) putCommon(key string, value interface{}, ts *model.Timest
 	newChild := its.createJSONType(its, value, ts)
 	its.addToNodeMap(newChild)
 	// removed can be either the existing one or newChild.
-	removed, _ := its.putCommonWithTimedType(key, newChild) // by hashMapSnapshot
+	removed, put := its.putCommonWithTimedType(key, newChild) // by hashMapSnapshot
 
 	if removed != nil {
 		removedJSON := removed.(jsonType)
+		putJSON := put.(jsonType)
 		/*
 			The removedJSON.makeTomb(ts) should work as follows.
 			JSONObject and JSONArray remain in NodeMap because they can be accessed as parents by other remote operations.
@@ -79,17 +80,9 @@ func (its *jsonObject) putCommon(key string, value interface{}, ts *model.Timest
 			Even if any jsonType is already a tombstone, it is not deleted again.
 
 			jsonElement: removed from NodeMap, not added to Cemetery.
-			jsonObject: remain in NodeMap, added to Cemetery.
-			jsonArray: remain in NodeMap, added to Cemetery.
+			jsonObject, jsonArray: remain in NodeMap, added to Cemetery.
 		*/
-		if !removedJSON.isTomb() {
-			removedJSON.makeTomb(ts)
-		}
-		if je, ok := removed.(*jsonElement); ok {
-			its.removeFromNodeMap(je)
-		} else {
-			its.addToCemetery(removedJSON)
-		}
+		its.funeral(removedJSON, putJSON.getKeyTime())
 		return removedJSON
 	}
 	return nil

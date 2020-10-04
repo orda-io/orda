@@ -71,7 +71,7 @@ func TestJSONObject(t *testing.T) {
 		child3 := root.getAsJSONType("K3").(*jsonArray)
 		require.Equal(t, TypeJSONObject, child3.getParent().getType())
 		require.Equal(t, root, child3.getParent())
-		grandChild3, oErr := child3.getTimedType(0)
+		grandChild3, oErr := child3.findTimedType(0)
 		require.NoError(t, oErr)
 		require.Equal(t, child3, grandChild3.(*jsonElement).getParent())
 
@@ -143,7 +143,7 @@ func TestJSONObject(t *testing.T) {
 		require.Equal(t, root, arr.getParent())
 
 		// get jsonElement from jsonArray
-		val1, err := arr.getTimedType(0)
+		val1, err := arr.findTimedType(0)
 		require.NoError(t, err)
 		require.Equal(t, float64(1234), val1.getValue())
 		require.Equal(t, arr, val1.(*jsonElement).getParent())
