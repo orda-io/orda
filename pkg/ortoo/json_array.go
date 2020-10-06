@@ -22,7 +22,7 @@ func newJSONArray(base *datatypes.BaseDatatype, parent jsonType, ts *model.Times
 		jsonType: &jsonPrimitive{
 			parent: parent,
 			common: parent.getRoot(),
-			T:      ts,
+			C:      ts,
 		},
 		listSnapshot: newListSnapshot(base),
 	}
@@ -121,7 +121,7 @@ func (its *jsonArray) updateRemote(
 			var deleted, updated jsonType
 			oldOne := node.getTimedType().(jsonType)
 			if !node.isTomb() {
-				if node.getTime().Compare(newOne.getKeyTime()) < 0 {
+				if node.getTime().Compare(newOne.getCreateTime()) < 0 {
 					node.setTimedType(newOne)
 					deleted = oldOne
 					updated = newOne
@@ -133,7 +133,7 @@ func (its *jsonArray) updateRemote(
 				deleted = newOne
 				updated = oldOne
 			}
-			its.funeral(deleted, updated.getKeyTime())
+			its.funeral(deleted, updated.getCreateTime())
 		} else {
 			errs = append(errs, errors.ErrDatatypeNoTarget.New(its.base.Logger, t.ToString()))
 		}
@@ -157,9 +157,9 @@ func (its *jsonArray) String() string {
 	parent := its.getParent()
 	parentTS := "nil"
 	if parent != nil {
-		parentTS = parent.getKeyTime().ToString()
+		parentTS = parent.getCreateTime().ToString()
 	}
-	return fmt.Sprintf("JA(%v)[T%v|V%v", parentTS, its.getKeyTime().ToString(), its.listSnapshot.String())
+	return fmt.Sprintf("JA(%v)[C%v|V%v", parentTS, its.getCreateTime().ToString(), its.listSnapshot.String())
 }
 
 // GetAsJSONCompatible returns an interface type that contains all live objects.
@@ -180,4 +180,56 @@ func (its *jsonArray) GetAsJSONCompatible() interface{} {
 		n = n.getNextLive()
 	}
 	return list
+}
+
+func (its *jsonArray) equal(o jsonType) bool {
+	if its.getType() != o.getType() {
+		return false
+	}
+
+	ja := o.(*jsonArray)
+	if !its.jsonType.equal(ja.jsonType) {
+		return false
+	}
+	if its.size != ja.size {
+		return false
+	}
+	for k, v1 := range its.Map {
+		v2 := ja.Map[k]
+		if (v1 == nil && v2 != nil) || (v1 != nil && v2 == nil) {
+			return false
+		}
+		if v1 == nil && v2 == nil { // cannot happen
+			return false
+		}
+		ov1, ov2 := v1.(orderedType), v2.(orderedType)
+		if ov1.getOrderTime().Compare(ov2.getOrderTime()) != 0 {
+			return false
+		}
+		if ov1.getOrderTime().Compare(model.OldestTimestamp()) == 0 &&
+			ov1.getOrderTime().Compare(ov2.getOrderTime()) == 0 {
+			return true
+		}
+		jt1, jt2 := ov1.getTimedType().(jsonType), ov2.getTimedType().(jsonType)
+		if jt1.getCreateTime().Compare(jt2.getCreateTime()) != 0 {
+			return false
+		}
+		if (ov1.getPrev() == nil && ov2.getPrev() != nil) || (ov1.getPrev() != nil && ov2.getPrev() == nil) {
+			return false
+		}
+		if ov1.getPrev() != nil && ov2.getPrev() != nil {
+			if ov1.getPrev().getOrderTime().Compare(ov2.getPrev().getOrderTime()) != 0 {
+				return false
+			}
+		}
+		if (ov1.getNext() == nil && ov2.getNext() != nil) || (ov1.getNext() != nil && ov2.getNext() == nil) {
+			return false
+		}
+		if ov1.getNext() != nil && ov2.getNext() != nil {
+			if ov1.getNext().getOrderTime().Compare(ov2.getNext().getOrderTime()) != 0 {
+				return false
+			}
+		}
+	}
+	return true
 }

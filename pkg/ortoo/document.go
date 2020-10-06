@@ -38,9 +38,9 @@ func newDocument(key string, cuid types.CUID, wire iface.Wire, handlers *Handler
 			ManageableDatatype: &datatypes.ManageableDatatype{},
 			handlers:           handlers,
 		},
-		root:      model.OldestTimestamp,
+		root:      model.OldestTimestamp(),
 		typeOfDoc: TypeJSONObject,
-		snapshot:  newJSONObject(base, nil, model.OldestTimestamp),
+		snapshot:  newJSONObject(base, nil, model.OldestTimestamp()),
 	}
 	doc.Initialize(base, wire, doc.snapshot, doc)
 	return doc
@@ -130,7 +130,7 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		var newSnap = newJSONObject(its.BaseDatatype, nil, model.OldestTimestamp)
+		var newSnap = newJSONObject(its.BaseDatatype, nil, model.OldestTimestamp())
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
 			return nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 		}
@@ -163,7 +163,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 func (its *document) GetFromObject(key string) (Document, error) {
 	if its.typeOfDoc == TypeJSONObject {
 		if currentRoot, ok := its.snapshot.findJSONObject(its.root); ok {
-			child := currentRoot.get(key).(jsonType)
+			child := currentRoot.getFromMap(key).(jsonType)
 			if child == nil {
 				return nil, errors.ErrDatatypeNotExistChildDocument.New(its.Logger)
 			}
@@ -177,7 +177,7 @@ func (its *document) GetFromObject(key string) (Document, error) {
 func (its *document) getChildDocument(child jsonType) *document {
 	return &document{
 		datatype:  its.datatype,
-		root:      child.getKeyTime(),
+		root:      child.getCreateTime(),
 		typeOfDoc: child.getType(),
 		snapshot:  its.snapshot,
 	}

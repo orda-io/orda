@@ -34,7 +34,7 @@ func newJSONObject(base *datatypes.BaseDatatype, parent jsonType, ts *model.Time
 		jsonType: &jsonPrimitive{
 			common: root,
 			parent: parent,
-			T:      ts,
+			C:      ts,
 		},
 		hashMapSnapshot: newHashMapSnapshot(base),
 	}
@@ -82,7 +82,7 @@ func (its *jsonObject) putCommon(key string, value interface{}, ts *model.Timest
 			jsonElement: removed from NodeMap, not added to Cemetery.
 			jsonObject, jsonArray: remain in NodeMap, added to Cemetery.
 		*/
-		its.funeral(removedJSON, putJSON.getKeyTime())
+		its.funeral(removedJSON, putJSON.getCreateTime())
 		return removedJSON
 	}
 	return nil
@@ -222,20 +222,8 @@ func (its *jsonObject) getType() TypeOfJSON {
 	return TypeJSONObject
 }
 
-// func (its *jsonObject) makeTombAsChild(ts *model.Timestamp) bool {
-// 	if its.jsonType.makeTombAsChild(ts) {
-// 		its.addToCemetery(its)
-// 		for _, v := range its.Map {
-// 			cast := v.(jsonType)
-// 			cast.makeTombAsChild(ts)
-// 		}
-// 		return true
-// 	}
-// 	return false
-// }
-
 func (its *jsonObject) getChildAsJSONElement(key string) *jsonElement {
-	value := its.get(key)
+	value := its.getFromMap(key)
 	if value == nil {
 		return nil
 	}
@@ -243,12 +231,12 @@ func (its *jsonObject) getChildAsJSONElement(key string) *jsonElement {
 }
 
 func (its *jsonObject) getChildAsJSONObject(key string) *jsonObject {
-	value := its.get(key)
+	value := its.getFromMap(key)
 	return value.(*jsonObject)
 }
 
 func (its *jsonObject) getChildAsJSONArray(key string) *jsonArray {
-	value := its.get(key)
+	value := its.getFromMap(key)
 	return value.(*jsonArray)
 }
 
@@ -256,9 +244,9 @@ func (its *jsonObject) String() string {
 	parent := its.getParent()
 	parentTS := "nil"
 	if parent != nil {
-		parentTS = parent.getKeyTime().ToString()
+		parentTS = parent.getCreateTime().ToString()
 	}
-	return fmt.Sprintf("JO(%v)[T%v|V%v]", parentTS, its.getKeyTime().ToString(), its.hashMapSnapshot.String())
+	return fmt.Sprintf("JO(%v)[C%v|V%v]", parentTS, its.getCreateTime().ToString(), its.hashMapSnapshot.String())
 }
 
 func (its *jsonObject) GetAsJSONCompatible() interface{} {
@@ -283,4 +271,36 @@ func (its *jsonObject) GetAsJSONCompatible() interface{} {
 		}
 	}
 	return m
+}
+
+func (its *jsonObject) Equal(o *jsonObject) bool {
+	return its.jsonType.(*jsonPrimitive).common.equal(o.jsonType.(*jsonPrimitive).common)
+}
+
+func (its *jsonObject) equal(o jsonType) bool {
+	if its.getType() != o.getType() {
+		return false
+	}
+	jo := o.(*jsonObject)
+	if !its.jsonType.equal(jo.jsonType) {
+		return false
+	}
+
+	if its.Size != jo.Size {
+		return false
+	}
+	for k, v1 := range its.Map {
+		v2 := jo.Map[k]
+		if (v1 == nil && v2 != nil) || (v1 != nil && v2 == nil) {
+			return false
+		}
+		if v1 == nil && v2 == nil {
+			continue
+		}
+		jv1, jv2 := v1.(jsonType), v2.(jsonType)
+		if jv1.getCreateTime().Compare(jv2.getCreateTime()) != 0 {
+			return false
+		}
+	}
+	return true
 }

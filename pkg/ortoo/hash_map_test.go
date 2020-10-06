@@ -82,46 +82,48 @@ func TestHashMap(t *testing.T) {
 	t.Run("Can do operations with hashMapSnapshot", func(t *testing.T) {
 
 		opID1 := model.NewOperationID()
-		opID2 := model.NewOperationID()
-		opID2.Lamport++
-		opID3 := model.NewOperationID()
-		opID3.Era++
+		opID2 := model.NewOperationID().Next()
+
 		base := datatypes.NewBaseDatatype("test", model.TypeOfDatatype_HASH_MAP, types.NewCUID())
 		snap := newHashMapSnapshot(base)
-		_, _ = snap.putCommon("key1", "value1-1", opID1.GetTimestamp())
-		_, _ = snap.putCommon("key1", "value1-2", opID2.GetTimestamp())
-
-		_, _ = snap.putCommon("key2", "value2-1", opID2.GetTimestamp())
-		_, _ = snap.putCommon("key2", "value2-2", opID1.GetTimestamp())
-
-		json1 := snap.GetAsJSONCompatible()
-		log.Logger.Infof("%+v", json1)
-		j1, err := json.Marshal(json1)
+		old1, err := snap.putCommon("key1", "v1", opID1.Next().GetTimestamp())
 		require.NoError(t, err)
-		require.Equal(t, `{"key1":"value1-2","key2":"value2-1"}`, string(j1))
+		require.Nil(t, old1)
+		old2, err := snap.putCommon("key1", "v2", opID2.Next().GetTimestamp()) // should win
+		require.NoError(t, err)
+		require.Equal(t, "v1", old2)
+
+		old3, err := snap.putCommon("key2", "v3", opID2.Next().GetTimestamp()) // should win
+		require.NoError(t, err)
+		require.Nil(t, old3)
+		old4, err := snap.putCommon("key2", "v4", opID1.Next().GetTimestamp())
+		require.NoError(t, err)
+		require.Equal(t, "v4", old4)
+
+		log.Logger.Infof("%+v", marshal(t, snap.GetAsJSONCompatible()))
+		require.Equal(t, `{"key1":"v2","key2":"v3"}`, marshal(t, snap.GetAsJSONCompatible()))
 		require.Equal(t, 2, snap.size())
 
-		removed1, err := snap.removeRemote("key1", opID3.GetTimestamp())
+		removed1, err := snap.removeRemote("key1", opID2.Next().GetTimestamp())
 		require.NoError(t, err)
-		removed2, err := snap.removeRemote("key1", opID1.GetTimestamp()) // remove with older timestamp; no op
-		require.Error(t, err)
-		require.Equal(t, "value1-2", removed1)
+		require.Equal(t, "v2", removed1)
+
+		removed2, err := snap.removeRemote("key2", model.OldestTimestamp()) // remove with older timestamp; not effective
+		require.NoError(t, err)
 		require.Nil(t, removed2)
-		json2 := snap.GetAsJSONCompatible()
-		log.Logger.Infof("%+v", json2)
-		j2, err := json.Marshal(json2)
-		require.NoError(t, err)
-		require.Equal(t, `{"key2":"value2-1"}`, string(j2))
+		log.Logger.Infof("%+v", marshal(t, snap.GetAsJSONCompatible()))
 
 		// marshal and unmarshal snapshot
-		snap1, err := json.Marshal(snap)
-		require.NoError(t, err)
+		snap1, err2 := json.Marshal(snap)
+		require.NoError(t, err2)
 		log.Logger.Infof("%v", string(snap1))
 		clone := newHashMapSnapshot(base)
-		err = json.Unmarshal(snap1, clone)
-		require.NoError(t, err)
-		snap2, err := json.Marshal(clone)
-		require.NoError(t, err)
+		err2 = json.Unmarshal(snap1, clone)
+		require.NoError(t, err2)
+		snap2, err2 := json.Marshal(clone)
+		require.NoError(t, err2)
 		log.Logger.Infof("%v", string(snap2))
+		require.Equal(t, string(snap1), string(snap2))
+		require.Nil(t, clone.getFromMap("key1").getValue())
 	})
 }

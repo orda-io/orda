@@ -281,10 +281,8 @@ func (its *listSnapshot) insertRemoteWithTimedTypes(
 			newNode := &orderedNode{ // N
 				timedType: tt,
 				O:         tt.getTime(),
-				prev:      target,           // T -> N
-				next:      target.getNext(), // N -> B
 			}
-			target.setNext(newNode) // T -> N
+			target.insertNext(newNode) // T <--> N <--> B
 			its.Map[newNode.hash()] = newNode
 			its.size++
 			target = newNode // N => T
@@ -320,10 +318,8 @@ func (its *listSnapshot) insertLocalWithTimedTypes(
 		newNode := &orderedNode{
 			timedType: tt,
 			O:         tt.getTime(),
-			prev:      target,
-			next:      target.getNext(),
 		}
-		target.setNext(newNode)
+		target.insertNext(newNode)
 		its.Map[newNode.hash()] = newNode
 		inserted = append(inserted, tt.getValue())
 		its.size++
@@ -550,7 +546,7 @@ func (its *listSnapshot) Size() int {
 type marshaledNode struct {
 	V types.JSONValue
 	T *model.Timestamp
-	K *model.Timestamp
+	O *model.Timestamp
 }
 
 type marshaledList struct {
@@ -584,9 +580,9 @@ func (its *listSnapshot) UnmarshalJSON(bytes []byte) error {
 	prev := its.head
 	for _, n := range forUnmarshal.Nodes {
 		node := n.unmarshalAsNode()
-		prev.setNext(node)
-		node.setPrev(prev)
+		prev.insertNext(node)
 		prev = node
+		its.Map[node.getOrderTime().Hash()] = node
 	}
 	return nil
 }
@@ -594,7 +590,7 @@ func (its *listSnapshot) UnmarshalJSON(bytes []byte) error {
 func (its *marshaledNode) unmarshalAsNode() orderedType {
 	return &orderedNode{
 		timedType: newTimedNode(its.V, its.T),
-		O:         its.K,
+		O:         its.O,
 		next:      nil,
 		prev:      nil,
 	}
@@ -604,7 +600,7 @@ func (its *orderedNode) marshal() *marshaledNode {
 	return &marshaledNode{
 		V: its.getValue(),
 		T: its.getTime(),
-		K: its.getOrderTime(),
+		O: its.getOrderTime(),
 	}
 }
 

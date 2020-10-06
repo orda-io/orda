@@ -1,7 +1,6 @@
 package ortoo
 
 import (
-	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
@@ -24,11 +23,11 @@ func initJSONArrayAndInsertTest(t *testing.T, root *jsonObject, opID *model.Oper
 
 	array := root.getChildAsJSONArray("K1")
 	require.Equal(t, root, array.getParent())
-	require.Equal(t, opID.GetTimestamp(), array.getKeyTime())
+	require.Equal(t, opID.GetTimestamp(), array.getCreateTime())
 	var err error
 
 	// {"K1":["world",{ "K1": "hello", "K2": 1234 }, 1234,3.14]}
-	_, _, err = root.InsertLocalInArray(array.getKeyTime(), 1, opID.Next().GetTimestamp(), strt1)
+	_, _, err = root.InsertLocalInArray(array.getCreateTime(), 1, opID.Next().GetTimestamp(), strt1)
 	require.NoError(t, err)
 	log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
@@ -38,7 +37,7 @@ func initJSONArrayAndInsertTest(t *testing.T, root *jsonObject, opID *model.Oper
 	require.Equal(t, TypeJSONObject, objChild.getType())
 
 	// {"K1":["world",{ "K1": "hello", "K2": 1234 }, ["world", 1234, 3.14], 1234,3.14]}
-	_, _, err = root.InsertLocalInArray(array.getKeyTime(), 2, opID.Next().GetTimestamp(), arr1)
+	_, _, err = root.InsertLocalInArray(array.getCreateTime(), 2, opID.Next().GetTimestamp(), arr1)
 	require.NoError(t, err)
 	log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
@@ -55,12 +54,12 @@ func TestJSONArray(t *testing.T) {
 	t.Run("Can insert remotely in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
-		root := newJSONObject(base, nil, model.OldestTimestamp)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		var arr = make([]interface{}, 0)
-		_, err := root.PutCommonInObject(root.getKeyTime(), "K1", arr, opID.Next().GetTimestamp())
+		_, err := root.PutCommonInObject(root.getCreateTime(), "K1", arr, opID.Next().GetTimestamp())
 		require.NoError(t, err)
-		_, err = root.PutCommonInObject(root.getKeyTime(), "K2", arr, opID.Next().GetTimestamp())
+		_, err = root.PutCommonInObject(root.getCreateTime(), "K2", arr, opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
@@ -73,15 +72,15 @@ func TestJSONArray(t *testing.T) {
 		values2 := []interface{}{"a", "b"} // older
 
 		// insert into K1
-		err = root.InsertRemoteInArray(k1.getKeyTime(), model.OldestTimestamp, ts2, values1...)
+		err = root.InsertRemoteInArray(k1.getCreateTime(), model.OldestTimestamp(), ts2, values1...)
 		require.NoError(t, err)
-		err = root.InsertRemoteInArray(k1.getKeyTime(), model.OldestTimestamp, ts1, values2...)
+		err = root.InsertRemoteInArray(k1.getCreateTime(), model.OldestTimestamp(), ts1, values2...)
 		require.NoError(t, err)
 
 		// insert into K2
-		err = root.InsertRemoteInArray(k2.getKeyTime(), model.OldestTimestamp, ts1, values2...)
+		err = root.InsertRemoteInArray(k2.getCreateTime(), model.OldestTimestamp(), ts1, values2...)
 		require.NoError(t, err)
-		err = root.InsertRemoteInArray(k2.getKeyTime(), model.OldestTimestamp, ts2, values1...)
+		err = root.InsertRemoteInArray(k2.getCreateTime(), model.OldestTimestamp(), ts2, values1...)
 		require.NoError(t, err)
 
 		//
@@ -90,21 +89,24 @@ func TestJSONArray(t *testing.T) {
 		y, err := k2.getJSONType(1)
 		require.NoError(t, err)
 		require.Equal(t, k2, x.getParent(), y.getParent())
-		require.NotEqual(t, x.getKeyTime(), y.getKeyTime())
+		require.NotEqual(t, x.getCreateTime(), y.getCreateTime())
 
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 		require.Equal(t, k1.GetAsJSONCompatible(), k2.GetAsJSONCompatible())
+
+		// marshal and unmarshal snapshot
+		jsonObjectMarshalTest(t, root)
 	})
 
 	t.Run("Can delete something locally in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
-		root := newJSONObject(base, nil, model.OldestTimestamp)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 		var err error
 		array := initJSONArrayAndInsertTest(t, root, opID)
 
 		// delete out of index bound
-		_, _, err = root.DeleteLocalInArray(array.getKeyTime(), 10, 1, opID.Next().GetTimestamp())
+		_, _, err = root.DeleteLocalInArray(array.getCreateTime(), 10, 1, opID.Next().GetTimestamp())
 		require.Error(t, err)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
@@ -113,7 +115,7 @@ func TestJSONArray(t *testing.T) {
 		element1, err := array.getJSONType(0)
 		require.NoError(t, err)
 		require.False(t, element1.isTomb())
-		_, _, err = root.DeleteLocalInArray(array.getKeyTime(), 0, 1, opID.Next().GetTimestamp())
+		_, _, err = root.DeleteLocalInArray(array.getCreateTime(), 0, 1, opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.True(t, element1.isTomb())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
@@ -123,10 +125,10 @@ func TestJSONArray(t *testing.T) {
 		element2, err := array.getJSONType(0) // keep it in advance.
 		require.NoError(t, err)
 		require.False(t, element2.isTomb())
-		_, _, err = root.DeleteLocalInArray(array.getKeyTime(), 0, 1, opID.Next().GetTimestamp())
+		_, _, err = root.DeleteLocalInArray(array.getCreateTime(), 0, 1, opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.True(t, element2.isTomb())
-		require.Equal(t, opID.GetTimestamp(), element2.getDelTime())
+		require.Equal(t, opID.GetTimestamp(), element2.getDeleteTime())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// delete a JSONArray
@@ -134,10 +136,10 @@ func TestJSONArray(t *testing.T) {
 		element3, err := array.getJSONType(0) // keep it in advance.
 		require.NoError(t, err)
 		require.False(t, element3.isTomb())
-		_, _, err = root.DeleteLocalInArray(array.getKeyTime(), 0, 1, opID.Next().GetTimestamp())
+		_, _, err = root.DeleteLocalInArray(array.getCreateTime(), 0, 1, opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.True(t, element3.isTomb())
-		require.Equal(t, opID.GetTimestamp(), element3.getDelTime())
+		require.Equal(t, opID.GetTimestamp(), element3.getDeleteTime())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// delete two values
@@ -147,28 +149,22 @@ func TestJSONArray(t *testing.T) {
 		del2, err := array.getJSONType(1)
 		require.NoError(t, err)
 		require.False(t, del2.isTomb())
-		_, _, err = root.DeleteLocalInArray(array.getKeyTime(), 0, 2, opID.Next().GetTimestamp())
+		_, _, err = root.DeleteLocalInArray(array.getCreateTime(), 0, 2, opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Equal(t, 0, array.Size())
 		ts := opID.GetTimestamp()
-		require.Equal(t, ts.GetAndNextDelimiter(), del1.getDelTime())
-		require.Equal(t, ts.GetAndNextDelimiter(), del2.getDelTime())
+		require.Equal(t, ts.GetAndNextDelimiter(), del1.getDeleteTime())
+		require.Equal(t, ts.GetAndNextDelimiter(), del2.getDeleteTime())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
-		// // marshal and unmarshal
-		// m, err2 := json.Marshal(root) // ==> jsonObject.MarshalJSON
-		// require.NoError(t, err2)
-		// unmarshaled := newJSONObject(base, nil, model.OldestTimestamp)
-		// err2 = json.Unmarshal(m, unmarshaled)
-		// require.NoError(t, err2)
-		// log.Logger.Infof("%v", marshal(t, unmarshaled.GetAsJSONCompatible()))
-		// require.Equal(t, marshal(t, root.GetAsJSONCompatible()), marshal(t, unmarshaled.GetAsJSONCompatible()))
+		// marshal and unmarshal snapshot
+		jsonObjectMarshalTest(t, root)
 	})
 
 	t.Run("Can delete something remotely in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
-		root := newJSONObject(base, nil, model.OldestTimestamp)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// init JSONObject
 		// {"K1":["world",{ "K1": "hello", "K2": 1234 }, ["world", 1234, 3.14], 1234,3.14]}
@@ -176,7 +172,7 @@ func TestJSONArray(t *testing.T) {
 
 		// delete NOT_EXISTING remotely
 		tsNotExisting := model.NewTimestamp(0, 0, types.NewCUID(), 0)
-		errs := root.DeleteRemoteInArray(array.getKeyTime(), opID.Next().GetTimestamp(), []*model.Timestamp{tsNotExisting})
+		errs := root.DeleteRemoteInArray(array.getCreateTime(), opID.Next().GetTimestamp(), []*model.Timestamp{tsNotExisting})
 		require.Equal(t, 1, len(errs))
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
@@ -191,93 +187,54 @@ func TestJSONArray(t *testing.T) {
 		// {"K1":[1234,3.14]}
 		ts1 := opID.Next().GetTimestamp()
 
-		errs = root.DeleteRemoteInArray(array.getKeyTime(), ts1.Clone(), []*model.Timestamp{je.getKeyTime(), jo.getKeyTime(), ja.getKeyTime()})
+		errs = root.DeleteRemoteInArray(array.getCreateTime(), ts1.Clone(), []*model.Timestamp{je.getCreateTime(), jo.getCreateTime(), ja.getCreateTime()})
 		require.Equal(t, 0, len(errs))
 		require.True(t, je.isTomb())
 		require.True(t, jo.isTomb())
 		require.True(t, ja.isTomb())
-		require.Equal(t, ts1.GetAndNextDelimiter(), je.getDelTime())
-		require.Equal(t, ts1.GetAndNextDelimiter(), jo.getDelTime())
-		require.Equal(t, ts1.GetAndNextDelimiter(), ja.getDelTime())
+		require.Equal(t, ts1.GetAndNextDelimiter(), je.getDeleteTime())
+		require.Equal(t, ts1.GetAndNextDelimiter(), jo.getDeleteTime())
+		require.Equal(t, ts1.GetAndNextDelimiter(), ja.getDeleteTime())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// if delete again with newer timestamp, then they should be deleted with newer timestamp.
 		ts2 := opID.Next().GetTimestamp()
 		ts2_2 := ts2.Clone()
-		errs = root.DeleteRemoteInArray(array.getKeyTime(), ts2.Clone(), []*model.Timestamp{je.getKeyTime(), jo.getKeyTime(), ja.getKeyTime()})
+		errs = root.DeleteRemoteInArray(array.getCreateTime(), ts2.Clone(), []*model.Timestamp{je.getCreateTime(), jo.getCreateTime(), ja.getCreateTime()})
 		require.Equal(t, 0, len(errs))
 		require.True(t, je.isTomb())
 		require.True(t, jo.isTomb())
 		require.True(t, ja.isTomb())
-		require.Equal(t, ts2.GetAndNextDelimiter(), je.getDelTime())
-		require.Equal(t, ts2.GetAndNextDelimiter(), jo.getDelTime())
-		require.Equal(t, ts2.GetAndNextDelimiter(), ja.getDelTime())
+		require.Equal(t, ts2.GetAndNextDelimiter(), je.getDeleteTime())
+		require.Equal(t, ts2.GetAndNextDelimiter(), jo.getDeleteTime())
+		require.Equal(t, ts2.GetAndNextDelimiter(), ja.getDeleteTime())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// if delete again with older timestamp, then they should be deleted with newer timestamp.
-		errs = root.DeleteRemoteInArray(array.getKeyTime(), ts1.Clone(), []*model.Timestamp{je.getKeyTime(), jo.getKeyTime(), ja.getKeyTime()})
+		errs = root.DeleteRemoteInArray(array.getCreateTime(), ts1.Clone(), []*model.Timestamp{je.getCreateTime(), jo.getCreateTime(), ja.getCreateTime()})
 		require.Equal(t, 0, len(errs))
 		require.True(t, je.isTomb())
 		require.True(t, jo.isTomb())
 		require.True(t, ja.isTomb())
-		require.Equal(t, ts2_2.GetAndNextDelimiter(), je.getDelTime())
-		require.Equal(t, ts2_2.GetAndNextDelimiter(), jo.getDelTime())
-		require.Equal(t, ts2_2.GetAndNextDelimiter(), ja.getDelTime())
+		require.Equal(t, ts2_2.GetAndNextDelimiter(), je.getDeleteTime())
+		require.Equal(t, ts2_2.GetAndNextDelimiter(), jo.getDeleteTime())
+		require.Equal(t, ts2_2.GetAndNextDelimiter(), ja.getDeleteTime())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// insert next to deleted one.
-		err = root.InsertRemoteInArray(array.getKeyTime(), jo.getKeyTime(), opID.Next().GetTimestamp(), "E1")
+		err = root.InsertRemoteInArray(array.getCreateTime(), jo.getCreateTime(), opID.Next().GetTimestamp(), "E1")
 		require.NoError(t, err)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// TODO: should test for updating a deleted one.
-	})
-
-	t.Run("Can marshal and unmarshal snapshots ", func(t *testing.T) {
-		opID1 := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
-		jsonObj := newJSONObject(base, nil, model.OldestTimestamp)
-
-		// { "A1": ["world", 1234, 3.14] }
-		jsonObj.putCommon("A1", arr1, opID1.Next().GetTimestamp())
-
-		// { "A1": ["world", 1234, 3.14], "K2": 3.14, "K3": "willBeDeleted" }
-		jsonObj.putCommon("K2", 3.14, opID1.Next().GetTimestamp())
-		jsonObj.putCommon("K3", "willBeDeleted", opID1.Next().GetTimestamp())
-		// { "A1": ["world", 1234, 3.14], "K2": 3.14, "K3": "willBeDeleted"(TOMBSTONE) }
-		jsonObj.DeleteRemoteInObject(jsonObj.getKeyTime(), "K3", opID1.Next().GetTimestamp())
-
-		// ["world", 1234, 3.14]
-		a1 := jsonObj.getChildAsJSONArray("A1")
-		// ["world", 3.14]
-		_, _, _ = a1.deleteLocal(1, 1, opID1.GetTimestamp())
-		log.Logger.Infof("%v", marshal(t, a1.GetAsJSONCompatible()))
-		// [{"K1": "hello", "K2":" 1234}, "world", 3.14]
-		_, _, _ = a1.insertCommon(0, nil, opID1.Next().GetTimestamp(), strt1)
-		log.Logger.Infof("%v", marshal(t, a1.GetAsJSONCompatible()))
-
-		// marshaling
-		m, err := json.Marshal(jsonObj)
-		require.NoError(t, err)
-		log.Logger.Infof("%+v", string(m))
-		// unmarshaling
-		clone := jsonObject{}
-		err = json.Unmarshal(m, &clone)
-		require.NoError(t, err)
-		log.Logger.Infof("%+v", marshal(t, clone.GetAsJSONCompatible()))
-
-		ck3 := clone.getChildAsJSONElement("K3")
-		require.True(t, ck3.isTomb())
-		ca1 := clone.getChildAsJSONArray("A1")
-		v314, err := ca1.findValue(2)
-		require.NoError(t, err)
-		require.Equal(t, 3.14, v314)
+		// marshal and unmarshal snapshot
+		jsonObjectMarshalTest(t, root)
 	})
 
 	t.Run("Can update values locally in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
-		root := newJSONObject(base, nil, model.OldestTimestamp)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// init JSONObject
 		// {"K1":["world",{ "K1": "hello", "K2": 1234 }, ["world", 1234, 3.14], 1234,3.14]}
@@ -292,7 +249,7 @@ func TestJSONArray(t *testing.T) {
 
 		// update 3 nodes
 		ts := opID.Next().GetTimestamp()
-		_, oErr = root.UpdateLocalInArray(array.getKeyTime(), 0, ts.Clone(), "updated1", "updated2", "updated3")
+		_, oErr = root.UpdateLocalInArray(array.getCreateTime(), 0, ts.Clone(), "updated1", "updated2", "updated3")
 		require.NoError(t, oErr)
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 		newOne1, oErr := array.getJSONType(0)
@@ -309,17 +266,19 @@ func TestJSONArray(t *testing.T) {
 		// Except jsonElement(oldOne1), they should be in cemetery.
 		require.Equal(t, 2, len(array.getRoot().cemetery))
 
-		require.Equal(t, newOne1.getKeyTime(), oldOne1.getDelTime())
-		require.Equal(t, newOne2.getKeyTime(), oldOne2.getDelTime())
-		require.Equal(t, newOne3.getKeyTime(), oldOne3.getDelTime())
+		require.Equal(t, newOne1.getCreateTime(), oldOne1.getDeleteTime())
+		require.Equal(t, newOne2.getCreateTime(), oldOne2.getDeleteTime())
+		require.Equal(t, newOne3.getCreateTime(), oldOne3.getDeleteTime())
 
+		// marshal and unmarshal snapshot
+		jsonObjectMarshalTest(t, root)
 	})
 
 	t.Run("Can update value remotely in JSONArray", func(t *testing.T) {
 		opID1 := model.NewOperationID()
 		opID2 := model.NewOperationIDWithCUID(types.NewCUID())
 		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
-		root := newJSONObject(base, nil, model.OldestTimestamp)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// init JSONObject
 		// {"K1":["world",{ "K1": "hello", "K2": 1234 }, ["world", 1234, 3.14], 1234,3.14]}
@@ -334,7 +293,7 @@ func TestJSONArray(t *testing.T) {
 
 		// updates with older timestamp
 		ts1 := opID2.GetTimestamp()
-		errs := root.UpdateRemoteInArray(array.getKeyTime(), ts1.Clone(), []*model.Timestamp{oldOne1.getKeyTime()}, []interface{}{strt1})
+		errs := root.UpdateRemoteInArray(array.getCreateTime(), ts1.Clone(), []*model.Timestamp{oldOne1.getCreateTime()}, []interface{}{strt1})
 		require.Equal(t, 0, len(errs))
 		require.False(t, oldOne1.isTomb())
 		require.Equal(t, 1, len(root.getRoot().cemetery))
@@ -343,48 +302,50 @@ func TestJSONArray(t *testing.T) {
 
 		// updates with newer timestamp
 		ts2 := opID2.Next().GetTimestamp()
-		errs = root.UpdateRemoteInArray(array.getKeyTime(), ts2.Clone(), []*model.Timestamp{oldOne1.getKeyTime()}, []interface{}{"updated1"})
+		errs = root.UpdateRemoteInArray(array.getCreateTime(), ts2.Clone(), []*model.Timestamp{oldOne1.getCreateTime()}, []interface{}{"updated1"})
 		require.Equal(t, 0, len(errs))
 		require.True(t, oldOne1.isTomb())
 		n0, oErr := array.getJSONType(0)
 		require.NoError(t, oErr)
-		require.Equal(t, ts2, n0.getKeyTime())
+		require.Equal(t, ts2, n0.getCreateTime())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
-		// should find the first one with oldOne1.getKeyTime()
+		// should find the first one with oldOne1.getCreateTime()
 		ts3 := opID2.Next().GetTimestamp()
-		errs = root.UpdateRemoteInArray(array.getKeyTime(), ts3.Clone(), []*model.Timestamp{oldOne1.getKeyTime()}, []interface{}{"updated2"})
+		errs = root.UpdateRemoteInArray(array.getCreateTime(), ts3.Clone(), []*model.Timestamp{oldOne1.getCreateTime()}, []interface{}{"updated2"})
 		require.Equal(t, 0, len(errs))
 		require.True(t, n0.isTomb())
 		n1, oErr := array.getJSONType(0)
 		require.NoError(t, oErr)
-		require.Equal(t, ts3, n1.getKeyTime())
+		require.Equal(t, ts3, n1.getCreateTime())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// delete the first
 		ts4 := opID2.Next().GetTimestamp()
-		errs = root.DeleteRemoteInArray(array.getKeyTime(), ts4.Clone(), []*model.Timestamp{oldOne1.getKeyTime()})
+		errs = root.DeleteRemoteInArray(array.getCreateTime(), ts4.Clone(), []*model.Timestamp{oldOne1.getCreateTime()})
 		require.Equal(t, 0, len(errs))
 		require.True(t, n1.isTomb())
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// update the deleted one.
 		ts5 := opID2.Next().GetTimestamp()
-		errs = root.UpdateRemoteInArray(array.getKeyTime(), ts5.Clone(), []*model.Timestamp{oldOne1.getKeyTime()}, []interface{}{"updated3"})
+		errs = root.UpdateRemoteInArray(array.getCreateTime(), ts5.Clone(), []*model.Timestamp{oldOne1.getCreateTime()}, []interface{}{"updated3"})
 		require.Equal(t, 0, len(errs))
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
 
 		// update jsonObject and jsonArray at once.
 		ts6 := opID2.Next().GetTimestamp()
-		errs = root.UpdateRemoteInArray(array.getKeyTime(), ts6.Clone(),
-			[]*model.Timestamp{oldOne2.getKeyTime(), oldOne3.getKeyTime()},
+		errs = root.UpdateRemoteInArray(array.getCreateTime(), ts6.Clone(),
+			[]*model.Timestamp{oldOne2.getCreateTime(), oldOne3.getCreateTime()},
 			[]interface{}{"updated4", "updated5"})
 		require.Equal(t, 0, len(errs))
 		require.True(t, oldOne2.isTomb())
 		require.True(t, oldOne3.isTomb())
-		require.Equal(t, ts6.GetAndNextDelimiter(), oldOne2.getDelTime())
-		require.Equal(t, ts6.GetAndNextDelimiter(), oldOne3.getDelTime())
+		require.Equal(t, ts6.GetAndNextDelimiter(), oldOne2.getDeleteTime())
+		require.Equal(t, ts6.GetAndNextDelimiter(), oldOne3.getDeleteTime())
 
 		log.Logger.Infof("%v", marshal(t, root.GetAsJSONCompatible()))
+		// marshal and unmarshal snapshot
+		jsonObjectMarshalTest(t, root)
 	})
 }

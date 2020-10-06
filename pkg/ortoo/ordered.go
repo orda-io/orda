@@ -10,6 +10,7 @@ type orderedType interface {
 	setPrev(n orderedType)
 	getNext() orderedType
 	setNext(n orderedType)
+	insertNext(n orderedType)
 	getNextLive() orderedType
 	getTimedType() timedType
 	setTimedType(tt timedType)
@@ -27,7 +28,7 @@ type orderedNode struct {
 func newHead() *orderedNode {
 	return &orderedNode{
 		timedType: newTimedNode(nil, nil),
-		O:         model.OldestTimestamp,
+		O:         model.OldestTimestamp(),
 		prev:      nil,
 		next:      nil,
 	}
@@ -59,6 +60,16 @@ func (its *orderedNode) getNext() orderedType {
 
 func (its *orderedNode) setNext(n orderedType) {
 	its.next = n
+}
+
+func (its *orderedNode) insertNext(n orderedType) {
+	oldNext := its.next
+	its.next = n
+	n.setPrev(its)
+	n.setNext(oldNext)
+	if oldNext != nil {
+		oldNext.setPrev(n)
+	}
 }
 
 func (its *orderedNode) getNextLive() orderedType {

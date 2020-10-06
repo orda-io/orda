@@ -197,7 +197,7 @@ func (its *hashMapSnapshot) CloneSnapshot() iface.Snapshot {
 	}
 }
 
-func (its *hashMapSnapshot) get(key string) interface{} {
+func (its *hashMapSnapshot) getFromMap(key string) timedType {
 	return its.Map[key]
 }
 

@@ -2,57 +2,69 @@ package ortoo
 
 import (
 	"encoding/json"
+	"github.com/TylerBrock/colorjson"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
 type marshaledDocument struct {
-	TS        map[string]*model.Timestamp   `json:"ts"`
-	JSONTypes map[string]*marshaledJSONType `json:"js"`
-	Cemetery  []string                      `json:"ce"` // store the hash of all deleted jsonType
+	NodeMap []*marshaledJSONType `json:"nm"`
+	// Cemetery []*model.Timestamp   `json:"ce"` // store the hash of all deleted jsonType
 }
 
-type marshalJSONType string
+type unmarshalAssistant struct {
+	tsMap  map[string]*model.Timestamp
+	common *jsonCommon
+}
+
+type marshalKeyJSONType string
 
 const (
-	mJSONElement marshalJSONType = "E"
-	mJSONObject  marshalJSONType = "O"
-	mJSONArray   marshalJSONType = "A"
+	marshalKeyJSONElement marshalKeyJSONType = "E"
+	marshalKeyJSONObject  marshalKeyJSONType = "O"
+	marshalKeyJSONArray   marshalKeyJSONType = "A"
 )
 
 type marshaledJSONType struct {
-	F *model.Timestamp     `json:"f,omitempty"` // jsonPrimitive.parent (Forebear)
+	P *model.Timestamp     `json:"p,omitempty"` // jsonPrimitive.parent's C
 	K *model.Timestamp     `json:"k,omitempty"` // jsonPrimitive.K
-	P *model.Timestamp     `json:"p,omitempty"` // jsonPrimitive.P
+	C *model.Timestamp     `json:"c,omitempty"` // jsonPrimitive.C
 	D *model.Timestamp     `json:"d,omitempty"` // jsonPrimitive.D
-	T marshalJSONType      `json:"t,omitempty"` // type; "E": jsonElement, "O": jsonObject, "A": jsonArray
+	T marshalKeyJSONType   `json:"t,omitempty"` // type; "E": jsonElement, "O": jsonObject, "A": jsonArray
 	E interface{}          `json:"e,omitempty"` // for jsonElement
 	A *marshaledJSONArray  `json:"a,omitempty"` // for jsonArray
 	O *marshaledJSONObject `json:"o,omitempty"` // for jsonObject
 }
 
+type marshaledOrderedType [2]*model.Timestamp
+
 type marshaledJSONObject struct {
-	M map[string]*model.Timestamp `json:"m"`
-	S int                         `json:"s"`
+	M map[string]*model.Timestamp `json:"m"` // hashmapSnapshot.Map
+	S int                         `json:"s"` // hashmapSnapshot.Size
 }
 
 type marshaledJSONArray struct {
-	N []*model.Timestamp `json:"m"`
-	S int                `json:"s"`
+	N []marshaledOrderedType `json:"n"` // an array of node
+	S int                    `json:"s"` // size of a list
 }
 
-func (its *marshaledDocument) unifyTimestamp(ts *model.Timestamp) *model.Timestamp {
+// unifyTimestamp is used to unify timestamps. This must be called when timestamps of any jsonType are set.
+func (its *unmarshalAssistant) unifyTimestamp(ts *model.Timestamp) *model.Timestamp {
 	if ts == nil {
 		return nil
 	}
-	return its.TS[ts.Hash()]
+	if existing, ok := its.tsMap[ts.Hash()]; ok {
+		return existing
+	} else {
+		its.tsMap[ts.Hash()] = ts
+		return ts
+	}
 }
 
 func newMarshaledDocument() *marshaledDocument {
 	return &marshaledDocument{
-		Cemetery:  nil,
-		TS:        make(map[string]*model.Timestamp),
-		JSONTypes: make(map[string]*marshaledJSONType), // by marshal()
+		NodeMap: nil,
+		// Cemetery: nil,
 	}
 }
 
@@ -63,57 +75,46 @@ func newMarshaledDocument() *marshaledDocument {
 // MarshalJSON returns marshaledDocument.
 func (its *jsonObject) MarshalJSON() ([]byte, error) {
 	marshalDoc := newMarshaledDocument()
-	// for k, v := range its.getRoot().nodeMap {
-	// 	t, p := v.getTime(), v.getPrecedence()
-	// 	if t != nil {
-	// 		marshalDoc.TS[k] = t
-	// 	}
-	// 	if p != nil {
-	// 		marshalDoc.TS[k] = p
-	// 	}
-	// 	marshaled := v.marshal()
-	// 	marshalDoc.JSONTypes[k] = marshaled
+	for _, v := range its.getRoot().nodeMap {
+		marshaled := v.marshal()
+		marshalDoc.NodeMap = append(marshalDoc.NodeMap, marshaled)
+	}
+	// for _, v := range its.getRoot().cemetery {
+	// 	marshalDoc.Cemetery = append(marshalDoc.Cemetery, v.getCreateTime())
 	// }
-	// // for _, v := range its.getRoot().cemetery {
-	// // 	marshalDoc.Cemetery = append(marshalDoc.Cemetery, v)
-	// // }
+	// printMarshalDoc(marshalDoc)
 	return json.Marshal(marshalDoc)
 }
 
 func (its *jsonPrimitive) marshal() *marshaledJSONType {
-	// var forebear *model.Timestamp = nil
-	// if its.parent != nil {
-	// 	forebear = its.parent.getTime()
-	// }
-	return &marshaledJSONType{
-		// F: forebear,
-		// K: its.K,
-		// P: its.P,
-		// D: its.deleted,
+	var p *model.Timestamp = nil
+	if its.parent != nil {
+		p = its.parent.getCreateTime()
 	}
-}
-
-func (its *jsonPrimitive) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
-	// do nothing
+	return &marshaledJSONType{
+		P: p,
+		C: its.C,
+		D: its.D,
+	}
 }
 
 func (its *jsonElement) marshal() *marshaledJSONType {
 	forMarshal := its.jsonType.marshal()
-	forMarshal.T = mJSONElement
+	forMarshal.T = marshalKeyJSONElement
 	forMarshal.E = its.getValue()
 	return forMarshal
 }
 
 func (its *jsonObject) marshal() *marshaledJSONType {
 	marshal := its.jsonType.marshal()
-	marshal.T = mJSONObject
+	marshal.T = marshalKeyJSONObject
 	value := &marshaledJSONObject{
 		S: its.Size,
 		M: make(map[string]*model.Timestamp),
 	}
 	for k, v := range its.hashMapSnapshot.Map {
-		jsonP := v.(jsonType)
-		value.M[k] = jsonP.getKeyTime()
+		jt := v.(jsonType)
+		value.M[k] = jt.getCreateTime() // store only create timestamp
 	}
 	marshal.O = value
 	return marshal
@@ -121,17 +122,36 @@ func (its *jsonObject) marshal() *marshaledJSONType {
 
 func (its *jsonArray) marshal() *marshaledJSONType {
 	marshal := its.jsonType.marshal()
-	marshal.T = mJSONArray
-	value := &marshaledJSONArray{
+	marshal.T = marshalKeyJSONArray
+	marshaledJA := &marshaledJSONArray{
 		S: its.listSnapshot.size,
 	}
-	n := its.listSnapshot.head.getNext()
+	n := its.listSnapshot.head.getNext() // NOT store head
 	for n != nil {
-		value.N = append(value.N, n.getOrderTime())
+		jt := n.getTimedType().(jsonType)
+		var mot marshaledOrderedType
+		if n.getOrderTime() == jt.getCreateTime() {
+			mot = [2]*model.Timestamp{n.getOrderTime()}
+		} else {
+			mot = [2]*model.Timestamp{n.getOrderTime(), jt.getCreateTime()}
+		}
+
+		marshaledJA.N = append(marshaledJA.N, mot)
 		n = n.getNext()
 	}
-	marshal.A = value
+	marshal.A = marshaledJA
 	return marshal
+}
+
+func printMarshalDoc(doc *marshaledDocument) {
+	f := colorjson.NewFormatter()
+	f.Indent = 2
+	f.DisabledColor = true
+	m, _ := json.Marshal(doc)
+	var obj map[string]interface{}
+	_ = json.Unmarshal(m, &obj)
+	s, _ := f.Marshal(obj)
+	log.Logger.Infof("%v", string(s))
 }
 
 // //////////////////////////////
@@ -145,100 +165,113 @@ func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
 		return log.OrtooError(err)
 	}
 
-	// root := forUnmarshal.JSONTypes[model.OldestTimestamp.Hash()]
+	// printMarshalDoc(&forUnmarshal)
 
-	common := &jsonCommon{
-		root:     its,
-		nodeMap:  make(map[string]jsonType),
-		cemetery: make(map[string]jsonType),
+	assistant := &unmarshalAssistant{
+		tsMap: make(map[string]*model.Timestamp),
+		common: &jsonCommon{
+			root:     its,
+			base:     its.base,
+			nodeMap:  make(map[string]jsonType),
+			cemetery: make(map[string]jsonType),
+		},
 	}
-
-	its.jsonType = &jsonPrimitive{
-		// common:  common,
-		// parent:  nil, // root has no parent
-		// deleted: root.D,
-		// K:       forUnmarshal.unifyTimestamp(root.K), // rootKey
-		// P:       forUnmarshal.unifyTimestamp(root.P),
-	}
-	rootKey := its.getKeyTime().Hash()
-	common.nodeMap[rootKey] = its
-
 	// make all skeleton jsonTypes "in advance"
-	for k, v := range forUnmarshal.JSONTypes {
-		if k != rootKey {
-			common.nodeMap[k] = v.unmarshalAsJSONType(&forUnmarshal, common, nil)
+	for _, v := range forUnmarshal.NodeMap {
+		jt := v.unmarshalAsJSONType(&forUnmarshal, assistant)
+		if jt.getCreateTime().Compare(model.OldestTimestamp()) == 0 {
+			its.jsonType = &jsonPrimitive{
+				common: assistant.common,
+				parent: nil,
+				C:      jt.getCreateTime(),
+				D:      jt.getDeleteTime(),
+			}
+			its.addToNodeMap(its)
+		} else {
+			jt.addToNodeMap(jt)
 		}
 	}
 
-	// constitute the value for each jsonType
-	for k, v := range forUnmarshal.JSONTypes {
-		j := common.nodeMap[k] // real jsonType
-		if v.F != nil {
-			parent := common.nodeMap[v.F.Hash()]
-			j.setParent(parent)
+	// fill up the missing values for each jsonType
+	for _, marshaled := range forUnmarshal.NodeMap {
+		jt, _ := its.findJSONPrimitive(marshaled.C) // real jsonType
+		if marshaled.P != nil {
+			parent, _ := its.findJSONPrimitive(marshaled.P)
+			jt.setParent(parent)
 		}
-		j.unmarshal(v, common.nodeMap) // j is a real jsonType and v is marshaledJSONType
-	}
-
-	for _, v := range forUnmarshal.Cemetery {
-		common.cemetery[common.nodeMap[v].getDelTime().Hash()] = common.nodeMap[v]
+		jt.unmarshal(marshaled, assistant) // unmarshal type-dependently
+		if jt.isTomb() {
+			its.addToCemetery(jt)
+		}
 	}
 	return nil
 }
 
-func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
-	jo := marshaled.O
+func (its *jsonPrimitive) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
+	// do nothing
+}
 
+func (its *jsonElement) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
+	its.V = marshaled.E
+}
+
+func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
+	marshaledJO := marshaled.O
 	its.hashMapSnapshot = &hashMapSnapshot{
+		base: its.getBase(),
 		Map:  make(map[string]timedType),
-		Size: jo.S,
+		Size: marshaledJO.S,
 	}
-	for k, v := range jo.M {
-		realInstance := jsonMap[v.Hash()]
+	for k, ts := range marshaledJO.M {
+		realInstance, _ := its.findJSONPrimitive(ts)
 		its.hashMapSnapshot.Map[k] = realInstance
 	}
 }
 
-func (its *jsonArray) unmarshal(marshaled *marshaledJSONType, jsonMap map[string]jsonType) {
-	ja := marshaled.A
+func (its *jsonArray) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
+	marshaledJA := marshaled.A
 	its.listSnapshot = newListSnapshot(its.getBase())
 	prev := its.listSnapshot.head
-	for _, ts := range ja.N {
-		node := &orderedNode{
-			timedType: jsonMap[ts.Hash()],
-			prev:      prev,
-			next:      nil,
+	for _, mot := range marshaledJA.N {
+		o := mot[0]
+		c := mot[1]
+		if c == nil {
+			c = o
 		}
-		prev.setNext(node)
+		timedType, _ := its.findJSONPrimitive(c)
+		node := &orderedNode{
+			timedType: timedType,
+			O:         assistant.unifyTimestamp(o),
+		}
+		its.Map[node.getOrderTime().Hash()] = node
+		prev.insertNext(node)
 		prev = node
+
 	}
 	its.size = marshaled.A.S
 }
 
-func (its *marshaledJSONType) unmarshalAsJSONPrimitive(doc *marshaledDocument, common *jsonCommon, parent jsonType) *jsonPrimitive {
+func (its *marshaledJSONType) unmarshalAsJSONPrimitive(doc *marshaledDocument, assistant *unmarshalAssistant) *jsonPrimitive {
 	return &jsonPrimitive{
-		common: common,
-		parent: parent,
-		D:      its.D,
-		// K:       doc.unifyTimestamp(its.K),
-		// P:       doc.unifyTimestamp(its.P),
+		common: assistant.common,
+		C:      assistant.unifyTimestamp(its.C),
+		D:      assistant.unifyTimestamp(its.D),
 	}
 }
 
-func (its *marshaledJSONType) unmarshalAsJSONType(doc *marshaledDocument, common *jsonCommon, parent jsonType) jsonType {
+func (its *marshaledJSONType) unmarshalAsJSONType(doc *marshaledDocument, assistant *unmarshalAssistant) jsonType {
 	switch its.T {
-	case mJSONElement:
+	case marshalKeyJSONElement:
 		return &jsonElement{
-			jsonType: its.unmarshalAsJSONPrimitive(doc, common, parent),
-			V:        its.E,
+			jsonType: its.unmarshalAsJSONPrimitive(doc, assistant),
 		}
-	case mJSONObject:
+	case marshalKeyJSONObject:
 		return &jsonObject{
-			jsonType: its.unmarshalAsJSONPrimitive(doc, common, parent),
+			jsonType: its.unmarshalAsJSONPrimitive(doc, assistant),
 		}
-	case mJSONArray:
+	case marshalKeyJSONArray:
 		return &jsonArray{
-			jsonType: its.unmarshalAsJSONPrimitive(doc, common, parent),
+			jsonType: its.unmarshalAsJSONPrimitive(doc, assistant),
 		}
 	}
 	return nil

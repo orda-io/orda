@@ -64,5 +64,5 @@ func (its *timedNode) String() string {
 	if its.V == nil {
 		return fmt.Sprintf("Φ|%s", its.T.ToString())
 	}
-	return fmt.Sprintf("TV[%v|T%s]", its.V, its.T.ToString())
+	return fmt.Sprintf("TV[%v|C%s]", its.V, its.T.ToString())
 }

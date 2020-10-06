@@ -34,6 +34,48 @@ func initList(t *testing.T, list *listSnapshot, opID *model.OperationID) {
 	log.Logger.Infof("%v", marshal(t, list.GetAsJSONCompatible()))
 }
 
+func listIntegrityTest(t *testing.T, l *listSnapshot) {
+	current := l.head
+	for current != nil {
+		next := current.getNext()
+		if next != nil {
+			require.Equal(t, current, next.getPrev())
+		}
+		current = current.getNext()
+	}
+}
+
+func listMarshalTest(t *testing.T, original *listSnapshot) {
+	clone := newListSnapshot(original.base)
+	snap1, err2 := json.Marshal(original)
+	require.NoError(t, err2)
+	log.Logger.Infof("%v", string(snap1))
+	err2 = json.Unmarshal(snap1, clone)
+	require.NoError(t, err2)
+	snap2, err2 := json.Marshal(clone)
+	require.NoError(t, err2)
+	log.Logger.Infof("%v", string(snap2))
+	require.Equal(t, string(snap1), string(snap2))
+	require.Equal(t, len(original.Map), len(clone.Map))
+
+	e1 := original.head
+	e2 := clone.head
+
+	for e1 != nil && e2 != nil {
+		require.Equal(t, e1.getValue(), e2.getValue())
+		require.Equal(t, e1.getOrderTime(), e2.getOrderTime())
+		require.Equal(t, e1.getTime(), e2.getTime())
+		if e1.getPrev() != nil && e2.getPrev() != nil {
+			require.Equal(t, e1.getPrev().getOrderTime(), e2.getPrev().getOrderTime())
+		}
+		if e1.getNext() != nil && e2.getNext() != nil {
+			require.Equal(t, e1.getNext().getOrderTime(), e2.getNext().getOrderTime())
+		}
+		e1 = e1.getNext()
+		e2 = e2.getNext()
+	}
+}
+
 func TestList(t *testing.T) {
 
 	t.Run("Can insert remotely in list", func(t *testing.T) {
@@ -43,10 +85,10 @@ func TestList(t *testing.T) {
 
 		oldTS1 := opID.Next().GetTimestamp()
 		oldTS2 := opID.Next().GetTimestamp()
-		err := list.insertRemote(model.OldestTimestamp, oldTS2.Clone(), "x", "y")
+		err := list.insertRemote(model.OldestTimestamp(), oldTS2.Clone(), "x", "y")
 		log.Logger.Infof("%v", marshal(t, list.GetAsJSONCompatible()))
 		require.NoError(t, err)
-		err = list.insertRemote(model.OldestTimestamp, oldTS1.Clone(), "a", "b")
+		err = list.insertRemote(model.OldestTimestamp(), oldTS1.Clone(), "a", "b")
 		log.Logger.Infof("%v", marshal(t, list.GetAsJSONCompatible()))
 		require.NoError(t, err)
 		n1, err := list.findTimedType(0)
@@ -65,6 +107,10 @@ func TestList(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "b", n4.getValue())
 		require.Equal(t, oldTS1.GetAndNextDelimiter(), n4.getTime())
+
+		listIntegrityTest(t, list)
+		// marshal and unmarshal snapshot
+		listMarshalTest(t, list)
 	})
 
 	t.Run("Can delete something in list", func(t *testing.T) {
@@ -87,10 +133,10 @@ func TestList(t *testing.T) {
 		log.Logger.Infof("%v", marshal(t, list.GetAsJSONCompatible()))
 
 		// deleteRemote the first "x" again with an older timestamp
-		deleted, errs := list.deleteRemote([]*model.Timestamp{e1.getOrderTime()}, model.OldestTimestamp)
+		deleted, errs := list.deleteRemote([]*model.Timestamp{e1.getOrderTime()}, model.OldestTimestamp())
 		require.Equal(t, 0, len(errs))
-		require.Equal(t, 0, len(deleted))                        // nothing deleted effectively
-		require.NotEqual(t, model.OldestTimestamp, e1.getTime()) // this deletion is not effective.
+		require.Equal(t, 0, len(deleted))                          // nothing deleted effectively
+		require.NotEqual(t, model.OldestTimestamp(), e1.getTime()) // this deletion is not effective.
 
 		// deleteRemote the first "x" again with a newer timestamp
 		deleted, errs = list.deleteRemote([]*model.Timestamp{e1.getOrderTime()}, opID.Next().GetTimestamp())
@@ -103,6 +149,9 @@ func TestList(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 4, list.Size())
 		log.Logger.Infof("%v", marshal(t, list.GetAsJSONCompatible()))
+		listIntegrityTest(t, list)
+		// marshal and unmarshal snapshot
+		listMarshalTest(t, list)
 	})
 
 	t.Run("Can update something in list", func(t *testing.T) {
@@ -125,7 +174,7 @@ func TestList(t *testing.T) {
 		require.NotEqual(t, e1.getOrderTime(), e1.getTime())
 
 		// update remotely with older timestamps
-		upd, errs := list.updateRemote(updTS, []interface{}{"v1", "v2", "v3"}, model.OldestTimestamp)
+		upd, errs := list.updateRemote(updTS, []interface{}{"v1", "v2", "v3"}, model.OldestTimestamp())
 		require.Equal(t, 0, len(errs))
 		require.Equal(t, 0, len(upd))
 		require.Equal(t, ts1, e1.getTime())
@@ -152,6 +201,10 @@ func TestList(t *testing.T) {
 		require.Equal(t, e1.getOrderTime(), e1.getTime())
 		require.True(t, e1.isTomb())
 		log.Logger.Infof("%v", marshal(t, list.GetAsJSONCompatible()))
+
+		listIntegrityTest(t, list)
+		// marshal and unmarshal snapshot
+		listMarshalTest(t, list)
 	})
 
 	t.Run("Can perform list operations", func(t *testing.T) {

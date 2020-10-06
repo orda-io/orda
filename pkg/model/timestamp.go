@@ -7,15 +7,15 @@ import (
 	"strings"
 )
 
-var (
-	// OldestTimestamp defines the oldest timestamp.
-	OldestTimestamp = &Timestamp{
+// OldestTimestamp returns the oldest timestamp.
+func OldestTimestamp() *Timestamp {
+	return &Timestamp{
 		Era:       0,
 		Lamport:   0,
 		CUID:      make([]byte, 16),
 		Delimiter: 0,
 	}
-)
+}
 
 func NewTimestamp(era uint32, lamport uint64, cuid []byte, delimiter uint32) *Timestamp {
 	return &Timestamp{
