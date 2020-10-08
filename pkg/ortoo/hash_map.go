@@ -68,7 +68,7 @@ func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError
 	case *operations.RemoveOperation:
 		return its.snapshot.removeLocal(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
+	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op)
 }
 
 func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -85,7 +85,7 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 	case *operations.RemoveOperation:
 		return its.snapshot.removeRemote(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
+	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op)
 }
 
 func (its *hashMap) GetSnapshot() iface.Snapshot {
@@ -125,7 +125,7 @@ func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) errors.Orto
 
 func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
 	if key == "" || value == nil {
-		return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, "empty key or nil value is not allowed")
+		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "empty key or nil value is not allowed")
 	}
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
@@ -142,7 +142,7 @@ func (its *hashMap) Get(key string) interface{} {
 
 func (its *hashMap) Remove(key string) (interface{}, error) {
 	if key == "" {
-		return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, "empty key is not allowed")
+		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "empty key is not allowed")
 	}
 	op := operations.NewRemoveOperation(key)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)

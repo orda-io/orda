@@ -23,6 +23,19 @@ const (
 	TypeJSONArray
 )
 
+var (
+	typeName = map[TypeOfJSON]string{
+		TypeJSONElement: "JSONElement",
+		TypeJSONObject:  "JSONObject",
+		TypeJSONArray:   "JSONArray",
+	}
+)
+
+// Name returns the name of JSONType
+func (its TypeOfJSON) Name() string {
+	return typeName[its]
+}
+
 // jsonType extends timedType
 // jsonElement extends jsonType
 // jsonObject extends jsonType
@@ -46,7 +59,7 @@ type jsonType interface {
 	findJSONArray(ts *model.Timestamp) (j *jsonArray, ok bool)
 	findJSONObject(ts *model.Timestamp) (j *jsonObject, ok bool)
 	findJSONElement(ts *model.Timestamp) (j *jsonElement, ok bool)
-	findJSONPrimitive(ts *model.Timestamp) (j jsonType, ok bool)
+	findJSONType(ts *model.Timestamp) (j jsonType, ok bool)
 	addToNodeMap(j jsonType)
 	addToCemetery(j jsonType)
 	removeFromNodeMap(j jsonType)
@@ -162,7 +175,7 @@ func (its *jsonPrimitive) getLogger() *log.OrtooLog {
 	return its.common.base.Logger
 }
 
-func (its *jsonPrimitive) findJSONPrimitive(ts *model.Timestamp) (j jsonType, ok bool) {
+func (its *jsonPrimitive) findJSONType(ts *model.Timestamp) (j jsonType, ok bool) {
 	node, ok := its.getRoot().nodeMap[ts.Hash()]
 	return node, ok
 }

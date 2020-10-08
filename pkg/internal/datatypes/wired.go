@@ -196,7 +196,7 @@ func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
 // ApplyPushPullPack ...
 func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	var oldState, newState model.StateOfDatatype
-	var errs []errors.OrtooError
+	errs := &errors.MultipleOrtooErrors{}
 	var opList []interface{}
 	err := its.checkPushPullPackOption(ppp)
 	if err == nil {
@@ -204,20 +204,20 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 		its.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
 		oldState, newState, err = its.applyPushPullPackUpdateStateOfDatatype(ppp)
 		if err != nil {
-			errs = append(errs, err)
+			_ = errs.Append(err)
 		}
 		opList, err = its.applyPushPullPackExecuteOperations(ppp.Operations)
 		if err != nil {
-			errs = append(errs, err)
+			_ = errs.Append(err)
 		}
 	} else {
-		errs = append(errs, err)
+		_ = errs.Append(err)
 	}
 	its.applyPushPullPackCallHandler(errs, oldState, newState, opList)
 }
 
 func (its *WiredDatatype) applyPushPullPackCallHandler(
-	errs []errors.OrtooError,
+	errs errors.OrtooError,
 	oldState,
 	newState model.StateOfDatatype,
 	opList []interface{},
@@ -225,8 +225,8 @@ func (its *WiredDatatype) applyPushPullPackCallHandler(
 	if oldState != newState {
 		its.datatype.HandleStateChange(oldState, newState)
 	}
-	if len(errs) > 0 {
-		its.datatype.HandleErrors(errs...)
+	if errs.Size() > 0 {
+		its.datatype.HandleErrors(errs.ToArray()...)
 	}
 	if len(opList) > 0 {
 		its.datatype.HandleRemoteOperations(opList)

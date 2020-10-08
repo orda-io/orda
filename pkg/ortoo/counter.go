@@ -89,7 +89,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 		return its.snapshot.increaseCommon(cast.C.Delta), nil
 	}
 
-	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
+	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op)
 }
 
 func (its *counter) Get() int32 {

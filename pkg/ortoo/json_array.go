@@ -44,9 +44,9 @@ func (its *jsonArray) insertCommon(
 ) (*model.Timestamp, []interface{}, errors.OrtooError) {
 	var inserted []timedType
 	for _, v := range values {
-		element := its.createJSONType(its, v, ts)
-		inserted = append(inserted, element)
-		its.addToNodeMap(element)
+		ins := its.createJSONType(its, v, ts)
+		inserted = append(inserted, ins)
+		its.addToNodeMap(ins)
 	}
 	if target == nil {
 		return its.listSnapshot.insertLocalWithTimedTypes(pos, inserted...)
@@ -58,36 +58,49 @@ func (its *jsonArray) deleteLocal(
 	pos int,
 	numOfNodes int,
 	ts *model.Timestamp,
-) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
-	targets, values, err := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
+) ([]*model.Timestamp, []jsonType, errors.OrtooError) {
+	targets, timedTypes, err := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
 	if err != nil {
 		return nil, nil, err
 	}
 	for _, v := range targets {
-		if jt, ok := its.findJSONPrimitive(v); ok {
+		if jt, ok := its.findJSONType(v); ok {
 			its.addToCemetery(jt)
 		}
 	}
-	return targets, values, err
+	var jsonTypes []jsonType
+	for _, t := range timedTypes {
+		jsonTypes = append(jsonTypes, t.(jsonType))
+	}
+	return targets, jsonTypes, err
 }
 
-func (its *jsonArray) deleteRemote(targets []*model.Timestamp, ts *model.Timestamp) (errs []errors.OrtooError) {
-	deleted, errs := its.listSnapshot.deleteRemote(targets, ts)
-	for _, t := range deleted {
-		its.addToCemetery(t.(jsonType))
+func (its *jsonArray) deleteRemote(
+	targets []*model.Timestamp,
+	ts *model.Timestamp,
+) (deleted []jsonType, err errors.OrtooError) {
+	deletedTimedTypes, err := its.listSnapshot.deleteRemote(targets, ts)
+	if err != nil {
+		return nil, err
 	}
-	return errs
+	for _, t := range deletedTimedTypes {
+		jt := t.(jsonType)
+		deleted = append(deleted, jt)
+		its.addToCemetery(jt)
+	}
+	return
 }
 
 func (its *jsonArray) updateLocal(
 	pos int,
 	ts *model.Timestamp,
 	values ...interface{},
-) ([]*model.Timestamp, errors.OrtooError) {
+) ([]*model.Timestamp, []jsonType, errors.OrtooError) {
 	if err := its.validateRange(pos, len(values)); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var updatedTargets []*model.Timestamp
+	var oldJSONTypes []jsonType
 	target := its.retrieve(pos + 1)
 	for _, v := range values {
 		/*
@@ -102,17 +115,19 @@ func (its *jsonArray) updateLocal(
 		target.setTimedType(newOne)
 		its.addToNodeMap(newOne)
 		its.funeral(oldOne, newOne.getTime())
+		oldJSONTypes = append(oldJSONTypes, oldOne)
 		target = target.getNextLive()
 	}
-	return updatedTargets, nil
+	return updatedTargets, oldJSONTypes, nil
 }
 
 func (its *jsonArray) updateRemote(
 	ts *model.Timestamp,
 	targets []*model.Timestamp,
 	values []interface{},
-) (errs []errors.OrtooError) {
-
+) ([]jsonType, errors.OrtooError) {
+	errs := &errors.MultipleOrtooErrors{}
+	var delTypes []jsonType = nil
 	for i, t := range targets {
 		newOne := its.createJSONType(its, values[i], ts)
 		its.addToNodeMap(newOne)
@@ -134,11 +149,12 @@ func (its *jsonArray) updateRemote(
 				updated = oldOne
 			}
 			its.funeral(deleted, updated.getCreateTime())
+			delTypes = append(delTypes, deleted)
 		} else {
-			errs = append(errs, errors.ErrDatatypeNoTarget.New(its.base.Logger, t.ToString()))
+			_ = errs.Append(errors.ErrDatatypeNoTarget.New(its.base.Logger, t.ToString()))
 		}
 	}
-	return
+	return delTypes, errs.Return()
 }
 
 func (its *jsonArray) getValue() types.JSONValue {

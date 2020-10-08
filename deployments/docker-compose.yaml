@@ -33,4 +33,4 @@ services:
       - 9001:9001
     volumes:
       - ./docker_volumes/mosquitto:/mosquitto
-      - ./configs/mosquitto.conf:/mosquitto/configs/mosquitto.conf
+      - ./config:/mosquitto/config

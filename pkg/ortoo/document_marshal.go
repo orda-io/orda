@@ -194,9 +194,9 @@ func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
 
 	// fill up the missing values for each jsonType
 	for _, marshaled := range forUnmarshal.NodeMap {
-		jt, _ := its.findJSONPrimitive(marshaled.C) // real jsonType
+		jt, _ := its.findJSONType(marshaled.C) // real jsonType
 		if marshaled.P != nil {
-			parent, _ := its.findJSONPrimitive(marshaled.P)
+			parent, _ := its.findJSONType(marshaled.P)
 			jt.setParent(parent)
 		}
 		jt.unmarshal(marshaled, assistant) // unmarshal type-dependently
@@ -223,7 +223,7 @@ func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, assistant *unmars
 		Size: marshaledJO.S,
 	}
 	for k, ts := range marshaledJO.M {
-		realInstance, _ := its.findJSONPrimitive(ts)
+		realInstance, _ := its.findJSONType(ts)
 		its.hashMapSnapshot.Map[k] = realInstance
 	}
 }
@@ -238,7 +238,7 @@ func (its *jsonArray) unmarshal(marshaled *marshaledJSONType, assistant *unmarsh
 		if c == nil {
 			c = o
 		}
-		timedType, _ := its.findJSONPrimitive(c)
+		timedType, _ := its.findJSONType(c)
 		node := &orderedNode{
 			timedType: timedType,
 			O:         assistant.unifyTimestamp(o),

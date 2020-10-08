@@ -20,15 +20,17 @@ type Document interface {
 
 // DocumentInTxn is an Ortoo datatype which provides document (JSON-like) interfaces in a transaction.
 type DocumentInTxn interface {
-	PutToObject(key string, value interface{}) (interface{}, error)
-	InsertToArray(pos int, value ...interface{}) (interface{}, error)
-	DeleteInObject(key string) (interface{}, error)
-	DeleteInArray(pos int) (interface{}, error)
-	DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, error)
-	UpdateInArray(pos int, values ...interface{}) ([]interface{}, error)
+	PutToObject(key string, value interface{}) (Document, error)
+	DeleteInObject(key string) (Document, error)
 	GetFromObject(key string) (Document, error)
+
+	InsertToArray(pos int, value ...interface{}) (Document, error)
+	UpdateInArray(pos int, values ...interface{}) ([]Document, error)
+	DeleteInArray(pos int) (Document, error)
+	DeleteManyInArray(pos int, numOfNodes int) ([]Document, error)
 	GetFromArray(pos int) (Document, error)
-	GetDocumentType() TypeOfJSON
+
+	GetJSONType() TypeOfJSON
 }
 
 func newDocument(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) Document {
@@ -69,62 +71,35 @@ func (its *document) DoTransaction(tag string, txnFunc func(document DocumentInT
 	})
 }
 
-func (its *document) PutToObject(key string, value interface{}) (interface{}, error) {
-	if its.typeOfDoc == TypeJSONObject {
-		op := operations.NewDocPutInObjectOperation(its.root, key, value)
-		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
-		if err != nil {
-			return nil, err
-		}
-		return ret, nil
-	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "PutToObject not on JSONObject")
-}
-
-func (its *document) InsertToArray(pos int, values ...interface{}) (interface{}, error) {
-	if its.typeOfDoc == TypeJSONArray {
-		op := operations.NewDocInsertToArrayOperation(its.root, pos, values)
-		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
-		if err != nil {
-			return nil, err
-		}
-		return ret, nil
-	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "InsertToArray not on JSONArray")
-}
-
 func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.DocPutInObjectOperation:
-		if _, err := its.snapshot.PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp()); err != nil {
-			return nil, err
-		}
-		return its, nil
+		return its.snapshot.PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp())
 	case *operations.DocDeleteInObjectOperation:
-		ret, err := its.snapshot.DeleteLocalInObject(cast.C.P, cast.C.Key, cast.GetTimestamp())
-		if err != nil {
-			return nil, err
-		}
-		return ret, nil
+		return its.snapshot.DeleteLocalInObject(cast.C.P, cast.C.Key, cast.GetTimestamp())
 	case *operations.DocInsertToArrayOperation:
-		target, ret, err := its.snapshot.InsertLocalInArray(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
+		target, parent, err := its.snapshot.InsertLocalInArray(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = target
-		return ret, nil
+		return parent, nil
 	case *operations.DocDeleteInArrayOperation:
-		deletedTargets, deletedValues, err := its.snapshot.DeleteLocalInArray(cast.C.P, cast.Pos, cast.NumOfNodes, cast.ID.GetTimestamp())
+		delTargets, delJSONTypes, err := its.snapshot.DeleteLocalInArray(cast.C.P, cast.Pos, cast.NumOfNodes, cast.ID.GetTimestamp())
 		if err != nil {
 			return nil, err
 		}
-		cast.C.T = deletedTargets
-		return deletedValues, nil
+		cast.C.T = delTargets
+		return delJSONTypes, nil
 	case *operations.DocUpdateInArrayOperation:
-		// its.snapshot.UpdateLocalInArray()
-		return nil, nil
+		uptTargets, oldOnes, err := its.snapshot.UpdateLocalInArray(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V)
+		if err != nil {
+			return nil, err
+		}
+		cast.C.T = uptTargets
+		return oldOnes, nil
 	}
-	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op.(iface.Operation).GetType())
+	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op.(iface.Operation).GetType())
 }
 
 func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -135,119 +110,145 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 			return nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 		}
 		its.snapshot = newSnap
-		// its.datatype.SetOpID()
 		return nil, nil
 	case *operations.DocPutInObjectOperation:
-		if _, err := its.snapshot.PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp()); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	case *operations.DocInsertToArrayOperation:
-		its.snapshot.InsertRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp(), cast.C.V...)
-		return nil, nil
+		return its.snapshot.PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp())
 	case *operations.DocDeleteInObjectOperation:
-		if _, err := its.snapshot.DeleteRemoteInObject(cast.C.P, cast.C.Key, cast.GetTimestamp()); err != nil {
-			return nil, err
-		}
-		return nil, nil
+		return its.snapshot.DeleteRemoteInObject(cast.C.P, cast.C.Key, cast.GetTimestamp())
+	case *operations.DocInsertToArrayOperation:
+		return its.snapshot.InsertRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp(), cast.C.V...)
 	case *operations.DocDeleteInArrayOperation:
-		errs := its.snapshot.DeleteRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T)
-		if len(errs) > 0 {
-			// TODO: have to deliver handler
-		}
-		return nil, nil
+		return its.snapshot.DeleteRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T)
+	case *operations.DocUpdateInArrayOperation:
+		return its.snapshot.UpdateRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T, cast.C.V)
 	}
-	return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, op)
+	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op)
 }
 
+// GetFromObject returns the child associated with the given key as a Document.
 func (its *document) GetFromObject(key string) (Document, error) {
-	if its.typeOfDoc == TypeJSONObject {
-		if currentRoot, ok := its.snapshot.findJSONObject(its.root); ok {
-			child := currentRoot.getFromMap(key).(jsonType)
-			if child == nil {
-				return nil, errors.ErrDatatypeNotExistChildDocument.New(its.Logger)
-			}
-			return its.getChildDocument(child), nil
-		}
-
+	jt, err := its.allowLocalOperation("GetFromObject", TypeJSONObject, true)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "GetFromObject not on JSONObject")
+	currentRoot := jt.(*jsonObject)
+	child := currentRoot.getFromMap(key).(jsonType)
+	if child == nil {
+		return nil, errors.ErrDatatypeNotExist.New(its.Logger)
+	}
+	return its.toDocument(child), nil
 }
 
-func (its *document) getChildDocument(child jsonType) *document {
-	return &document{
-		datatype:  its.datatype,
-		root:      child.getCreateTime(),
-		typeOfDoc: child.getType(),
-		snapshot:  its.snapshot,
+// PutToObject associates a new value with the given key, and returns the old value as a Document
+func (its *document) PutToObject(key string, value interface{}) (Document, error) {
+	if _, err := its.allowLocalOperation("PutToObject", TypeJSONObject, false); err != nil {
+		return nil, err
 	}
+	op := operations.NewDocPutInObjectOperation(its.root, key, value)
+	removed, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		return nil, err
+	}
+	if removed != nil {
+		return its.toDocument(removed.(jsonType)), nil
+	}
+	return nil, nil
 }
 
+// DeleteInObject removes the value associated with the given key, and returns the removed value as a Document.
+func (its *document) DeleteInObject(key string) (Document, error) {
+	if _, err := its.allowLocalOperation("DeleteInObject", TypeJSONObject, false); err != nil {
+		return nil, err
+	}
+	op := operations.NewDocDeleteInObjectOperation(its.root, key)
+	removed, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		return nil, err
+	}
+	return its.toDocument(removed.(jsonType)), nil
+}
+
+// GetFromArray returns the element of the JSONArray Document at the given position.
 func (its *document) GetFromArray(pos int) (Document, error) {
-	if its.typeOfDoc == TypeJSONArray {
-		if currentRoot, ok := its.snapshot.findJSONArray(its.root); ok {
-			c, err := currentRoot.findTimedType(pos)
-			if err != nil {
-				return nil, err
-			}
-			child := c.(jsonType)
-			return its.getChildDocument(child), nil
-		}
+	jt, err := its.allowLocalOperation("GetFromArray", TypeJSONArray, true)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "GetFromArray not on JSONArray")
+	currentRoot := jt.(*jsonArray)
+	c, err := currentRoot.findTimedType(pos)
+	if err != nil {
+		return nil, err
+	}
+	child := c.(jsonType)
+	return its.toDocument(child), nil
 }
 
-func (its *document) DeleteInObject(key string) (interface{}, error) {
-	if its.typeOfDoc == TypeJSONObject {
-		op := operations.NewDocDeleteInObjectOperation(its.root, key)
-		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
-		if err != nil {
-			return nil, err
-		}
-		return ret, nil
+// InsertToArray inserts given values at the next of the given position.
+// It returns the current JSONArray Document.
+func (its *document) InsertToArray(pos int, values ...interface{}) (Document, error) {
+	if _, err := its.allowLocalOperation("InsertToArray", TypeJSONArray, false); err != nil {
+		return nil, err
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "DeleteInObject not on JSONObject")
+	op := operations.NewDocInsertToArrayOperation(its.root, pos, values)
+	_, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		return nil, err
+	}
+	return its, nil
 }
 
-func (its *document) DeleteInArray(pos int) (interface{}, error) {
+// DeleteInArray deletes a value at the given position, and returns the deleted Document.
+func (its *document) DeleteInArray(pos int) (Document, error) {
 	ret, err := its.DeleteManyInArray(pos, 1)
-	return ret[0], err
-}
-
-func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]interface{}, error) {
-	if its.typeOfDoc == TypeJSONArray {
-		op := operations.NewDocDeleteInArrayOperation(its.root, pos, numOfNodes)
-		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
-		if err != nil {
-			return nil, err
-		}
-		return ret.([]interface{}), nil
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "DeleteManyInArray not on JSONArray")
-}
-
-func (its *document) UpdateInArray(pos int, values ...interface{}) ([]interface{}, error) {
-	if its.typeOfDoc == TypeJSONArray {
-		if len(values) < 1 {
-			return nil, errors.ErrDatatypeIllegalOperation.New(its.Logger, "at least one value should be inserted")
-		}
-
-		op := operations.NewDocUpdateInArrayOperation(its.root, pos, values)
-		ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
-		if err != nil {
-			return nil, err
-		}
-		return ret.([]interface{}), nil
+	if ret != nil {
+		return ret[0], err
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "UpdateInArray not on JSONArray")
+	return nil, nil
 }
 
-func (its *document) GetDocumentType() TypeOfJSON {
+// DeleteManyInArray deletes values of the given range, and returns the deleted Documents.
+func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]Document, error) {
+	if numOfNodes < 1 {
+		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "numOfNodes >= 1 is allowed")
+	}
+	if _, err := its.allowLocalOperation("DeleteManyInArray", TypeJSONArray, false); err != nil {
+		return nil, err
+	}
+	op := operations.NewDocDeleteInArrayOperation(its.root, pos, numOfNodes)
+	delJSONTypes, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		return nil, err
+	}
+	return its.toDocuments(delJSONTypes.([]jsonType)), nil
+
+}
+
+// UpdateInArray updates the child from the given position, and returns the previous child Documents
+func (its *document) UpdateInArray(pos int, values ...interface{}) ([]Document, error) {
+	if len(values) < 1 {
+		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "at least one value is required")
+	}
+	if _, err := its.allowLocalOperation("UpdateInArray", TypeJSONArray, false); err != nil {
+		return nil, err
+	}
+
+	op := operations.NewDocUpdateInArrayOperation(its.root, pos, values)
+	oldOnes, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		return nil, err
+	}
+	return its.toDocuments(oldOnes.([]jsonType)), nil
+}
+
+func (its *document) GetJSONType() TypeOfJSON {
 	return its.typeOfDoc
 }
 
 func (its *document) GetAsJSON() interface{} {
-	r, _ := its.snapshot.findJSONPrimitive(its.root)
+	r, _ := its.snapshot.findJSONType(its.root)
 	switch cast := r.(type) {
 	case *jsonObject:
 		return cast.GetAsJSONCompatible()
@@ -284,4 +285,33 @@ func (its *document) SetMetaAndSnapshot(meta []byte, snapshot string) errors.Ort
 		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	return nil
+}
+
+func (its *document) toDocuments(children []jsonType) (ret []Document) {
+	for _, child := range children {
+		ret = append(ret, its.toDocument(child))
+	}
+	return
+}
+
+func (its *document) toDocument(child jsonType) Document {
+	return &document{
+		datatype:  its.datatype,
+		root:      child.getCreateTime(),
+		typeOfDoc: child.getType(),
+		snapshot:  its.snapshot,
+	}
+}
+func (its *document) allowLocalOperation(opName string, ofJSON TypeOfJSON, workOnOrphan bool) (jsonType, errors.OrtooError) {
+	if its.GetJSONType() != ofJSON {
+		return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, opName, " is not allowed to ")
+	}
+	jt, ok := its.snapshot.findJSONType(its.root)
+	if !ok {
+		return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "not exist in the root Document")
+	}
+	if !workOnOrphan && !jt.isTomb() { // FIXME: should check if there exist tombstones of its ancestor
+		return nil, errors.ErrDatatypeInvalidParent.New(its.Logger, "already deleted from the root Document")
+	}
+	return jt, nil
 }

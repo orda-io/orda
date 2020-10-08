@@ -17,10 +17,9 @@ const (
 	ErrDatatypeTransaction
 	ErrDatatypeTransactionRollback
 	ErrDatatypeSnapshot
-	ErrDatatypeInvalidType
-	ErrDatatypeIllegalOperation
+	ErrDatatypeIllegalParameters
 	ErrDatatypeInvalidParent
-	ErrDatatypeNotExistChildDocument
+	ErrDatatypeNotExist
 	ErrDatatypeNoOp
 	ErrDatatypeMarshal
 	ErrDatatypeUnmarshal
@@ -28,24 +27,23 @@ const (
 )
 
 var datatypeErrFormats = map[DatatypeErrorCode]string{
-	ErrDatatypeCreate:                "fail to create datatype: %s",
-	ErrDatatypeSubscribe:             "fail to subscribe datatype: %s",
-	ErrDatatypeTransaction:           "fail to proceed transaction: %s",
-	ErrDatatypeSnapshot:              "fail to make a snapshot: %s",
-	ErrDatatypeInvalidType:           "fail to make an operation due to invalid value type: %s",
-	ErrDatatypeIllegalOperation:      "fail to execute operation due to illegal operation: %v",
-	ErrDatatypeNotExistChildDocument: "fail to access child due to its absence",
-	ErrDatatypeInvalidParent:         "fail to access child with invalid parent: %v",
-	ErrDatatypeNoOp:                  "fail to issue operation",
-	ErrDatatypeMarshal:               "fail to marshal:%v",
-	ErrDatatypeUnmarshal:             "fail to unmarshal:%v",
-	ErrDatatypeNoTarget:              "fail to find target: %v",
+	ErrDatatypeCreate:            "fail to create datatype: %s",
+	ErrDatatypeSubscribe:         "fail to subscribe datatype: %s",
+	ErrDatatypeTransaction:       "fail to proceed transaction: %s",
+	ErrDatatypeSnapshot:          "fail to make a snapshot: %s",
+	ErrDatatypeIllegalParameters: "fail to execute the operation due to illegal operation: %v",
+	ErrDatatypeNotExist:          "fail to access child due to its absence",
+	ErrDatatypeInvalidParent:     "fail to modify due to the invalid parent: %v",
+	ErrDatatypeNoOp:              "fail to issue operation",
+	ErrDatatypeMarshal:           "fail to marshal:%v",
+	ErrDatatypeUnmarshal:         "fail to unmarshal:%v",
+	ErrDatatypeNoTarget:          "fail to find target: %v",
 }
 
 // New creates an error related to the datatype
 func (its DatatypeErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooError {
 	format := fmt.Sprintf("[DatatypeError: %d] %s", its, datatypeErrFormats[its])
-	err := &OrtooErrorImpl{
+	err := &SingleOrtooError{
 		Code: ErrorCode(its),
 		Msg:  fmt.Sprintf(format, args...),
 	}
