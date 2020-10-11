@@ -30,7 +30,7 @@ var clientErrFormats = map[ClientErrorCode]string{
 // New creates an error related to the client
 func (its ClientErrorCode) New(args ...interface{}) OrtooError {
 	format := fmt.Sprintf("[ClientError: %d] %s", its, clientErrFormats[its])
-	err := &SingleOrtooError{
+	err := &singleOrtooError{
 		Code: ErrorCode(its),
 		Msg:  fmt.Sprintf(format, args...),
 	}

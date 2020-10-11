@@ -1,30 +1,30 @@
 package integration
 
 import (
+	"context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/ortoo"
+	"github.com/knowhunger/ortoo/pkg/testonly"
 	"github.com/stretchr/testify/require"
 )
 
-func (its *OrtooIntegrationTestSuite) TestDocument() {
-	key := GetFunctionName()
+var (
+	arr  = []interface{}{"a", 2}
+	arr1 = []interface{}{"world", 1234, 3.14}
 
-	// var arr = []interface{}{"a", 2}
-	// var strt1 = struct {
-	// 	E1 string
-	// 	E2 int
-	// 	A3 []interface{}
-	// }{
-	// 	E1: "hello",
-	// 	E2: 1234,
-	// 	A3: arr,
-	// }
-	//
-	// var arr1 = []interface{}{"world", 1234, 3.14}
+	str1 = struct {
+		E1 string
+		E2 int
+		A3 []interface{}
+	}{
+		E1: "hello",
+		E2: 1234,
+		A3: arr,
+	}
 
-	var json1 = struct {
+	json1 = struct {
 		K1_1 struct {
 			K1_1_1 string
 		}
@@ -36,7 +36,7 @@ func (its *OrtooIntegrationTestSuite) TestDocument() {
 		},
 	}
 
-	handler := ortoo.NewHandlers(
+	handler = ortoo.NewHandlers(
 		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 
 		},
@@ -46,93 +46,99 @@ func (its *OrtooIntegrationTestSuite) TestDocument() {
 		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 
 		})
+)
 
-	its.Run("Can exploit commutativity between OPX", func() {
-		config := NewTestOrtooClientConfig(its.collectionName)
-		client1 := ortoo.NewClient(config, "docClient1")
-		client2 := ortoo.NewClient(config, "docClient2")
+func (its *IntegrationTestSuite) TestCanExploitOPX() {
 
-		err := client1.Connect()
-		require.NoError(its.T(), err)
-		err = client2.Connect()
-		require.NoError(its.T(), err)
-		defer func() {
-			_ = client1.Close()
-			_ = client2.Close()
-		}()
+	config := NewTestOrtooClientConfig(its.collectionName)
+	client1 := ortoo.NewClient(config, "docClient1")
+	client2 := ortoo.NewClient(config, "docClient2")
 
-		doc1 := client1.SubscribeOrCreateDocument(key+"1", handler)
-		_, _ = doc1.PutToObject("K1", json1)
-		require.NoError(its.T(), client1.Sync())
-		doc2 := client2.SubscribeOrCreateDocument(key+"1", handler)
-		require.NoError(its.T(), client2.Sync())
+	err := client1.Connect()
+	require.NoError(its.T(), err)
+	err = client2.Connect()
+	require.NoError(its.T(), err)
+	defer func() {
+		_ = client1.Close()
+		_ = client2.Close()
+	}()
 
-		log.Logger.Infof("DOC1:%v", doc1.GetAsJSON())
-		log.Logger.Infof("DOC2:%v", doc2.GetAsJSON())
-		require.Equal(its.T(), doc1.GetAsJSON(), doc2.GetAsJSON())
+	doc1 := client1.SubscribeOrCreateDocument(its.getTestName(), handler)
+	_, _ = doc1.PutToObject("K1", json1)
+	require.NoError(its.T(), client1.Sync())
+	doc2 := client2.SubscribeOrCreateDocument(its.getTestName(), handler)
+	require.NoError(its.T(), client2.Sync())
 
-		_, _ = doc1.PutToObject("K1", "hello")
-		_, _ = doc2.PutToObject("K1", "world")
-		log.Logger.Infof("sync1")
-		require.NoError(its.T(), client1.Sync())
+	log.Logger.Infof("DOC1:%v", doc1.GetAsJSON())
+	log.Logger.Infof("DOC2:%v", doc2.GetAsJSON())
+	require.Equal(its.T(), doc1.GetAsJSON(), doc2.GetAsJSON())
 
-		// log.Logger.Infof("sync2")
-		// require.NoError(its.T(), client2.Sync())
-		// log.Logger.Infof("sync3")
-		// require.NoError(its.T(), client1.Sync())
-		// log.Logger.Infof("DOC1:%v", doc1.GetAsJSON())
-		// log.Logger.Infof("DOC2:%v", doc2.GetAsJSON())
-		// require.Equal(its.T(), doc1.GetAsJSON(), doc2.GetAsJSON())
-	})
+	_, _ = doc1.PutToObject("K1", "hello")
+	_, _ = doc2.PutToObject("K1", "world")
+	log.Logger.Infof("sync1")
+	require.NoError(its.T(), client1.Sync())
 
-	// its.Run("Can update snapshot for document", func() {
-	// 	config := NewTestOrtooClientConfig(its.collectionName)
-	// 	client1 := ortoo.NewClient(config, "docClient")
-	//
-	// 	err := client1.Connect()
-	// 	require.NoError(its.T(), err)
-	// 	defer func() {
-	// 		_ = client1.Close()
-	// 	}()
-	//
-	// 	docu1 := client1.CreateDocument(key, ortoo.NewHandlers(
-	// 		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
-	//
-	// 		},
-	// 		func(dt ortoo.Datatype, opList []interface{}) {
-	//
-	// 		},
-	// 		func(dt ortoo.Datatype, errs ...error) {
-	//
-	// 		}))
-	//
-	// 	_, _ = docu1.PutToObject("E1", "X")
-	// 	_, _ = docu1.PutToObject("O2", strt1)
-	// 	_, _ = docu1.PutToObject("A3", arr1)
-	// 	docu2, err := docu1.GetFromObject("O2")
-	// 	require.NoError(its.T(), err)
-	// 	require.Equal(its.T(), docu2.GetJSONType(), ortoo.TypeJSONObject)
-	// 	log.Logger.Infof("%v => %v", docu1.GetAsJSON(), docu2.GetAsJSON())
-	//
-	// 	docu2.PutToObject("E4", "world")
-	//
-	// 	docu3, err := docu1.GetFromObject("A3")
-	// 	require.Equal(its.T(), docu3.GetJSONType(), ortoo.TypeJSONArray)
-	// 	docu3.InsertToArray(1, strt1)
-	//
-	// 	docu4, err := docu3.GetFromArray(1)
-	// 	require.NoError(its.T(), err)
-	// 	require.Equal(its.T(), docu4.GetJSONType(), ortoo.TypeJSONObject)
-	// 	docu4.PutToObject("O4", strt1)
-	// 	log.Logger.Infof("Before DELETE:	%v", docu1.GetAsJSON())
-	// 	docu1.DeleteInObject("E1")
-	// 	log.Logger.Infof("After DELETE E1:%v", docu1.GetAsJSON())
-	// 	docu1.DeleteInObject("O2")
-	// 	log.Logger.Infof("After DELETE O2:%v", docu1.GetAsJSON())
-	// 	docu3.DeleteInArray(1)
-	// 	log.Logger.Infof("After DELETE A3[1]:%v", docu1.GetAsJSON())
-	//
-	// 	require.NoError(its.T(), client1.Sync())
-	//
-	// })
+	// log.Logger.Infof("sync2")
+	// require.NoError(its.T(), client2.Sync())
+	// log.Logger.Infof("sync3")
+	// require.NoError(its.T(), client1.Sync())
+	// log.Logger.Infof("DOC1:%v", doc1.GetAsJSON())
+	// log.Logger.Infof("DOC2:%v", doc2.GetAsJSON())
+	// require.Equal(its.T(), doc1.GetAsJSON(), doc2.GetAsJSON())
+
+}
+
+func (its *IntegrationTestSuite) TestCanMakeRealSnapshotForDocument() {
+	config := NewTestOrtooClientConfig(its.collectionName)
+	client1 := ortoo.NewClient(config, its.getTestName())
+
+	err := client1.Connect()
+	require.NoError(its.T(), err)
+	defer func() {
+		_ = client1.Close()
+	}()
+
+	doc1 := client1.CreateDocument(its.getTestName(), handler)
+
+	// {"E1":"X"}
+	old1, err := doc1.PutToObject("E1", "X")
+	require.NoError(its.T(), err)
+	require.Nil(its.T(), old1)
+	// {"E1":"hello","O2":{"A3":["a",2],"E2":1234}}
+	old2, err := doc1.PutToObject("O2", str1)
+	require.Nil(its.T(), old2)
+	require.NoError(its.T(), err)
+	// doc1: {"E1":"X","O2":{"A3":["a",2],"E1":"hello","E2":1234},"A3":["world",1234,3.14]}
+	old3, err := doc1.PutToObject("A3", arr1)
+	require.NoError(its.T(), err)
+	require.Nil(its.T(), old3)
+
+	// Can obtain JSONObject: doc2 = {"A3":["a",2],"E1":"hello","E2":1234}
+	doc2, err := doc1.GetFromObject("O2")
+	require.NoError(its.T(), err)
+	log.Logger.Infof("%v", testonly.Marshal(its.T(), doc1.GetAsJSON()))
+
+	// Check the child Document
+	require.Equal(its.T(), doc2.GetJSONType(), ortoo.TypeJSONObject)
+
+	// Can put a new value to the child Document
+	old4, err := doc2.PutToObject("E3", "world")
+	require.NoError(its.T(), err)
+	require.Nil(its.T(), old4)
+
+	// Can obtain JSONArray: doc3 = ["world",1234,3.14]
+	doc3, err := doc1.GetFromObject("A3")
+	require.NoError(its.T(), err)
+	require.Equal(its.T(), doc3.GetJSONType(), ortoo.TypeJSONArray)
+
+	// Can insert a new JSONObject to the child JSONArray Document
+	doc3a, err := doc3.InsertToArray(1, str1)
+	require.NoError(its.T(), err)
+	// Should return the same JSONArray Document
+	require.Equal(its.T(), doc3a, doc3)
+
+	require.NoError(its.T(), client1.Sync())
+	snap, err := its.mongo.GetRealSnapshot(context.Background(), its.collectionName, its.getTestName())
+	require.NoError(its.T(), err)
+	log.Logger.Infof("%v", testonly.Marshal(its.T(), snap))
 }

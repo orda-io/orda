@@ -43,13 +43,13 @@ func TestIntCounterTransactions(t *testing.T) {
 
 		tw.SetDatatypes(counter1.(*counter).ManageableDatatype, counter2.(*counter).ManageableDatatype)
 
-		i, err := counter1.Increase()
-		require.NoError(t, err)
+		i, oErr := counter1.Increase()
+		require.NoError(t, oErr)
 
 		require.Equal(t, i, int32(1))
 		require.Equal(t, counter1.Get(), counter2.Get())
 
-		err = counter1.DoTransaction("transaction1", func(intCounter CounterInTxn) error {
+		err := counter1.DoTransaction("transaction1", func(intCounter CounterInTxn) error {
 			_, _ = intCounter.IncreaseBy(-1)
 			require.Equal(t, int32(0), intCounter.Get())
 			_, _ = intCounter.IncreaseBy(-2)

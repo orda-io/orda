@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (its *OrtooIntegrationTestSuite) TestHashMap() {
+func (its *IntegrationTestSuite) TestHashMap() {
 	key := GetFunctionName()
 
 	its.Run("Can update snapshot for hash map", func() {

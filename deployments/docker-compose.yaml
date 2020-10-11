@@ -1,10 +1,12 @@
-version: "3"
+version: "3.4"
 services:
   mongodb:
     container_name: ortoo_mongodb_testing
     image: mongo:latest
+    restart: always
     volumes:
-      - ./docker_volumes/mongodb:/data
+      - mongodb_configdb:/data/configdb
+      - mongodb_db:/data/db
     ports:
       - 27017:27017
     environment:
@@ -29,8 +31,14 @@ services:
     image: eclipse-mosquitto:latest
     restart: always
     ports:
-      - 1883:1883
+      - 11883:11883
       - 9001:9001
     volumes:
-      - ./docker_volumes/mosquitto:/mosquitto
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
       - ./config:/mosquitto/config
+volumes:
+  mongodb_configdb: { }
+  mongodb_db: { }
+  mosquitto_data: { }
+  mosquitto_log: { }

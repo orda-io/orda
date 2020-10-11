@@ -28,6 +28,7 @@ func New(ctx context.Context, conf *Config) (*RepositoryMongo, error) {
 		return nil, log.OrtooErrorf(err, "fail to ping MongoDB")
 	}
 	db := client.Database(conf.OrtooDB)
+	log.Logger.Infof("New MongoDB:%v", conf.OrtooDB)
 	repo := &RepositoryMongo{
 		db:     db,
 		ctx:    ctx,
@@ -39,6 +40,7 @@ func New(ctx context.Context, conf *Config) (*RepositoryMongo, error) {
 	if err := repo.InitializeCollections(ctx); err != nil {
 		return nil, log.OrtooError(err)
 	}
+
 	return repo, nil
 }
 

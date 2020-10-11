@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-func (its *OrtooIntegrationTestSuite) TestClientServer() {
+func (its *IntegrationTestSuite) TestClientServer() {
 	key := GetFunctionName()
 
 	its.Run("Can create a client and a datatype with server", func() {

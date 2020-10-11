@@ -8,8 +8,8 @@ import (
 type ErrorCode uint32
 
 const (
-	ErrSingle = iota
-	ErrMultiple
+	// ErrMultiple is an error code that includes many OrtooErrors
+	ErrMultiple = iota + 1
 )
 
 // OrtooError defines an OrtooError
@@ -23,45 +23,45 @@ type OrtooError interface {
 	Size() int
 }
 
-// SingleOrtooError implements an error related to Ortoo
-type SingleOrtooError struct {
+// singleOrtooError implements an error related to Ortoo
+type singleOrtooError struct {
 	Code ErrorCode
 	Msg  string
 }
 
-func (its *SingleOrtooError) Size() int {
+func (its *singleOrtooError) Size() int {
 	return 1
 }
 
-func (its *SingleOrtooError) ToArray() []OrtooError {
+func (its *singleOrtooError) ToArray() []OrtooError {
 	return []OrtooError{its}
 }
 
-func (its *SingleOrtooError) Have(code ErrorCode) int {
+func (its *singleOrtooError) Have(code ErrorCode) int {
 	if its.Code == code {
 		return 1
 	}
 	return 0
 }
 
-func (its *SingleOrtooError) Error() string {
+func (its *singleOrtooError) Error() string {
 	return its.Msg
 }
 
 // GetCode returns ErrorCode
-func (its *SingleOrtooError) GetCode() ErrorCode {
+func (its *singleOrtooError) GetCode() ErrorCode {
 	return its.Code
 }
 
-func (its *SingleOrtooError) Return() OrtooError {
+func (its *singleOrtooError) Return() OrtooError {
 	return its
 }
 
-func (its *SingleOrtooError) Append(e OrtooError) OrtooError {
+func (its *singleOrtooError) Append(e OrtooError) OrtooError {
 	var codes []ErrorCode
 	var msgs []string
 	switch cast := e.(type) {
-	case *SingleOrtooError:
+	case *singleOrtooError:
 		codes = append(codes, its.Code, cast.Code)
 		msgs = append(msgs, its.Msg, cast.Msg)
 	case *MultipleOrtooErrors:
@@ -96,7 +96,7 @@ func (its *MultipleOrtooErrors) Size() int {
 func (its *MultipleOrtooErrors) ToArray() []OrtooError {
 	var errs []OrtooError
 	for i, code := range its.Codes {
-		errs = append(errs, &SingleOrtooError{
+		errs = append(errs, &singleOrtooError{
 			Code: code,
 			Msg:  its.Msgs[i],
 		})
@@ -124,7 +124,7 @@ func (its *MultipleOrtooErrors) GetCode() ErrorCode {
 
 func (its *MultipleOrtooErrors) Append(e OrtooError) OrtooError {
 	switch cast := e.(type) {
-	case *SingleOrtooError:
+	case *singleOrtooError:
 		its.Codes = append(its.Codes, cast.Code)
 		its.Msgs = append(its.Msgs, cast.Msg)
 	case *MultipleOrtooErrors:

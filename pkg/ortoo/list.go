@@ -21,12 +21,12 @@ type List interface {
 
 // ListInTxn is an Ortoo datatype which provides the list interfaces in a transaction.
 type ListInTxn interface {
-	InsertMany(pos int, value ...interface{}) (interface{}, error)
-	Get(pos int) (interface{}, error)
-	GetMany(pos int, numOfNodes int) ([]interface{}, error)
-	Delete(pos int) (interface{}, error)
-	DeleteMany(pos int, numOfNodes int) ([]interface{}, error)
-	Update(pos int, values ...interface{}) ([]interface{}, error)
+	InsertMany(pos int, value ...interface{}) (interface{}, errors.OrtooError)
+	Get(pos int) (interface{}, errors.OrtooError)
+	GetMany(pos int, numOfNodes int) ([]interface{}, errors.OrtooError)
+	Delete(pos int) (interface{}, errors.OrtooError)
+	DeleteMany(pos int, numOfNodes int) ([]interface{}, errors.OrtooError)
+	Update(pos int, values ...interface{}) ([]interface{}, errors.OrtooError)
 	Size() int
 }
 
@@ -82,12 +82,9 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 		cast.C.T = target
 		return ret, nil
 	case *operations.DeleteOperation:
-		delTargets, delTimedTypes, err := its.snapshot.deleteLocal(cast.Pos, cast.NumOfNodes, cast.GetTimestamp())
-		if err != nil {
-			return nil, err
-		}
+		delTargets, _, delValues := its.snapshot.deleteLocal(cast.Pos, cast.NumOfNodes, cast.GetTimestamp())
 		cast.C.T = delTargets
-		return getValuesFromTimedTypeSlice(delTimedTypes), nil
+		return delValues, nil
 	case *operations.UpdateOperation:
 		uptTargets, uptValues, err := its.snapshot.updateLocal(cast.Pos, cast.GetTimestamp(), cast.C.V)
 		if err != nil {
@@ -150,32 +147,13 @@ func (its *list) SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooEr
 	return nil
 }
 
-func (its *list) Update(pos int, values ...interface{}) ([]interface{}, error) {
-	if len(values) < 1 {
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "at least one value should be inserted")
-	}
-	if err := its.snapshot.validateRange(pos, len(values)); err != nil {
+func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, errors.OrtooError) {
+	if err := its.snapshot.validateInsertPosition(pos); err != nil {
 		return nil, err
 	}
-	jsonValues, err := types.ConvertValueList(values)
-	if err != nil {
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, err.Error())
-	}
-	op := operations.NewUpdateOperation(pos, jsonValues)
-	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
-	if err != nil {
-		return nil, err
-	}
-	return ret.([]interface{}), nil
-}
-
-func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, error) {
-	if len(values) < 1 {
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "at least one value should be inserted")
-	}
-	jsonValues, err := types.ConvertValueList(values)
-	if err != nil {
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, err.Error())
+	jsonValues, err2 := types.ConvertValueList(values)
+	if err2 != nil {
+		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, err2.Error())
 	}
 	op := operations.NewInsertOperation(pos, jsonValues)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -185,21 +163,15 @@ func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, error)
 	return ret, nil
 }
 
-// Delete deletes one orderedType at index pos.
-func (its *list) Delete(pos int) (interface{}, error) {
-	ret, err := its.DeleteMany(pos, 1)
-	return ret[0], err
-}
-
-// DeleteMany deletes the nodes at index pos in sequence.
-func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
-	if numOfNode < 1 {
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "at least one orderedType should be deleted")
-	}
-	if err := its.snapshot.validateRange(pos, numOfNode); err != nil {
+func (its *list) Update(pos int, values ...interface{}) ([]interface{}, errors.OrtooError) {
+	if err := its.snapshot.validateGetRange(pos, len(values)); err != nil {
 		return nil, err
 	}
-	op := operations.NewDeleteOperation(pos, numOfNode)
+	jsonValues, err2 := types.ConvertValueList(values)
+	if err2 != nil {
+		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, err2.Error())
+	}
+	op := operations.NewUpdateOperation(pos, jsonValues)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
@@ -207,12 +179,41 @@ func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, error) {
 	return ret.([]interface{}), nil
 }
 
-func (its *list) Get(pos int) (interface{}, error) {
-	return its.snapshot.findValue(pos)
+// Delete deletes one orderedType at index pos.
+func (its *list) Delete(pos int) (interface{}, errors.OrtooError) {
+	ret, err := its.DeleteMany(pos, 1)
+	return ret[0], err
 }
 
-func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, error) {
-	return its.snapshot.findManyValues(pos, numOfNodes)
+// DeleteMany deletes the nodes at index pos in sequence.
+func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, errors.OrtooError) {
+	if err := its.snapshot.validateGetRange(pos, numOfNode); err != nil {
+		return nil, err
+	}
+	op := operations.NewDeleteOperation(pos, numOfNode)
+	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	if err != nil {
+		return nil, err
+	}
+	if ret == nil {
+		return nil, nil
+	}
+
+	return types.ToInterfaceArray(ret.([]types.JSONValue)), nil
+}
+
+func (its *list) Get(pos int) (interface{}, errors.OrtooError) {
+	if err := its.snapshot.validateGetPosition(pos); err != nil {
+		return nil, err
+	}
+	return its.snapshot.findValue(pos), nil
+}
+
+func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, errors.OrtooError) {
+	if err := its.snapshot.validateGetRange(pos, numOfNodes); err != nil {
+		return nil, err
+	}
+	return its.snapshot.findManyValues(pos, numOfNodes), nil
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -305,10 +306,7 @@ func (its *listSnapshot) insertLocalWithTimedTypes(
 	pos int,
 	tts ...timedType,
 ) (*model.Timestamp, []interface{}, errors.OrtooError) {
-	target, err := its.findOrderedTypeAsLink(pos)
-	if err != nil {
-		return nil, nil, err
-	}
+	target := its.findOrderedTypeForInsert(pos)
 	var inserted []interface{}
 	targetTs := target.getOrderTime()
 	for _, tt := range tts {
@@ -330,10 +328,7 @@ func (its *listSnapshot) updateLocal(
 	ts *model.Timestamp,
 	values []interface{},
 ) ([]*model.Timestamp, []interface{}, errors.OrtooError) {
-	target, err := its.findOrderedTypeWithRange(pos, len(values))
-	if err != nil {
-		return nil, nil, err
-	}
+	target := its.findOrderedType(pos)
 	var updatedValues []interface{}
 	var updatedTargets []*model.Timestamp
 	for _, v := range values {
@@ -376,22 +371,21 @@ func (its *listSnapshot) deleteLocal(
 	pos int,
 	numOfNodes int,
 	ts *model.Timestamp,
-) ([]*model.Timestamp, []timedType, errors.OrtooError) {
-	target, err := its.findOrderedTypeWithRange(pos, numOfNodes)
-	if err != nil {
-		return nil, nil, err
-	}
+) ([]*model.Timestamp, []timedType, []types.JSONValue) {
+	target := its.findOrderedType(pos)
 	var delTargets []*model.Timestamp
 	var delTimedTypes []timedType
+	var delValues []types.JSONValue
 	for i := 0; i < numOfNodes; i++ {
 		delTimedTypes = append(delTimedTypes, target.getTimedType())
 		delTargets = append(delTargets, target.getOrderTime())
+		delValues = append(delValues, target.getValue())
 		// targets should be deleted with different timestamps because they can be inserted into Cemetery in Document
 		target.makeTomb(ts.GetAndNextDelimiter())
 		its.size--
 		target = target.getNextLive()
 	}
-	return delTargets, delTimedTypes, nil
+	return delTargets, delTimedTypes, delValues
 }
 
 func (its *listSnapshot) deleteRemote(
@@ -449,9 +443,12 @@ func (its *listSnapshot) retrieve(pos int) orderedType {
 	return ret
 }
 
-func (its *listSnapshot) validateRange(pos int, numOfNodes int) errors.OrtooError {
+func (its *listSnapshot) validateGetRange(pos int, numOfNodes int) errors.OrtooError {
 	// 1st condition: if size==4, pos==3 is ok, but 4 is not ok
 	// 2nd condition: if size==4, (pos==3, numOfNodes==1) is ok, (pos==3, numOfNodes=2) is not ok.
+	if pos < 0 {
+		return errors.ErrDatatypeIllegalParameters.New(its.base.Logger, "negative position")
+	}
 	if numOfNodes < 1 {
 		return errors.ErrDatatypeIllegalParameters.New(its.base.Logger, "numOfNodes should be more than 0")
 	}
@@ -461,53 +458,63 @@ func (its *listSnapshot) validateRange(pos int, numOfNodes int) errors.OrtooErro
 	return nil
 }
 
-func (its *listSnapshot) findOrderedTypeWithRange(pos int, numOfNodes int) (orderedType, errors.OrtooError) {
-	if err := its.validateRange(pos, numOfNodes); err != nil {
-		return nil, err
+func (its *listSnapshot) validateInsertPosition(pos int) errors.OrtooError {
+	if pos < 0 {
+		return errors.ErrDatatypeIllegalParameters.New(its.base.Logger, "negative position")
 	}
-	return its.retrieve(pos + 1), nil // no head, but live orderedType
+	if pos > its.size { // size:0 => pos{0} , size:1 => pos{0, 1}
+		return errors.ErrDatatypeIllegalParameters.New(its.base.Logger, "out of bound index")
+	}
+	return nil
 }
 
-func (its *listSnapshot) findOrderedType(pos int) (orderedType, errors.OrtooError) {
-	// size == 3, pos can be 0, 1, 2
-	if its.size <= pos {
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.base.Logger, "out of bound index")
+func (its *listSnapshot) validateGetPosition(pos int) errors.OrtooError {
+	if pos < 0 {
+		return errors.ErrDatatypeIllegalParameters.New(its.base.Logger, "negative position")
 	}
-	return its.retrieve(pos + 1), nil
+	if pos >= its.size { // size: 1 => pos {0}, size: 2 => pos {0, 1}
+		return errors.ErrDatatypeIllegalParameters.New(its.base.Logger, "out of bound index")
+	}
+	return nil
 }
 
-// findOrderedTypeAsLink finds a place next of which
-func (its *listSnapshot) findOrderedTypeAsLink(pos int) (orderedType, errors.OrtooError) {
-	if its.size < pos { // size:0 => possible indexes{0} , s:1 => p{0, 1}
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.base.Logger, "out of bound index")
-	}
-	return its.retrieve(pos), nil
+func (its *listSnapshot) findOrderedType(pos int) orderedType {
+	return its.retrieve(pos + 1)
 }
 
-func (its *listSnapshot) findTimedType(pos int) (timedType, errors.OrtooError) {
-	o, err := its.findOrderedType(pos)
-	return o.getTimedType(), err
+// findOrderedTypeForInsert finds a place related to Insert
+func (its *listSnapshot) findOrderedTypeForInsert(pos int) orderedType {
+	return its.retrieve(pos)
 }
 
-func (its *listSnapshot) findValue(pos int) (interface{}, errors.OrtooError) {
-	pt, err := its.findTimedType(pos)
-	if err != nil {
-		return nil, err
-	}
-	return pt.getValue(), nil
+func (its *listSnapshot) findTimedType(pos int) timedType {
+	o := its.findOrderedType(pos)
+	return o.getTimedType()
 }
 
-func (its *listSnapshot) findManyValues(pos int, numOfNodes int) ([]interface{}, errors.OrtooError) {
-	target, err := its.findOrderedTypeWithRange(pos, numOfNodes)
-	if err != nil {
-		return nil, err
+func (its *listSnapshot) findManyTimedTypes(pos int, numOfNodes int) []timedType {
+	target := its.findOrderedType(pos)
+	var ret []timedType
+	for i := 1; i <= numOfNodes; i++ {
+		ret = append(ret, target.getTimedType())
+		target = target.getNextLive()
 	}
+	return ret
+}
+
+func (its *listSnapshot) findValue(pos int) interface{} {
+	pt := its.findTimedType(pos)
+	return pt.getValue()
+}
+
+func (its *listSnapshot) findManyValues(pos int, numOfNodes int) []interface{} {
+	target := its.findOrderedType(pos)
 	var ret []interface{}
 	for i := 1; i <= numOfNodes; i++ {
 		ret = append(ret, target.getValue())
 		target = target.getNextLive()
 	}
-	return ret, nil
+	return ret
 }
 
 func (its *listSnapshot) String() string {

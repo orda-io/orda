@@ -47,7 +47,7 @@ func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 	return &ortoo.ClientConfig{
 		ServerAddr:       "127.0.0.1:19061",
 		CollectionName:   collectionName,
-		NotificationAddr: "127.0.0.1:1883",
+		NotificationAddr: "127.0.0.1:11883",
 		SyncType:         model.SyncType_NOTIFIABLE,
 	}
 }
@@ -57,7 +57,7 @@ func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
 		RPCServerPort: 19061,
 		RestfulPort:   19861,
-		Notification:  "127.0.0.1:1883",
+		Notification:  "127.0.0.1:11883",
 		Mongo:         *mongodb.NewTestMongoDBConfig(dbName),
 	}
 }

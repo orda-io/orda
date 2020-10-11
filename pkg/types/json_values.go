@@ -19,6 +19,14 @@ func ConvertValueList(values []interface{}) ([]interface{}, error) {
 	return jsonValues, nil
 }
 
+func ToInterfaceArray(ja []JSONValue) []interface{} {
+	var ret []interface{}
+	for _, v := range ja {
+		ret = append(ret, v.(interface{}))
+	}
+	return ret
+}
+
 // ConvertToJSONSupportedValue converts any type of Go into a type that is supported by JSON
 func ConvertToJSONSupportedValue(t interface{}) JSONValue {
 	switch v := t.(type) {

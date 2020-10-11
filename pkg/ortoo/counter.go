@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
@@ -23,8 +22,8 @@ type Counter interface {
 // CounterInTxn is an Ortoo datatype which provides int counter interfaces in a transaction.
 type CounterInTxn interface {
 	Get() int32
-	Increase() (int32, error)
-	IncreaseBy(delta int32) (int32, error)
+	Increase() (int32, errors.OrtooError)
+	IncreaseBy(delta int32) (int32, errors.OrtooError)
 }
 
 type counter struct {
@@ -96,15 +95,15 @@ func (its *counter) Get() int32 {
 	return its.snapshot.Value
 }
 
-func (its *counter) Increase() (int32, error) {
+func (its *counter) Increase() (int32, errors.OrtooError) {
 	return its.IncreaseBy(1)
 }
 
-func (its *counter) IncreaseBy(delta int32) (int32, error) {
+func (its *counter) IncreaseBy(delta int32) (int32, errors.OrtooError) {
 	op := operations.NewIncreaseOperation(delta)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
-		return 0, log.OrtooErrorf(err, "fail to execute operation")
+		return its.snapshot.Value, err
 	}
 	return ret.(int32), nil
 }

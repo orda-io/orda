@@ -71,7 +71,7 @@ func (its *TransactionDatatype) ExecuteOperationWithTransaction(
 	if isLocal {
 		ret, err := its.executeLocalBase(op)
 		if err != nil {
-			return 0, errors.ErrDatatypeTransaction.New(its.Logger, err.Error())
+			return ret, err
 		}
 		its.currentTrxCtx.appendOperation(op)
 		return ret, nil

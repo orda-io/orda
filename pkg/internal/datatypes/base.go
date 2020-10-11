@@ -50,9 +50,11 @@ func (its *BaseDatatype) String() string {
 
 func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, errors.OrtooError) {
 	its.SetNextOpID(op)
-	// TODO: should deal with NO_OP
-	return op.ExecuteLocal(its.datatype)
-
+	ret, err := op.ExecuteLocal(its.datatype)
+	if err != nil {
+		its.opID.RollBack()
+	}
+	return ret, err // should deliver err
 }
 
 // Replay replays an already executed operation.
@@ -120,4 +122,8 @@ func (its *BaseDatatype) SetDUID(duid types.DUID) {
 // SetState sets the state of this datatype.
 func (its *BaseDatatype) SetState(state model.StateOfDatatype) {
 	its.state = state
+}
+
+func (its *BaseDatatype) GetOpID() *model.OperationID {
+	return its.opID
 }

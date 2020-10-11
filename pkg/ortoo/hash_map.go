@@ -22,8 +22,8 @@ type HashMap interface {
 // HashMapInTxn is an Ortoo datatype which provides hash map interface in a transaction.
 type HashMapInTxn interface {
 	Get(key string) interface{}
-	Put(key string, value interface{}) (interface{}, error)
-	Remove(key string) (interface{}, error)
+	Put(key string, value interface{}) (interface{}, errors.OrtooError)
+	Remove(key string) (interface{}, errors.OrtooError)
 	Size() int
 }
 
@@ -123,7 +123,7 @@ func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) errors.Orto
 	return nil
 }
 
-func (its *hashMap) Put(key string, value interface{}) (interface{}, error) {
+func (its *hashMap) Put(key string, value interface{}) (interface{}, errors.OrtooError) {
 	if key == "" || value == nil {
 		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "empty key or nil value is not allowed")
 	}
@@ -140,7 +140,7 @@ func (its *hashMap) Get(key string) interface{} {
 	return nil
 }
 
-func (its *hashMap) Remove(key string) (interface{}, error) {
+func (its *hashMap) Remove(key string) (interface{}, errors.OrtooError) {
 	if key == "" {
 		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "empty key is not allowed")
 	}
@@ -258,7 +258,7 @@ func (its *hashMapSnapshot) removeLocalWithTimedType(
 			}
 		}
 	}
-	return nil, nil, errors.ErrDatatypeNoOp.New(its.base.Logger)
+	return nil, nil, errors.ErrDatatypeNoOp.New(its.base.Logger, "remove the value for not existing key")
 }
 
 func (its *hashMapSnapshot) removeRemoteWithTimedType(

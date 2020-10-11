@@ -14,8 +14,8 @@ import (
 
 const dbName = "test"
 
-// OrtooIntegrationTestSuite is the base test suite for integration test.
-type OrtooIntegrationTestSuite struct {
+// IntegrationTestSuite is the base test suite for integration test.
+type IntegrationTestSuite struct {
 	suite.Suite
 	collectionName string
 	collectionNum  uint32
@@ -24,7 +24,7 @@ type OrtooIntegrationTestSuite struct {
 }
 
 // SetupTest builds some prerequisite for testing.
-func (its *OrtooIntegrationTestSuite) SetupSuite() {
+func (its *IntegrationTestSuite) SetupSuite() {
 
 	var err error
 	its.mongo, err = GetMongo(dbName)
@@ -44,7 +44,7 @@ func (its *OrtooIntegrationTestSuite) SetupSuite() {
 	time.Sleep(1 * time.Second)
 }
 
-func (its *OrtooIntegrationTestSuite) SetupTest() {
+func (its *IntegrationTestSuite) SetupTest() {
 	its.collectionName = strings.Split(its.T().Name(), "/")[1]
 	log.Logger.Infof("Setup OrtooIntegrationTest:%s", its.collectionName)
 	var err error
@@ -53,12 +53,17 @@ func (its *OrtooIntegrationTestSuite) SetupTest() {
 	require.NoError(its.T(), err)
 }
 
-// TearDownTest tears down OrtooIntegrationTestSuite.
-func (its *OrtooIntegrationTestSuite) TearDownSuite() {
-	its.T().Log("TearDown OrtooIntegrationTestSuite")
+// TearDownTest tears down IntegrationTestSuite.
+func (its *IntegrationTestSuite) TearDownSuite() {
+	its.T().Log("TearDown IntegrationTestSuite")
 	its.server.Close(true)
 }
 
+func (its *IntegrationTestSuite) getTestName() string {
+	sp := strings.Split(its.T().Name(), "/")
+	return sp[len(sp)-1]
+}
+
 func TestIntegration(t *testing.T) {
-	suite.Run(t, new(OrtooIntegrationTestSuite))
+	suite.Run(t, new(IntegrationTestSuite))
 }

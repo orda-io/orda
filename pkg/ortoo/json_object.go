@@ -28,7 +28,7 @@ func newJSONObject(base *datatypes.BaseDatatype, parent jsonType, ts *model.Time
 			cemetery: make(map[string]jsonType),
 		}
 	} else {
-		root = parent.getRoot()
+		root = parent.getCommon()
 	}
 	obj := &jsonObject{
 		jsonType: &jsonPrimitive{
@@ -42,23 +42,6 @@ func newJSONObject(base *datatypes.BaseDatatype, parent jsonType, ts *model.Time
 		obj.jsonType.setRoot(obj)
 	}
 	return obj
-}
-
-func (its *jsonObject) CloneSnapshot() iface.Snapshot {
-	// TODO: implement CloneSnapshot()
-	return &jsonObject{}
-}
-
-func (its *jsonObject) PutCommonInObject(
-	parent *model.Timestamp,
-	key string,
-	value interface{},
-	ts *model.Timestamp,
-) (jsonType, errors.OrtooError) {
-	if parentObj, ok := its.findJSONObject(parent); ok {
-		return parentObj.putCommon(key, value, ts), nil
-	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonObject) putCommon(key string, value interface{}, ts *model.Timestamp) jsonType {
@@ -88,47 +71,27 @@ func (its *jsonObject) putCommon(key string, value interface{}, ts *model.Timest
 	return nil
 }
 
-func (its *jsonObject) DeleteLocalInObject(
-	parent *model.Timestamp,
-	key string,
-	ts *model.Timestamp,
-) (jsonType, errors.OrtooError) {
-	return its.deleteCommonInObject(parent, key, ts, true)
-}
-
-func (its *jsonObject) DeleteRemoteInObject(
-	parent *model.Timestamp,
-	key string,
-	ts *model.Timestamp,
-) (jsonType, errors.OrtooError) {
-	return its.deleteCommonInObject(parent, key, ts, false)
-}
-
 func (its *jsonObject) deleteCommonInObject(
-	parent *model.Timestamp,
 	key string,
 	ts *model.Timestamp,
 	isLocal bool,
 ) (jsonType, errors.OrtooError) {
-	if parentObj, ok := its.findJSONObject(parent); ok {
-		/*
-			If jsonType is deleted in jsonObject, it should remain in NodeMap, and be added to Cemetery.
-		*/
-		var deleted timedType
-		var err errors.OrtooError
-		if isLocal {
-			deleted, _, err = parentObj.removeLocalWithTimedType(key, ts)
-		} else {
-			deleted, _, err = parentObj.removeRemoteWithTimedType(key, ts)
-		}
-		if deleted != nil {
-			deletedJT := deleted.(jsonType)
-			its.addToCemetery(deletedJT)
-			return deletedJT, nil
-		}
-		return nil, err
+	/*
+		If jsonType is deleted in jsonObject, it should remain in NodeMap, and be added to Cemetery.
+	*/
+	var deleted timedType
+	var err errors.OrtooError
+	if isLocal {
+		deleted, _, err = its.removeLocalWithTimedType(key, ts)
+	} else {
+		deleted, _, err = its.removeRemoteWithTimedType(key, ts)
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	if deleted != nil {
+		deletedJT := deleted.(jsonType)
+		its.addToCemetery(deletedJT)
+		return deletedJT, nil
+	}
+	return nil, err
 }
 
 func (its *jsonObject) getAsJSONType(key string) jsonType {
@@ -136,83 +99,6 @@ func (its *jsonObject) getAsJSONType(key string) jsonType {
 		return v.(jsonType)
 	}
 	return nil
-}
-
-// InsertLocalInArray inserts values locally and returns the timestamp of target
-func (its *jsonObject) InsertLocalInArray(
-	parent *model.Timestamp,
-	pos int,
-	ts *model.Timestamp,
-	values ...interface{},
-) (
-	*model.Timestamp, // the timestamp of target
-	jsonType, // parent Array
-	errors.OrtooError, // error
-) {
-	if parentArray, ok := its.findJSONArray(parent); ok {
-		target, _, err := parentArray.insertCommon(pos, nil, ts, values...)
-		return target, parentArray, err
-	}
-	return nil, nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
-}
-
-func (its *jsonObject) InsertRemoteInArray(
-	parent *model.Timestamp,
-	target *model.Timestamp,
-	ts *model.Timestamp,
-	values ...interface{},
-) (jsonType, errors.OrtooError) {
-	if parentArray, ok := its.findJSONArray(parent); ok {
-		_, _, err := parentArray.insertCommon(-1, target, ts, values...)
-		return parentArray, err
-	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
-}
-
-func (its *jsonObject) UpdateLocalInArray(
-	parent *model.Timestamp,
-	pos int,
-	ts *model.Timestamp,
-	values ...interface{},
-) ([]*model.Timestamp, []jsonType, errors.OrtooError) {
-	if parentArray, ok := its.findJSONArray(parent); ok {
-		return parentArray.updateLocal(pos, ts, values...)
-	}
-	return nil, nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
-}
-
-func (its *jsonObject) UpdateRemoteInArray(
-	parent *model.Timestamp,
-	ts *model.Timestamp,
-	targets []*model.Timestamp,
-	values []interface{},
-) ([]jsonType, errors.OrtooError) {
-	if parentArray, ok := its.findJSONArray(parent); ok {
-		return parentArray.updateRemote(ts, targets, values)
-	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
-}
-
-func (its *jsonObject) DeleteLocalInArray(
-	parent *model.Timestamp,
-	pos, numOfNodes int,
-	ts *model.Timestamp,
-) ([]*model.Timestamp, []jsonType, errors.OrtooError) {
-	if parentArray, ok := its.findJSONArray(parent); ok {
-		return parentArray.deleteLocal(pos, numOfNodes, ts)
-	}
-	return nil, nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
-}
-
-func (its *jsonObject) DeleteRemoteInArray(
-	parent *model.Timestamp,
-	ts *model.Timestamp,
-	targets []*model.Timestamp,
-) ([]jsonType, errors.OrtooError) {
-	if parentArray, ok := its.findJSONArray(parent); ok {
-		return parentArray.deleteRemote(targets, ts)
-	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonObject) getValue() types.JSONValue {
@@ -250,30 +136,6 @@ func (its *jsonObject) String() string {
 	return fmt.Sprintf("JO(%v)[C%v|V%v]", parentTS, its.getCreateTime().ToString(), its.hashMapSnapshot.String())
 }
 
-func (its *jsonObject) GetAsJSONCompatible() interface{} {
-	m := make(map[string]interface{})
-	for k, v := range its.Map {
-		if v != nil {
-			switch cast := v.(type) {
-			case *jsonObject:
-				if !cast.isTomb() {
-					m[k] = cast.GetAsJSONCompatible()
-				}
-
-			case *jsonElement:
-				if !cast.isTomb() {
-					m[k] = v.getValue()
-				}
-			case *jsonArray:
-				if !cast.isTomb() {
-					m[k] = cast.GetAsJSONCompatible()
-				}
-			}
-		}
-	}
-	return m
-}
-
 func (its *jsonObject) Equal(o *jsonObject) bool {
 	return its.jsonType.(*jsonPrimitive).common.equal(o.jsonType.(*jsonPrimitive).common)
 }
@@ -304,4 +166,35 @@ func (its *jsonObject) equal(o jsonType) bool {
 		}
 	}
 	return true
+}
+
+// ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
+
+func (its *jsonObject) CloneSnapshot() iface.Snapshot {
+	// TODO: implement CloneSnapshot()
+	return &jsonObject{}
+}
+
+func (its *jsonObject) GetAsJSONCompatible() interface{} {
+	m := make(map[string]interface{})
+	for k, v := range its.Map {
+		if v != nil {
+			switch cast := v.(type) {
+			case *jsonObject:
+				if !cast.isTomb() {
+					m[k] = cast.GetAsJSONCompatible()
+				}
+
+			case *jsonElement:
+				if !cast.isTomb() {
+					m[k] = v.getValue()
+				}
+			case *jsonArray:
+				if !cast.isTomb() {
+					m[k] = cast.GetAsJSONCompatible()
+				}
+			}
+		}
+	}
+	return m
 }

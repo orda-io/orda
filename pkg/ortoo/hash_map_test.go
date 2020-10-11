@@ -100,8 +100,8 @@ func TestHashMap(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "v4", old4)
 
-		log.Logger.Infof("%+v", marshal(t, snap.GetAsJSONCompatible()))
-		require.Equal(t, `{"key1":"v2","key2":"v3"}`, marshal(t, snap.GetAsJSONCompatible()))
+		log.Logger.Infof("%+v", testonly.Marshal(t, snap.GetAsJSONCompatible()))
+		require.Equal(t, `{"key1":"v2","key2":"v3"}`, testonly.Marshal(t, snap.GetAsJSONCompatible()))
 		require.Equal(t, 2, snap.size())
 
 		removed1, err := snap.removeRemote("key1", opID2.Next().GetTimestamp())
@@ -111,7 +111,7 @@ func TestHashMap(t *testing.T) {
 		removed2, err := snap.removeRemote("key2", model.OldestTimestamp()) // remove with older timestamp; not effective
 		require.NoError(t, err)
 		require.Nil(t, removed2)
-		log.Logger.Infof("%+v", marshal(t, snap.GetAsJSONCompatible()))
+		log.Logger.Infof("%+v", testonly.Marshal(t, snap.GetAsJSONCompatible()))
 
 		// marshal and unmarshal snapshot
 		snap1, err2 := json.Marshal(snap)

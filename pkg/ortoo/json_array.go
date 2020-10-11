@@ -3,6 +3,7 @@ package ortoo
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
+	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
@@ -21,19 +22,25 @@ func newJSONArray(base *datatypes.BaseDatatype, parent jsonType, ts *model.Times
 	return &jsonArray{
 		jsonType: &jsonPrimitive{
 			parent: parent,
-			common: parent.getRoot(),
+			common: parent.getCommon(),
 			C:      ts,
 		},
 		listSnapshot: newListSnapshot(base),
 	}
 }
 
-func (its *jsonArray) getJSONType(pos int) (jsonType, errors.OrtooError) {
-	tt, err := its.findTimedType(pos)
-	if err != nil {
-		return nil, err
+func (its *jsonArray) getManyJSONTypes(pos int, numOfNodes int) []jsonType {
+	tts := its.findManyTimedTypes(pos, numOfNodes)
+	var ret []jsonType
+	for _, tt := range tts {
+		ret = append(ret, tt.(jsonType))
 	}
-	return tt.(jsonType), nil
+	return ret
+}
+
+func (its *jsonArray) getJSONType(pos int) jsonType {
+	tt := its.findTimedType(pos)
+	return tt.(jsonType)
 }
 
 func (its *jsonArray) insertCommon(
@@ -58,11 +65,8 @@ func (its *jsonArray) deleteLocal(
 	pos int,
 	numOfNodes int,
 	ts *model.Timestamp,
-) ([]*model.Timestamp, []jsonType, errors.OrtooError) {
-	targets, timedTypes, err := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
-	if err != nil {
-		return nil, nil, err
-	}
+) ([]*model.Timestamp, []jsonType) {
+	targets, timedTypes, _ := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
 	for _, v := range targets {
 		if jt, ok := its.findJSONType(v); ok {
 			its.addToCemetery(jt)
@@ -72,7 +76,7 @@ func (its *jsonArray) deleteLocal(
 	for _, t := range timedTypes {
 		jsonTypes = append(jsonTypes, t.(jsonType))
 	}
-	return targets, jsonTypes, err
+	return targets, jsonTypes
 }
 
 func (its *jsonArray) deleteRemote(
@@ -96,9 +100,6 @@ func (its *jsonArray) updateLocal(
 	ts *model.Timestamp,
 	values ...interface{},
 ) ([]*model.Timestamp, []jsonType, errors.OrtooError) {
-	if err := its.validateRange(pos, len(values)); err != nil {
-		return nil, nil, err
-	}
 	var updatedTargets []*model.Timestamp
 	var oldJSONTypes []jsonType
 	target := its.retrieve(pos + 1)
@@ -178,26 +179,6 @@ func (its *jsonArray) String() string {
 	return fmt.Sprintf("JA(%v)[C%v|V%v", parentTS, its.getCreateTime().ToString(), its.listSnapshot.String())
 }
 
-// GetAsJSONCompatible returns an interface type that contains all live objects.
-func (its *jsonArray) GetAsJSONCompatible() interface{} {
-	var list = make([]interface{}, 0)
-	n := its.listSnapshot.head.getNextLive()
-	for n != nil {
-		if !n.isTomb() {
-			switch cast := n.getTimedType().(type) {
-			case *jsonObject:
-				list = append(list, cast.GetAsJSONCompatible())
-			case *jsonElement:
-				list = append(list, cast.getValue())
-			case *jsonArray:
-				list = append(list, cast.GetAsJSONCompatible())
-			}
-		}
-		n = n.getNextLive()
-	}
-	return list
-}
-
 func (its *jsonArray) equal(o jsonType) bool {
 	if its.getType() != o.getType() {
 		return false
@@ -248,4 +229,30 @@ func (its *jsonArray) equal(o jsonType) bool {
 		}
 	}
 	return true
+}
+
+// ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
+
+func (its *jsonArray) CloneSnapshot() iface.Snapshot {
+	panic("Implement me")
+}
+
+// GetAsJSONCompatible returns an interface type that contains all live objects.
+func (its *jsonArray) GetAsJSONCompatible() interface{} {
+	var list = make([]interface{}, 0)
+	n := its.listSnapshot.head.getNextLive()
+	for n != nil {
+		if !n.isTomb() {
+			switch cast := n.getTimedType().(type) {
+			case *jsonObject:
+				list = append(list, cast.GetAsJSONCompatible())
+			case *jsonElement:
+				list = append(list, cast.getValue())
+			case *jsonArray:
+				list = append(list, cast.GetAsJSONCompatible())
+			}
+		}
+		n = n.getNextLive()
+	}
+	return list
 }

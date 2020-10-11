@@ -2,6 +2,7 @@ package ortoo
 
 import (
 	"fmt"
+	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
 )
@@ -19,7 +20,7 @@ func newJSONElement(parent jsonType, value interface{}, ts *model.Timestamp) *js
 	return &jsonElement{
 		jsonType: &jsonPrimitive{
 			parent: parent,
-			common: parent.getRoot(),
+			common: parent.getCommon(),
 			C:      ts,
 		},
 		V: value,
@@ -64,4 +65,14 @@ func (its *jsonElement) equal(o jsonType) bool {
 		return false
 	}
 	return true
+}
+
+// ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
+
+func (its *jsonElement) CloneSnapshot() iface.Snapshot {
+	panic("Implement me")
+}
+
+func (its *jsonElement) GetAsJSONCompatible() interface{} {
+	panic("Implement me")
 }

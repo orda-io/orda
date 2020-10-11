@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (its *OrtooIntegrationTestSuite) TestProtocol() {
+func (its *IntegrationTestSuite) TestProtocol() {
 	key := GetFunctionName()
 
 	its.Run("Can return duplicate key error for datatype", func() {

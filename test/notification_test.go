@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-func (its *OrtooIntegrationTestSuite) TestNotification() {
+func (its *IntegrationTestSuite) TestNotification() {
 	key := GetFunctionName()
 	its.Run("Can notify remote change", func() {
 		config := NewTestOrtooClientConfig(its.collectionName)

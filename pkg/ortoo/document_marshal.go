@@ -75,14 +75,10 @@ func newMarshaledDocument() *marshaledDocument {
 // MarshalJSON returns marshaledDocument.
 func (its *jsonObject) MarshalJSON() ([]byte, error) {
 	marshalDoc := newMarshaledDocument()
-	for _, v := range its.getRoot().nodeMap {
+	for _, v := range its.getCommon().nodeMap {
 		marshaled := v.marshal()
 		marshalDoc.NodeMap = append(marshalDoc.NodeMap, marshaled)
 	}
-	// for _, v := range its.getRoot().cemetery {
-	// 	marshalDoc.Cemetery = append(marshalDoc.Cemetery, v.getCreateTime())
-	// }
-	// printMarshalDoc(marshalDoc)
 	return json.Marshal(marshalDoc)
 }
 

@@ -38,3 +38,18 @@ func (r *RepositoryMongo) InsertRealSnapshot(ctx context.Context, collectionName
 	}
 	return nil
 }
+
+func (r *RepositoryMongo) GetRealSnapshot(ctx context.Context, collectionName, id string) (interface{}, error) {
+	collection := r.db.Collection(collectionName)
+	f := schema.FilterByID(id)
+	result := collection.FindOne(ctx, f)
+	if result.Err() != nil {
+		return "", result.Err()
+	}
+	var snap map[string]interface{}
+	if err := result.Decode(&snap); err != nil {
+		return "", err
+	}
+	return snap, nil
+
+}

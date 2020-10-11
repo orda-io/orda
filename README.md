@@ -53,7 +53,7 @@ Created collection 'hello_world(1)'
 ```go
 clientConf := &ortoo.ClientConfig{
     ServerAddr:       "localhost:19061",         // Ortoo Server address.
-    NotificationAddr: "localhost:1883",          // notification server address.
+    NotificationAddr: "localhost:11883",          // notification server address.
     CollectionName:   "hello_world",             // the collection name of MongoDB which the client participates in.
     SyncType:         model.SyncType_NOTIFIABLE, // syncType that is notified in real-time from notification server.
 }

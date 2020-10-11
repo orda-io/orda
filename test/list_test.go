@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (its *OrtooIntegrationTestSuite) TestList() {
+func (its *IntegrationTestSuite) TestList() {
 	key := GetFunctionName()
 
 	its.Run("Can update snapshot for list", func() {
