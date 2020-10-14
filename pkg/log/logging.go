@@ -15,19 +15,25 @@ type OrtooLog struct {
 }
 
 // Logger is a global instance of OrtooLog
-var Logger = NewOrtooLog()
+var Logger = New()
 
-// NewOrtooLog creates a new OrtooLog.
-func NewOrtooLog() *OrtooLog {
+// New creates a new OrtooLog.
+func New() *OrtooLog {
 	logger := logrus.New()
 	logger.SetFormatter(&ortooFormatter{})
 	logger.SetReportCaller(true)
 	return &OrtooLog{logrus.NewEntry(logger)}
 }
 
-// NewOrtooLogWithTag creates a new OrtooLog with a tag.
-func NewOrtooLogWithTag(tag string) *OrtooLog {
-	return &OrtooLog{NewOrtooLog().WithFields(logrus.Fields{tagField: tag})}
+// NewWithTag creates a new OrtooLog with a tag.
+func NewWithTag(mainLevel, subLevel string, tag string) *OrtooLog {
+	return &OrtooLog{
+		New().WithFields(logrus.Fields{
+			mainField: mainLevel,
+			subField:  subLevel,
+			tagField:  tag,
+		}),
+	}
 }
 
 const (
@@ -39,13 +45,13 @@ const (
 
 var (
 	_, b, _, _ = runtime.Caller(0)
-	basepath   = strings.Replace(b, "/pkg/log/logging.go", "/", 1)
+	basePath   = strings.Replace(b, "/pkg/log/logging.go", "/", 1)
 )
 
 const (
-	fieldErrorAt = "errorAt"
-	fieldError   = "error"
-	tagField     = "tagFiled"
+	mainField = "mainLevel"
+	subField  = "subLevel"
+	tagField  = "tagFiled"
 )
 
 func getColorByLevel(level logrus.Level) int {
@@ -61,93 +67,50 @@ func getColorByLevel(level logrus.Level) int {
 	}
 }
 
-type ortooFormatter struct {
-}
+type ortooFormatter struct{}
 
 // Format implements format of the OrtooLog.
 func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestampFormat := time.StampMilli
-	b := &bytes.Buffer{}
-	b.WriteString(entry.Time.Format(timestampFormat))
-	level := strings.ToUpper(entry.Level.String())
 
+	b := &bytes.Buffer{}
+	level := strings.ToUpper(entry.Level.String())
 	_, _ = fmt.Fprintf(b, "\x1b[%dm", getColorByLevel(entry.Level))
 
-	b.WriteString(" [" + level[:4] + "]")
+	b.WriteString("[" + level[:4] + "]")
 	b.WriteString("\x1b[0m ")
-
-	if entry.Data[tagField] != nil {
-		b.WriteString("[" + entry.Data[tagField].(string) + "] ")
+	b.WriteString("[")
+	// main level
+	if v, ok := entry.Data[mainField]; ok {
+		b.WriteString(v.(string))
 	} else if strings.Contains(entry.Caller.File, "server/") {
-		b.WriteString("[SERVER] ")
+		b.WriteString("SERV")
 	} else if strings.Contains(entry.Caller.File, "pkg/") {
-		b.WriteString("[SDK] ")
+		b.WriteString("SDKS")
+	} else {
+		b.WriteString("NONE")
 	}
+	if v, ok := entry.Data[subField]; ok && v != "" {
+		b.WriteString("|")
+		b.WriteString(v.(string))
+	}
+	b.WriteString("] ")
 
 	b.WriteString(entry.Message)
+	b.WriteString("\t\t")
 
-	if entry.Data[fieldErrorAt] != nil {
-		b.WriteString("\t\t")
-		if entry.Data[fieldError] != nil {
-			b.WriteString("[" + entry.Data[fieldError].(string) + "]")
-		}
-		b.WriteString("[ " + entry.Data[fieldErrorAt].(string) + " ] ")
-	} else {
-		relativeCallFile := strings.Replace(entry.Caller.File, basepath, "", 1)
-		_, _ = fmt.Fprintf(b, "\t\t[ %s:%d ] ", relativeCallFile, entry.Caller.Line)
+	if v, ok := entry.Data[tagField]; ok && v.(string) != "" {
+		b.WriteString("[")
+		b.WriteString(v.(string))
+		b.WriteString("] ")
 	}
 
+	timestampFormat := time.StampMilli
+	b.WriteString(" [")
+	b.WriteString(entry.Time.Format(timestampFormat))
+	b.WriteString("] ")
+
+	relativeCallFile := strings.Replace(entry.Caller.File, basePath, "", 1)
+	_, _ = fmt.Fprintf(b, "[ %s:%d ] ", relativeCallFile, entry.Caller.Line)
 	b.WriteByte('\n')
 	return b.Bytes(), nil
-}
-
-// OrtooErrorf is a method to present a error log
-func (o *OrtooLog) OrtooErrorf(err error, format string, args ...interface{}) error {
-	return o.OrtooSkipErrorf(err, 3, format, args...)
-}
-
-// OrtooSkipErrorf is used to print an error with skipping callers
-func (o *OrtooLog) OrtooSkipErrorf(err error, skip int, format string, args ...interface{}) error {
-	_, file, line, _ := runtime.Caller(skip)
-	relativeCallFile := strings.Replace(file, basepath, "", 1)
-	errorPlace := fmt.Sprintf("%s:%d", relativeCallFile, line)
-	// var errString = "nil"
-	// if err != nil {
-	// 	errString = err.Error()
-	// } else {
-	// 	err = fmt.Errorf("nil")
-	// }
-	o.WithFields(logrus.Fields{
-		fieldErrorAt: errorPlace,
-	}).Errorf(format, args...)
-	return err
-}
-
-// OrtooErrorf is a method wrapping Logger.OrtooErrorf()
-func OrtooErrorf(err error, format string, args ...interface{}) error {
-	return Logger.OrtooSkipErrorf(err, 2, format, args...)
-}
-
-// OrtooError prints out the error message with the location where an error occur.
-func OrtooError(err error) error {
-	_, file, line, _ := runtime.Caller(1)
-	relativeCallFile := strings.Replace(file, basepath, "", 1)
-	errorPlace := fmt.Sprintf("%s:%d", relativeCallFile, line)
-	var errString = "nil"
-	if err != nil {
-		errString = err.Error()
-	} else {
-		err = fmt.Errorf("nil")
-	}
-
-	Logger.WithFields(logrus.Fields{
-		fieldErrorAt: errorPlace,
-	}).Errorf("%s", errString)
-
-	return err
-}
-
-// OrtooErrorWithSkip is a method wrapping Logger.OrtooErrorf()
-func OrtooErrorWithSkip(err error, skip int, format string, args ...interface{}) error {
-	return Logger.OrtooSkipErrorf(err, skip, format, args...)
 }

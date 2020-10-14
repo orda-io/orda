@@ -12,6 +12,7 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.1
 	github.com/hokaccha/go-prettyjson v0.0.0-20190818114111-108c894c2c0e // indirect
+	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/k0kubun/pp v2.4.0+incompatible // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
@@ -25,10 +26,11 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/xdg/stringprep v1.0.0 // indirect
+	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.4.0
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 	google.golang.org/grpc v1.21.1
 	gotest.tools v2.2.0+incompatible
 )
 
-go 1.13
+go 1.14

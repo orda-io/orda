@@ -2,31 +2,29 @@ package errors
 
 import (
 	"fmt"
+	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/ztrue/tracerr"
+	"strings"
 )
 
-// ErrorCode is a type for error code of OrtooError
-type ErrorCode uint32
-
-const (
-	// ErrMultiple is an error code that includes many OrtooErrors
-	ErrMultiple = iota + 1
-)
+type tError tracerr.Error
 
 // OrtooError defines an OrtooError
 type OrtooError interface {
-	error
+	tError
 	GetCode() ErrorCode
 	Append(e OrtooError) OrtooError
 	Return() OrtooError
 	Have(code ErrorCode) int
 	ToArray() []OrtooError
 	Size() int
+	Print(l *log.OrtooLog)
 }
 
 // singleOrtooError implements an error related to Ortoo
 type singleOrtooError struct {
+	tError
 	Code ErrorCode
-	Msg  string
 }
 
 func (its *singleOrtooError) Size() int {
@@ -45,7 +43,7 @@ func (its *singleOrtooError) Have(code ErrorCode) int {
 }
 
 func (its *singleOrtooError) Error() string {
-	return its.Msg
+	return its.tError.Error()
 }
 
 // GetCode returns ErrorCode
@@ -58,22 +56,28 @@ func (its *singleOrtooError) Return() OrtooError {
 }
 
 func (its *singleOrtooError) Append(e OrtooError) OrtooError {
-	var codes []ErrorCode
-	var msgs []string
+	var errs []*singleOrtooError
 	switch cast := e.(type) {
 	case *singleOrtooError:
-		codes = append(codes, its.Code, cast.Code)
-		msgs = append(msgs, its.Msg, cast.Msg)
+		errs = append(errs, its, cast)
 	case *MultipleOrtooErrors:
-		codes = append(codes, its.Code)
-		codes = append(codes, cast.Codes...)
-		msgs = append(msgs, its.Msg)
-		msgs = append(msgs, cast.Msgs...)
+		errs = append(errs, its)
+		errs = append(errs, cast.errs...)
 	}
 	return &MultipleOrtooErrors{
-		Codes: codes,
-		Msgs:  msgs,
+		tError: tracerr.New("Multiple OrtooErrors"),
+		errs:   errs,
 	}
+}
+
+func (its *singleOrtooError) Print(l *log.OrtooLog) {
+	var sb strings.Builder
+	sb.WriteString(its.tError.Error())
+	for _, frame := range its.StackTrace()[1:] {
+		sb.WriteString("\n\t")
+		sb.WriteString(frame.String())
+	}
+	l.Error(sb.String())
 }
 
 // ToOrtooError casts an error to OrtooError if it is a OrtooError type
@@ -85,29 +89,26 @@ func ToOrtooError(err error) OrtooError {
 }
 
 type MultipleOrtooErrors struct {
-	Codes []ErrorCode
-	Msgs  []string
+	tError
+	errs []*singleOrtooError
 }
 
 func (its *MultipleOrtooErrors) Size() int {
-	return len(its.Codes)
+	return len(its.errs)
 }
 
 func (its *MultipleOrtooErrors) ToArray() []OrtooError {
 	var errs []OrtooError
-	for i, code := range its.Codes {
-		errs = append(errs, &singleOrtooError{
-			Code: code,
-			Msg:  its.Msgs[i],
-		})
+	for _, e := range its.errs {
+		errs = append(errs, e)
 	}
 	return errs
 }
 
 func (its *MultipleOrtooErrors) Have(code ErrorCode) int {
 	cnt := 0
-	for _, e := range its.Codes {
-		if e == code {
+	for _, e := range its.errs {
+		if e.Code == code {
 			cnt++
 		}
 	}
@@ -115,28 +116,50 @@ func (its *MultipleOrtooErrors) Have(code ErrorCode) int {
 }
 
 func (its *MultipleOrtooErrors) Error() string {
-	return fmt.Sprintf("%+q", its.Msgs)
+	var ret []string
+	for _, err := range its.errs {
+		ret = append(ret, err.Error())
+	}
+	return fmt.Sprintf("%+q", ret)
 }
 
 func (its *MultipleOrtooErrors) GetCode() ErrorCode {
-	return ErrMultiple
+	return MultipleErrors
 }
 
 func (its *MultipleOrtooErrors) Append(e OrtooError) OrtooError {
 	switch cast := e.(type) {
 	case *singleOrtooError:
-		its.Codes = append(its.Codes, cast.Code)
-		its.Msgs = append(its.Msgs, cast.Msg)
+		its.errs = append(its.errs, cast)
 	case *MultipleOrtooErrors:
-		its.Codes = append(its.Codes, cast.Codes...)
-		its.Msgs = append(its.Msgs, cast.Msgs...)
+		its.errs = append(its.errs, cast.errs...)
 	}
 	return its
 }
 
 func (its *MultipleOrtooErrors) Return() OrtooError {
-	if len(its.Codes) > 0 {
+	if len(its.errs) > 0 {
 		return its
 	}
 	return nil
+}
+
+func (its *MultipleOrtooErrors) Print(l *log.OrtooLog) {
+	var sb strings.Builder
+	sb.WriteString(its.tError.Error())
+	for _, frame := range its.StackTrace()[1:] {
+		sb.WriteString("\n\t")
+		sb.WriteString(frame.String())
+	}
+	l.Error(sb.String())
+}
+
+func newSingleOrtooError(l *log.OrtooLog, code ErrorCode, name string, msgFormat string, args ...interface{}) OrtooError {
+	format := fmt.Sprintf("[%s: %d] %s", name, code, msgFormat)
+	err := &singleOrtooError{
+		tError: tracerr.New(fmt.Sprintf(format, args...)),
+		Code:   code,
+	}
+	err.Print(l)
+	return err
 }

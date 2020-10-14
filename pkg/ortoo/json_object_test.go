@@ -3,11 +3,9 @@ package ortoo
 import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -58,7 +56,7 @@ func jsonObjectMarshalTest(t *testing.T, original *jsonObject) {
 func TestJSONObject(t *testing.T) {
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// {"K1":1234,"K2":{"K1":"hello","K2":1234},"K3":["world",1234,3.14]}
@@ -92,7 +90,7 @@ func TestJSONObject(t *testing.T) {
 
 	t.Run("Can put JSONArray to JSONObject", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// put array for K1
@@ -118,7 +116,7 @@ func TestJSONObject(t *testing.T) {
 
 	t.Run("Can update values in JSONObject", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		initJSONObjectAndTestPut(t, root, opID)
@@ -160,7 +158,7 @@ func TestJSONObject(t *testing.T) {
 
 	t.Run("Can delete something locally in JSONObject", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		initJSONObjectAndTestPut(t, root, opID)
@@ -168,7 +166,7 @@ func TestJSONObject(t *testing.T) {
 		// delete not existing
 		old0, err := root.DeleteCommonInObject(root.getCreateTime(), "NOT_EXISTING", opID.Next().GetTimestamp(), true)
 		require.Error(t, err)
-		require.Equal(t, errors.ErrDatatypeNoOp.ToErrorCode(), err.GetCode())
+		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), err.GetCode())
 		require.Nil(t, old0)
 
 		// delete a jsonElement
@@ -181,7 +179,7 @@ func TestJSONObject(t *testing.T) {
 		// delete again: it should be ignored.
 		old2, err := root.DeleteCommonInObject(root.getCreateTime(), "K1", opID.Next().GetTimestamp(), true)
 		require.Error(t, err)
-		require.Equal(t, errors.ErrDatatypeNoOp.ToErrorCode(), err.GetCode())
+		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), err.GetCode())
 		require.Nil(t, old2)
 		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
 
@@ -205,7 +203,7 @@ func TestJSONObject(t *testing.T) {
 
 	t.Run("Can delete something remotely in JSONObject", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		ts := initJSONObjectAndTestPut(t, root, opID)
@@ -214,7 +212,7 @@ func TestJSONObject(t *testing.T) {
 		old0, err := root.DeleteCommonInObject(root.getCreateTime(), "NOT_EXISTING", opID.Next().GetTimestamp(), false)
 		require.Nil(t, old0)
 		require.Error(t, err)
-		require.Equal(t, errors.ErrDatatypeNoTarget.ToErrorCode(), err.GetCode())
+		require.Equal(t, errors.DatatypeNoTarget.ToErrorCode(), err.GetCode())
 
 		// delete a JSONElement remotely
 		old1, err := root.DeleteCommonInObject(root.getCreateTime(), "K1", opID.Next().GetTimestamp(), false)

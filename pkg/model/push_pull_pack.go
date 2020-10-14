@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/types"
+	"github.com/knowhunger/ortoo/pkg/utils"
 	"strings"
 )
 
@@ -108,6 +109,10 @@ func (its *PushPullPackOption) HasErrorBit() bool {
 func (its *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
 	var option = (*PushPullPackOption)(&its.Option)
 	return option
+}
+
+func (its *PushPullPack) GetDatatypeTag() string {
+	return utils.MakeSummary(its.Key, its.DUID, "D")
 }
 
 // GetResponsePushPullPack returns the PushPullPack that can be used for response.

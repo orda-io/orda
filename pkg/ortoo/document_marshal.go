@@ -2,8 +2,7 @@ package ortoo
 
 import (
 	"encoding/json"
-	"github.com/TylerBrock/colorjson"
-	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
@@ -139,17 +138,6 @@ func (its *jsonArray) marshal() *marshaledJSONType {
 	return marshal
 }
 
-func printMarshalDoc(doc *marshaledDocument) {
-	f := colorjson.NewFormatter()
-	f.Indent = 2
-	f.DisabledColor = true
-	m, _ := json.Marshal(doc)
-	var obj map[string]interface{}
-	_ = json.Unmarshal(m, &obj)
-	s, _ := f.Marshal(obj)
-	log.Logger.Infof("%v", string(s))
-}
-
 // //////////////////////////////
 // Unmarshal functions
 // //////////////////////////////
@@ -158,10 +146,8 @@ func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
 	var forUnmarshal marshaledDocument
 
 	if err := json.Unmarshal(bytes, &forUnmarshal); err != nil {
-		return log.OrtooError(err)
+		return errors.DatatypeMarshal.New(its.getLogger(), err.Error())
 	}
-
-	// printMarshalDoc(&forUnmarshal)
 
 	assistant := &unmarshalAssistant{
 		tsMap: make(map[string]*model.Timestamp),

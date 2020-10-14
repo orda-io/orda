@@ -2,7 +2,9 @@ package testonly
 
 import (
 	"encoding/json"
+	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
@@ -26,4 +28,14 @@ func Marshal(t *testing.T, j interface{}) string {
 	data, err := json.Marshal(j)
 	require.NoError(t, err)
 	return string(data)
+}
+
+func NewBase(key string, t model.TypeOfDatatype) *datatypes.BaseDatatype {
+	cm := &model.Client{
+		CUID:       types.NewCUID(),
+		Alias:      "",
+		Collection: "",
+		SyncType:   0,
+	}
+	return datatypes.NewBaseDatatype(key, t, cm)
 }

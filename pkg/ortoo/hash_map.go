@@ -5,7 +5,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	operations "github.com/knowhunger/ortoo/pkg/operations"
 	"github.com/knowhunger/ortoo/pkg/types"
@@ -27,8 +26,7 @@ type HashMapInTxn interface {
 	Size() int
 }
 
-func newHashMap(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) HashMap {
-	base := datatypes.NewBaseDatatype(key, model.TypeOfDatatype_HASH_MAP, cuid)
+func newHashMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) HashMap {
 	hashMap := &hashMap{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
@@ -68,7 +66,7 @@ func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError
 	case *operations.RemoveOperation:
 		return its.snapshot.removeLocal(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
 }
 
 func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -76,7 +74,7 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 	case *operations.SnapshotOperation:
 		var newSnap = newHashMapSnapshot(its.BaseDatatype)
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+			return nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
 		}
 		its.snapshot = newSnap
 		return nil, nil
@@ -85,7 +83,7 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 	case *operations.RemoveOperation:
 		return its.snapshot.removeRemote(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
 }
 
 func (its *hashMap) GetSnapshot() iface.Snapshot {
@@ -100,32 +98,32 @@ func (its *hashMap) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSONCompatible()
 }
 
-func (its *hashMap) GetMetaAndSnapshot() ([]byte, iface.Snapshot, errors.OrtooError) {
-	meta, err := its.ManageableDatatype.GetMeta()
-	if err != nil {
-		return nil, nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+func (its *hashMap) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
+	meta, oErr := its.ManageableDatatype.GetMeta()
+	if oErr != nil {
+		return nil, nil, oErr
 	}
-	return meta, its.snapshot, nil
+	snap, err := json.Marshal(its.snapshot)
+	if err != nil {
+		return nil, nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
+	}
+	return meta, snap, nil
 }
 
-func (its *hashMap) SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooError {
+func (its *hashMap) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+		return err
 	}
 
-	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
-		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
-	}
-
-	if err := its.snapshot.UnmarshalJSON([]byte(snapshot)); err != nil {
-
+	if err := json.Unmarshal(snap, its.snapshot); err != nil {
+		return errors.DatatypeMarshal.New(its.Logger, err.Error())
 	}
 	return nil
 }
 
 func (its *hashMap) Put(key string, value interface{}) (interface{}, errors.OrtooError) {
 	if key == "" || value == nil {
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "empty key or nil value is not allowed")
+		return nil, errors.DatatypeIllegalParameters.New(its.Logger, "empty key or nil value is not allowed")
 	}
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
@@ -142,7 +140,7 @@ func (its *hashMap) Get(key string) interface{} {
 
 func (its *hashMap) Remove(key string) (interface{}, errors.OrtooError) {
 	if key == "" {
-		return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, "empty key is not allowed")
+		return nil, errors.DatatypeIllegalParameters.New(its.Logger, "empty key is not allowed")
 	}
 	op := operations.NewRemoveOperation(key)
 	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
@@ -177,7 +175,7 @@ func (its *hashMapSnapshot) UnmarshalJSON(bytes []byte) error {
 	}{}
 	err := json.Unmarshal(bytes, &temp)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.DatatypeMarshal.New(its.base.Logger, err.Error())
 	}
 	its.Map = make(map[string]timedType)
 	for k, v := range temp.Map {
@@ -258,7 +256,7 @@ func (its *hashMapSnapshot) removeLocalWithTimedType(
 			}
 		}
 	}
-	return nil, nil, errors.ErrDatatypeNoOp.New(its.base.Logger, "remove the value for not existing key")
+	return nil, nil, errors.DatatypeNoOp.New(its.base.Logger, "remove the value for not existing key")
 }
 
 func (its *hashMapSnapshot) removeRemoteWithTimedType(
@@ -276,7 +274,7 @@ func (its *hashMapSnapshot) removeRemoteWithTimedType(
 		}
 		return nil, nil, nil
 	}
-	return nil, nil, errors.ErrDatatypeNoTarget.New(its.base.Logger, key)
+	return nil, nil, errors.DatatypeNoTarget.New(its.base.Logger, key)
 }
 
 func (its *hashMapSnapshot) size() int {

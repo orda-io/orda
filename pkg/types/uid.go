@@ -26,12 +26,12 @@ func newUniqueID() UID {
 }
 
 func (its UID) String() string {
-	return ToUID(its)
+	return UIDtoString(its)
 }
 
 // ShortString returns a short string.
 func (its UID) ShortString() string {
-	return ToShortUID(its)
+	return UIDtoShortString(its)
 }
 
 // CompareUID compares two UIDs.
@@ -39,12 +39,16 @@ func CompareUID(a, b UID) int {
 	return bytes.Compare(a, b)
 }
 
-// ToShortUID returns a short UID string.
-func ToShortUID(uid []byte) string {
+// UIDtoShortString returns a short UID string.
+func UIDtoShortString(uid []byte) string {
 	return hex.EncodeToString(uid)[:shortStringLength]
 }
 
-// ToUID returns a string of UID.
-func ToUID(uid []byte) string {
+// UIDtoString returns a string of UID.
+func UIDtoString(uid []byte) string {
 	return hex.EncodeToString(uid)
+}
+
+func ShortenUIDString(uid string) string {
+	return uid[:shortStringLength]
 }

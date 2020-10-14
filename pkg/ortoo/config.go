@@ -14,8 +14,8 @@ type ClientConfig struct {
 func NewLocalClientConfig(collectionName string) *ClientConfig {
 	return &ClientConfig{
 		ServerAddr:       "",
-		CollectionName:   collectionName,
 		NotificationAddr: "",
+		CollectionName:   collectionName,
 		SyncType:         0,
 	}
 }

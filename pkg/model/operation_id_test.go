@@ -6,7 +6,7 @@ import (
 )
 
 func TestClientId(t *testing.T) {
-	t.Run("Can compare OperationID", func(t *testing.T) {
+	t.Run("Can compare OperationIDs", func(t *testing.T) {
 		opID1 := NewOperationID()
 		opID2 := NewOperationID()
 		assert.Assert(t, opID1.Compare(opID2) == 0)

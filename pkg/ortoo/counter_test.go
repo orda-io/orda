@@ -3,8 +3,8 @@ package ortoo
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -12,9 +12,8 @@ import (
 func TestIntCounterTransactions(t *testing.T) {
 	t.Run("Can transaction for Counter", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		cuid1 := types.NewCUID()
 
-		counter1 := newCounter("key1", cuid1, tw, nil)
+		counter1 := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
 
 		require.NoError(t, counter1.DoTransaction("transaction1", func(counter CounterInTxn) error {
 			_, _ = counter.IncreaseBy(2)
@@ -38,8 +37,8 @@ func TestIntCounterTransactions(t *testing.T) {
 
 	t.Run("Can sync Counter operations with Test wire", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		counter1 := newCounter("key1", types.NewNilCUID(), tw, nil)
-		counter2 := newCounter("key2", types.NewNilCUID(), tw, nil)
+		counter1 := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
+		counter2 := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), tw, nil)
 
 		tw.SetDatatypes(counter1.(*counter).ManageableDatatype, counter2.(*counter).ManageableDatatype)
 

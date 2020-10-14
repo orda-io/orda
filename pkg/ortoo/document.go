@@ -5,10 +5,8 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
-	"github.com/knowhunger/ortoo/pkg/types"
 )
 
 // Document is an Ortoo datatype which provides document (JSON-like) interfaces.
@@ -38,8 +36,7 @@ type DocumentInTxn interface {
 	Equal(o Document) bool
 }
 
-func newDocument(key string, cuid types.CUID, wire iface.Wire, handlers *Handlers) Document {
-	base := datatypes.NewBaseDatatype(key, model.TypeOfDatatype_DOCUMENT, cuid)
+func newDocument(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) Document {
 	doc := &document{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
@@ -100,7 +97,7 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 		cast.C.T = uptTargets
 		return oldOnes, nil
 	}
-	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op.(iface.Operation).GetType())
+	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op.(iface.Operation).GetType())
 }
 
 func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -108,7 +105,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 	case *operations.SnapshotOperation:
 		var newSnap = newJSONObject(its.BaseDatatype, nil, model.OldestTimestamp())
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+			return nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
 		}
 		its.snapshot = newSnap
 		return nil, nil
@@ -123,7 +120,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 	case *operations.DocUpdateInArrayOperation:
 		return its.snapshot.UpdateRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T, cast.C.V)
 	}
-	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
 }
 
 // GetFromObject returns the child associated with the given key as a Document.
@@ -302,21 +299,24 @@ func (its *document) GetSnapshot() iface.Snapshot {
 	return its.snapshot
 }
 
-func (its *document) GetMetaAndSnapshot() ([]byte, iface.Snapshot, errors.OrtooError) {
-	meta, err := its.ManageableDatatype.GetMeta()
-	if err != nil {
-		return nil, nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+func (its *document) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
+	meta, oErr := its.ManageableDatatype.GetMeta()
+	if oErr != nil {
+		return nil, nil, oErr
 	}
-	return meta, its.snapshot, nil
+	snap, err := json.Marshal(its.snapshot)
+	if err != nil {
+		return nil, nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
+	}
+	return meta, snap, nil
 }
 
-func (its *document) SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooError {
-	log.Logger.Infof("SetMetaAndSnapshot:%v", snapshot)
+func (its *document) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+		return err
 	}
-	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
-		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+	if err := json.Unmarshal(snap, its.snapshot); err != nil {
+		return errors.DatatypeSnapshot.New(its.Logger, err.Error())
 	}
 	return nil
 }
@@ -336,10 +336,10 @@ func (its *document) toDocument(child jsonType) Document {
 }
 func (its *document) assertLocalOp(opName string, ofJSON TypeOfJSON, workOnGarbage bool) errors.OrtooError {
 	if its.GetJSONType() != ofJSON {
-		return errors.ErrDatatypeInvalidParent.New(its.Logger, opName, " is not allowed to ")
+		return errors.DatatypeInvalidParent.New(its.Logger, opName, " is not allowed to ")
 	}
 	if !workOnGarbage && its.snapshot.isGarbage() {
-		return errors.ErrDatatypeNoOp.New(its.Logger, "already deleted from the root Document")
+		return errors.DatatypeNoOp.New(its.Logger, "already deleted from the root Document")
 	}
 	return nil
 }

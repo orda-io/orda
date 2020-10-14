@@ -1,11 +1,9 @@
 package operations
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
 )
@@ -44,7 +42,7 @@ func (its *baseOperation) GetAsJSON() interface{} {
 	}{
 		Era:     its.ID.Era,
 		Lamport: its.ID.Lamport,
-		CUID:    types.ToUID(its.ID.CUID),
+		CUID:    types.UIDtoString(its.ID.CUID),
 		Seq:     its.ID.Seq,
 	}
 }
@@ -131,12 +129,12 @@ func (its *TransactionOperation) GetAsJSON() interface{} {
 // ////////////////// ErrorOperation ////////////////////
 
 // NewErrorOperation creates an ErrorOperation.
-func NewErrorOperation(err *errors.PushPullError) *ErrorOperation {
+func NewErrorOperation(err errors.OrtooError) *ErrorOperation {
 	return &ErrorOperation{
 		baseOperation: nil,
 		C: errorContent{
-			Code: int32(err.Code),
-			Msg:  err.Msg,
+			Code: int32(err.GetCode()),
+			Msg:  err.Error(),
 		},
 	}
 }
@@ -196,7 +194,7 @@ func (its *ErrorOperation) GetAsJSON() interface{} {
 // GetPushPullError returns PushPullError from ErrorOperation
 func (its *ErrorOperation) GetPushPullError() *errors.PushPullError {
 	return &errors.PushPullError{
-		Code: errors.ErrorCodePushPull(its.C.Code),
+		Code: errors.PushPullErrorCode(its.C.Code),
 		Msg:  its.C.Msg,
 	}
 }
@@ -204,20 +202,16 @@ func (its *ErrorOperation) GetPushPullError() *errors.PushPullError {
 // ////////////////// SnapshotOperation ////////////////////
 
 // NewSnapshotOperation creates a SnapshotOperation
-func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDatatype, snapshot iface.Snapshot) (*SnapshotOperation, error) {
-	j := snapshot // .GetAsJSON()
-	data, err := json.Marshal(j)
-	if err != nil {
-		return nil, log.OrtooError(err)
-	}
+func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDatatype, snapshot string) *SnapshotOperation {
+
 	return &SnapshotOperation{
 		baseOperation: newBaseOperation(nil),
 		C: snapshotContent{
 			Type:     typeOf,
 			State:    state,
-			Snapshot: string(data),
+			Snapshot: snapshot,
 		},
-	}, nil
+	}
 }
 
 type snapshotContent struct {

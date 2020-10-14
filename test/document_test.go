@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
@@ -138,7 +137,7 @@ func (its *IntegrationTestSuite) TestCanMakeRealSnapshotForDocument() {
 	require.Equal(its.T(), doc3a, doc3)
 
 	require.NoError(its.T(), client1.Sync())
-	snap, err := its.mongo.GetRealSnapshot(context.Background(), its.collectionName, its.getTestName())
+	snap, err := its.mongo.GetRealSnapshot(its.ctx, its.collectionName, its.getTestName())
 	require.NoError(its.T(), err)
 	log.Logger.Infof("%v", testonly.Marshal(its.T(), snap))
 }

@@ -1,97 +1,100 @@
 package mongodb
 
 import (
-	"context"
-	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
 // GetCollection gets a collectionDoc with the specified name.
-func (m *MongoCollections) GetCollection(ctx context.Context, name string) (*schema.CollectionDoc, error) {
-	sr := m.collections.FindOne(ctx, schema.FilterByID(name))
+func (its *MongoCollections) GetCollection(ctx context.OrtooContext, name string) (*schema.CollectionDoc, errors.OrtooError) {
+	sr := its.collections.FindOne(ctx, schema.FilterByID(name))
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	var collection schema.CollectionDoc
 	if err := sr.Decode(&collection); err != nil {
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
 	}
 	return &collection, nil
 }
 
 // DeleteCollection deletes collections with the specified name.
-func (m *MongoCollections) DeleteCollection(ctx context.Context, name string) error {
-	result, err := m.collections.DeleteOne(ctx, schema.FilterByID(name))
+func (its *MongoCollections) DeleteCollection(ctx context.OrtooContext, name string) errors.OrtooError {
+	result, err := its.collections.DeleteOne(ctx, schema.FilterByID(name))
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.DeletedCount == 1 {
-		log.Logger.Infof("Collection is successfully removed:%s", name)
+		ctx.L().Infof("Collection is successfully removed:%s", name)
 	}
 	return nil
 }
 
 // InsertCollection inserts a document for the specified collection.
-func (m *MongoCollections) InsertCollection(ctx context.Context, name string) (collection *schema.CollectionDoc, err error) {
+func (its *MongoCollections) InsertCollection(
+	ctx context.OrtooContext,
+	name string,
+) (collection *schema.CollectionDoc, err errors.OrtooError) {
 
-	if err := m.doTransaction(ctx, func() error {
-		num, err := m.GetNextCollectionNum(ctx)
+	if err := its.doTransaction(ctx, func() errors.OrtooError {
+		num, err := its.GetNextCollectionNum(ctx)
 		if err != nil {
-			return log.OrtooErrorf(err, "fail to get next counter")
+			return err
 		}
 		collection = &schema.CollectionDoc{
 			Name:      name,
 			Num:       num,
 			CreatedAt: time.Now(),
 		}
-		_, err = m.collections.InsertOne(ctx, collection)
-		if err != nil {
-			return log.OrtooErrorf(err, "fail to insert collection")
+		_, err2 := its.collections.InsertOne(ctx, collection)
+		if err2 != nil {
+			return errors.ServerDBQuery.New(ctx.L(), err2.Error())
 		}
-		log.Logger.Infof("insert collection: %+v", collection)
+		ctx.L().Infof("insert collection: %+v", collection)
 		return nil
 	}); err != nil {
-		return nil, log.OrtooError(err)
+		return nil, err
 	}
 	return collection, nil
 }
 
 // PurgeAllDocumentsOfCollection purges all data for the specified collection.
-func (m *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.Context, name string) error {
-	if err := m.doTransaction(ctx, func() error {
-		collectionDoc, err := m.GetCollection(ctx, name)
+func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrtooContext, name string) errors.OrtooError {
+	if err := its.doTransaction(ctx, func() errors.OrtooError {
+		collectionDoc, err := its.GetCollection(ctx, name)
 		if err != nil {
-			return log.OrtooError(err)
+			return err
 		}
 		if collectionDoc == nil {
 			return nil
 		}
-		log.Logger.Infof("purge collection '%s' (%d)", name, collectionDoc.Num)
-		if err := m.purgeAllCollectionDatatypes(ctx, collectionDoc.Num); err != nil {
-			return log.OrtooError(err)
+		ctx.L().Infof("purge collection '%s' (%d)", name, collectionDoc.Num)
+		if err := its.purgeAllCollectionDatatypes(ctx, collectionDoc.Num); err != nil {
+			return err
 		}
-		if err := m.purgeAllCollectionClients(ctx, collectionDoc.Num); err != nil {
-			return log.OrtooError(err)
+		if err := its.purgeAllCollectionClients(ctx, collectionDoc.Num); err != nil {
+			return err
 		}
 		filter := schema.GetFilter().AddFilterEQ(schema.CollectionDocFields.Name, name)
 
-		result, err := m.collections.DeleteOne(ctx, filter)
-		if err != nil {
-			return log.OrtooError(err)
+		result, err2 := its.collections.DeleteOne(ctx, filter)
+		if err2 != nil {
+			return errors.ServerDBQuery.New(ctx.L(), err2.Error())
 		}
 		if result.DeletedCount > 0 {
-			log.Logger.Infof("delete collection `%s`", name)
+			ctx.L().Infof("delete collection `%s`", name)
 			return nil
 		}
-		log.Logger.Warnf("delete no collection")
+		ctx.L().Warnf("delete no collection")
 		return nil
 	}); err != nil {
-		return log.OrtooError(err)
+		return err
 	}
 	return nil
 }

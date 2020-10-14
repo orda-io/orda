@@ -1,8 +1,8 @@
 package errors
 
 import (
-	"fmt"
-	"github.com/knowhunger/ortoo/pkg/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type errorCodeRPC uint32
@@ -22,23 +22,19 @@ var formatMap = map[errorCodeRPC]string{
 	RPCErrNoClient:                     "exist no client in the server",
 }
 
-// RPCError defines errors of RPC
-type RPCError struct {
-	code errorCodeRPC
-	msg  string
-}
-
-func (r *RPCError) Error() string {
-	return r.msg
-}
-
-// NewRPCError creates a new RPCError.
-func NewRPCError(code errorCodeRPC, args ...interface{}) *RPCError {
-	format := fmt.Sprintf("[RPCErr: %d] ", code) + formatMap[code]
-	err := &RPCError{
-		code: code,
-		msg:  fmt.Sprintf(format, args...),
+// NewRPCError creates a RPC error
+func NewRPCError(oErr OrtooError) error {
+	var c codes.Code
+	code := oErr.GetCode()
+	switch code {
+	case ServerDBQuery.ec():
+		c = codes.Unavailable // temporally unavailable
+	case ServerDBDecode.ec():
+		c = codes.Internal // something is broken
+	case ServerNoResource.ec():
+		c = codes.NotFound
+	case ServerNoPermission.ec():
+		c = codes.Unauthenticated
 	}
-	_ = log.OrtooErrorWithSkip(err, 3, err.msg)
-	return err
+	return status.Error(c, oErr.Error())
 }

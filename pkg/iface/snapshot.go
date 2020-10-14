@@ -12,8 +12,8 @@ type SnapshotDatatype interface {
 	PublicSnapshotDatatype
 	SetSnapshot(snapshot Snapshot)
 	GetSnapshot() Snapshot
-	GetMetaAndSnapshot() ([]byte, Snapshot, errors.OrtooError)         // @Real datatype
-	SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooError // @Real datatype
+	GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError)       // @Real datatype
+	SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError // @Real datatype
 }
 
 // Snapshot defines the interfaces for snapshot used in a datatype.

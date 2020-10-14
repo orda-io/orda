@@ -1,8 +1,9 @@
 package integration
 
 import (
-	"context"
-	"github.com/knowhunger/ortoo/pkg/log"
+	gocontext "context"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/server"
 	"github.com/stretchr/testify/require"
@@ -21,23 +22,18 @@ type IntegrationTestSuite struct {
 	collectionNum  uint32
 	server         *server.OrtooServer
 	mongo          *mongodb.RepositoryMongo
+	ctx            context.OrtooContext
 }
 
 // SetupTest builds some prerequisite for testing.
 func (its *IntegrationTestSuite) SetupSuite() {
-
-	var err error
-	its.mongo, err = GetMongo(dbName)
+	its.ctx = context.NewWithTag(gocontext.TODO(), context.TEST, its.T().Name())
+	var err errors.OrtooError
+	its.server, err = server.NewOrtooServer(gocontext.TODO(), NewTestOrtooServerConfig(dbName))
 	if err != nil {
-		its.T().Fatal("fail to initialize mongoDB")
-	}
-
-	its.server, err = server.NewOrtooServer(context.TODO(), NewTestOrtooServerConfig(dbName))
-	if err != nil {
-		_ = log.OrtooError(err)
 		its.Fail("fail to setup")
 	}
-
+	its.mongo = its.server.Mongo
 	go func() {
 		require.NoError(its.T(), its.server.Start())
 	}()
@@ -46,10 +42,10 @@ func (its *IntegrationTestSuite) SetupSuite() {
 
 func (its *IntegrationTestSuite) SetupTest() {
 	its.collectionName = strings.Split(its.T().Name(), "/")[1]
-	log.Logger.Infof("Setup OrtooIntegrationTest:%s", its.collectionName)
+	its.ctx.L().Infof("Setup OrtooIntegrationTest:%s", its.collectionName)
 	var err error
-	require.NoError(its.T(), its.mongo.ResetCollections(context.Background(), its.collectionName))
-	its.collectionNum, err = mongodb.MakeCollection(its.server.Mongo, its.collectionName)
+	require.NoError(its.T(), its.mongo.ResetCollections(its.ctx, its.collectionName))
+	its.collectionNum, err = mongodb.MakeCollection(its.ctx, its.server.Mongo, its.collectionName)
 	require.NoError(its.T(), err)
 }
 

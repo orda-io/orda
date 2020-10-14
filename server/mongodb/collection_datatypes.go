@@ -1,121 +1,136 @@
 package mongodb
 
 import (
-	"context"
-	"errors"
-	log "github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // GetDatatype retrieves a datatypeDoc from MongoDB
-func (m *MongoCollections) GetDatatype(ctx context.Context, duid string) (*schema.DatatypeDoc, error) {
+func (its *MongoCollections) GetDatatype(
+	ctx context.OrtooContext,
+	duid string,
+) (*schema.DatatypeDoc, errors.OrtooError) {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, duid)
-	result := m.datatypes.FindOne(ctx, f)
+	result := its.datatypes.FindOne(ctx, f)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	var datatype schema.DatatypeDoc
 	if err := result.Decode(&datatype); err != nil {
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
 	}
 	return &datatype, nil
 }
 
 // GetDatatypeByKey gets a datatype with the specified key.
-func (m *MongoCollections) GetDatatypeByKey(ctx context.Context, collectionNum uint32, key string) (*schema.DatatypeDoc, error) {
+func (its *MongoCollections) GetDatatypeByKey(
+	ctx context.OrtooContext,
+	collectionNum uint32,
+	key string,
+) (*schema.DatatypeDoc, errors.OrtooError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.DatatypeDocFields.Key, key)
-	result := m.datatypes.FindOne(ctx, f)
+	result := its.datatypes.FindOne(ctx, f)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	var datatype schema.DatatypeDoc
 	if err := result.Decode(&datatype); err != nil {
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
 	}
 	return &datatype, nil
 }
 
 // UpdateDatatype updates the datatypeDoc.
-func (m *MongoCollections) UpdateDatatype(ctx context.Context, datatype *schema.DatatypeDoc) error {
+func (its *MongoCollections) UpdateDatatype(
+	ctx context.OrtooContext,
+	datatype *schema.DatatypeDoc,
+) errors.OrtooError {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, datatype.DUID)
-	result, err := m.datatypes.UpdateOne(ctx, f, datatype.ToUpdateBSON(), schema.UpsertOption)
+	result, err := its.datatypes.UpdateOne(ctx, f, datatype.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 
 	if result.ModifiedCount == 1 || result.UpsertedCount == 1 {
 		return nil
 	}
-	return log.OrtooError(errors.New("fail to update datatype"))
+	return errors.ServerDBQuery.New(ctx.L(), "fail to update datatype")
 }
 
-func (m *MongoCollections) purgeAllCollectionDatatypes(ctx context.Context, collectionNum uint32) error {
+func (its *MongoCollections) purgeAllCollectionDatatypes(
+	ctx context.OrtooContext,
+	collectionNum uint32,
+) errors.OrtooError {
 	opFilter := schema.GetFilter().AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum)
-	r1, err := m.operations.DeleteMany(ctx, opFilter)
+	r1, err := its.operations.DeleteMany(ctx, opFilter)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if r1.DeletedCount > 0 {
-		log.Logger.Infof("delete %d operations in collection %d", r1.DeletedCount, collectionNum)
+		ctx.L().Infof("delete %d operations in collection %d", r1.DeletedCount, collectionNum)
 	}
 
 	snapFilter := schema.GetFilter().AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum)
-	r2, err := m.snapshots.DeleteMany(ctx, snapFilter)
+	r2, err := its.snapshots.DeleteMany(ctx, snapFilter)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if r2.DeletedCount > 0 {
-		log.Logger.Infof("delete %d snapshots in collection %d", r2.DeletedCount, collectionNum)
+		ctx.L().Infof("delete %d snapshots in collection %d", r2.DeletedCount, collectionNum)
 	}
 
 	datatypeFilter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum)
-	r3, err := m.datatypes.DeleteMany(ctx, datatypeFilter)
+	r3, err := its.datatypes.DeleteMany(ctx, datatypeFilter)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if r3.DeletedCount > 0 {
-		log.Logger.Infof("delete %d datatypes in collection %d", r3.DeletedCount, collectionNum)
+		ctx.L().Infof("delete %d datatypes in collection %d", r3.DeletedCount, collectionNum)
 	}
 	return nil
 }
 
 // PurgeDatatype purges a datatype from MongoDB.
-func (m *MongoCollections) PurgeDatatype(ctx context.Context, collectionNum uint32, key string) error {
-	doc, err := m.GetDatatypeByKey(ctx, collectionNum, key)
+func (its *MongoCollections) PurgeDatatype(
+	ctx context.OrtooContext,
+	collectionNum uint32,
+	key string,
+) errors.OrtooError {
+	doc, err := its.GetDatatypeByKey(ctx, collectionNum, key)
 	if err != nil {
-		return log.OrtooError(err)
+		return err
 	}
 	if doc == nil {
-		log.Logger.Warnf("find no datatype to purge")
+		ctx.L().Warnf("find no datatype to purge")
 		return nil
 	}
-	if err := m.doTransaction(ctx, func() error {
-
-		if err := m.PurgeOperations(ctx, collectionNum, doc.DUID); err != nil {
-			return log.OrtooError(err)
+	if err := its.doTransaction(ctx, func() errors.OrtooError {
+		if err := its.PurgeOperations(ctx, collectionNum, doc.DUID); err != nil {
+			return err
 		}
 		filter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, doc.DUID)
-		result, err := m.datatypes.DeleteOne(ctx, filter)
+		result, err := its.datatypes.DeleteOne(ctx, filter)
 		if err != nil {
-			return log.OrtooError(err)
+			return errors.ServerDBQuery.New(ctx.L(), err.Error())
 		}
 		if result.DeletedCount == 1 {
-			log.Logger.Infof("purged datatype `%s(%d)`", key, collectionNum)
+			ctx.L().Infof("purged datatype `%s(%d)`", key, collectionNum)
 			return nil
 		}
-		log.Logger.Warnf("deleted no datatypeDoc")
+		ctx.L().Warnf("deleted no datatypeDoc")
 		return nil
 	}); err != nil {
-		return log.OrtooError(err)
+		return err
 	}
 
 	return nil

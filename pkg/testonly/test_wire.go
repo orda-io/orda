@@ -4,7 +4,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
@@ -60,7 +59,7 @@ func (its *TestWire) Sync() {
 		its.sseqMap[wired.GetCUID()] = len(pushPullPack.Operations)
 		for _, w := range its.datatypeList {
 			if wired != w.GetWired() {
-				log.Logger.Info(wired.GetCUID(), " => ", w.GetCUID())
+				// log.Logger.Info(wired.GetCUID(), " => ", w.GetCUID())
 				w.ReceiveRemoteModelOperations(operations)
 			}
 		}

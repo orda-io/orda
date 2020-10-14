@@ -1,6 +1,7 @@
 package iface
 
 import (
+	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
 )
@@ -19,4 +20,5 @@ type BaseDatatype interface {
 	GetDUID() types.DUID                  // @baseDatatype
 	GetCUID() string                      // @baseDatatype
 	SetState(state model.StateOfDatatype) // @baseDatatype
+	SetLogger(l *log.OrtooLog)            // @baseDatatype
 }

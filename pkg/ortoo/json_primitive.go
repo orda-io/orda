@@ -132,7 +132,7 @@ func (its *jsonCommon) equal(o *jsonCommon) bool {
 	for k, v1 := range its.nodeMap {
 		v2 := o.nodeMap[k]
 		if !v1.equal(v2) {
-			log.Logger.Errorf("\n%v\n%v", v1, v2)
+			its.base.Logger.Errorf("\n%v\n%v", v1, v2)
 			return false
 		}
 	}
@@ -339,10 +339,7 @@ func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts
 		appendValues = append(appendValues, jt)
 	}
 	if appendValues != nil {
-		_, _, err := ja.insertLocalWithTimedTypes(0, appendValues...)
-		if err != nil { // this cannot happen when inserted at position 0.
-			_ = log.OrtooError(err)
-		}
+		_, _ = ja.insertLocalWithTimedTypes(0, appendValues...)
 		for _, v := range appendValues {
 			its.addToNodeMap(v.(jsonType))
 		}
@@ -412,7 +409,7 @@ func (its *jsonPrimitive) PutCommonInObject(
 	if parentObj, ok := its.findJSONObject(parent); ok {
 		return parentObj.putCommon(key, value, ts), nil
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) DeleteCommonInObject(
@@ -424,7 +421,7 @@ func (its *jsonPrimitive) DeleteCommonInObject(
 	if parentObj, ok := its.findJSONObject(parent); ok {
 		return parentObj.deleteCommonInObject(key, ts, isLocal)
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 // InsertLocalInArray inserts values locally and returns the timestamp of target
@@ -442,7 +439,7 @@ func (its *jsonPrimitive) InsertLocalInArray(
 		target, _, err := parentArray.insertCommon(pos, nil, ts, values...)
 		return target, parentArray, err
 	}
-	return nil, nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) InsertRemoteInArray(
@@ -455,7 +452,7 @@ func (its *jsonPrimitive) InsertRemoteInArray(
 		_, _, err := parentArray.insertCommon(-1, target, ts, values...)
 		return parentArray, err
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) UpdateLocalInArray(
@@ -467,7 +464,7 @@ func (its *jsonPrimitive) UpdateLocalInArray(
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		return parentArray.updateLocal(pos, ts, values...)
 	}
-	return nil, nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) UpdateRemoteInArray(
@@ -479,7 +476,7 @@ func (its *jsonPrimitive) UpdateRemoteInArray(
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		return parentArray.updateRemote(ts, targets, values)
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) DeleteLocalInArray(
@@ -491,7 +488,7 @@ func (its *jsonPrimitive) DeleteLocalInArray(
 		t, j := parentArray.deleteLocal(pos, numOfNodes, ts)
 		return t, j, nil
 	}
-	return nil, nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) DeleteRemoteInArray(
@@ -502,7 +499,7 @@ func (its *jsonPrimitive) DeleteRemoteInArray(
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		return parentArray.deleteRemote(targets, ts)
 	}
-	return nil, errors.ErrDatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////

@@ -3,8 +3,8 @@ package ortoo
 import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -25,7 +25,7 @@ var (
 func TestDocument(t *testing.T) {
 	t.Run("Can test operations of JSONObject Document", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		root := newDocument(t.Name(), types.NewCUID(), tw, nil)
+		root := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
 		old1, oErr := root.PutToObject("K1", "V1")
 		require.NoError(t, oErr)
@@ -84,13 +84,13 @@ func TestDocument(t *testing.T) {
 		// put on deleted Document
 		oldE4, oErr := oldK3.PutToObject("E4", "V4")
 		require.Error(t, oErr)
-		require.Equal(t, errors.ErrDatatypeNoOp.ToErrorCode(), oErr.GetCode())
+		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), oErr.GetCode())
 		require.Nil(t, oldE4)
 
 		// delete on deleted Document
 		oldE4a, oErr := k2.DeleteInObject("E4")
 		require.Error(t, oErr)
-		require.Equal(t, errors.ErrDatatypeNoOp.ToErrorCode(), oErr.GetCode())
+		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), oErr.GetCode())
 		require.Nil(t, oldE4a)
 
 		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))
@@ -100,7 +100,7 @@ func TestDocument(t *testing.T) {
 		opID1 := root.(*document).GetBase().GetOpID().Clone()
 		not, oErr := root.DeleteInObject("NOT_EXISTING")
 		require.Error(t, oErr)
-		require.Equal(t, errors.ErrDatatypeNoOp.ToErrorCode(), oErr.GetCode())
+		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), oErr.GetCode())
 		require.Nil(t, not)
 		opID2 := root.(*document).GetBase().GetOpID().Clone()
 		require.Equal(t, 0, opID1.Compare(opID2))
@@ -108,7 +108,7 @@ func TestDocument(t *testing.T) {
 
 	t.Run("Can test operations of JSONArray Document", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		root := newDocument(t.Name(), types.NewCUID(), tw, nil)
+		root := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
 		old1, oErr := root.PutToObject("K1", arr)
 		require.NoError(t, oErr)
@@ -164,7 +164,7 @@ func TestDocument(t *testing.T) {
 
 		sameArr, oErr := insArr.InsertToArray(0, "X")
 		require.Error(t, oErr)
-		require.Equal(t, oErr.GetCode(), errors.ErrDatatypeNoOp.ToErrorCode())
+		require.Equal(t, oErr.GetCode(), errors.DatatypeNoOp.ToErrorCode())
 		require.True(t, insArr.Equal(sameArr))
 
 		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))

@@ -5,14 +5,13 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
 // NotificationManager manages notifications from Ortoo Server
 type NotificationManager struct {
 	client   mqtt.Client
-	ctx      *context.OrtooContext
+	ctx      context.OrtooContext
 	channel  chan *notificationMsg
 	receiver notificationReceiver
 }
@@ -30,7 +29,7 @@ const (
 )
 
 // NewNotificationManager creates an instance of NotificationManager
-func NewNotificationManager(ctx *context.OrtooContext, pubSubAddr string) *NotificationManager {
+func NewNotificationManager(ctx context.OrtooContext, pubSubAddr string) *NotificationManager {
 	pubSubOpts := mqtt.NewClientOptions().AddBroker(pubSubAddr)
 	client := mqtt.NewClient(pubSubOpts)
 	channel := make(chan *notificationMsg)
@@ -51,7 +50,7 @@ type notificationMsg struct {
 func (its *NotificationManager) SubscribeNotification(topic string) errors.OrtooError {
 	token := its.client.Subscribe(topic, 0, its.notificationSubscribeFunc)
 	if token.Wait() && token.Error() != nil {
-		return errors.ErrClientConnectNotification.New(token.Error())
+		return errors.ClientConnect.New(its.ctx.L(), "notification ", token.Error())
 	}
 	return nil
 }
@@ -77,9 +76,9 @@ func (its *NotificationManager) notificationSubscribeFunc(client mqtt.Client, ms
 // Connect make a connection with Ortoo notification server.
 func (its *NotificationManager) Connect() errors.OrtooError {
 	if token := its.client.Connect(); token.Wait() && token.Error() != nil {
-		return errors.ErrClientConnect.New("notification server")
+		return errors.ClientConnect.New(its.ctx.L(), "notification server")
 	}
-	its.ctx.Logger.Infof("connect to notification server")
+	its.ctx.L().Infof("connect to notification server")
 	go its.notificationLoop()
 	return nil
 }
@@ -103,10 +102,10 @@ func (its *NotificationManager) notificationLoop() {
 		switch note.typeOf {
 		case notificationError:
 			err := note.msg.(error)
-			_ = log.OrtooError(err)
+			its.ctx.L().Errorf("receive a notification error: %s", err.Error())
 			break
 		case notificationQuit:
-			its.ctx.Logger.Infof("Quit notification loop")
+			its.ctx.L().Infof("Quit notification loop")
 			return
 		case notificationPushPull:
 			notification := note.msg.(model.NotificationPushPull)

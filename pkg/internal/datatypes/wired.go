@@ -115,19 +115,19 @@ func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error
 		errOp, ok := operations.ModelToOperation(modelOp).(*operations.ErrorOperation)
 		if ok {
 			switch errOp.GetPushPullError().Code {
-			case errors.PushPullErrQueryToDB:
-			case errors.PushPullErrIllegalFormat:
-			case errors.PushPullErrDuplicateDatatypeKey:
-				return errors.ErrDatatypeCreate.New(its.Logger, fmt.Sprintf("duplicated key:'%s'", its.Key))
-			case errors.PushPullErrPullOperations:
-			case errors.PushPullErrPushOperations:
-			case errors.PushPullErrMissingOperations:
+			case errors.PushPullAbortedForServer:
+				// TODO: implement me.
+			case errors.PushPullAbortedForClient:
+				// TODO: implement me.
+			case errors.PushPullDuplicateKey:
+				return errors.DatatypeCreate.New(its.Logger, fmt.Sprintf("duplicated key:'%s'", its.Key))
+			case errors.PushPullMissingOps:
+				// TODO: implement me.
 			}
 		} else {
 			panic("Not implemented yet")
 		}
 	} else if ppp.GetPushPullPackOption().HasSubscribeBit() {
-
 		// modelOp := ppp.GetOperations()[0]
 		// snapOp, ok := operations.ModelToOperation(modelOp).(*operations.SnapshotOperation)
 		// if ok {

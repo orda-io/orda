@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -17,8 +15,7 @@ func TestHashMap(t *testing.T) {
 
 	t.Run("Can run transaction", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		cuid1 := types.NewCUID()
-		hashMap1 := newHashMap("key1", cuid1, tw, nil)
+		hashMap1 := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), tw, nil)
 		key1 := "k1"
 		key2 := "k2"
 
@@ -56,27 +53,28 @@ func TestHashMap(t *testing.T) {
 	})
 
 	t.Run("Can set and get snapshot", func(t *testing.T) {
-		hashMap1 := newHashMap("key1", types.NewCUID(), nil, nil)
-		hashMap1.Put("k1", 1)
-		hashMap1.Put("k2", "2")
-		hashMap1.Put("k3", 3.141592)
-		hashMap1.Remove("k2")
+		hashMap1 := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), nil, nil)
+		_, _ = hashMap1.Put("k1", 1)
+		_, _ = hashMap1.Put("k2", "2")
+		_, _ = hashMap1.Put("k3", 3.141592)
+		_, _ = hashMap1.Remove("k2")
 
-		clone := newHashMap("key2", types.NewCUID(), nil, nil)
+		clone := newHashMap(testonly.NewBase("key2", model.TypeOfDatatype_HASH_MAP), nil, nil)
 		meta1, snap1, err := hashMap1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
-		snapA, err2 := json.Marshal(snap1)
-		require.NoError(t, err2)
-		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, string(snapA))
+		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)
 		require.NoError(t, err)
-		_, snap2, err := clone.(iface.Datatype).GetMetaAndSnapshot()
+		cloneDT := clone.(iface.Datatype)
+		_, snap2, err := cloneDT.GetMetaAndSnapshot()
 		require.NoError(t, err)
-		snapB, err2 := json.Marshal(snap2)
-		require.NoError(t, err)
-		require.Equal(t, snapA, snapB)
 
-		log.Logger.Infof("%v", string(snapA))
-		log.Logger.Infof("%v", string(snapB))
+		log.Logger.Infof("%v", string(snap1))
+		log.Logger.Infof("%v", string(snap2))
+		require.Equal(t, snap1, snap2)
+
+		snapshot := cloneDT.GetSnapshot().(*hashMapSnapshot)
+		tt := snapshot.getFromMap("k2")
+		require.True(t, tt.isTomb())
 	})
 
 	t.Run("Can do operations with hashMapSnapshot", func(t *testing.T) {
@@ -84,7 +82,7 @@ func TestHashMap(t *testing.T) {
 		opID1 := model.NewOperationID()
 		opID2 := model.NewOperationID().Next()
 
-		base := datatypes.NewBaseDatatype("test", model.TypeOfDatatype_HASH_MAP, types.NewCUID())
+		base := testonly.NewBase("test", model.TypeOfDatatype_HASH_MAP)
 		snap := newHashMapSnapshot(base)
 		old1, err := snap.putCommon("key1", "v1", opID1.Next().GetTimestamp())
 		require.NoError(t, err)

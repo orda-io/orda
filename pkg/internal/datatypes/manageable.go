@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
 )
@@ -41,7 +40,7 @@ func (its *ManageableDatatype) GetMeta() ([]byte, errors.OrtooError) {
 	}
 	metab, err := json.Marshal(&meta)
 	if err != nil {
-		return nil, errors.ErrDatatypeMarshal.New(its.Logger, meta)
+		return nil, errors.DatatypeMarshal.New(its.Logger, meta)
 	}
 	return metab, nil
 }
@@ -50,7 +49,7 @@ func (its *ManageableDatatype) GetMeta() ([]byte, errors.OrtooError) {
 func (its *ManageableDatatype) SetMeta(meta []byte) errors.OrtooError {
 	m := model.DatatypeMeta{}
 	if err := json.Unmarshal(meta, &m); err != nil {
-		return errors.ErrDatatypeUnmarshal.New(its.Logger, string(meta))
+		return errors.DatatypeMarshal.New(its.Logger, string(meta))
 	}
 	its.Key = m.Key
 	its.id = m.DUID
@@ -68,12 +67,12 @@ func (its *ManageableDatatype) DoTransaction(
 	txnCtx := its.BeginTransaction(tag, its.TransactionCtx, true)
 	defer func() {
 		if err := its.EndTransaction(txnCtx, true, true); err != nil {
-			_ = log.OrtooError(err)
+			// do nothing
 		}
 	}()
 	if err := userFunc(txnCtx); err != nil {
 		its.SetTransactionFail()
-		return errors.ErrDatatypeTransaction.New(its.Logger, err.Error())
+		return errors.DatatypeTransaction.New(its.Logger, err.Error())
 	}
 	return nil
 }
@@ -84,13 +83,14 @@ func (its *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) er
 		its.state = state
 		return nil
 	}
-	subscribeOp, err := operations.NewSnapshotOperation(its.TypeOf, state, its.datatype.GetSnapshot())
+	snap, err := json.Marshal(its.datatype.GetSnapshot())
 	if err != nil {
-		return errors.ErrDatatypeSubscribe.New(its.Logger, err.Error())
+		return errors.DatatypeSubscribe.New(its.Logger, err.Error())
 	}
+	subscribeOp := operations.NewSnapshotOperation(its.TypeOf, state, string(snap))
 	_, err = its.ExecuteOperationWithTransaction(its.TransactionCtx, subscribeOp, true)
 	if err != nil {
-		return errors.ErrDatatypeSubscribe.New(its.Logger, err.Error())
+		return errors.DatatypeSubscribe.New(its.Logger, err.Error())
 	}
 	return nil
 }
@@ -104,15 +104,15 @@ func (its ManageableDatatype) ExecuteRemoteTransaction(
 	if len(transaction) > 1 {
 		trxOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
 		if !ok {
-			return nil, errors.ErrDatatypeTransaction.New(its.Logger, "no transaction operation")
+			return nil, errors.DatatypeTransaction.New(its.Logger, "no transaction operation")
 		}
 		if int(trxOp.GetNumOfOps()) != len(transaction) {
-			return nil, errors.ErrDatatypeTransaction.New(its.Logger, "not matched number of operations")
+			return nil, errors.DatatypeTransaction.New(its.Logger, "not matched number of operations")
 		}
 		trxCtx = its.BeginTransaction(trxOp.C.Tag, its.TransactionCtx, false)
 		defer func() {
 			if err := its.EndTransaction(trxCtx, false, false); err != nil {
-				_ = log.OrtooError(err)
+				// _ = log.OrtooError(err)
 			}
 		}()
 		transaction = transaction[1:]
@@ -125,7 +125,7 @@ func (its ManageableDatatype) ExecuteRemoteTransaction(
 		}
 		_, err := its.ExecuteOperationWithTransaction(trxCtx, op, false)
 		if err != nil {
-			return nil, errors.ErrDatatypeTransaction.New(its.Logger, err.Error())
+			return nil, errors.DatatypeTransaction.New(its.Logger, err.Error())
 		}
 	}
 	return opList, nil

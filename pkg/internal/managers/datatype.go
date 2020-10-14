@@ -5,7 +5,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
 	"strings"
@@ -13,7 +12,7 @@ import (
 
 // DatatypeManager manages Ortoo datatypes regarding operations
 type DatatypeManager struct {
-	ctx                 *context.OrtooContext
+	ctx                 context.OrtooContext
 	cuid                string
 	collectionName      string
 	messageManager      *MessageManager
@@ -29,14 +28,14 @@ func (its *DatatypeManager) DeliverTransaction(wired iface.WiredDatatype) {
 // ReceiveNotification enables datatype to sync when it receive notification
 func (its *DatatypeManager) ReceiveNotification(topic string, notification model.NotificationPushPull) {
 	if its.cuid == notification.CUID {
-		its.ctx.Logger.Infof("drain own notification")
+		its.ctx.L().Infof("drain own notification")
 		return
 	}
 	splitTopic := strings.Split(topic, "/")
 	datatypeKey := splitTopic[1]
 
 	if err := its.SyncIfNeeded(datatypeKey, notification.DUID, notification.Sseq); err != nil {
-		_ = log.OrtooError(err)
+		// _ = log.OrtooError(err)
 	}
 }
 
@@ -47,9 +46,9 @@ func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model
 		topic := fmt.Sprintf("%s/%s", its.collectionName, dt.GetKey())
 		if its.notificationManager != nil {
 			if err := its.notificationManager.SubscribeNotification(topic); err != nil {
-				return errors.ErrDatatypeSubscribe.New(nil, err.Error())
+				return errors.DatatypeSubscribe.New(nil, err.Error())
 			}
-			its.ctx.Logger.Infof("subscribe datatype topic: %s", topic)
+			its.ctx.L().Infof("subscribe datatype topic: %s", topic)
 		}
 	}
 	return nil
@@ -57,7 +56,7 @@ func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model
 
 // NewDatatypeManager creates a new instance of DatatypeManager
 func NewDatatypeManager(
-	ctx *context.OrtooContext,
+	ctx context.OrtooContext,
 	mm *MessageManager,
 	nm *NotificationManager,
 	collectionName string,
@@ -117,13 +116,13 @@ func (its *DatatypeManager) Sync(key string) errors.OrtooError {
 func (its *DatatypeManager) SyncIfNeeded(key, duid string, sseq uint64) errors.OrtooError {
 	data, ok := its.dataMap[key]
 	if ok {
-		its.ctx.Logger.Infof("receive a notification for datatype %s(%s) sseq:%d", key, duid[0:8], sseq)
+		its.ctx.L().Infof("receive a notification for datatype %s(%s) sseq:%d", key, duid[0:8], sseq)
 		if data.GetDUID().String() == duid && data.NeedSync(sseq) {
-			its.ctx.Logger.Infof("need to sync after notification: %s (sseq:%d)", key, sseq)
+			its.ctx.L().Infof("need to sync after notification: %s (sseq:%d)", key, sseq)
 			return its.Sync(key)
 		}
 	} else {
-		its.ctx.Logger.Warnf("receive a notification for not subscribed datatype %s(%s) sseq:%d", key, duid, sseq)
+		its.ctx.L().Warnf("receive a notification for not subscribed datatype %s(%s) sseq:%d", key, duid, sseq)
 	}
 	return nil
 }

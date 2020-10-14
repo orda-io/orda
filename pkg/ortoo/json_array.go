@@ -56,7 +56,8 @@ func (its *jsonArray) insertCommon(
 		its.addToNodeMap(ins)
 	}
 	if target == nil {
-		return its.listSnapshot.insertLocalWithTimedTypes(pos, inserted...)
+		t, ins := its.listSnapshot.insertLocalWithTimedTypes(pos, inserted...)
+		return t, ins, nil
 	}
 	return nil, nil, its.listSnapshot.insertRemoteWithTimedTypes(target, ts, inserted...)
 }
@@ -152,7 +153,7 @@ func (its *jsonArray) updateRemote(
 			its.funeral(deleted, updated.getCreateTime())
 			delTypes = append(delTypes, deleted)
 		} else {
-			_ = errs.Append(errors.ErrDatatypeNoTarget.New(its.base.Logger, t.ToString()))
+			_ = errs.Append(errors.DatatypeNoTarget.New(its.base.Logger, t.ToString()))
 		}
 	}
 	return delTypes, errs.Return()

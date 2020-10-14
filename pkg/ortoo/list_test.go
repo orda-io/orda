@@ -3,27 +3,23 @@ package ortoo
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func initList(t *testing.T, list *listSnapshot, opID *model.OperationID) {
 	ts := opID.Next().GetTimestamp()
-	target, _, err := list.insertLocal(0, ts.Clone(), "x", "y")
-	require.NoError(t, err)
+	target, _ := list.insertLocal(0, ts.Clone(), "x", "y")
 	require.Equal(t, list.head.getOrderTime(), target)
-	o1 := list.findOrderedType(0)
 
+	o1 := list.findOrderedType(0)
 	o2 := list.findOrderedType(1)
-	require.NoError(t, err)
 	require.Equal(t, ts.GetAndNextDelimiter(), o1.getOrderTime())
 	require.Equal(t, ts.GetAndNextDelimiter(), o2.getOrderTime())
-	err = list.insertRemote(o2.getOrderTime(), ts.GetAndNextDelimiter(), "a", "b")
+	err := list.insertRemote(o2.getOrderTime(), ts.GetAndNextDelimiter(), "a", "b")
 	require.NoError(t, err)
 	log.Logger.Infof("%v", testonly.Marshal(t, list.GetAsJSONCompatible()))
 }
@@ -74,7 +70,7 @@ func TestList(t *testing.T) {
 
 	t.Run("Can insert remotely in list", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_LIST, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_LIST)
 		list := newListSnapshot(base)
 
 		oldTS1 := opID.Next().GetTimestamp()
@@ -109,7 +105,7 @@ func TestList(t *testing.T) {
 
 	t.Run("Can delete something in list", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_LIST, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_LIST)
 		list := newListSnapshot(base)
 
 		// ["x","y","a","b"]
@@ -148,7 +144,7 @@ func TestList(t *testing.T) {
 
 	t.Run("Can update something in list", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_LIST, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_LIST)
 		list := newListSnapshot(base)
 
 		// ["x","y","a","b"]
@@ -200,8 +196,8 @@ func TestList(t *testing.T) {
 
 	t.Run("Can perform list operations", func(t *testing.T) {
 		tw := testonly.NewTestWire(false)
-		list1 := newList("key1", types.NewNilCUID(), tw, nil)
-		list2 := newList("key2", types.NewCUID(), tw, nil) // list2 always wins
+		list1 := newList(testonly.NewBase("key1", model.TypeOfDatatype_LIST), tw, nil)
+		list2 := newList(testonly.NewBase("key2", model.TypeOfDatatype_LIST), tw, nil) // list2 always wins
 		tw.SetDatatypes(list1.(*list).ManageableDatatype, list2.(*list).ManageableDatatype)
 
 		// list1: x -> y
@@ -298,8 +294,7 @@ func TestList(t *testing.T) {
 
 	t.Run("Can run transactions", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		cuid1 := types.NewCUID()
-		list1 := newList("key1", cuid1, tw, nil)
+		list1 := newList(testonly.NewBase("key1", model.TypeOfDatatype_LIST), tw, nil)
 
 		require.NoError(t, list1.DoTransaction("succeeded transaction", func(listTxn ListInTxn) error {
 			_, _ = listTxn.InsertMany(0, "a", "b")

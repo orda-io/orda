@@ -1,8 +1,8 @@
 package integration
 
 import (
-	"context"
-	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/ortoo"
 	"github.com/knowhunger/ortoo/server/mongodb"
@@ -29,14 +29,14 @@ func GetFileName() string {
 }
 
 // GetMongo returns an instance of RepositoryMongo for testing.
-func GetMongo(dbName string) (*mongodb.RepositoryMongo, error) {
+func GetMongo(ctx context.OrtooContext, dbName string) (*mongodb.RepositoryMongo, errors.OrtooError) {
 	if m, ok := mongoDB[dbName]; ok {
 		return m, nil
 	}
 	conf := mongodb.NewTestMongoDBConfig(dbName)
-	mongo, err := mongodb.New(context.Background(), conf)
+	mongo, err := mongodb.New(ctx, conf)
 	if err != nil {
-		return nil, log.OrtooError(err)
+		return nil, err
 	}
 	mongoDB[dbName] = mongo
 	return mongo, nil

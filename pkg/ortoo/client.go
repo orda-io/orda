@@ -1,10 +1,12 @@
 package ortoo
 
 import (
+	gocontext "context"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
+	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/internal/managers"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
@@ -46,21 +48,21 @@ type clientImpl struct {
 	state           clientState
 	model           *model.Client
 	conf            *ClientConfig
-	ctx             *context.OrtooContext
+	ctx             context.OrtooContext
 	messageManager  *managers.MessageManager
 	datatypeManager *managers.DatatypeManager
 }
 
 // NewClient creates a new Ortoo client
 func NewClient(conf *ClientConfig, alias string) Client {
-	ctx := context.NewOrtooContext(alias)
-	clientModel := &model.Client{
+
+	cm := &model.Client{
 		CUID:       types.NewCUID(),
 		Alias:      alias,
 		Collection: conf.CollectionName,
 		SyncType:   conf.SyncType,
 	}
-
+	ctx := context.NewWithTag(gocontext.TODO(), context.CLIENT, conf.CollectionName, cm.GetSummary())
 	var notificationManager *managers.NotificationManager
 	switch conf.SyncType {
 	case model.SyncType_LOCAL_ONLY, model.SyncType_MANUALLY:
@@ -71,74 +73,73 @@ func NewClient(conf *ClientConfig, alias string) Client {
 	var messageManager *managers.MessageManager = nil
 	var datatypeManager *managers.DatatypeManager = nil
 	if conf.SyncType != model.SyncType_LOCAL_ONLY {
-		messageManager = managers.NewMessageManager(ctx, clientModel, conf.ServerAddr, notificationManager)
-		datatypeManager = managers.NewDatatypeManager(ctx, messageManager, notificationManager, clientModel.Collection, clientModel.CUID)
+		messageManager = managers.NewMessageManager(ctx, cm, conf.ServerAddr, notificationManager)
+		datatypeManager = managers.NewDatatypeManager(ctx, messageManager, notificationManager, cm.Collection, cm.CUID)
 	}
 	return &clientImpl{
 		conf:            conf,
 		ctx:             ctx,
-		model:           clientModel,
+		model:           cm,
 		state:           notConnected,
 		messageManager:  messageManager,
 		datatypeManager: datatypeManager,
 	}
 }
 
-func (c *clientImpl) IsConnected() bool {
-	return c.state == connected
+func (its *clientImpl) IsConnected() bool {
+	return its.state == connected
 }
 
-func (c *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype {
+func (its *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, handlers *Handlers) Datatype {
 	switch typeOf {
 	case model.TypeOfDatatype_COUNTER:
-		return c.CreateCounter(key, handlers).(Datatype)
+		return its.CreateCounter(key, handlers).(Datatype)
 	case model.TypeOfDatatype_HASH_MAP:
-		return c.CreateHashMap(key, handlers).(Datatype)
+		return its.CreateHashMap(key, handlers).(Datatype)
 	case model.TypeOfDatatype_LIST:
-		return c.CreateList(key, handlers).(Datatype)
+		return its.CreateList(key, handlers).(Datatype)
 	case model.TypeOfDatatype_DOCUMENT:
-		return c.CreateDocument(key, handlers).(Datatype)
+		return its.CreateDocument(key, handlers).(Datatype)
 	}
 	return nil
 }
 
-func (c *clientImpl) Connect() (err error) {
+func (its *clientImpl) Connect() (err error) {
 	defer func() {
 		if err == nil {
-			c.state = connected
+			its.state = connected
 		}
 	}()
-	if err = c.messageManager.Connect(); err != nil {
-		return errors.ErrClientConnect.New(err.Error())
+	if err = its.messageManager.Connect(); err != nil {
+		return errors.ClientConnect.New(its.ctx.L(), err.Error())
 	}
 
-	err = c.messageManager.ExchangeClientRequestResponse()
+	err = its.messageManager.ExchangeClientRequestResponse()
 	return
 }
 
-func (c *clientImpl) Close() error {
-	c.state = notConnected
-	c.ctx.Logger.Infof("close client: %s", c.model.ToString())
-
-	return c.messageManager.Close()
+func (its *clientImpl) Close() error {
+	its.state = notConnected
+	its.ctx.L().Infof("close client: %s", its.model.ToString())
+	return its.messageManager.Close()
 }
 
 // methods for Document
 
-func (c *clientImpl) CreateDocument(key string, handlers *Handlers) Document {
-	return c.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
+func (its *clientImpl) CreateDocument(key string, handlers *Handlers) Document {
+	return its.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (c *clientImpl) SubscribeDocument(key string, handlers *Handlers) Document {
-	return c.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
+func (its *clientImpl) SubscribeDocument(key string, handlers *Handlers) Document {
+	return its.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (c *clientImpl) SubscribeOrCreateDocument(key string, handlers *Handlers) Document {
-	return c.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
+func (its *clientImpl) SubscribeOrCreateDocument(key string, handlers *Handlers) Document {
+	return its.subscribeOrCreateDocument(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (c *clientImpl) subscribeOrCreateDocument(key string, state model.StateOfDatatype, handlers *Handlers) Document {
-	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_DOCUMENT, state, handlers)
+func (its *clientImpl) subscribeOrCreateDocument(key string, state model.StateOfDatatype, handlers *Handlers) Document {
+	datatype := its.subscribeOrCreateDatatype(key, model.TypeOfDatatype_DOCUMENT, state, handlers)
 	if datatype != nil {
 		return datatype.(Document)
 	}
@@ -147,20 +148,20 @@ func (c *clientImpl) subscribeOrCreateDocument(key string, state model.StateOfDa
 
 // methods for List
 
-func (c *clientImpl) CreateList(key string, handlers *Handlers) List {
-	return c.subscribeOrCreateList(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
+func (its *clientImpl) CreateList(key string, handlers *Handlers) List {
+	return its.subscribeOrCreateList(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (c *clientImpl) SubscribeList(key string, handlers *Handlers) List {
-	return c.subscribeOrCreateList(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
+func (its *clientImpl) SubscribeList(key string, handlers *Handlers) List {
+	return its.subscribeOrCreateList(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (c *clientImpl) SubscribeOrCreateList(key string, handlers *Handlers) List {
-	return c.subscribeOrCreateList(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
+func (its *clientImpl) SubscribeOrCreateList(key string, handlers *Handlers) List {
+	return its.subscribeOrCreateList(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (c *clientImpl) subscribeOrCreateList(key string, state model.StateOfDatatype, handlers *Handlers) List {
-	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_LIST, state, handlers)
+func (its *clientImpl) subscribeOrCreateList(key string, state model.StateOfDatatype, handlers *Handlers) List {
+	datatype := its.subscribeOrCreateDatatype(key, model.TypeOfDatatype_LIST, state, handlers)
 	if datatype != nil {
 		return datatype.(List)
 	}
@@ -169,20 +170,20 @@ func (c *clientImpl) subscribeOrCreateList(key string, state model.StateOfDataty
 
 // methods for HashMap
 
-func (c *clientImpl) CreateHashMap(key string, handlers *Handlers) HashMap {
-	return c.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
+func (its *clientImpl) CreateHashMap(key string, handlers *Handlers) HashMap {
+	return its.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (c *clientImpl) SubscribeHashMap(key string, handlers *Handlers) HashMap {
-	return c.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
+func (its *clientImpl) SubscribeHashMap(key string, handlers *Handlers) HashMap {
+	return its.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (c *clientImpl) SubscribeOrCreateHashMap(key string, handlers *Handlers) HashMap {
-	return c.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
+func (its *clientImpl) SubscribeOrCreateHashMap(key string, handlers *Handlers) HashMap {
+	return its.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (c *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfDatatype, handlers *Handlers) HashMap {
-	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_HASH_MAP, state, handlers)
+func (its *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfDatatype, handlers *Handlers) HashMap {
+	datatype := its.subscribeOrCreateDatatype(key, model.TypeOfDatatype_HASH_MAP, state, handlers)
 	if datatype != nil {
 		return datatype.(HashMap)
 	}
@@ -191,40 +192,40 @@ func (c *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfDat
 
 // methods for Counter
 
-func (c *clientImpl) CreateCounter(key string, handlers *Handlers) Counter {
-	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
+func (its *clientImpl) CreateCounter(key string, handlers *Handlers) Counter {
+	return its.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (c *clientImpl) SubscribeCounter(key string, handlers *Handlers) Counter {
-	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
+func (its *clientImpl) SubscribeCounter(key string, handlers *Handlers) Counter {
+	return its.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (c *clientImpl) SubscribeOrCreateCounter(key string, handlers *Handlers) Counter {
-	return c.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
+func (its *clientImpl) SubscribeOrCreateCounter(key string, handlers *Handlers) Counter {
+	return its.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (c *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype, handlers *Handlers) Counter {
-	datatype := c.subscribeOrCreateDatatype(key, model.TypeOfDatatype_COUNTER, state, handlers)
+func (its *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype, handlers *Handlers) Counter {
+	datatype := its.subscribeOrCreateDatatype(key, model.TypeOfDatatype_COUNTER, state, handlers)
 	if datatype != nil {
 		return datatype.(Counter)
 	}
 	return nil
 }
 
-func (c *clientImpl) subscribeOrCreateDatatype(
+func (its *clientImpl) subscribeOrCreateDatatype(
 	key string,
 	typeOf model.TypeOfDatatype,
 	state model.StateOfDatatype,
 	handler *Handlers,
 ) iface.Datatype {
-	if c.datatypeManager != nil {
-		datatypeFromDM := c.datatypeManager.Get(key)
+	if its.datatypeManager != nil {
+		datatypeFromDM := its.datatypeManager.Get(key)
 		if datatypeFromDM != nil {
 			if datatypeFromDM.GetType() == typeOf {
-				c.ctx.Logger.Warnf("already subscribed datatype '%s'", key)
+				its.ctx.L().Warnf("already subscribed datatype '%s'", key)
 				return datatypeFromDM
 			}
-			err := errors.ErrDatatypeSubscribe.New(nil,
+			err := errors.DatatypeSubscribe.New(nil,
 				fmt.Sprintf("not matched type: %s vs %s", typeOf.String(), datatypeFromDM.GetType().String()))
 			if handler != nil {
 				handler.errorHandler(nil, err)
@@ -234,20 +235,21 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 	var datatype iface.Datatype
 	var impl interface{}
 
+	base := datatypes.NewBaseDatatype(key, typeOf, its.model)
 	switch typeOf {
 	case model.TypeOfDatatype_COUNTER:
-		impl = newCounter(key, c.model.CUID, c.datatypeManager, handler)
+		impl = newCounter(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_HASH_MAP:
-		impl = newHashMap(key, c.model.CUID, c.datatypeManager, handler)
+		impl = newHashMap(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_LIST:
-		impl = newList(key, c.model.CUID, c.datatypeManager, handler)
+		impl = newList(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_DOCUMENT:
-		impl = newDocument(key, c.model.CUID, c.datatypeManager, handler)
+		impl = newDocument(base, its.datatypeManager, handler)
 	}
 	datatype = impl.(iface.Datatype)
 
-	if c.datatypeManager != nil {
-		if err := c.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {
+	if its.datatypeManager != nil {
+		if err := its.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {
 			if handler != nil {
 				handler.errorHandler(nil, err)
 			}
@@ -256,9 +258,9 @@ func (c *clientImpl) subscribeOrCreateDatatype(
 	return datatype
 }
 
-func (c *clientImpl) Sync() error {
-	if c.state == connected {
-		return c.datatypeManager.SyncAll()
+func (its *clientImpl) Sync() error {
+	if its.state == connected {
+		return its.datatypeManager.SyncAll()
 	}
-	return errors.ErrClientNotConnected.New("fail to sync")
+	return errors.ClientSync.New(its.ctx.L(), "not connected")
 }

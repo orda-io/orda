@@ -78,17 +78,17 @@ func createIntCounter(client ortoo.Client) {
 		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
-	if err := client.Sync(); err != nil {
-		panic(err)
+	if err1 := client.Sync(); err1 != nil {
+		panic(err1)
 	}
-	val, err := intCounter.IncreaseBy(5)
-	if err != nil {
-		panic(err)
+	val, err2 := intCounter.IncreaseBy(5)
+	if err2 != nil {
+		panic(err2)
 	}
 	fmt.Printf("After increase: %d\n", val)
 
-	if err2 := client.Sync(); err2 != nil {
-		panic(err2)
+	if err3 := client.Sync(); err3 != nil {
+		panic(err3)
 	}
 }
 
@@ -134,8 +134,8 @@ func subscribeIntCounter(client ortoo.Client) {
 		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
-	if err := client.Sync(); err != nil {
-		panic(err)
+	if err1 := client.Sync(); err1 != nil {
+		panic(err1)
 	}
 	val, err := intCounter.IncreaseBy(5)
 	if err != nil {

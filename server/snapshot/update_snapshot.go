@@ -1,11 +1,9 @@
 package snapshot
 
 import (
-	"context"
-	"encoding/json"
+	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
 	"github.com/knowhunger/ortoo/pkg/ortoo"
@@ -16,7 +14,7 @@ import (
 
 // Manager is a struct that updates snapshot of a datatype in Ortoo server
 type Manager struct {
-	ctx           context.Context
+	ctx           context.OrtooContext
 	mongo         *mongodb.RepositoryMongo
 	datatypeDoc   *schema.DatatypeDoc
 	collectionDoc *schema.CollectionDoc
@@ -24,10 +22,11 @@ type Manager struct {
 
 // NewManager returns an instance of Snapshot Manager
 func NewManager(
-	ctx context.Context,
+	ctx context.OrtooContext,
 	mongo *mongodb.RepositoryMongo,
 	datatypeDoc *schema.DatatypeDoc,
-	collectionDoc *schema.CollectionDoc) *Manager {
+	collectionDoc *schema.CollectionDoc,
+) *Manager {
 	return &Manager{
 		ctx:           ctx,
 		mongo:         mongo,
@@ -36,33 +35,26 @@ func NewManager(
 	}
 }
 
-func (m *Manager) getPushPullTag() errors.PushPullTag {
-	return errors.PushPullTag{
-		CollectionName: m.collectionDoc.Name,
-		Key:            m.datatypeDoc.Key,
-		DUID:           m.datatypeDoc.DUID,
-	}
-}
-
 // UpdateSnapshot updates snapshot for specified datatype
-func (m *Manager) UpdateSnapshot() error {
+func (its *Manager) UpdateSnapshot() errors.OrtooError {
 	var sseq uint64 = 0
-	client := ortoo.NewClient(ortoo.NewLocalClientConfig(m.collectionDoc.Name), "server")
-	datatype := client.CreateDatatype(m.datatypeDoc.Key, m.datatypeDoc.GetType(), nil).(iface.Datatype)
-	snapshotDoc, err := m.mongo.GetLatestSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID)
+	client := ortoo.NewClient(ortoo.NewLocalClientConfig(its.collectionDoc.Name), "server")
+	datatype := client.CreateDatatype(its.datatypeDoc.Key, its.datatypeDoc.GetType(), nil).(iface.Datatype)
+	datatype.SetLogger(its.ctx.L())
+	snapshotDoc, err := its.mongo.GetLatestSnapshot(its.ctx, its.collectionDoc.Num, its.datatypeDoc.DUID)
 	if err != nil {
-		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		return err
 	}
 	if snapshotDoc != nil {
 		sseq = snapshotDoc.Sseq
-		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot); err != nil {
-			return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, []byte(snapshotDoc.Snapshot)); err != nil {
+			return err
 		}
 	}
 	var transaction []*model.Operation
 	var remainOfTransaction int32 = 0
-	if err := m.mongo.GetOperations(m.ctx, m.datatypeDoc.DUID, sseq+1, constants.InfinitySseq,
-		func(opDoc *schema.OperationDoc) error {
+	err = its.mongo.GetOperations(its.ctx, its.datatypeDoc.DUID, sseq+1, constants.InfinitySseq,
+		func(opDoc *schema.OperationDoc) errors.OrtooError {
 			var modelOp = opDoc.GetOperation()
 			if modelOp.OpType == model.TypeOfOperation_TRANSACTION {
 				trxOp := operations.ModelToOperation(modelOp).(*operations.TransactionOperation)
@@ -74,40 +66,36 @@ func (m *Manager) UpdateSnapshot() error {
 				if remainOfTransaction == 0 {
 					_, err := datatype.ExecuteRemoteTransaction(transaction, false)
 					if err != nil {
-						return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+						return err
 					}
 					transaction = nil
 				}
 			} else {
 				op := operations.ModelToOperation(modelOp)
-				log.Logger.Infof("%v", op.String())
-				_, err := op.ExecuteRemote(datatype)
-				if err != nil {
-					return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+				its.ctx.L().Infof("%v", op.String())
+				if _, err := op.ExecuteRemote(datatype); err != nil {
+					return err
 				}
 			}
 			sseq = opDoc.Sseq
 			return nil
-		}); err != nil {
+		})
+	if err != nil {
 		return err
 	}
 
 	meta, snap, err := datatype.GetMetaAndSnapshot()
 	if err != nil {
-		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+		return err
 	}
-	snapb, err := json.Marshal(snap)
-	log.Logger.Infof("snapB: %v", string(snapb))
-	if err != nil {
-		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
-	}
-	if err := m.mongo.InsertSnapshot(m.ctx, m.collectionDoc.Num, m.datatypeDoc.DUID, sseq, meta, string(snapb)); err != nil {
-		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+	its.ctx.L().Infof("snapB: %v", string(snap))
+	if err := its.mongo.InsertSnapshot(its.ctx, its.collectionDoc.Num, its.datatypeDoc.DUID, sseq, meta, string(snap)); err != nil {
+		return err
 	}
 
-	data := snap.GetAsJSONCompatible()
-	if err := m.mongo.InsertRealSnapshot(m.ctx, m.collectionDoc.Name, m.datatypeDoc.Key, data, sseq); err != nil {
-		return errors.NewPushPullError(errors.PushPullErrUpdateSnapshot, m.getPushPullTag(), err.Error())
+	data := datatype.GetSnapshot().GetAsJSONCompatible()
+	if err := its.mongo.InsertRealSnapshot(its.ctx, its.collectionDoc.Name, its.datatypeDoc.Key, data, sseq); err != nil {
+		return err
 	}
 	return nil
 }

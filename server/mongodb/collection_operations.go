@@ -1,8 +1,9 @@
 package mongodb
 
 import (
-	"context"
-	"github.com/knowhunger/ortoo/pkg/log"
+	"fmt"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,38 +11,48 @@ import (
 )
 
 // InsertOperations inserts operations into MongoDB
-func (m *MongoCollections) InsertOperations(ctx context.Context, operations []interface{}) error {
+func (its *MongoCollections) InsertOperations(
+	ctx context.OrtooContext,
+	operations []interface{},
+) errors.OrtooError {
 	if operations == nil {
 		return nil
 	}
-	result, err := m.operations.InsertMany(ctx, operations)
+	result, err := its.operations.InsertMany(ctx, operations)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if len(result.InsertedIDs) != len(operations) {
-		return log.OrtooErrorf(err, "fail to insert operation all")
+		msg := fmt.Sprintf("the inserted operations (%d) are less than all the intended ones (%d)",
+			len(result.InsertedIDs), len(operations))
+		return errors.ServerDBQuery.New(ctx.L(), msg)
 	}
 	return nil
 }
 
 // DeleteOperation deletes operations for the specified sseq
-func (m *MongoCollections) DeleteOperation(ctx context.Context, duid string, sseq uint32) (int64, error) {
+func (its *MongoCollections) DeleteOperation(
+	ctx context.OrtooContext,
+	duid string,
+	sseq uint32,
+) (int64, errors.OrtooError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterEQ(schema.OperationDocFields.Sseq, sseq)
-	result, err := m.operations.DeleteOne(ctx, f)
+	result, err := its.operations.DeleteOne(ctx, f)
 	if err != nil {
-		return 0, log.OrtooError(err)
+		return 0, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	return result.DeletedCount, nil
 }
 
 // GetOperations gets operations of the specified range. For each operation, a given handler is called.
-func (m *MongoCollections) GetOperations(
-	ctx context.Context,
+func (its *MongoCollections) GetOperations(
+	ctx context.OrtooContext,
 	duid string,
 	from, to uint64,
-	operationDocHandler func(opDoc *schema.OperationDoc) error) error {
+	fn func(opDoc *schema.OperationDoc) errors.OrtooError,
+) errors.OrtooError {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterGTE(schema.OperationDocFields.Sseq, from)
@@ -50,19 +61,19 @@ func (m *MongoCollections) GetOperations(
 	}
 	opt := options.Find()
 	opt.SetSort(bson.D{{schema.OperationDocFields.Sseq, 1}})
-	cursor, err := m.operations.Find(ctx, f, opt)
+	cursor, err := its.operations.Find(ctx, f, opt)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 
 	for cursor.Next(ctx) {
 		var operationDoc schema.OperationDoc
 		if err := cursor.Decode(&operationDoc); err != nil {
-			return log.OrtooError(err)
+			return errors.ServerDBDecode.New(ctx.L(), err.Error())
 		}
-		if operationDocHandler != nil {
-			if err := operationDocHandler(&operationDoc); err != nil {
-				return log.OrtooError(err)
+		if fn != nil {
+			if err := fn(&operationDoc); err != nil {
+				return err
 			}
 		}
 	}
@@ -70,18 +81,18 @@ func (m *MongoCollections) GetOperations(
 }
 
 // PurgeOperations purges operations for the specified datatype.
-func (m *MongoCollections) PurgeOperations(ctx context.Context, collectionNum uint32, duid string) error {
+func (its *MongoCollections) PurgeOperations(ctx context.OrtooContext, collectionNum uint32, duid string) errors.OrtooError {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.OperationDocFields.DUID, duid)
-	result, err := m.operations.DeleteMany(ctx, f)
+	result, err := its.operations.DeleteMany(ctx, f)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.DeletedCount > 0 {
-		log.Logger.Infof("deleted %d operations of %s(%d)", result.DeletedCount, duid, collectionNum)
+		ctx.L().Infof("deleted %d operations of %s(%d)", result.DeletedCount, duid, collectionNum)
 		return nil
 	}
-	log.Logger.Warnf("deleted no operations")
+	ctx.L().Warnf("deleted no operations")
 	return nil
 }

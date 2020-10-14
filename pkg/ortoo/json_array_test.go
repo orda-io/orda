@@ -1,7 +1,6 @@
 package ortoo
 
 import (
-	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
@@ -52,7 +51,7 @@ func TestJSONArray(t *testing.T) {
 
 	t.Run("Can insert remotely in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		var arr = make([]interface{}, 0)
@@ -102,7 +101,7 @@ func TestJSONArray(t *testing.T) {
 
 	t.Run("Can delete something locally in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 		var err error
 		array := initJSONArrayAndInsertTest(t, root, opID)
@@ -155,7 +154,7 @@ func TestJSONArray(t *testing.T) {
 
 	t.Run("Can delete something remotely in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// init JSONObject
@@ -227,7 +226,7 @@ func TestJSONArray(t *testing.T) {
 
 	t.Run("Can update values locally in JSONArray", func(t *testing.T) {
 		opID := model.NewOperationID()
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// init JSONObject
@@ -269,7 +268,7 @@ func TestJSONArray(t *testing.T) {
 	t.Run("Can update value remotely in JSONArray", func(t *testing.T) {
 		opID1 := model.NewOperationID()
 		opID2 := model.NewOperationIDWithCUID(types.NewCUID())
-		base := datatypes.NewBaseDatatype(t.Name(), model.TypeOfDatatype_DOCUMENT, types.NewCUID())
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// init JSONObject

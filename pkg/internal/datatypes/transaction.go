@@ -3,7 +3,6 @@ package datatypes
 import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
 	"sync"
@@ -64,7 +63,7 @@ func (its *TransactionDatatype) ExecuteOperationWithTransaction(
 	transactionCtx := its.BeginTransaction(NotUserTransactionTag, ctx, false)
 	defer func() {
 		if err := its.EndTransaction(transactionCtx, false, isLocal); err != nil {
-			_ = log.OrtooError(err)
+
 		}
 	}()
 
@@ -129,7 +128,7 @@ func (its *TransactionDatatype) Rollback() errors.OrtooError {
 		if err != nil {
 			its.SetOpID(redoOpID)
 			snapshotDatatype.SetSnapshot(redoSnapshot)
-			return errors.ErrDatatypeTransactionRollback.New(its.Logger, err.Error())
+			return errors.DatatypeTransaction.New(its.Logger, "rollback failed")
 		}
 	}
 	its.rollbackOpID = its.opID.Clone()
@@ -152,7 +151,7 @@ func (its *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withO
 			if withOp {
 				beginOp, ok := its.currentTrxCtx.opBuffer[0].(*operations.TransactionOperation)
 				if !ok {
-					return errors.ErrDatatypeTransaction.New(its.Logger, "no transaction operation")
+					return errors.DatatypeTransaction.New(its.Logger, "no transaction operation")
 				}
 				beginOp.SetNumOfOps(len(its.currentTrxCtx.opBuffer))
 			}

@@ -3,11 +3,13 @@ package datatypes
 import (
 	"bytes"
 	"fmt"
+	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
+	"github.com/knowhunger/ortoo/pkg/utils"
 )
 
 // BaseDatatype is the base datatype which contains
@@ -22,26 +24,31 @@ type BaseDatatype struct {
 }
 
 // NewBaseDatatype creates a new base datatype
-func NewBaseDatatype(key string, t model.TypeOfDatatype, cuid types.CUID) *BaseDatatype {
+func NewBaseDatatype(key string, t model.TypeOfDatatype, client *model.Client) *BaseDatatype {
 	duid := types.NewDUID()
+	tag := fmt.Sprintf("%s|%s", client.GetSummary(), utils.MakeSummary(key, duid, "D"))
 	return &BaseDatatype{
 		Key:    key,
 		id:     duid,
 		TypeOf: t,
-		opID:   model.NewOperationIDWithCUID(cuid),
+		opID:   model.NewOperationIDWithCUID(client.CUID),
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
-		Logger: log.NewOrtooLogWithTag(fmt.Sprintf("%s:%s:%s", t, key, cuid.ShortString())),
+		Logger: log.NewWithTag(string(context.DATATYPE), client.Collection, tag),
 	}
 }
 
 // GetCUID returns CUID of the client which this datatype subecribes to.
 func (its *BaseDatatype) GetCUID() string {
-	return types.ToUID(its.opID.CUID)
+	return types.UIDtoString(its.opID.CUID)
 }
 
 // GetEra returns the era of operation ID.
 func (its *BaseDatatype) GetEra() uint32 {
 	return its.opID.GetEra()
+}
+
+func (its *BaseDatatype) SetLogger(l *log.OrtooLog) {
+	its.Logger = l
 }
 
 func (its *BaseDatatype) String() string {

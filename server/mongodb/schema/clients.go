@@ -44,6 +44,10 @@ func (its *ClientDoc) String() string {
 	return fmt.Sprintf("(%d)%s:%s:%d", its.CollectionNum, its.Alias, its.CUID[0:8], len(its.CheckPoints))
 }
 
+func (its *ClientDoc) GetShortCUID() string {
+	return types.ShortenUIDString(its.CUID)
+}
+
 // ToUpdateBSON returns a bson from a ClientDoc
 func (its *ClientDoc) ToUpdateBSON() bson.D {
 
@@ -97,9 +101,17 @@ func (its *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
 // ClientModelToBson returns a ClientDoc from a model.Client
 func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	return &ClientDoc{
-		CUID:          types.ToUID(model.CUID),
+		CUID:          types.UIDtoString(model.CUID),
 		Alias:         model.Alias,
 		CollectionNum: collectionNum,
 		SyncType:      model.SyncType.String(),
 	}
+}
+
+func (its *ClientDoc) GetClient() string {
+	return fmt.Sprintf("%s(%s)", its.Alias, its.CUID)
+}
+
+func (its *ClientDoc) GetClientSummary() string {
+	return fmt.Sprintf("C:%.10s(%.10s)", its.Alias, its.CUID)
 }

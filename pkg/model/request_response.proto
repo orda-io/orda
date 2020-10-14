@@ -9,7 +9,8 @@ message MessageHeader {
     uint32 seq = 2;
     TypeOfMessage typeOf = 3;
     string collection = 4;
-    bytes cuid = 5;
+    string clientAlias = 5;
+    bytes cuid = 6;
 }
 
 enum TypeOfMessage {

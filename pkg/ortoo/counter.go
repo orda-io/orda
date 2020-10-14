@@ -2,14 +2,11 @@ package ortoo
 
 import (
 	"encoding/json"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/operations"
-	"github.com/knowhunger/ortoo/pkg/types"
-
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
+	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/pkg/operations"
 )
 
 // Counter is an Ortoo datatype which provides int counter interfaces.
@@ -32,8 +29,7 @@ type counter struct {
 }
 
 // newCounter creates a new int counter
-func newCounter(key string, cuid types.CUID, wire iface.Wire, handler *Handlers) Counter {
-	base := datatypes.NewBaseDatatype(key, model.TypeOfDatatype_COUNTER, cuid)
+func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handler *Handlers) Counter {
 	counter := &counter{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
@@ -80,7 +76,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 	case *operations.SnapshotOperation:
 		newSnap := counterSnapshot{}
 		if err := json.Unmarshal([]byte(cast.C.Snapshot), &newSnap); err != nil {
-			return nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+			return nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
 		}
 		its.snapshot = &newSnap
 		return nil, nil
@@ -88,7 +84,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 		return its.snapshot.increaseCommon(cast.C.Delta), nil
 	}
 
-	return nil, errors.ErrDatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
 }
 
 func (its *counter) Get() int32 {
@@ -120,21 +116,25 @@ func (its *counter) GetAsJSON() interface{} {
 	return its.snapshot.GetAsJSONCompatible()
 }
 
-func (its *counter) GetMetaAndSnapshot() ([]byte, iface.Snapshot, errors.OrtooError) {
-	meta, err := its.ManageableDatatype.GetMeta()
-	if err != nil {
-		return nil, nil, errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+func (its *counter) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
+	meta, oErr := its.ManageableDatatype.GetMeta()
+	if oErr != nil {
+		return nil, nil, oErr
 	}
-	return meta, its.snapshot, nil
+	snap, err := json.Marshal(its.snapshot)
+	if err != nil {
+		return nil, nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
+	}
+	return meta, snap, nil
 }
 
-func (its *counter) SetMetaAndSnapshot(meta []byte, snapshot string) errors.OrtooError {
+func (its *counter) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+		return err
 	}
 
-	if err := json.Unmarshal([]byte(snapshot), its.snapshot); err != nil {
-		return errors.ErrDatatypeSnapshot.New(its.Logger, err.Error())
+	if err := json.Unmarshal(snap, its.snapshot); err != nil {
+		return errors.DatatypeMarshal.New(its.Logger, err.Error())
 	}
 	return nil
 }

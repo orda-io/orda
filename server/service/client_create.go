@@ -1,48 +1,49 @@
 package service
 
 import (
-	"context"
+	gocontext "context"
+	"fmt"
+	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"time"
 )
 
+const tagClient = "REQ_CLIENT"
+
 // ProcessClient processes ClientRequest and returns ClientResponse
-func (o *OrtooService) ProcessClient(ctx context.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
-	log.Logger.Infof("receive %s", in.ToString())
-	collectionDoc, err := o.mongo.GetCollection(ctx, in.Client.Collection)
-	if err != nil {
-		return nil, errors.NewRPCError(errors.RPCErrMongoDB)
-	}
-	if collectionDoc == nil {
-		return nil, log.OrtooError(status.New(codes.InvalidArgument, "fail to find collection").Err())
-	}
+func (its *OrtooService) ProcessClient(goCtx gocontext.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
+	ctx := context.NewWithTag(goCtx, context.SERVER, tagClient, in.Client.GetSummary())
+	ctx.L().Infof("receive %s", in.ToString())
 
-	transferredDoc := schema.ClientModelToBson(in.Client, collectionDoc.Num)
-
-	storedDoc, err := o.mongo.GetClient(ctx, transferredDoc.CUID)
-	if err != nil {
-		return nil, log.OrtooErrorf(err, "fail to get client")
+	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Client.Collection)
+	if rpcErr != nil {
+		return nil, rpcErr
 	}
-	if storedDoc == nil {
-		transferredDoc.CreatedAt = time.Now()
-		log.Logger.Infof("create a new client:%+v", transferredDoc)
-		if err := o.mongo.GetOrCreateRealCollection(ctx, in.Client.Collection); err != nil {
-			return nil, errors.NewRPCError(errors.RPCErrMongoDB)
+	clientDocFromReq := schema.ClientModelToBson(in.Client, collectionDoc.Num)
+
+	clientDocFromDB, err := its.mongo.GetClient(ctx, clientDocFromReq.CUID)
+	if err != nil {
+		return nil, errors.NewRPCError(err)
+	}
+	if clientDocFromDB == nil {
+		clientDocFromReq.CreatedAt = time.Now()
+		ctx.L().Infof("create a new client:%+v", clientDocFromReq)
+		if err := its.mongo.GetOrCreateRealCollection(ctx, in.Client.Collection); err != nil {
+			return nil, errors.NewRPCError(err)
 		}
 	} else {
-		if storedDoc.CollectionNum != transferredDoc.CollectionNum {
-			return nil, errors.NewRPCError(errors.RPCErrClientInconsistentCollection, storedDoc.CollectionNum, transferredDoc.CollectionNum)
+		if clientDocFromDB.CollectionNum != clientDocFromReq.CollectionNum {
+			msg := fmt.Sprintf("client '%s' accesses collection(%d)",
+				clientDocFromDB.GetClient(), clientDocFromReq.CollectionNum)
+			return nil, errors.NewRPCError(errors.ServerNoPermission.New(ctx.L(), msg))
 		}
-		log.Logger.Infof("Client will be updated:%+v", transferredDoc)
+		ctx.L().Infof("Client will be updated:%+v", clientDocFromReq)
 	}
-	transferredDoc.CreatedAt = time.Now()
-	if err = o.mongo.UpdateClient(ctx, transferredDoc); err != nil {
-		return nil, errors.NewRPCError(errors.RPCErrMongoDB)
+	clientDocFromReq.CreatedAt = time.Now()
+	if err = its.mongo.UpdateClient(ctx, clientDocFromReq); err != nil {
+		return nil, errors.NewRPCError(err)
 	}
 
 	return model.NewClientResponse(in.Header, model.StateOfResponse_OK), nil

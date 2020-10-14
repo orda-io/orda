@@ -1,7 +1,6 @@
 package ortoo
 
 import (
-	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -15,12 +14,10 @@ func TestLocalOnlyClientTest(t *testing.T) {
 		intCounter1 := client1.CreateCounter("key", nil)
 		_, _ = intCounter1.IncreaseBy(2)
 		_, _ = intCounter1.IncreaseBy(3)
-		meta, snapshot, err := intCounter1.(iface.Datatype).GetMetaAndSnapshot()
+		meta, snap, err := intCounter1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
 		intCounter2 := client2.CreateCounter("key", nil)
-		snapB, err2 := json.Marshal(snapshot)
-		require.NoError(t, err2)
-		err = intCounter2.(iface.Datatype).SetMetaAndSnapshot(meta, string(snapB))
+		err = intCounter2.(iface.Datatype).SetMetaAndSnapshot(meta, snap)
 		require.NoError(t, err)
 		require.Equal(t, intCounter1.Get(), intCounter2.Get())
 	})

@@ -3,7 +3,6 @@ package types
 import (
 	"bytes"
 	"github.com/google/uuid"
-	"github.com/knowhunger/ortoo/pkg/log"
 )
 
 // DUID is the unique ID of a datatype.
@@ -18,22 +17,22 @@ func NewDUID() DUID {
 func DUIDFromString(duidString string) (DUID, error) {
 	uid, err := uuid.Parse(duidString)
 	if err != nil {
-		return nil, log.OrtooError(err)
+		return nil, err
 	}
 	b, err := uid.MarshalBinary()
 	if err != nil {
-		return nil, log.OrtooError(err)
+		return nil, err
 	}
 	return b, nil
 }
 
 func (its DUID) String() string {
-	return ToUID(its)
+	return UIDtoString(its)
 }
 
 // ShortString returns a short string.
 func (its DUID) ShortString() string {
-	return ToShortUID(its)
+	return UIDtoShortString(its)
 }
 
 // Compare compares a DUID with another.

@@ -13,11 +13,11 @@ GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.Version=${VERSION}
 
 .PHONY: protoc-gen
 protoc-gen:
-	-rm ./ortoo/model/model.pb.go
-	protoc ortoo/model/*.proto \
-			-I=./ortoo/model/ \
-			--gofast_out=plugins=grpc,:./ortoo/model/
-	protoc-go-inject-tag -input=./ortoo/model/model.pb.go
+	-rm ./pkg/model/model.pb.go
+	protoc ./pkg/model/*.proto \
+			-I=./pkg/model/ \
+			--gofast_out=plugins=grpc,:./pkg/model/
+	protoc-go-inject-tag -input=./pkg/model/model.pb.go
 
 .PHONY: server
 server:

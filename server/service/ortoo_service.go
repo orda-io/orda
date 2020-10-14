@@ -1,7 +1,10 @@
 package service
 
 import (
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"github.com/knowhunger/ortoo/server/notification"
 )
 
@@ -12,15 +15,20 @@ type OrtooService struct {
 }
 
 // NewOrtooService creates a new OrtooService
-func NewOrtooService(mongo *mongodb.RepositoryMongo, notifier *notification.Notifier) (*OrtooService, error) {
+func NewOrtooService(mongo *mongodb.RepositoryMongo, notifier *notification.Notifier) *OrtooService {
 	return &OrtooService{
 		mongo:    mongo,
 		notifier: notifier,
-	}, nil
+	}
 }
 
-// // Initialize initializes mongoDB and something else
-// func (o *OrtooService) Initialize(ctx context.Context) error {
-//
-// 	return nil
-// }
+func (its *OrtooService) getCollectionDocWithRPCError(ctx context.OrtooContext, collection string) (*schema.CollectionDoc, error) {
+	collectionDoc, err := its.mongo.GetCollection(ctx, collection)
+	if err != nil {
+		return nil, errors.NewRPCError(err)
+	}
+	if collectionDoc == nil {
+		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), "collection "+collection))
+	}
+	return collectionDoc, nil
+}

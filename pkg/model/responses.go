@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/log"
 	"strings"
 )
 
@@ -16,11 +15,10 @@ var (
 func NewClientResponse(header *MessageHeader, state StateOfResponse, args ...interface{}) *ClientResponse {
 	msg := ""
 	if state != StateOfResponse_OK {
-		log.Logger.Errorf(responseFormat[state], args)
 		msg = fmt.Sprintf(responseFormat[state], args)
 	}
 	return &ClientResponse{
-		Header: NewMessageHeader(header.Seq, TypeOfMessage_RESPONSE_CLIENT, header.Collection, header.Cuid),
+		Header: NewMessageHeader(header.Seq, TypeOfMessage_RESPONSE_CLIENT, header.Collection, header.ClientAlias, header.Cuid),
 		State: &ResponseState{
 			State: state,
 			Msg:   msg,
