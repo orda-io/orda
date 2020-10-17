@@ -26,7 +26,7 @@ type HashMapInTxn interface {
 	Size() int
 }
 
-func newHashMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) HashMap {
+func newHashMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (HashMap, errors.OrtooError) {
 	hashMap := &hashMap{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
@@ -36,8 +36,7 @@ func newHashMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handler
 			Snapshot: newHashMapSnapshot(base),
 		},
 	}
-	hashMap.Initialize(base, wire, hashMap.GetSnapshot(), hashMap)
-	return hashMap
+	return hashMap, hashMap.Initialize(base, wire, hashMap.GetSnapshot(), hashMap)
 }
 
 type hashMap struct {
@@ -48,17 +47,15 @@ type hashMap struct {
 func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) error) error {
 	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
 		clone := &hashMap{
-			datatype: &datatype{
-				ManageableDatatype: &datatypes.ManageableDatatype{
-					TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
-					TransactionCtx:      txnCtx,
-				},
-				handlers: its.handlers,
-			},
+			datatype:         its.newDatatype(txnCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
 		return txnFunc(clone)
 	})
+}
+
+func (its *hashMap) ResetSnapshot() {
+	its.SnapshotDatatype.SetSnapshot(newHashMapSnapshot(its.BaseDatatype))
 }
 
 func (its *hashMap) snapshot() *hashMapSnapshot {

@@ -234,26 +234,32 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 	}
 	var datatype iface.Datatype
 	var impl Datatype
-
+	var errs errors.OrtooError = &errors.MultipleOrtooErrors{}
+	var err errors.OrtooError
 	base := datatypes.NewBaseDatatype(key, typeOf, its.model)
 	switch typeOf {
 	case model.TypeOfDatatype_COUNTER:
-		impl = newCounter(base, its.datatypeManager, handler)
+		impl, err = newCounter(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_HASH_MAP:
-		impl = newHashMap(base, its.datatypeManager, handler)
+		impl, err = newHashMap(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_LIST:
-		impl = newList(base, its.datatypeManager, handler)
+		impl, err = newList(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_DOCUMENT:
-		impl = newDocument(base, its.datatypeManager, handler)
+		impl, err = newDocument(base, its.datatypeManager, handler)
+	}
+	if err != nil {
+		errs = errs.Append(err)
 	}
 	datatype = impl.(iface.Datatype)
 
 	if its.datatypeManager != nil {
-		if err := its.datatypeManager.SubscribeOrCreate(datatype, state); err != nil {
-			if handler != nil {
-				handler.errorHandler(nil, err)
-			}
+		if err2 := its.datatypeManager.SubscribeOrCreate(datatype, state); err2 != nil {
+			errs = errs.Append(err2)
 		}
+	}
+
+	if handler != nil && errs.Return() != nil {
+		handler.errorHandler(nil, errs.ToArray()...)
 	}
 	return datatype
 }

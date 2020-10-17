@@ -14,6 +14,7 @@ type Wire interface {
 // WiredDatatype defines the internal interface related to the synchronization with Ortoo server
 type WiredDatatype interface {
 	BaseDatatype
+	ResetWired()
 	ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrtooError)
 	ApplyPushPullPack(*model.PushPullPack)
 	CreatePushPullPack() *model.PushPullPack

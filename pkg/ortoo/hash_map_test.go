@@ -15,7 +15,7 @@ func TestHashMap(t *testing.T) {
 
 	t.Run("Can run transaction", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		hashMap1 := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), tw, nil)
+		hashMap1, _ := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), tw, nil)
 		key1 := "k1"
 		key2 := "k2"
 
@@ -53,13 +53,13 @@ func TestHashMap(t *testing.T) {
 	})
 
 	t.Run("Can set and get hashMapSnapshot", func(t *testing.T) {
-		hashMap1 := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), nil, nil)
+		hashMap1, _ := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), nil, nil)
 		_, _ = hashMap1.Put("k1", 1)
 		_, _ = hashMap1.Put("k2", "2")
 		_, _ = hashMap1.Put("k3", 3.141592)
 		_, _ = hashMap1.Remove("k2")
 
-		clone := newHashMap(testonly.NewBase("key2", model.TypeOfDatatype_HASH_MAP), nil, nil)
+		clone, _ := newHashMap(testonly.NewBase("key2", model.TypeOfDatatype_HASH_MAP), nil, nil)
 		meta1, snap1, err := hashMap1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
 		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)

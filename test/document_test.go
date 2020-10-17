@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
@@ -157,4 +158,49 @@ func (its *IntegrationTestSuite) TestDocumentRealSnapshot() {
 
 	})
 
+}
+
+func (its *IntegrationTestSuite) TestDocumentTransaction() {
+	its.Run("Can store real snapshot for Document", func() {
+		config := NewTestOrtooClientConfig(its.collectionName)
+		client1 := ortoo.NewClient(config, "docClient1")
+		client2 := ortoo.NewClient(config, "docClient2")
+
+		oErr := client1.Connect()
+		require.NoError(its.T(), oErr)
+		oErr = client2.Connect()
+		require.NoError(its.T(), oErr)
+		defer func() {
+			_ = client1.Close()
+			_ = client2.Close()
+		}()
+
+		doc1 := client1.CreateDocument(its.getTestName(), handler)
+		_, _ = doc1.PutToObject("1", "a")
+		require.NoError(its.T(), client1.Sync())
+		doc2 := client2.SubscribeDocument(its.getTestName(), handler)
+		require.NoError(its.T(), client2.Sync())
+
+		err := doc1.DoTransaction("T1", func(document ortoo.DocumentInTxn) error {
+			_, _ = document.PutToObject("K1", "V1")
+			_, _ = document.PutToObject("K2", str1)
+			_, _ = document.PutToObject("K3", arr1)
+			return nil
+		})
+		require.NoError(its.T(), err)
+		require.NoError(its.T(), client1.Sync())
+		require.NoError(its.T(), client2.Sync())
+		its.ctx.L().Infof("doc1:%v", testonly.Marshal(its.T(), doc1.GetAsJSON()))
+		its.ctx.L().Infof("doc2:%v", testonly.Marshal(its.T(), doc2.GetAsJSON()))
+
+		err = doc2.DoTransaction("T2", func(document ortoo.DocumentInTxn) error {
+			_, _ = document.PutToObject("K1", "V2")
+			k3, _ := document.GetFromObject("K3")
+			_, _ = k3.InsertToArray(0, "V3")
+			return fmt.Errorf("error")
+		})
+
+		its.ctx.L().Infof("doc1:%v", testonly.Marshal(its.T(), doc1.GetAsJSON()))
+		its.ctx.L().Infof("doc2:%v", testonly.Marshal(its.T(), doc2.GetAsJSON()))
+	})
 }

@@ -25,7 +25,7 @@ var (
 func TestDocument(t *testing.T) {
 	t.Run("Can test operations of JSONObject Document", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		root := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
 		old1, oErr := root.PutToObject("K1", "V1")
 		require.NoError(t, oErr)
@@ -108,7 +108,7 @@ func TestDocument(t *testing.T) {
 
 	t.Run("Can test operations of JSONArray Document", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		root := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
 		old1, oErr := root.PutToObject("K1", arr)
 		require.NoError(t, oErr)
@@ -173,19 +173,23 @@ func TestDocument(t *testing.T) {
 	t.Run("Can transaction for Document", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
 
-		outDoc := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		outDoc, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
-		require.NoError(t, outDoc.DoTransaction("transaction1", func(doc DocumentInTxn) error {
-			// _, err:= doc.PutToObject("K1", "V1")
-			// require.NoError(t, err)
-			// _, err = doc.PutToObject("K2", str1)
-			// require.NoError(t, err)
-			// // _, _ = counter.IncreaseBy(2)
+		err := outDoc.DoTransaction("transaction1", func(doc DocumentInTxn) error {
+			_, err := doc.PutToObject("K1", "V1")
+			require.NoError(t, err)
+			_, err = doc.PutToObject("K2", str1)
+			require.NoError(t, err)
+			_, err = doc.GetFromObject("K2")
+			require.NoError(t, err)
+			// log.Logger.Infof("%v", testonly.Marshal(t, doc.GetAsJSON()))
+			// _, _ = counter.IncreaseBy(2)
 			// require.Equal(t, int32(2), outDoc.Get())
-			// // _, _ = counter.IncreaseBy(4)
-			// // require.Equal(t, int32(6), counter.Get())
+			// _, _ = counter.IncreaseBy(4)
+			// require.Equal(t, int32(6), counter.Get())
 			return nil
-		}))
+		})
+		require.NoError(t, err)
 
 		// require.Equal(t, int32(6), outDoc.Get())
 		//

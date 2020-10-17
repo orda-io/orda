@@ -35,7 +35,7 @@ type DocumentInTxn interface {
 	Equal(o Document) bool
 }
 
-func newDocument(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) Document {
+func newDocument(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Document, errors.OrtooError) {
 	doc := &document{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
@@ -45,8 +45,7 @@ func newDocument(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handle
 			Snapshot: newJSONObject(base, nil, model.OldestTimestamp()),
 		},
 	}
-	doc.Initialize(base, wire, doc.GetSnapshot(), doc)
-	return doc
+	return doc, doc.Initialize(base, wire, doc.GetSnapshot(), doc)
 }
 
 type document struct {
@@ -54,19 +53,28 @@ type document struct {
 	*datatypes.SnapshotDatatype
 }
 
-func (its *document) DoTransaction(tag string, txnFunc func(document DocumentInTxn) error) error {
+/*
+	document.DoTransaction(userFunc)
+		-> ManageableDatatype.DoTransaction(funcWithCloneDatatype())
+			-> TransactionDatatype.BeginTransaction()
+			-> funcWithCloneDatatype()
+				-> userFunc()
+					document.Operation ->
+						-> TransactionDatatype.ExecuteOperationWithTransaction()
+							-> TransactionDatatype.BeginTransaction(NotUserTransactionTag)
+							-> BaseDatatype.executeLocalBase()
+								-> op.ExecuteLocal(document)
+									-> document.ExecuteLocal(op)
+										-> document.snapshot.XXXX
+							-> TransactionDatatype.EndTransaction()
+*/
+func (its *document) DoTransaction(tag string, userFunc func(document DocumentInTxn) error) error {
 	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
 		clone := &document{
-			datatype: &datatype{
-				ManageableDatatype: &datatypes.ManageableDatatype{
-					TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
-					TransactionCtx:      txnCtx,
-				},
-				handlers: its.handlers,
-			},
+			datatype:         its.newDatatype(txnCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
-		return txnFunc(clone)
+		return userFunc(clone)
 	})
 }
 
@@ -275,6 +283,10 @@ func (its *document) GetRootDocument() Document {
 	return its.toDocument(its.snapshot().getRoot())
 }
 
+func (its *document) ResetSnapshot() {
+	its.SnapshotDatatype.SetSnapshot(newJSONObject(its.BaseDatatype, nil, model.OldestTimestamp()))
+}
+
 func (its *document) Equal(o Document) bool {
 	other := o.(*document)
 	if its.datatype != other.datatype {
@@ -285,29 +297,6 @@ func (its *document) Equal(o Document) bool {
 	}
 	return true
 }
-
-//
-// func (its *document) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
-// 	meta, oErr := its.ManageableDatatype.GetMeta()
-// 	if oErr != nil {
-// 		return nil, nil, oErr
-// 	}
-// 	snap, err := json.Marshal(its.snapshot)
-// 	if err != nil {
-// 		return nil, nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
-// 	}
-// 	return meta, snap, nil
-// }
-//
-// func (its *document) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
-// 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-// 		return err
-// 	}
-// 	if err := json.Unmarshal(snap, its.snapshot); err != nil {
-// 		return errors.DatatypeSnapshot.New(its.Logger, err.Error())
-// 	}
-// 	return nil
-// }
 
 func (its *document) toDocuments(children []jsonType) (ret []Document) {
 	for _, child := range children {

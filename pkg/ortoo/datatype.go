@@ -20,6 +20,16 @@ type datatype struct {
 	handlers *Handlers
 }
 
+func (its *datatype) newDatatype(txnCtx *datatypes.TransactionContext) *datatype {
+	return &datatype{
+		ManageableDatatype: &datatypes.ManageableDatatype{
+			TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
+			TransactionCtx:      txnCtx,
+		},
+		handlers: its.handlers,
+	}
+}
+
 func (its *datatype) HandleStateChange(old, new model.StateOfDatatype) {
 	if its.handlers != nil && its.handlers.stateChangeHandler != nil {
 		go its.handlers.stateChangeHandler(its.GetDatatype().(Datatype), old, new)

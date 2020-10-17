@@ -1,9 +1,9 @@
 package datatypes
 
 import (
+	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
 	"sync"
 )
@@ -17,35 +17,50 @@ type TransactionDatatype struct {
 	mutex            *sync.RWMutex
 	isLocked         bool
 	success          bool
-	rollbackSnapshot iface.Snapshot
+	rollbackSnapshot []byte
+	rollbackMeta     []byte
 	rollbackOps      []iface.Operation
-	rollbackOpID     *model.OperationID
 	currentTrxCtx    *TransactionContext
 }
 
 // TransactionContext is a context used for transactions
 type TransactionContext struct {
-	tag          string
-	opBuffer     []iface.Operation
-	rollbackOpID *model.OperationID
+	tag      string
+	opBuffer []iface.Operation
 }
 
-func (t *TransactionContext) appendOperation(op iface.Operation) {
-	t.opBuffer = append(t.opBuffer, op)
+func (its *TransactionContext) appendOperation(op iface.Operation) {
+	its.opBuffer = append(its.opBuffer, op)
 }
 
 // newTransactionDatatype creates a new TransactionDatatype
 func newTransactionDatatype(w *WiredDatatype, snapshot iface.Snapshot) *TransactionDatatype {
+
 	return &TransactionDatatype{
-		WiredDatatype:    w,
-		mutex:            new(sync.RWMutex),
-		isLocked:         false,
-		success:          true,
-		currentTrxCtx:    nil,
-		rollbackSnapshot: snapshot.CloneSnapshot(),
-		rollbackOps:      nil,
-		rollbackOpID:     w.opID.Clone(),
+		WiredDatatype: w,
+		mutex:         new(sync.RWMutex),
+		isLocked:      false,
+		success:       true,
+		currentTrxCtx: nil,
+		rollbackOps:   nil,
 	}
+}
+
+func (its *TransactionDatatype) ResetRollBackContext() errors.OrtooError {
+	its.datatype.ResetWired()
+	its.datatype.ResetSnapshot()
+	snap, err := json.Marshal(its.datatype.GetSnapshot())
+	if err != nil {
+		return errors.DatatypeMarshal.New(its.Logger, err.Error())
+	}
+	meta, err := its.GetMeta()
+	if err != nil {
+		return errors.DatatypeMarshal.New(its.Logger, err.Error())
+	}
+	its.rollbackSnapshot = snap
+	its.rollbackMeta = meta
+	its.rollbackOps = nil
+	return nil
 }
 
 // GetWired returns WiredDatatype
@@ -76,6 +91,7 @@ func (its *TransactionDatatype) ExecuteOperationWithTransaction(
 		return ret, nil
 	}
 	its.executeRemoteBase(op)
+	its.currentTrxCtx.appendOperation(op)
 	return nil, nil
 }
 
@@ -86,12 +102,10 @@ func (its *TransactionDatatype) setTransactionContextAndLock(tag string) *Transa
 	}
 	its.mutex.Lock()
 	its.isLocked = true
-	transactionCtx := &TransactionContext{
-		tag:          tag,
-		opBuffer:     nil,
-		rollbackOpID: its.opID.Clone(),
+	return &TransactionContext{
+		tag:      tag,
+		opBuffer: nil,
 	}
-	return transactionCtx
 }
 
 // BeginTransaction is called before a transaction is executed.
@@ -101,13 +115,13 @@ func (its *TransactionDatatype) setTransactionContextAndLock(tag string) *Transa
 func (its *TransactionDatatype) BeginTransaction(
 	tag string,
 	tnxCtx *TransactionContext,
-	withOp bool,
+	newTxnOp bool,
 ) *TransactionContext {
 	if its.isLocked && its.currentTrxCtx == tnxCtx {
 		return nil // called after DoTransaction() succeeds.
 	}
 	its.currentTrxCtx = its.setTransactionContextAndLock(tag)
-	if withOp {
+	if newTxnOp {
 		op := operations.NewTransactionOperation(tag)
 		its.SetNextOpID(op)
 		its.currentTrxCtx.appendOperation(op)
@@ -119,20 +133,20 @@ func (its *TransactionDatatype) BeginTransaction(
 func (its *TransactionDatatype) Rollback() errors.OrtooError {
 	its.Logger.Infof("Begin the rollback: '%s'", its.currentTrxCtx.tag)
 	snapshotDatatype, _ := its.datatype.(iface.SnapshotDatatype)
-	redoOpID := its.opID
-	redoSnapshot := snapshotDatatype.GetSnapshot().CloneSnapshot()
-	its.SetOpID(its.currentTrxCtx.rollbackOpID)
-	snapshotDatatype.SetSnapshot(its.rollbackSnapshot)
+	err := snapshotDatatype.SetMetaAndSnapshot(its.rollbackMeta, its.rollbackSnapshot)
+	if err != nil {
+		return errors.DatatypeTransaction.New(its.Logger, "rollback failed")
+	}
 	for _, op := range its.rollbackOps {
 		err := its.Replay(op)
 		if err != nil {
-			its.SetOpID(redoOpID)
-			snapshotDatatype.SetSnapshot(redoSnapshot)
 			return errors.DatatypeTransaction.New(its.Logger, "rollback failed")
 		}
 	}
-	its.rollbackOpID = its.opID.Clone()
-	its.rollbackSnapshot = snapshotDatatype.GetSnapshot().CloneSnapshot()
+	its.rollbackMeta, its.rollbackSnapshot, err = snapshotDatatype.GetMetaAndSnapshot()
+	if err != nil {
+		return errors.DatatypeTransaction.New(its.Logger, "rollback failed")
+	}
 	its.rollbackOps = nil
 	its.Logger.Infof("End the rollback: '%s'", its.currentTrxCtx.tag)
 	return nil

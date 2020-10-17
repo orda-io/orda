@@ -18,6 +18,7 @@ func (its *SnapshotDatatype) ApplySnapshotOperation(
 	sc iface.SnapshotContent,
 	newSnap iface.Snapshot,
 ) errors.OrtooError {
+	its.GetBase().GetLogger().Infof("apply SnapshotOperation")
 	if err := json.Unmarshal([]byte(sc.GetS()), newSnap); err != nil {
 		return errors.DatatypeSnapshot.New(its.GetBase().GetLogger(), err.Error())
 	}

@@ -20,19 +20,22 @@ func (its *ManageableDatatype) Initialize(
 	w iface.Wire,
 	snapshot iface.Snapshot,
 	datatype iface.Datatype,
-) {
+) errors.OrtooError {
 	wiredDatatype := newWiredDatatype(base, w)
 	transactionDatatype := newTransactionDatatype(wiredDatatype, snapshot)
-
 	its.TransactionDatatype = transactionDatatype
 	its.TransactionCtx = nil
 	its.SetDatatype(datatype)
+	if err := its.ResetRollBackContext(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // DoTransaction enables datatypes to perform a transaction.
 func (its *ManageableDatatype) DoTransaction(
 	tag string,
-	userFunc func(txnCtx *TransactionContext) error,
+	funcWithCloneDatatype func(txnCtx *TransactionContext) error,
 ) errors.OrtooError {
 	txnCtx := its.BeginTransaction(tag, its.TransactionCtx, true)
 	defer func() {
@@ -40,7 +43,7 @@ func (its *ManageableDatatype) DoTransaction(
 			// do nothing
 		}
 	}()
-	if err := userFunc(txnCtx); err != nil {
+	if err := funcWithCloneDatatype(txnCtx); err != nil {
 		its.SetTransactionFail()
 		return errors.DatatypeTransaction.New(its.Logger, err.Error())
 	}

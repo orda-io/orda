@@ -12,9 +12,9 @@ import (
 // WiredDatatype implements the datatype features related to the synchronization with Ortoo server
 type WiredDatatype struct {
 	*BaseDatatype
-	wire       iface.Wire
-	checkPoint *model.CheckPoint
-	buffer     []*model.Operation
+	wire        iface.Wire
+	checkPoint  *model.CheckPoint
+	localBuffer []*model.Operation
 }
 
 // newWiredDatatype creates a new wiredDatatype
@@ -22,9 +22,13 @@ func newWiredDatatype(b *BaseDatatype, w iface.Wire) *WiredDatatype {
 	return &WiredDatatype{
 		BaseDatatype: b,
 		checkPoint:   model.NewCheckPoint(),
-		buffer:       make([]*model.Operation, 0, constants.OperationBufferSize),
+		localBuffer:  make([]*model.Operation, 0, constants.OperationBufferSize),
 		wire:         w,
 	}
+}
+
+func (its *WiredDatatype) ResetWired() {
+	its.localBuffer = make([]*model.Operation, 0, constants.OperationBufferSize)
 }
 
 // GetBase returns BaseDatatype
@@ -121,11 +125,16 @@ func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error
 			panic("Not implemented yet")
 		}
 	} else if ppp.GetPushPullPackOption().HasSubscribeBit() {
-		// modelOp := ppp.GetOperations()[0]
-		// snapOp, ok := operations.ModelToOperation(modelOp).(*operations.SnapshotOperation)
-		// if ok {
-		// 	its.checkPoint = ppp.CheckPoint
-		// }
+
+		modelOp := ppp.GetOperations()[0]
+		_, ok := operations.ModelToOperation(modelOp).(*operations.SnapshotOperation)
+		if !ok {
+			return errors.DatatypeSnapshot.New(its.Logger, "subscribe without SnapshotOp")
+		}
+		its.datatype.ResetRollBackContext()
+		its.checkPoint.Cseq = ppp.CheckPoint.Cseq
+		its.checkPoint.Sseq = ppp.CheckPoint.Sseq - uint64(len(ppp.Operations))
+		its.Logger.Infof("ready to subscribe: (%v)", its.checkPoint)
 	}
 	return nil
 }
@@ -139,7 +148,6 @@ func (its *WiredDatatype) applyPushPullPackExcludeDuplicatedOperations(ppp *mode
 		skip := len(ppp.Operations) - pulled
 		ppp.Operations = ppp.Operations[skip:]
 		its.Logger.Infof("skip %d operations", skip)
-
 	}
 }
 
@@ -164,7 +172,7 @@ func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE,
 		model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE:
 		if its.state == model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE && ppp.GetPushPullPackOption().HasSubscribeBit() {
-			its.buffer = make([]*model.Operation, 0, constants.OperationBufferSize)
+			its.localBuffer = make([]*model.Operation, 0, constants.OperationBufferSize)
 			newOpID := model.NewOperationIDWithCUID(its.opID.CUID)
 			newOpID.Lamport = 1 // Because of SnapshotOperation
 			its.SetOpID(newOpID)
@@ -188,8 +196,10 @@ func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
 
 // ApplyPushPullPack ...
 func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
+	its.Logger.Infof("begin ApplyPushPull:%v", ppp.ToString())
+	defer its.Logger.Infof("end ApplyPushPull")
 	var oldState, newState model.StateOfDatatype
-	errs := &errors.MultipleOrtooErrors{}
+	var errs errors.OrtooError = &errors.MultipleOrtooErrors{}
 	var opList []interface{}
 	err := its.checkPushPullPackOption(ppp)
 	if err == nil {
@@ -197,14 +207,14 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 		its.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
 		oldState, newState, err = its.applyPushPullPackUpdateStateOfDatatype(ppp)
 		if err != nil {
-			_ = errs.Append(err)
+			errs = errs.Append(err)
 		}
 		opList, err = its.ReceiveRemoteModelOperations(ppp.Operations, true)
 		if err != nil {
-			_ = errs.Append(err)
+			errs = errs.Append(err)
 		}
 	} else {
-		_ = errs.Append(err)
+		errs = errs.Append(err)
 	}
 	go its.applyPushPullPackCallHandler(errs, oldState, newState, opList)
 }
@@ -228,14 +238,14 @@ func (its *WiredDatatype) applyPushPullPackCallHandler(
 
 func (its *WiredDatatype) getModelOperations(cseq uint64) []*model.Operation {
 
-	if len(its.buffer) == 0 {
+	if len(its.localBuffer) == 0 {
 		return []*model.Operation{}
 	}
-	op := its.buffer[0]
+	op := its.localBuffer[0]
 	startCseq := op.ID.GetSeq()
 	var start = int(cseq - startCseq)
-	if start >= 0 && len(its.buffer) > start {
-		return its.buffer[start:]
+	if start >= 0 && len(its.localBuffer) > start {
+		return its.localBuffer[start:]
 	}
 	return []*model.Operation{}
 }
@@ -245,7 +255,7 @@ func (its *WiredDatatype) deliverTransaction(transaction []iface.Operation) {
 		return
 	}
 	for _, op := range transaction {
-		its.buffer = append(its.buffer, op.ToModelOperation())
+		its.localBuffer = append(its.localBuffer, op.ToModelOperation())
 	}
 	its.wire.DeliverTransaction(its)
 }

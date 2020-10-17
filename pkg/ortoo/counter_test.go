@@ -14,7 +14,7 @@ func TestIntCounterTransactions(t *testing.T) {
 	t.Run("Can transaction for Counter", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
 
-		counter1 := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
+		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
 
 		require.NoError(t, counter1.DoTransaction("transaction1", func(counter CounterInTxn) error {
 			_, _ = counter.IncreaseBy(2)
@@ -38,8 +38,8 @@ func TestIntCounterTransactions(t *testing.T) {
 
 	t.Run("Can sync Counter operations with Test wire", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		counter1 := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
-		counter2 := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), tw, nil)
+		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
+		counter2, _ := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), tw, nil)
 
 		tw.SetDatatypes(counter1.(*counter).ManageableDatatype, counter2.(*counter).ManageableDatatype)
 
@@ -77,11 +77,11 @@ func TestIntCounterTransactions(t *testing.T) {
 	})
 
 	t.Run("Can set and get counterSnapshot", func(t *testing.T) {
-		counter1 := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), nil, nil)
+		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), nil, nil)
 		_, _ = counter1.Increase()
 		_, _ = counter1.IncreaseBy(1234)
 
-		clone := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), nil, nil)
+		clone, _ := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), nil, nil)
 		meta1, snap1, err := counter1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
 		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)

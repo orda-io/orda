@@ -128,6 +128,9 @@ func (its *MultipleOrtooErrors) GetCode() ErrorCode {
 }
 
 func (its *MultipleOrtooErrors) Append(e OrtooError) OrtooError {
+	if e == nil {
+		return its
+	}
 	switch cast := e.(type) {
 	case *singleOrtooError:
 		its.errs = append(its.errs, cast)

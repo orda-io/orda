@@ -28,7 +28,7 @@ type counter struct {
 }
 
 // newCounter creates a new int counter
-func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handler *Handlers) Counter {
+func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handler *Handlers) (Counter, errors.OrtooError) {
 	counter := &counter{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
@@ -38,20 +38,13 @@ func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handler *Handlers
 			Snapshot: newCounterSnapshot(base),
 		},
 	}
-	counter.Initialize(base, wire, counter.GetSnapshot(), counter)
-	return counter
+	return counter, counter.Initialize(base, wire, counter.GetSnapshot(), counter)
 }
 
 func (its *counter) DoTransaction(tag string, txnFunc func(intCounter CounterInTxn) error) error {
 	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
 		clone := &counter{
-			datatype: &datatype{
-				ManageableDatatype: &datatypes.ManageableDatatype{
-					TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
-					TransactionCtx:      txnCtx,
-				},
-				handlers: its.handlers,
-			},
+			datatype:         its.newDatatype(txnCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
 		return txnFunc(clone)
@@ -75,6 +68,10 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 	}
 
 	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
+}
+
+func (its *counter) ResetSnapshot() {
+	its.SnapshotDatatype.SetSnapshot(newCounterSnapshot(its.BaseDatatype))
 }
 
 func (its *counter) Get() int32 {
@@ -111,13 +108,6 @@ func newCounterSnapshot(base iface.BaseDatatype) *counterSnapshot {
 	return &counterSnapshot{
 		base:  base,
 		Value: 0,
-	}
-}
-
-func (its *counterSnapshot) CloneSnapshot() iface.Snapshot {
-	return &counterSnapshot{
-		base:  its.base,
-		Value: its.Value,
 	}
 }
 

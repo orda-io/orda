@@ -57,7 +57,7 @@ const (
 var datatypeErrFormats = map[DatatypeErrorCode]string{
 	DatatypeCreate:            "fail to create datatype: %s",
 	DatatypeSubscribe:         "fail to subscribe datatype: %s",
-	DatatypeTransaction:       "fail to proceed transaction: %s",
+	DatatypeTransaction:       "fail to proceed transaction: %v",
 	DatatypeSnapshot:          "fail to make a snapshot: %s",
 	DatatypeIllegalParameters: "fail to execute the operation due to illegal operation: %v",
 	DatatypeInvalidParent:     "fail to modify due to the invalid parent: %v",

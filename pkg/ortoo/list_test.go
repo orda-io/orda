@@ -198,8 +198,8 @@ func TestList(t *testing.T) {
 
 	t.Run("Can perform list operations", func(t *testing.T) {
 		tw := testonly.NewTestWire(false)
-		list1 := newList(testonly.NewBase("key1", model.TypeOfDatatype_LIST), tw, nil)
-		list2 := newList(testonly.NewBase("key2", model.TypeOfDatatype_LIST), tw, nil) // list2 always wins
+		list1, _ := newList(testonly.NewBase("key1", model.TypeOfDatatype_LIST), tw, nil)
+		list2, _ := newList(testonly.NewBase("key2", model.TypeOfDatatype_LIST), tw, nil) // list2 always wins
 		tw.SetDatatypes(list1.(*list).ManageableDatatype, list2.(*list).ManageableDatatype)
 
 		// list1: x -> y
@@ -295,7 +295,7 @@ func TestList(t *testing.T) {
 
 		meta1, snap1, err := list1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
-		clone2 := newList(testonly.NewBase("key2", model.TypeOfDatatype_LIST), nil, nil)
+		clone2, _ := newList(testonly.NewBase("key2", model.TypeOfDatatype_LIST), nil, nil)
 		err = clone2.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)
 		require.NoError(t, err)
 		meta2, snap2, err := clone2.(iface.Datatype).GetMetaAndSnapshot()
@@ -309,7 +309,7 @@ func TestList(t *testing.T) {
 
 	t.Run("Can run transactions", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		list1 := newList(testonly.NewBase("key1", model.TypeOfDatatype_LIST), tw, nil)
+		list1, _ := newList(testonly.NewBase("key1", model.TypeOfDatatype_LIST), tw, nil)
 
 		require.NoError(t, list1.DoTransaction("succeeded transaction", func(listTxn ListInTxn) error {
 			_, _ = listTxn.InsertMany(0, "a", "b")

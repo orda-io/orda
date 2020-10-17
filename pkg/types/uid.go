@@ -14,7 +14,7 @@ const (
 type UID []byte
 
 func newUniqueID() UID {
-	u, err := uuid.NewUUID()
+	u, err := uuid.NewRandom()
 	if err != nil {
 		panic(err) // panic because it cannot happen
 	}

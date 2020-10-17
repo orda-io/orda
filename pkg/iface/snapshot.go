@@ -18,6 +18,7 @@ type SnapshotDatatype interface {
 	PublicSnapshotDatatype
 	SetSnapshot(snapshot Snapshot)
 	GetSnapshot() Snapshot
+	ResetSnapshot()
 	GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError)
 	SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError
 	ApplySnapshotOperation(sc SnapshotContent, newSnap Snapshot) errors.OrtooError
@@ -27,6 +28,5 @@ type SnapshotDatatype interface {
 type Snapshot interface {
 	SetBase(base BaseDatatype)
 	GetBase() BaseDatatype
-	CloneSnapshot() Snapshot
 	GetAsJSONCompatible() interface{}
 }

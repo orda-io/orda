@@ -30,7 +30,7 @@ type ListInTxn interface {
 	Size() int
 }
 
-func newList(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) List {
+func newList(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (List, errors.OrtooError) {
 	list := &list{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
@@ -40,8 +40,7 @@ func newList(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) 
 			Snapshot: newListSnapshot(base),
 		},
 	}
-	list.Initialize(base, wire, list.GetSnapshot(), list)
-	return list
+	return list, list.Initialize(base, wire, list.GetSnapshot(), list)
 }
 
 type list struct {
@@ -52,17 +51,15 @@ type list struct {
 func (its *list) DoTransaction(tag string, txnFunc func(list ListInTxn) error) error {
 	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
 		clone := &list{
-			datatype: &datatype{
-				ManageableDatatype: &datatypes.ManageableDatatype{
-					TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
-					TransactionCtx:      txnCtx,
-				},
-				handlers: its.handlers,
-			},
+			datatype:         its.newDatatype(txnCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
 		return txnFunc(clone)
 	})
+}
+
+func (its *list) ResetSnapshot() {
+	its.SnapshotDatatype.SetSnapshot(newListSnapshot(its.BaseDatatype))
 }
 
 func (its *list) GetAsJSON() interface{} {
