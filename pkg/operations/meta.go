@@ -99,7 +99,7 @@ func (its *TransactionOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_TRANSACTION,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -131,7 +131,7 @@ func (its *TransactionOperation) GetAsJSON() interface{} {
 // NewErrorOperation creates an ErrorOperation.
 func NewErrorOperation(err errors.OrtooError) *ErrorOperation {
 	return &ErrorOperation{
-		baseOperation: nil,
+		baseOperation: newBaseOperation(model.NewOperationID()),
 		C: errorContent{
 			Code: int32(err.GetCode()),
 			Msg:  err.Error(),
@@ -165,7 +165,7 @@ func (its *ErrorOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_ERROR,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -206,8 +206,8 @@ func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDataty
 
 	return &SnapshotOperation{
 		baseOperation: newBaseOperation(nil),
-		C: snapshotContent{
-			Type:     typeOf,
+		C: &snapshotContent{
+			// Type:     typeOf,
 			State:    state,
 			Snapshot: snapshot,
 		},
@@ -215,15 +215,19 @@ func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDataty
 }
 
 type snapshotContent struct {
-	Type     model.TypeOfDatatype
+	// Type     model.TypeOfDatatype
 	State    model.StateOfDatatype
 	Snapshot string
+}
+
+func (its *snapshotContent) GetS() string {
+	return its.Snapshot
 }
 
 // SnapshotOperation is used to deliver the snapshot of a datatype.
 type SnapshotOperation struct {
 	*baseOperation
-	C snapshotContent
+	C *snapshotContent
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
@@ -242,8 +246,12 @@ func (its *SnapshotOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_SNAPSHOT,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
+}
+
+func (its *SnapshotOperation) GetContent() iface.SnapshotContent {
+	return its.C
 }
 
 // GetType returns the type of operation.
@@ -260,7 +268,7 @@ func (its *SnapshotOperation) GetAsJSON() interface{} {
 	return struct {
 		ID   interface{}
 		Type string
-		snapshotContent
+		*snapshotContent
 	}{
 		ID:              its.baseOperation.GetAsJSON(),
 		Type:            model.TypeOfOperation_SNAPSHOT.String(),

@@ -76,8 +76,8 @@ func newPushPullHandler(
 	collectionDoc *schema.CollectionDoc,
 	service *OrtooService,
 ) *PushPullHandler {
-	subLevel := fmt.Sprintf("%s(%d)", tagPushPull, collectionDoc.Num)
-	ortooCtx := context.NewWithTag(ctx, context.SERVER, subLevel, clientDoc.GetClientSummary(), ppp.GetDatatypeTag())
+	ortooCtx := context.NewWithTags(ctx, context.SERVER,
+		context.MakeTagInPushPull(constants.TagPushPull, collectionDoc.Num, clientDoc.CUID, ppp.DUID))
 	return &PushPullHandler{
 		Key:             ppp.Key,
 		DUID:            types.UIDtoString(ppp.DUID),
@@ -120,22 +120,27 @@ func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.Or
 
 func (its *PushPullHandler) finalize() {
 	if its.err == nil {
-		its.ctx.L().Infof("finish PUSHPULL for %s (%v) -> (%v)",
-			its.datatypeDoc, its.initialCheckPoint, its.currentCheckPoint)
+		its.ctx.L().Infof("finish with CP (%v) -> (%v) and pulled ops: %d",
+			its.initialCheckPoint, its.currentCheckPoint, len(its.resPushPullPack.Operations))
 		if len(its.pushingOperations) > 0 {
-			if err := its.sendNotification(); err == nil {
-				// continue
-			}
-			if err := its.reserveUpdateSnapshot(); err != nil {
-				// continue
-			}
+			newCtx := context.NewWithTags(gocontext.TODO(), context.SERVER,
+				context.MakeTagInPushPull(constants.TagPostPushPull, its.collectionDoc.Num, its.clientDoc.CUID, its.resPushPullPack.DUID))
+			go func() {
+				if err := its.sendNotification(newCtx); err == nil {
+					// continue
+				}
+				if err := its.reserveUpdateSnapshot(newCtx); err != nil {
+					// continue
+				}
+			}()
 		}
 	} else {
+		its.ctx.L().Infof("finish with an error: %v", its.err.Error())
 		its.resPushPullPack.GetPushPullPackOption().SetErrorBit()
 		errOp := operations.NewErrorOperation(its.err)
 		its.resPushPullPack.Operations = append(its.resPushPullPack.Operations, errOp.ToModelOperation())
 	}
-	its.ctx.L().Infof("send back to %s %s", its.clientDoc.Alias, its.resPushPullPack.ToString())
+	its.ctx.L().Infof("SENDBACK %s", its.resPushPullPack.ToString())
 	its.retCh <- its.resPushPullPack
 }
 
@@ -178,21 +183,20 @@ func (its *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	return
 }
 
-func (its *PushPullHandler) sendNotification() errors.OrtooError {
+func (its *PushPullHandler) sendNotification(ctx context.OrtooContext) errors.OrtooError {
 	if err := its.notifier.NotifyAfterPushPull(
-		its.ctx,
+		ctx,
 		its.collectionDoc.Name,
 		its.clientDoc,
 		its.datatypeDoc,
 		its.currentCheckPoint.Sseq); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (its *PushPullHandler) reserveUpdateSnapshot() error {
-	snapshotManager := snapshot.NewManager(its.ctx, its.mongo, its.datatypeDoc, its.collectionDoc)
+func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrtooContext) error {
+	snapshotManager := snapshot.NewManager(ctx, its.mongo, its.datatypeDoc, its.collectionDoc)
 	if err := snapshotManager.UpdateSnapshot(); err != nil { // TODO: should be asynchronous
 		return err
 	}
@@ -207,39 +211,30 @@ func (its *PushPullHandler) commitToMongoDB() errors.OrtooError {
 		if err := its.mongo.InsertOperations(its.ctx, its.pushingOperations); err != nil {
 			return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
 		}
-		its.ctx.L().Infof("push %d operations finally", len(its.pushingOperations))
+		its.ctx.L().Infof("commit %d Operations finally", len(its.pushingOperations))
 	}
 
 	if err := its.mongo.UpdateDatatype(its.ctx, its.datatypeDoc); err != nil {
 		return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
 	}
-	its.ctx.L().Infof("update %s", its.datatypeDoc)
+	its.ctx.L().Infof("commit Datatype %s", its.datatypeDoc)
 
 	if err := its.mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCheckPoint); err != nil {
 		return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
 	}
-	its.ctx.L().Infof("update %s with CP(%s)", its.clientDoc, its.currentCheckPoint.String())
+	its.ctx.L().Infof("commit CheckPoint with %s", its.currentCheckPoint.String())
 	return nil
 }
 
 func (its *PushPullHandler) pullOperations() errors.OrtooError {
 	sseqBegin := its.gotPushPullPack.CheckPoint.Sseq + 1
-
-	var opList []*model.Operation
 	if its.datatypeDoc.SseqBegin <= sseqBegin && !its.gotOption.HasSnapshotBit() {
-		err := its.mongo.GetOperations(
-			its.ctx,
-			its.DUID,
-			sseqBegin,
-			constants.InfinitySseq,
-			func(opDoc *schema.OperationDoc) errors.OrtooError {
-				var modelOp = opDoc.GetOperation()
-				opList = append(opList, modelOp)
-				its.currentCheckPoint.Sseq = opDoc.Sseq
-				return nil
-			})
+		opList, sseqList, err := its.mongo.GetOperations(its.ctx, its.DUID, sseqBegin, constants.InfinitySseq)
 		if err != nil {
 			return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
+		}
+		if len(opList) > 0 {
+			its.currentCheckPoint.Sseq = sseqList[len(sseqList)-1]
 		}
 		its.resPushPullPack.Operations = opList
 	}

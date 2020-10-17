@@ -7,6 +7,8 @@ import (
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
+type base iface.BaseDatatype // not to export in Snapshot
+
 // Datatype is an Ortoo Datatype which provides common interfaces.
 type Datatype interface {
 	iface.PublicBaseDatatype

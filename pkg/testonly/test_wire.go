@@ -60,7 +60,7 @@ func (its *TestWire) Sync() {
 		for _, w := range its.datatypeList {
 			if wired != w.GetWired() {
 				// log.Logger.Info(wired.GetCUID(), " => ", w.GetCUID())
-				w.ReceiveRemoteModelOperations(operations)
+				w.ReceiveRemoteModelOperations(operations, false)
 			}
 		}
 	}

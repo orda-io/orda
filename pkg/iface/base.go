@@ -1,6 +1,7 @@
 package iface
 
 import (
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
@@ -21,4 +22,8 @@ type BaseDatatype interface {
 	GetCUID() string                      // @baseDatatype
 	SetState(state model.StateOfDatatype) // @baseDatatype
 	SetLogger(l *log.OrtooLog)            // @baseDatatype
+	GetMeta() ([]byte, errors.OrtooError)
+	SetMeta(meta []byte) errors.OrtooError
+	GetLogger() *log.OrtooLog
+	GetOpID() *model.OperationID
 }

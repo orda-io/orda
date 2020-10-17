@@ -46,6 +46,6 @@ func (n *Notifier) NotifyAfterPushPull(
 	if token := n.pubSubClient.Publish(topic, 0, false, bMsg); token.Wait() && token.Error() != nil {
 		return errors.ServerNotify.New(ctx.L(), token.Error())
 	}
-	ctx.L().Infof("notify %s with sseq:%d by %s", datatype, sseq, client)
+	ctx.L().Infof("notify datatype topic:(%s) with sseq:%d by %s", topic, sseq, client.GetClientSummary())
 	return nil
 }

@@ -3,6 +3,7 @@ package ortoo
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
@@ -36,7 +37,7 @@ func listIntegrityTest(t *testing.T, l *listSnapshot) {
 }
 
 func listMarshalTest(t *testing.T, original *listSnapshot) {
-	clone := newListSnapshot(original.base)
+	clone := newListSnapshot(original.GetBase())
 	snap1, err2 := json.Marshal(original)
 	require.NoError(t, err2)
 	log.Logger.Infof("%v", string(snap1))
@@ -64,6 +65,7 @@ func listMarshalTest(t *testing.T, original *listSnapshot) {
 		e1 = e1.getNext()
 		e2 = e2.getNext()
 	}
+
 }
 
 func TestList(t *testing.T) {
@@ -229,8 +231,8 @@ func TestList(t *testing.T) {
 		tw.Sync()
 		json5 := testonly.Marshal(t, list1.GetAsJSON())
 		json6 := testonly.Marshal(t, list2.GetAsJSON())
-		log.Logger.Infof("SNAP1: %v => %v", json5, list1.(*list).snapshot)
-		log.Logger.Infof("SNAP2: %v => %v", json6, list2.(*list).snapshot)
+		log.Logger.Infof("SNAP1: %v => %v", json5, list1.(*list).GetSnapshot())
+		log.Logger.Infof("SNAP2: %v => %v", json6, list2.(*list).GetSnapshot())
 		require.Equal(t, json5, json6)
 
 		updated1, _ := list1.Update(4, "X", "Y")
@@ -241,8 +243,8 @@ func TestList(t *testing.T) {
 		json7 := testonly.Marshal(t, list1.GetAsJSON())
 		json8 := testonly.Marshal(t, list2.GetAsJSON())
 		require.Equal(t, json7, json8)
-		log.Logger.Infof("SNAP1: %v => %v", json7, list1.(*list).snapshot)
-		log.Logger.Infof("SNAP2: %v => %v", json8, list2.(*list).snapshot)
+		log.Logger.Infof("SNAP1: %v => %v", json7, list1.(*list).GetSnapshot())
+		log.Logger.Infof("SNAP2: %v => %v", json8, list2.(*list).GetSnapshot())
 
 		m := make(map[string]string)
 		m["a"] = "x"
@@ -255,8 +257,8 @@ func TestList(t *testing.T) {
 		tw.Sync()
 		json9 := testonly.Marshal(t, list1.GetAsJSON())
 		json10 := testonly.Marshal(t, list2.GetAsJSON())
-		log.Logger.Infof("SNAP1: %v => %v", json9, list1.(*list).snapshot)
-		log.Logger.Infof("SNAP2: %v => %v", json10, list2.(*list).snapshot)
+		log.Logger.Infof("SNAP1: %v => %v", json9, list1.(*list).GetSnapshot())
+		log.Logger.Infof("SNAP2: %v => %v", json10, list2.(*list).GetSnapshot())
 		require.Equal(t, json9, json10)
 
 		time2, err := list1.Get(3)
@@ -273,13 +275,13 @@ func TestList(t *testing.T) {
 		require.Equal(t, 4, list2.Size())
 		json11 := testonly.Marshal(t, list1.GetAsJSON())
 		json12 := testonly.Marshal(t, list2.GetAsJSON())
-		log.Logger.Infof("SNAP1: %v => %v", json11, list1.(*list).snapshot)
-		log.Logger.Infof("SNAP2: %v => %v", json12, list2.(*list).snapshot)
+		log.Logger.Infof("SNAP1: %v => %v", json11, list1.(*list).GetSnapshot())
+		log.Logger.Infof("SNAP2: %v => %v", json12, list2.(*list).GetSnapshot())
 
 		_, err = list2.DeleteMany(0, 0)
 		require.Error(t, err)
 
-		marshaled, err2 := json.Marshal(list1.(*list).snapshot)
+		marshaled, err2 := json.Marshal(list1.(*list).GetSnapshot())
 		require.NoError(t, err2)
 		log.Logger.Infof("%v", string(marshaled))
 		clone := listSnapshot{}
@@ -288,8 +290,21 @@ func TestList(t *testing.T) {
 		marshaled2, err2 := json.Marshal(&clone)
 		require.NoError(t, err2)
 		log.Logger.Infof("%v", string(marshaled2))
-		log.Logger.Infof("%+v", list1.(*list).snapshot.GetAsJSONCompatible())
+		log.Logger.Infof("%+v", list1.(*list).GetAsJSONCompatible())
 		log.Logger.Infof("%+v", clone.GetAsJSONCompatible())
+
+		meta1, snap1, err := list1.(iface.Datatype).GetMetaAndSnapshot()
+		require.NoError(t, err)
+		clone2 := newList(testonly.NewBase("key2", model.TypeOfDatatype_LIST), nil, nil)
+		err = clone2.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)
+		require.NoError(t, err)
+		meta2, snap2, err := clone2.(iface.Datatype).GetMetaAndSnapshot()
+		require.NoError(t, err)
+
+		log.Logger.Infof("%v", string(snap1))
+		log.Logger.Infof("%v", string(snap2))
+		require.Equal(t, meta1, meta2)
+		require.Equal(t, snap1, snap2)
 	})
 
 	t.Run("Can run transactions", func(t *testing.T) {

@@ -2,6 +2,7 @@ package ortoo
 
 import (
 	"fmt"
+	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
@@ -73,5 +74,26 @@ func TestIntCounterTransactions(t *testing.T) {
 
 		log.Logger.Infof("%#v vs. %#v", counter1.Get(), counter2.Get())
 		require.Equal(t, counter1.Get(), counter2.Get())
+	})
+
+	t.Run("Can set and get counterSnapshot", func(t *testing.T) {
+		counter1 := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), nil, nil)
+		_, _ = counter1.Increase()
+		_, _ = counter1.IncreaseBy(1234)
+
+		clone := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), nil, nil)
+		meta1, snap1, err := counter1.(iface.Datatype).GetMetaAndSnapshot()
+		require.NoError(t, err)
+		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)
+		require.NoError(t, err)
+		meta2, snap2, err := clone.(iface.Datatype).GetMetaAndSnapshot()
+		require.NoError(t, err)
+
+		log.Logger.Infof("%v", string(snap1))
+		log.Logger.Infof("%v", string(snap2))
+		require.Equal(t, snap1, snap2)
+		require.Equal(t, meta1, meta2)
+
+		require.Equal(t, counter1.Get(), clone.Get())
 	})
 }

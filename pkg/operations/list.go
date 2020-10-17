@@ -44,7 +44,7 @@ func (its *InsertOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_LIST_INSERT,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -96,7 +96,7 @@ func (its *DeleteOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_LIST_DELETE,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -149,7 +149,7 @@ func (its *UpdateOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_LIST_UPDATE,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 

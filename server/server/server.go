@@ -2,12 +2,10 @@ package server
 
 import (
 	gocontext "context"
-	"fmt"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/utils"
 	"github.com/knowhunger/ortoo/pkg/version"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/notification"
@@ -53,8 +51,7 @@ func NewOrtooServer(goCtx gocontext.Context, conf *OrtooServerConfig) (*OrtooSer
 	if err != nil {
 		return nil, errors.ServerInit.New(log.Logger, err.Error())
 	}
-	subLevel := fmt.Sprintf("%0.10s:%d", utils.TrimLong(host, 15), conf.RPCServerPort)
-	ctx := context.NewWithTag(goCtx, context.SERVER, subLevel)
+	ctx := context.NewWithTags(goCtx, context.SERVER, context.MakeTagInServer(host, conf.RPCServerPort))
 	ctx.L().Infof("Config: %#v", conf)
 	mongo, oErr := mongodb.New(ctx, &conf.Mongo)
 	if oErr != nil {

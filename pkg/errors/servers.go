@@ -8,12 +8,12 @@ import (
 
 // NewPushPullError generates a PushPullError.
 func (its ServerErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooError {
-	format := fmt.Sprintf("[PushPullError: %d] %s", its, serverErrFormats[its])
+	format := fmt.Sprintf("[ServerError: %d] %s", its, serverErrFormats[its])
 	err := &singleOrtooError{
 		tError: tracerr.New(fmt.Sprintf(format, args...)),
 		Code:   ErrorCode(its),
 	}
-	err.Print(l)
+	err.Print(l, 1)
 	return err
 }
 

@@ -169,4 +169,34 @@ func TestDocument(t *testing.T) {
 
 		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))
 	})
+
+	t.Run("Can transaction for Document", func(t *testing.T) {
+		tw := testonly.NewTestWire(true)
+
+		outDoc := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+
+		require.NoError(t, outDoc.DoTransaction("transaction1", func(doc DocumentInTxn) error {
+			// _, err:= doc.PutToObject("K1", "V1")
+			// require.NoError(t, err)
+			// _, err = doc.PutToObject("K2", str1)
+			// require.NoError(t, err)
+			// // _, _ = counter.IncreaseBy(2)
+			// require.Equal(t, int32(2), outDoc.Get())
+			// // _, _ = counter.IncreaseBy(4)
+			// // require.Equal(t, int32(6), counter.Get())
+			return nil
+		}))
+
+		// require.Equal(t, int32(6), outDoc.Get())
+		//
+		// require.Error(t, outDoc.DoTransaction("transaction2", func(intCounter CounterInTxn) error {
+		// 	_, _ = intCounter.IncreaseBy(3)
+		// 	require.Equal(t, int32(9), intCounter.Get())
+		// 	_, _ = intCounter.IncreaseBy(5)
+		// 	require.Equal(t, int32(14), intCounter.Get())
+		// 	return fmt.Errorf("err")
+		// }))
+		// require.Equal(t, int32(6), outDoc.Get())
+
+	})
 }

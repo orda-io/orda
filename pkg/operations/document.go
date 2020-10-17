@@ -48,7 +48,7 @@ func (its *DocPutInObjectOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_PUT_OBJ,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -109,7 +109,7 @@ func (its *DocInsertToArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_INS_ARR,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -169,7 +169,7 @@ func (its *DocDeleteInObjectOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_DEL_OBJ,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -228,7 +228,7 @@ func (its *DocUpdateInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_UPD_ARR,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -288,7 +288,7 @@ func (its *DocDeleteInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_DOCUMENT_DEL_ARR,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 

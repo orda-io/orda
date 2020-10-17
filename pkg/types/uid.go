@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	shortStringLength = 10
+	ShortUIDLength = 10
 )
 
 // UID is unique ID in the format of UUID.
@@ -41,7 +41,7 @@ func CompareUID(a, b UID) int {
 
 // UIDtoShortString returns a short UID string.
 func UIDtoShortString(uid []byte) string {
-	return hex.EncodeToString(uid)[:shortStringLength]
+	return hex.EncodeToString(uid)[:ShortUIDLength]
 }
 
 // UIDtoString returns a string of UID.
@@ -50,5 +50,5 @@ func UIDtoString(uid []byte) string {
 }
 
 func ShortenUIDString(uid string) string {
-	return uid[:shortStringLength]
+	return uid[:ShortUIDLength]
 }

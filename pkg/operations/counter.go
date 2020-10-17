@@ -41,7 +41,7 @@ func (its *IncreaseOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_COUNTER_INCREASE,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 

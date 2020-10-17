@@ -7,21 +7,20 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
+	"github.com/knowhunger/ortoo/server/constants"
 	"reflect"
 )
 
-const tagPushPull = "REQ_PUSHPULL"
-
 // ProcessPushPull processes a GRPC for Push-Pull
 func (its *OrtooService) ProcessPushPull(goctx gocontext.Context, in *model.PushPullRequest) (*model.PushPullResponse, error) {
-
-	ctx := context.NewWithTag(goctx, context.SERVER, tagPushPull, in.Header.GetClientSummary())
-	ctx.L().Infof("receive %v", in.ToString())
-
+	ctx := context.New(goctx)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Header.GetCollection())
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
+
+	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagPushPull, collectionDoc.Num, in.Header.Cuid))
+	ctx.L().Infof("RECV %v", in.ToString())
 
 	clientDoc, err := its.mongo.GetClient(ctx, types.UIDtoString(in.Header.GetCuid()))
 	if err != nil {

@@ -17,25 +17,6 @@ type OrtooLog struct {
 // Logger is a global instance of OrtooLog
 var Logger = New()
 
-// New creates a new OrtooLog.
-func New() *OrtooLog {
-	logger := logrus.New()
-	logger.SetFormatter(&ortooFormatter{})
-	logger.SetReportCaller(true)
-	return &OrtooLog{logrus.NewEntry(logger)}
-}
-
-// NewWithTag creates a new OrtooLog with a tag.
-func NewWithTag(mainLevel, subLevel string, tag string) *OrtooLog {
-	return &OrtooLog{
-		New().WithFields(logrus.Fields{
-			mainField: mainLevel,
-			subField:  subLevel,
-			tagField:  tag,
-		}),
-	}
-}
-
 const (
 	colorRed    = 31
 	colorYellow = 33
@@ -49,10 +30,27 @@ var (
 )
 
 const (
-	mainField = "mainLevel"
-	subField  = "subLevel"
-	tagField  = "tagFiled"
+	tag1Field = "1stTag"
+	tag2Field = "2ndTag"
 )
+
+// New creates a new OrtooLog.
+func New() *OrtooLog {
+	logger := logrus.New()
+	logger.SetFormatter(&ortooFormatter{})
+	logger.SetReportCaller(true)
+	return &OrtooLog{logrus.NewEntry(logger)}
+}
+
+// NewWithTags creates a new OrtooLog with a tag.
+func NewWithTags(tag1, tag2 string) *OrtooLog {
+	return &OrtooLog{
+		New().WithFields(logrus.Fields{
+			tag1Field: tag1,
+			tag2Field: tag2,
+		}),
+	}
+}
 
 func getColorByLevel(level logrus.Level) int {
 	switch level {
@@ -80,7 +78,7 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	b.WriteString("\x1b[0m ")
 	b.WriteString("[")
 	// main level
-	if v, ok := entry.Data[mainField]; ok {
+	if v, ok := entry.Data[tag1Field]; ok {
 		b.WriteString(v.(string))
 	} else if strings.Contains(entry.Caller.File, "server/") {
 		b.WriteString("SERV")
@@ -89,7 +87,7 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	} else {
 		b.WriteString("NONE")
 	}
-	if v, ok := entry.Data[subField]; ok && v != "" {
+	if v, ok := entry.Data[tag2Field]; ok && v != "" {
 		b.WriteString("|")
 		b.WriteString(v.(string))
 	}
@@ -97,12 +95,6 @@ func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	b.WriteString(entry.Message)
 	b.WriteString("\t\t")
-
-	if v, ok := entry.Data[tagField]; ok && v.(string) != "" {
-		b.WriteString("[")
-		b.WriteString(v.(string))
-		b.WriteString("] ")
-	}
 
 	timestampFormat := time.StampMilli
 	b.WriteString(" [")

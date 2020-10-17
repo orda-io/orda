@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/types"
+	"strings"
 )
 
 func TrimLong(tag string, maxLength int) string {
@@ -13,7 +14,13 @@ func TrimLong(tag string, maxLength int) string {
 	return tag
 }
 
-func MakeSummary(key string, uid []byte, prefix string) string {
+func MakeSummary(key string, uid []byte, up bool) string {
 	maxLength := 20
-	return fmt.Sprintf("%s:%.*s(%.10s)", prefix, maxLength, TrimLong(key, maxLength), types.UIDtoString(uid))
+	UID := types.UIDtoString(uid)
+	if up {
+		UID = strings.ToUpper(UID)
+	} else {
+		UID = strings.ToLower(UID)
+	}
+	return fmt.Sprintf("%.*s(%.10s)", maxLength, TrimLong(key, maxLength), UID)
 }

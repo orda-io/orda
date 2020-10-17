@@ -43,7 +43,7 @@ func (its *MongoCollections) InsertSnapshot(
 	duid string,
 	sseq uint64,
 	meta []byte,
-	snapshot string,
+	snapshot []byte,
 ) errors.OrtooError {
 	snap := schema.SnapshotDoc{
 		ID:            fmt.Sprintf("%s:%d", duid, sseq),
@@ -59,7 +59,7 @@ func (its *MongoCollections) InsertSnapshot(
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.InsertedID == snap.ID {
-		ctx.L().Infof("[MONGO] insert snapshot: %s", result.InsertedID)
+		ctx.L().Infof("insert snapshot: %s", result.InsertedID)
 	}
 	return nil
 }

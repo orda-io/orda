@@ -40,7 +40,7 @@ message OperationID {
 message Operation {
     OperationID ID = 1;
     TypeOfOperation opType = 2;
-    bytes json = 3;
+    bytes body = 3;
 }
 
 enum TypeOfOperation {

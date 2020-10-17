@@ -6,22 +6,22 @@ import (
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"time"
 )
 
-const tagClient = "REQ_CLIENT"
-
 // ProcessClient processes ClientRequest and returns ClientResponse
 func (its *OrtooService) ProcessClient(goCtx gocontext.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
-	ctx := context.NewWithTag(goCtx, context.SERVER, tagClient, in.Client.GetSummary())
-	ctx.L().Infof("receive %s", in.ToString())
-
+	ctx := context.New(goCtx)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Client.Collection)
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
 	clientDocFromReq := schema.ClientModelToBson(in.Client, collectionDoc.Num)
+
+	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagClient, collectionDoc.Num, in.Client.CUID))
+	ctx.L().Infof("RECV %s", in.ToString())
 
 	clientDocFromDB, err := its.mongo.GetClient(ctx, clientDocFromReq.CUID)
 	if err != nil {
@@ -45,6 +45,7 @@ func (its *OrtooService) ProcessClient(goCtx gocontext.Context, in *model.Client
 	if err = its.mongo.UpdateClient(ctx, clientDocFromReq); err != nil {
 		return nil, errors.NewRPCError(err)
 	}
-
-	return model.NewClientResponse(in.Header, model.StateOfResponse_OK), nil
+	out := model.NewClientResponse(in.Header, model.StateOfResponse_OK)
+	ctx.L().Infof("SENDBACK %s", out.ToString())
+	return out, nil
 }

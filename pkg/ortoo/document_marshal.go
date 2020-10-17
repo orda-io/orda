@@ -153,7 +153,7 @@ func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
 		tsMap: make(map[string]*model.Timestamp),
 		common: &jsonCommon{
 			root:     its,
-			base:     its.base,
+			base:     its.GetBase(),
 			nodeMap:  make(map[string]jsonType),
 			cemetery: make(map[string]jsonType),
 		},
@@ -200,7 +200,7 @@ func (its *jsonElement) unmarshal(marshaled *marshaledJSONType, assistant *unmar
 func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
 	marshaledJO := marshaled.O
 	its.hashMapSnapshot = &hashMapSnapshot{
-		base: its.getBase(),
+		base: its.GetBase(),
 		Map:  make(map[string]timedType),
 		Size: marshaledJO.S,
 	}
@@ -212,7 +212,7 @@ func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, assistant *unmars
 
 func (its *jsonArray) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
 	marshaledJA := marshaled.A
-	its.listSnapshot = newListSnapshot(its.getBase())
+	its.listSnapshot = newListSnapshot(its.GetBase())
 	prev := its.listSnapshot.head
 	for _, mot := range marshaledJA.N {
 		o := mot[0]

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
@@ -104,7 +103,6 @@ type jsonType interface {
 	setParent(j jsonType)
 	getCreateTime() *model.Timestamp
 	getDeleteTime() *model.Timestamp
-	getBase() *datatypes.BaseDatatype
 	getLogger() *log.OrtooLog
 	findJSONArray(ts *model.Timestamp) (j *jsonArray, ok bool)
 	findJSONObject(ts *model.Timestamp) (j *jsonObject, ok bool)
@@ -123,16 +121,19 @@ type jsonType interface {
 
 type jsonCommon struct {
 	root     *jsonObject
-	base     *datatypes.BaseDatatype
+	base     base
 	nodeMap  map[string]jsonType // store all jsonPrimitive.K.hash => jsonType
 	cemetery map[string]jsonType // store all deleted jsonType
 }
 
 func (its *jsonCommon) equal(o *jsonCommon) bool {
+	if its.base != o.base {
+		return false
+	}
 	for k, v1 := range its.nodeMap {
 		v2 := o.nodeMap[k]
 		if !v1.equal(v2) {
-			its.base.Logger.Errorf("\n%v\n%v", v1, v2)
+			its.base.GetLogger().Errorf("\n%v\n%v", v1, v2)
 			return false
 		}
 	}
@@ -152,6 +153,18 @@ func (its *jsonCommon) equal(o *jsonCommon) bool {
 		}
 	}
 	return true
+}
+
+func (its *jsonCommon) SetBase(base iface.BaseDatatype) {
+	its.base = base
+	for _, node := range its.nodeMap {
+		switch cast := node.(type) {
+		case *jsonObject:
+			cast.base = base
+		case *jsonArray:
+			cast.base = base
+		}
+	}
 }
 
 // jsonPrimitive should implement timedType, and jsonType.
@@ -229,12 +242,8 @@ func (its *jsonPrimitive) getType() TypeOfJSON {
 	return typeJSONPrimitive
 }
 
-func (its *jsonPrimitive) getBase() *datatypes.BaseDatatype {
-	return its.common.base
-}
-
 func (its *jsonPrimitive) getLogger() *log.OrtooLog {
-	return its.common.base.Logger
+	return its.common.base.GetLogger()
 }
 
 func (its *jsonPrimitive) findJSONType(ts *model.Timestamp) (j jsonType, ok bool) {
@@ -330,7 +339,7 @@ func (its *jsonPrimitive) createJSONType(parent jsonType, v interface{}, ts *mod
 }
 
 func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts *model.Timestamp) *jsonArray {
-	ja := newJSONArray(its.getBase(), parent, ts.GetAndNextDelimiter())
+	ja := newJSONArray(its.GetBase(), parent, ts.GetAndNextDelimiter())
 	var appendValues []timedType
 	elements := reflect.ValueOf(value)
 	for i := 0; i < elements.Len(); i++ {
@@ -348,7 +357,7 @@ func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts
 }
 
 func (its *jsonPrimitive) createJSONObject(parent jsonType, value interface{}, ts *model.Timestamp) *jsonObject {
-	jo := newJSONObject(its.getBase(), parent, ts.GetAndNextDelimiter())
+	jo := newJSONObject(its.GetBase(), parent, ts.GetAndNextDelimiter())
 	target := reflect.ValueOf(value)
 	fields := reflect.TypeOf(value)
 
@@ -504,10 +513,18 @@ func (its *jsonPrimitive) DeleteRemoteInArray(
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
 
+func (its *jsonPrimitive) SetBase(base iface.BaseDatatype) {
+	its.common.SetBase(base)
+}
+
+func (its *jsonPrimitive) GetBase() iface.BaseDatatype {
+	return its.common.base
+}
+
 func (its *jsonPrimitive) CloneSnapshot() iface.Snapshot {
 	panic("Implement me")
 }
 
 func (its *jsonPrimitive) GetAsJSONCompatible() interface{} {
-	panic("Implement me")
+	return its.getValue()
 }

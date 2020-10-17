@@ -2,6 +2,7 @@ package datatypes
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
@@ -9,7 +10,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
-	"github.com/knowhunger/ortoo/pkg/utils"
 )
 
 // BaseDatatype is the base datatype which contains
@@ -26,14 +26,14 @@ type BaseDatatype struct {
 // NewBaseDatatype creates a new base datatype
 func NewBaseDatatype(key string, t model.TypeOfDatatype, client *model.Client) *BaseDatatype {
 	duid := types.NewDUID()
-	tag := fmt.Sprintf("%s|%s", client.GetSummary(), utils.MakeSummary(key, duid, "D"))
 	return &BaseDatatype{
 		Key:    key,
 		id:     duid,
 		TypeOf: t,
 		opID:   model.NewOperationIDWithCUID(client.CUID),
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
-		Logger: log.NewWithTag(string(context.DATATYPE), client.Collection, tag),
+		Logger: log.NewWithTags(string(context.DATATYPE),
+			context.MakeTagInDatatype(client.Collection, key, client.CUID, duid)),
 	}
 }
 
@@ -133,4 +133,38 @@ func (its *BaseDatatype) SetState(state model.StateOfDatatype) {
 
 func (its *BaseDatatype) GetOpID() *model.OperationID {
 	return its.opID
+}
+
+// GetMeta returns the binary of metadata of the datatype.
+func (its *BaseDatatype) GetMeta() ([]byte, errors.OrtooError) {
+	meta := model.DatatypeMeta{
+		Key:    its.Key,
+		DUID:   its.id,
+		OpID:   its.opID,
+		TypeOf: its.TypeOf,
+		State:  its.state,
+	}
+	metab, err := json.Marshal(&meta)
+	if err != nil {
+		return nil, errors.DatatypeMarshal.New(its.Logger, meta)
+	}
+	return metab, nil
+}
+
+// SetMeta sets the metadata with binary metadata.
+func (its *BaseDatatype) SetMeta(meta []byte) errors.OrtooError {
+	m := model.DatatypeMeta{}
+	if err := json.Unmarshal(meta, &m); err != nil {
+		return errors.DatatypeMarshal.New(its.Logger, string(meta))
+	}
+	its.Key = m.Key
+	its.id = m.DUID
+	its.opID = m.OpID
+	its.TypeOf = m.TypeOf
+	its.state = m.State
+	return nil
+}
+
+func (its *BaseDatatype) GetLogger() *log.OrtooLog {
+	return its.Logger
 }

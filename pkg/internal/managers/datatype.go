@@ -48,7 +48,7 @@ func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model
 			if err := its.notificationManager.SubscribeNotification(topic); err != nil {
 				return errors.DatatypeSubscribe.New(nil, err.Error())
 			}
-			its.ctx.L().Infof("subscribe datatype topic: %s", topic)
+			its.ctx.L().Infof("subscribe datatype topic(%s)", topic)
 		}
 	}
 	return nil

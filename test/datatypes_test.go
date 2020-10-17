@@ -41,7 +41,9 @@ func (its *IntegrationTestSuite) TestClientServer() {
 		client2 := ortoo.NewClient(config, "client2")
 		err := client2.Connect()
 		require.NoError(its.T(), err)
-		defer client2.Close()
+		defer func() {
+			_ = client2.Close()
+		}()
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		client2.SubscribeCounter(key, ortoo.NewHandlers(

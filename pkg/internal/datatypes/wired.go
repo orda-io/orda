@@ -43,10 +43,7 @@ func (its *WiredDatatype) ExecuteRemote(op iface.Operation) {
 }
 
 // ReceiveRemoteModelOperations ...
-func (its *WiredDatatype) ReceiveRemoteModelOperations(
-	ops []*model.Operation,
-) ([]interface{}, errors.OrtooError) {
-
+func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrtooError) {
 	datatype := its.datatype
 	var opList []interface{}
 	for i := 0; i < len(ops); {
@@ -62,17 +59,13 @@ func (its *WiredDatatype) ReceiveRemoteModelOperations(
 			transaction = []*model.Operation{modelOp}
 			i++
 		}
-		trxList, err := datatype.ExecuteRemoteTransaction(transaction, true)
+		trxList, err := datatype.ExecuteRemoteTransaction(transaction, obtainList)
 		if err != nil {
 			return nil, err
 		}
 		opList = append(opList, trxList)
 	}
 	return opList, nil
-}
-
-func (its *WiredDatatype) applyPushPullPackExecuteOperations(operations []*model.Operation) ([]interface{}, errors.OrtooError) {
-	return its.ReceiveRemoteModelOperations(operations)
 }
 
 // CreatePushPullPack ...
@@ -206,14 +199,14 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 		if err != nil {
 			_ = errs.Append(err)
 		}
-		opList, err = its.applyPushPullPackExecuteOperations(ppp.Operations)
+		opList, err = its.ReceiveRemoteModelOperations(ppp.Operations, true)
 		if err != nil {
 			_ = errs.Append(err)
 		}
 	} else {
 		_ = errs.Append(err)
 	}
-	its.applyPushPullPackCallHandler(errs, oldState, newState, opList)
+	go its.applyPushPullPackCallHandler(errs, oldState, newState, opList)
 }
 
 func (its *WiredDatatype) applyPushPullPackCallHandler(

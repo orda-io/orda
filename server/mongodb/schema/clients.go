@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
+	"strings"
 	"time"
 )
 
@@ -113,5 +114,5 @@ func (its *ClientDoc) GetClient() string {
 }
 
 func (its *ClientDoc) GetClientSummary() string {
-	return fmt.Sprintf("C:%.10s(%.10s)", its.Alias, its.CUID)
+	return fmt.Sprintf("%.10s(%.10s)", its.Alias, strings.ToUpper(its.CUID))
 }

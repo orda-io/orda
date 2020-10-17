@@ -40,19 +40,19 @@ func TestHashMap(t *testing.T) {
 		require.Equal(t, float64(3), hashMap1.Get(key1))
 		require.Equal(t, nil, hashMap1.Get(key2))
 
-		m, err := json.Marshal(hashMap1.(*hashMap).snapshot)
+		m, err := json.Marshal(hashMap1.(*hashMap).GetSnapshot())
 		require.NoError(t, err)
 		log.Logger.Infof("%v", string(m))
 		clone := hashMapSnapshot{}
 		err = json.Unmarshal(m, &clone)
 		require.NoError(t, err)
-		m2, err := json.Marshal(hashMap1.(*hashMap).snapshot)
+		m2, err := json.Marshal(hashMap1.(*hashMap).GetSnapshot())
 		require.NoError(t, err)
 		log.Logger.Infof("%v", string(m2))
 		require.Equal(t, m, m2)
 	})
 
-	t.Run("Can set and get snapshot", func(t *testing.T) {
+	t.Run("Can set and get hashMapSnapshot", func(t *testing.T) {
 		hashMap1 := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), nil, nil)
 		_, _ = hashMap1.Put("k1", 1)
 		_, _ = hashMap1.Put("k2", "2")
@@ -65,12 +65,13 @@ func TestHashMap(t *testing.T) {
 		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)
 		require.NoError(t, err)
 		cloneDT := clone.(iface.Datatype)
-		_, snap2, err := cloneDT.GetMetaAndSnapshot()
+		meta2, snap2, err := cloneDT.GetMetaAndSnapshot()
 		require.NoError(t, err)
 
 		log.Logger.Infof("%v", string(snap1))
 		log.Logger.Infof("%v", string(snap2))
 		require.Equal(t, snap1, snap2)
+		require.Equal(t, meta1, meta2)
 
 		snapshot := cloneDT.GetSnapshot().(*hashMapSnapshot)
 		tt := snapshot.getFromMap("k2")

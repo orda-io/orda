@@ -29,36 +29,6 @@ func (its *ManageableDatatype) Initialize(
 	its.SetDatatype(datatype)
 }
 
-// GetMeta returns the binary of metadata of the datatype.
-func (its *ManageableDatatype) GetMeta() ([]byte, errors.OrtooError) {
-	meta := model.DatatypeMeta{
-		Key:    its.Key,
-		DUID:   its.id,
-		OpID:   its.opID,
-		TypeOf: its.TypeOf,
-		State:  its.state,
-	}
-	metab, err := json.Marshal(&meta)
-	if err != nil {
-		return nil, errors.DatatypeMarshal.New(its.Logger, meta)
-	}
-	return metab, nil
-}
-
-// SetMeta sets the metadata with binary metadata.
-func (its *ManageableDatatype) SetMeta(meta []byte) errors.OrtooError {
-	m := model.DatatypeMeta{}
-	if err := json.Unmarshal(meta, &m); err != nil {
-		return errors.DatatypeMarshal.New(its.Logger, string(meta))
-	}
-	its.Key = m.Key
-	its.id = m.DUID
-	its.opID = m.OpID
-	its.TypeOf = m.TypeOf
-	its.state = m.State
-	return nil
-}
-
 // DoTransaction enables datatypes to perform a transaction.
 func (its *ManageableDatatype) DoTransaction(
 	tag string,

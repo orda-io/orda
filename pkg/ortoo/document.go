@@ -1,7 +1,6 @@
 package ortoo
 
 import (
-	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
@@ -42,15 +41,17 @@ func newDocument(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handle
 			ManageableDatatype: &datatypes.ManageableDatatype{},
 			handlers:           handlers,
 		},
-		snapshot: newJSONObject(base, nil, model.OldestTimestamp()),
+		SnapshotDatatype: &datatypes.SnapshotDatatype{
+			Snapshot: newJSONObject(base, nil, model.OldestTimestamp()),
+		},
 	}
-	doc.Initialize(base, wire, doc.snapshot, doc)
+	doc.Initialize(base, wire, doc.GetSnapshot(), doc)
 	return doc
 }
 
 type document struct {
 	*datatype
-	snapshot jsonType
+	*datatypes.SnapshotDatatype
 }
 
 func (its *document) DoTransaction(tag string, txnFunc func(document DocumentInTxn) error) error {
@@ -63,34 +64,38 @@ func (its *document) DoTransaction(tag string, txnFunc func(document DocumentInT
 				},
 				handlers: its.handlers,
 			},
-			snapshot: its.snapshot,
+			SnapshotDatatype: its.SnapshotDatatype,
 		}
 		return txnFunc(clone)
 	})
 }
 
+func (its *document) snapshot() jsonType {
+	return its.GetSnapshot().(jsonType)
+}
+
 func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.DocPutInObjectOperation:
-		return its.snapshot.PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp())
+		return its.snapshot().PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp())
 	case *operations.DocDeleteInObjectOperation:
-		return its.snapshot.DeleteCommonInObject(cast.C.P, cast.C.Key, cast.GetTimestamp(), true)
+		return its.snapshot().DeleteCommonInObject(cast.C.P, cast.C.Key, cast.GetTimestamp(), true)
 	case *operations.DocInsertToArrayOperation:
-		target, parent, err := its.snapshot.InsertLocalInArray(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
+		target, parent, err := its.snapshot().InsertLocalInArray(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = target
 		return parent, nil
 	case *operations.DocDeleteInArrayOperation:
-		delTargets, delJSONTypes, err := its.snapshot.DeleteLocalInArray(cast.C.P, cast.Pos, cast.NumOfNodes, cast.ID.GetTimestamp())
+		delTargets, delJSONTypes, err := its.snapshot().DeleteLocalInArray(cast.C.P, cast.Pos, cast.NumOfNodes, cast.ID.GetTimestamp())
 		if err != nil {
 			return nil, err
 		}
 		cast.C.T = delTargets
 		return delJSONTypes, nil
 	case *operations.DocUpdateInArrayOperation:
-		uptTargets, oldOnes, err := its.snapshot.UpdateLocalInArray(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
+		uptTargets, oldOnes, err := its.snapshot().UpdateLocalInArray(cast.C.P, cast.Pos, cast.ID.GetTimestamp(), cast.C.V...)
 		if err != nil {
 			return nil, err
 		}
@@ -103,22 +108,20 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		var newSnap = newJSONObject(its.BaseDatatype, nil, model.OldestTimestamp())
-		if err := json.Unmarshal([]byte(cast.C.Snapshot), newSnap); err != nil {
-			return nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
-		}
-		its.snapshot = newSnap
-		return nil, nil
+		err := its.ApplySnapshotOperation(
+			cast.GetContent(),
+			newJSONObject(its.GetBase(), nil, model.OldestTimestamp()))
+		return nil, err
 	case *operations.DocPutInObjectOperation:
-		return its.snapshot.PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp())
+		return its.snapshot().PutCommonInObject(cast.C.P, cast.C.K, cast.C.V, cast.GetTimestamp())
 	case *operations.DocDeleteInObjectOperation:
-		return its.snapshot.DeleteCommonInObject(cast.C.P, cast.C.Key, cast.GetTimestamp(), false)
+		return its.snapshot().DeleteCommonInObject(cast.C.P, cast.C.Key, cast.GetTimestamp(), false)
 	case *operations.DocInsertToArrayOperation:
-		return its.snapshot.InsertRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp(), cast.C.V...)
+		return its.snapshot().InsertRemoteInArray(cast.C.P, cast.C.T, cast.GetTimestamp(), cast.C.V...)
 	case *operations.DocDeleteInArrayOperation:
-		return its.snapshot.DeleteRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T)
+		return its.snapshot().DeleteRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T)
 	case *operations.DocUpdateInArrayOperation:
-		return its.snapshot.UpdateRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T, cast.C.V)
+		return its.snapshot().UpdateRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T, cast.C.V)
 	}
 	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
 }
@@ -128,7 +131,7 @@ func (its *document) GetFromObject(key string) (Document, errors.OrtooError) {
 	if err := its.assertLocalOp("GetFromObject", TypeJSONObject, true); err != nil {
 		return nil, err
 	}
-	obj := its.snapshot.(*jsonObject)
+	obj := its.snapshot().(*jsonObject)
 	child := obj.getFromMap(key).(jsonType)
 	if child == nil || child.isGarbage() {
 		return nil, nil
@@ -141,7 +144,7 @@ func (its *document) PutToObject(key string, value interface{}) (Document, error
 	if err := its.assertLocalOp("PutToObject", TypeJSONObject, false); err != nil {
 		return nil, err
 	}
-	op := operations.NewDocPutInObjectOperation(its.snapshot.getCreateTime(), key, value)
+	op := operations.NewDocPutInObjectOperation(its.snapshot().getCreateTime(), key, value)
 	removed, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
@@ -157,7 +160,7 @@ func (its *document) DeleteInObject(key string) (Document, errors.OrtooError) {
 	if err := its.assertLocalOp("DeleteInObject", TypeJSONObject, false); err != nil {
 		return nil, err
 	}
-	op := operations.NewDocDeleteInObjectOperation(its.snapshot.getCreateTime(), key)
+	op := operations.NewDocDeleteInObjectOperation(its.snapshot().getCreateTime(), key)
 	removed, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
@@ -178,7 +181,7 @@ func (its *document) GetManyFromArray(pos int, numOfNodes int) ([]Document, erro
 	if err := its.assertLocalOp("GetManyFromArray", TypeJSONArray, true); err != nil {
 		return nil, err
 	}
-	arr := its.snapshot.(*jsonArray)
+	arr := its.snapshot().(*jsonArray)
 	if err := arr.validateGetRange(pos, numOfNodes); err != nil {
 		return nil, err
 	}
@@ -192,11 +195,11 @@ func (its *document) InsertToArray(pos int, values ...interface{}) (Document, er
 	if err := its.assertLocalOp("InsertToArray", TypeJSONArray, false); err != nil {
 		return its, err
 	}
-	arr := its.snapshot.(*jsonArray)
+	arr := its.snapshot().(*jsonArray)
 	if err := arr.validateInsertPosition(pos); err != nil {
 		return its, err
 	}
-	op := operations.NewDocInsertToArrayOperation(its.snapshot.getCreateTime(), pos, values)
+	op := operations.NewDocInsertToArrayOperation(its.snapshot().getCreateTime(), pos, values)
 	if _, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true); err != nil {
 		return its, err
 	}
@@ -220,11 +223,11 @@ func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]Document, err
 	if err := its.assertLocalOp("DeleteManyInArray", TypeJSONArray, false); err != nil {
 		return nil, err
 	}
-	arr := its.snapshot.(*jsonArray)
+	arr := its.snapshot().(*jsonArray)
 	if err := arr.validateGetRange(pos, numOfNodes); err != nil {
 		return nil, err
 	}
-	op := operations.NewDocDeleteInArrayOperation(its.snapshot.getCreateTime(), pos, numOfNodes)
+	op := operations.NewDocDeleteInArrayOperation(its.snapshot().getCreateTime(), pos, numOfNodes)
 	delJSONTypes, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
@@ -238,11 +241,11 @@ func (its *document) UpdateManyInArray(pos int, values ...interface{}) ([]Docume
 	if err := its.assertLocalOp("UpdateManyInArray", TypeJSONArray, false); err != nil {
 		return nil, err
 	}
-	arr := its.snapshot.(*jsonArray)
+	arr := its.snapshot().(*jsonArray)
 	if err := arr.validateGetRange(pos, len(values)); err != nil {
 		return nil, err
 	}
-	op := operations.NewDocUpdateInArrayOperation(its.snapshot.getCreateTime(), pos, values)
+	op := operations.NewDocUpdateInArrayOperation(its.snapshot().getCreateTime(), pos, values)
 	oldOnes, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
@@ -251,33 +254,25 @@ func (its *document) UpdateManyInArray(pos int, values ...interface{}) ([]Docume
 }
 
 func (its *document) GetJSONType() TypeOfJSON {
-	return its.snapshot.getType()
+	return its.snapshot().getType()
 }
 
 func (its *document) IsGarbage() bool {
-	return its.snapshot.isGarbage()
+	return its.snapshot().isGarbage()
 }
 
 func (its *document) GetAsJSON() interface{} {
-	switch cast := its.snapshot.(type) {
-	case *jsonObject:
-		return cast.GetAsJSONCompatible()
-	case *jsonArray:
-		return cast.GetAsJSONCompatible()
-	case *jsonElement:
-		return cast.getValue()
-	}
-	return nil
+	return its.snapshot().GetAsJSONCompatible()
 }
 
 func (its *document) GetParentDocument() Document {
-	return its.toDocument(its.snapshot.getParent())
+	return its.toDocument(its.snapshot().getParent())
 }
 func (its *document) GetRootDocument() Document {
-	if its.snapshot.getRoot() == its.snapshot {
+	if its.snapshot().getRoot() == its.snapshot() {
 		return its
 	}
-	return its.toDocument(its.snapshot.getRoot())
+	return its.toDocument(its.snapshot().getRoot())
 }
 
 func (its *document) Equal(o Document) bool {
@@ -285,41 +280,34 @@ func (its *document) Equal(o Document) bool {
 	if its.datatype != other.datatype {
 		return false
 	}
-	if its.snapshot != other.snapshot {
+	if its.snapshot() != other.snapshot() {
 		return false
 	}
 	return true
 }
 
-func (its *document) SetSnapshot(snapshot iface.Snapshot) {
-	panic("implement me")
-}
-
-func (its *document) GetSnapshot() iface.Snapshot {
-	return its.snapshot
-}
-
-func (its *document) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
-	meta, oErr := its.ManageableDatatype.GetMeta()
-	if oErr != nil {
-		return nil, nil, oErr
-	}
-	snap, err := json.Marshal(its.snapshot)
-	if err != nil {
-		return nil, nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
-	}
-	return meta, snap, nil
-}
-
-func (its *document) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
-	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(snap, its.snapshot); err != nil {
-		return errors.DatatypeSnapshot.New(its.Logger, err.Error())
-	}
-	return nil
-}
+//
+// func (its *document) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
+// 	meta, oErr := its.ManageableDatatype.GetMeta()
+// 	if oErr != nil {
+// 		return nil, nil, oErr
+// 	}
+// 	snap, err := json.Marshal(its.snapshot)
+// 	if err != nil {
+// 		return nil, nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
+// 	}
+// 	return meta, snap, nil
+// }
+//
+// func (its *document) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
+// 	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
+// 		return err
+// 	}
+// 	if err := json.Unmarshal(snap, its.snapshot); err != nil {
+// 		return errors.DatatypeSnapshot.New(its.Logger, err.Error())
+// 	}
+// 	return nil
+// }
 
 func (its *document) toDocuments(children []jsonType) (ret []Document) {
 	for _, child := range children {
@@ -331,14 +319,16 @@ func (its *document) toDocuments(children []jsonType) (ret []Document) {
 func (its *document) toDocument(child jsonType) Document {
 	return &document{
 		datatype: its.datatype,
-		snapshot: child,
+		SnapshotDatatype: &datatypes.SnapshotDatatype{
+			Snapshot: child,
+		},
 	}
 }
 func (its *document) assertLocalOp(opName string, ofJSON TypeOfJSON, workOnGarbage bool) errors.OrtooError {
 	if its.GetJSONType() != ofJSON {
 		return errors.DatatypeInvalidParent.New(its.Logger, opName, " is not allowed to ")
 	}
-	if !workOnGarbage && its.snapshot.isGarbage() {
+	if !workOnGarbage && its.snapshot().isGarbage() {
 		return errors.DatatypeNoOp.New(its.Logger, "already deleted from the root Document")
 	}
 	return nil

@@ -1,18 +1,16 @@
 package context
 
 import (
-	"bytes"
 	"context"
 	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/utils"
 )
-
-const maxSubLevelLength = 20
 
 // OrtooContext is a context used in Ortoo
 type OrtooContext interface {
 	context.Context
 	L() *log.OrtooLog
+	SetNewLogger(lv mainTag, subLevel string)
+	SetLogger(l *log.OrtooLog)
 }
 
 type ortooContext struct {
@@ -20,42 +18,42 @@ type ortooContext struct {
 	Logger *log.OrtooLog
 }
 
+func New(ctx context.Context) OrtooContext {
+	return &ortooContext{
+		Context: ctx,
+	}
+}
+
 // New creates a new OrtooContext
-func New(ctx context.Context, lv1 mainLevel, lv2, tag string) OrtooContext {
-	logger := log.NewWithTag(string(lv1), lv2, tag)
+func NewWithTags(ctx context.Context, tag1 mainTag, tag2 string) OrtooContext {
+	logger := log.NewWithTags(string(tag1), tag2)
 	return &ortooContext{
 		Context: ctx,
 		Logger:  logger,
 	}
 }
 
-// NewWithTag creates a new OrtooContext with tag
-func NewWithTag(ctx context.Context, lv mainLevel, subLevels ...string) OrtooContext {
-	subLevel := ""
-	if len(subLevels) >= 1 {
-		subLevel = utils.TrimLong(subLevels[0], maxSubLevelLength)
-	}
-	b := &bytes.Buffer{}
-	if len(subLevels) >= 2 {
-		b.WriteString(subLevels[1])
-	}
-	if len(subLevels) >= 3 {
-		b.WriteString("|")
-		b.WriteString(subLevels[2])
-	}
-	return New(ctx, lv, subLevel, b.String())
-}
-
 // L returns OrtooLog
 func (its *ortooContext) L() *log.OrtooLog {
+	if its.Logger == nil {
+		return log.Logger
+	}
 	return its.Logger
 }
 
-type mainLevel string
+func (its *ortooContext) SetNewLogger(lv1 mainTag, lv2 string) {
+	its.Logger = log.NewWithTags(string(lv1), lv2)
+}
+
+func (its *ortooContext) SetLogger(l *log.OrtooLog) {
+	its.Logger = l
+}
+
+type mainTag string
 
 const (
-	CLIENT   mainLevel = "CLIE"
-	DATATYPE mainLevel = "DATA"
-	SERVER   mainLevel = "SERV"
-	TEST     mainLevel = "TEST"
+	CLIENT   mainTag = "CLIE"
+	DATATYPE mainTag = "DATA"
+	SERVER   mainTag = "SERV"
+	TEST     mainTag = "TEST"
 )

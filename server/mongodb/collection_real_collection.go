@@ -5,6 +5,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -49,16 +50,19 @@ func (r *RepositoryMongo) GetRealSnapshot(
 	ctx context.OrtooContext,
 	collectionName string,
 	id string,
-) (interface{}, errors.OrtooError) {
+) (map[string]interface{}, errors.OrtooError) {
 	collection := r.db.Collection(collectionName)
 	f := schema.FilterByID(id)
 	result := collection.FindOne(ctx, f)
 	if result.Err() != nil {
-		return "", errors.ServerDBQuery.New(ctx.L(), result.Err().Error())
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, errors.ServerDBQuery.New(ctx.L(), result.Err().Error())
 	}
 	var snap map[string]interface{}
 	if err := result.Decode(&snap); err != nil {
-		return "", errors.ServerDBDecode.New(ctx.L(), result.Err().Error())
+		return nil, errors.ServerDBDecode.New(ctx.L(), result.Err().Error())
 	}
 	return snap, nil
 }

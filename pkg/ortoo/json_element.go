@@ -74,5 +74,5 @@ func (its *jsonElement) CloneSnapshot() iface.Snapshot {
 }
 
 func (its *jsonElement) GetAsJSONCompatible() interface{} {
-	panic("Implement me")
+	return its.getValue()
 }

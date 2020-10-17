@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
+	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
@@ -51,8 +52,7 @@ func (its *MongoCollections) GetOperations(
 	ctx context.OrtooContext,
 	duid string,
 	from, to uint64,
-	fn func(opDoc *schema.OperationDoc) errors.OrtooError,
-) errors.OrtooError {
+) ([]*model.Operation, []uint64, errors.OrtooError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterGTE(schema.OperationDocFields.Sseq, from)
@@ -63,21 +63,19 @@ func (its *MongoCollections) GetOperations(
 	opt.SetSort(bson.D{{schema.OperationDocFields.Sseq, 1}})
 	cursor, err := its.operations.Find(ctx, f, opt)
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return nil, nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-
+	var opList []*model.Operation
+	var sseqList []uint64
 	for cursor.Next(ctx) {
-		var operationDoc schema.OperationDoc
-		if err := cursor.Decode(&operationDoc); err != nil {
-			return errors.ServerDBDecode.New(ctx.L(), err.Error())
+		var opDoc schema.OperationDoc
+		if err := cursor.Decode(&opDoc); err != nil {
+			return nil, nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
 		}
-		if fn != nil {
-			if err := fn(&operationDoc); err != nil {
-				return err
-			}
-		}
+		opList = append(opList, opDoc.GetOperation())
+		sseqList = append(sseqList, opDoc.Sseq)
 	}
-	return nil
+	return opList, sseqList, nil
 }
 
 // PurgeOperations purges operations for the specified datatype.

@@ -43,7 +43,7 @@ func (its *PutOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_HASH_MAP_PUT,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 
@@ -106,7 +106,7 @@ func (its *RemoveOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
 		OpType: model.TypeOfOperation_HASH_MAP_REMOVE,
-		Json:   marshalContent(its.C),
+		Body:   marshalContent(its.C),
 	}
 }
 

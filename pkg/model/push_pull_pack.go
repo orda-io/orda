@@ -112,7 +112,7 @@ func (its *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
 }
 
 func (its *PushPullPack) GetDatatypeTag() string {
-	return utils.MakeSummary(its.Key, its.DUID, "D")
+	return utils.MakeSummary(its.Key, its.DUID, false)
 }
 
 // GetResponsePushPullPack returns the PushPullPack that can be used for response.
@@ -142,6 +142,7 @@ func (its *PushPullPack) ToString() string {
 		}
 		b.WriteString(op.OpType.String())
 		b.WriteString(op.ID.ToString())
+		init = false
 	}
 	b.WriteString("}")
 	return b.String()

@@ -1,7 +1,6 @@
 package ortoo
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
@@ -25,7 +24,7 @@ type CounterInTxn interface {
 
 type counter struct {
 	*datatype
-	snapshot *counterSnapshot
+	*datatypes.SnapshotDatatype
 }
 
 // newCounter creates a new int counter
@@ -35,12 +34,11 @@ func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handler *Handlers
 			ManageableDatatype: &datatypes.ManageableDatatype{},
 			handlers:           handler,
 		},
-		snapshot: &counterSnapshot{
-			base:  base,
-			Value: 0,
+		SnapshotDatatype: &datatypes.SnapshotDatatype{
+			Snapshot: newCounterSnapshot(base),
 		},
 	}
-	counter.Initialize(base, wire, counter.snapshot, counter)
+	counter.Initialize(base, wire, counter.GetSnapshot(), counter)
 	return counter
 }
 
@@ -54,89 +52,50 @@ func (its *counter) DoTransaction(tag string, txnFunc func(intCounter CounterInT
 				},
 				handlers: its.handlers,
 			},
-			snapshot: its.snapshot,
+			SnapshotDatatype: its.SnapshotDatatype,
 		}
 		return txnFunc(clone)
 	})
 }
 
-func (its *counter) GetFinal() *datatypes.ManageableDatatype {
-	return its.ManageableDatatype
-}
-
 // ExecuteLocal enables the operation to perform something at the local client.
 func (its *counter) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	iop := op.(*operations.IncreaseOperation)
-	return its.snapshot.increaseCommon(iop.C.Delta), nil
+	return its.snapshot().increaseCommon(iop.C.Delta), nil
 }
 
 // ExecuteRemote is called by operation.ExecuteRemote()
 func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		newSnap := counterSnapshot{}
-		if err := json.Unmarshal([]byte(cast.C.Snapshot), &newSnap); err != nil {
-			return nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
-		}
-		its.snapshot = &newSnap
-		return nil, nil
+		err := its.ApplySnapshotOperation(cast.GetContent(), newCounterSnapshot(its.BaseDatatype))
+		return nil, err
 	case *operations.IncreaseOperation:
-		return its.snapshot.increaseCommon(cast.C.Delta), nil
+		return its.snapshot().increaseCommon(cast.C.Delta), nil
 	}
 
 	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
 }
 
 func (its *counter) Get() int32 {
-	return its.snapshot.Value
+	return its.snapshot().Value
 }
 
 func (its *counter) Increase() (int32, errors.OrtooError) {
 	return its.IncreaseBy(1)
 }
 
+func (its *counter) snapshot() *counterSnapshot {
+	return its.GetSnapshot().(*counterSnapshot)
+}
+
 func (its *counter) IncreaseBy(delta int32) (int32, errors.OrtooError) {
 	op := operations.NewIncreaseOperation(delta)
 	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
 	if err != nil {
-		return its.snapshot.Value, err
+		return its.snapshot().Value, err
 	}
 	return ret.(int32), nil
-}
-
-func (its *counter) GetSnapshot() iface.Snapshot {
-	return its.snapshot
-}
-
-func (its *counter) SetSnapshot(snapshot iface.Snapshot) {
-	its.snapshot = snapshot.(*counterSnapshot)
-}
-
-func (its *counter) GetAsJSON() interface{} {
-	return its.snapshot.GetAsJSONCompatible()
-}
-
-func (its *counter) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
-	meta, oErr := its.ManageableDatatype.GetMeta()
-	if oErr != nil {
-		return nil, nil, oErr
-	}
-	snap, err := json.Marshal(its.snapshot)
-	if err != nil {
-		return nil, nil, errors.DatatypeSnapshot.New(its.Logger, err.Error())
-	}
-	return meta, snap, nil
-}
-
-func (its *counter) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
-	if err := its.ManageableDatatype.SetMeta(meta); err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(snap, its.snapshot); err != nil {
-		return errors.DatatypeMarshal.New(its.Logger, err.Error())
-	}
-	return nil
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -144,12 +103,20 @@ func (its *counter) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooErr
 // ////////////////////////////////////////////////////////////////
 
 type counterSnapshot struct {
-	base  *datatypes.BaseDatatype
+	base
 	Value int32 `json:"value"`
+}
+
+func newCounterSnapshot(base iface.BaseDatatype) *counterSnapshot {
+	return &counterSnapshot{
+		base:  base,
+		Value: 0,
+	}
 }
 
 func (its *counterSnapshot) CloneSnapshot() iface.Snapshot {
 	return &counterSnapshot{
+		base:  its.base,
 		Value: its.Value,
 	}
 }
@@ -165,4 +132,12 @@ func (its *counterSnapshot) increaseCommon(delta int32) int32 {
 
 func (its *counterSnapshot) String() string {
 	return fmt.Sprintf("Map: %d", its.Value)
+}
+
+func (its *counterSnapshot) GetBase() iface.BaseDatatype {
+	return its.base
+}
+
+func (its *counterSnapshot) SetBase(base iface.BaseDatatype) {
+	its.base = base
 }

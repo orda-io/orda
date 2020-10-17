@@ -44,7 +44,7 @@ func initJSONObjectAndTestPut(
 }
 
 func jsonObjectMarshalTest(t *testing.T, original *jsonObject) {
-	clone := newJSONObject(original.base, nil, model.OldestTimestamp())
+	clone := newJSONObject(original.GetBase(), nil, model.OldestTimestamp())
 	m, err := json.Marshal(original) // ==> jsonObject.MarshalJSON
 	require.NoError(t, err)
 

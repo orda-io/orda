@@ -18,7 +18,7 @@ type OrtooError interface {
 	Have(code ErrorCode) int
 	ToArray() []OrtooError
 	Size() int
-	Print(l *log.OrtooLog)
+	Print(l *log.OrtooLog, skip int)
 }
 
 // singleOrtooError implements an error related to Ortoo
@@ -70,10 +70,10 @@ func (its *singleOrtooError) Append(e OrtooError) OrtooError {
 	}
 }
 
-func (its *singleOrtooError) Print(l *log.OrtooLog) {
+func (its *singleOrtooError) Print(l *log.OrtooLog, skip int) {
 	var sb strings.Builder
 	sb.WriteString(its.tError.Error())
-	for _, frame := range its.StackTrace()[1:] {
+	for _, frame := range its.StackTrace()[skip:] {
 		sb.WriteString("\n\t")
 		sb.WriteString(frame.String())
 	}
@@ -144,10 +144,10 @@ func (its *MultipleOrtooErrors) Return() OrtooError {
 	return nil
 }
 
-func (its *MultipleOrtooErrors) Print(l *log.OrtooLog) {
+func (its *MultipleOrtooErrors) Print(l *log.OrtooLog, skip int) {
 	var sb strings.Builder
 	sb.WriteString(its.tError.Error())
-	for _, frame := range its.StackTrace()[1:] {
+	for _, frame := range its.StackTrace()[skip:] {
 		sb.WriteString("\n\t")
 		sb.WriteString(frame.String())
 	}
@@ -160,6 +160,6 @@ func newSingleOrtooError(l *log.OrtooLog, code ErrorCode, name string, msgFormat
 		tError: tracerr.New(fmt.Sprintf(format, args...)),
 		Code:   code,
 	}
-	err.Print(l)
+	err.Print(l, 2)
 	return err
 }

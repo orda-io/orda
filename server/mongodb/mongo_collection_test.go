@@ -23,7 +23,7 @@ import (
 )
 
 func TestMongo(t *testing.T) {
-	ctx := context.NewWithTag(gocontext.TODO(), context.TEST, t.Name())
+	ctx := context.NewWithTags(gocontext.TODO(), context.TEST, t.Name())
 	mongo, err := integration.GetMongo(ctx, "ortoo_unit_test")
 	if err != nil {
 		t.Fatal("fail to initialize mongoDB")
@@ -176,15 +176,11 @@ func TestMongo(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = mongo.GetOperations(ctx, opDoc.DUID, 1, constants.InfinitySseq, nil)
+		opList, _, err := mongo.GetOperations(ctx, opDoc.DUID, 1, constants.InfinitySseq)
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		// deletedNum,  err := mongo.DeleteOperation(ctx, opDoc.DUID, 1)
-		// if err != nil || deletedNum != 1{
-		//	t.Fatal(err)
-		// }
+		require.Equal(t, 1, len(opList))
 
 	})
 
@@ -204,6 +200,14 @@ func TestMongo(t *testing.T) {
 
 type testSnapshot struct {
 	Value int32 `json:"value"`
+}
+
+func (its *testSnapshot) SetBase(base iface.BaseDatatype) {
+	panic("implement me")
+}
+
+func (its *testSnapshot) GetBase() iface.BaseDatatype {
+	panic("implement me")
 }
 
 func (its *testSnapshot) GetAsJSONCompatible() interface{} {

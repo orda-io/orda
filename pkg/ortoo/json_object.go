@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
 )
@@ -18,7 +17,7 @@ type jsonObject struct {
 	*hashMapSnapshot
 }
 
-func newJSONObject(base *datatypes.BaseDatatype, parent jsonType, ts *model.Timestamp) *jsonObject {
+func newJSONObject(base iface.BaseDatatype, parent jsonType, ts *model.Timestamp) *jsonObject {
 	var root *jsonCommon
 	if parent == nil {
 		root = &jsonCommon{
@@ -169,6 +168,14 @@ func (its *jsonObject) equal(o jsonType) bool {
 }
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
+
+func (its *jsonObject) GetBase() iface.BaseDatatype {
+	return its.getCommon().base
+}
+
+func (its *jsonObject) SetBase(base iface.BaseDatatype) {
+	its.getCommon().SetBase(base)
+}
 
 func (its *jsonObject) CloneSnapshot() iface.Snapshot {
 	// TODO: implement CloneSnapshot()

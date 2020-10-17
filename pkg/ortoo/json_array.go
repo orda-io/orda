@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
 )
@@ -18,7 +17,7 @@ type jsonArray struct {
 	*listSnapshot
 }
 
-func newJSONArray(base *datatypes.BaseDatatype, parent jsonType, ts *model.Timestamp) *jsonArray {
+func newJSONArray(base iface.BaseDatatype, parent jsonType, ts *model.Timestamp) *jsonArray {
 	return &jsonArray{
 		jsonType: &jsonPrimitive{
 			parent: parent,
@@ -153,7 +152,7 @@ func (its *jsonArray) updateRemote(
 			its.funeral(deleted, updated.getCreateTime())
 			delTypes = append(delTypes, deleted)
 		} else {
-			_ = errs.Append(errors.DatatypeNoTarget.New(its.base.Logger, t.ToString()))
+			_ = errs.Append(errors.DatatypeNoTarget.New(its.GetLogger(), t.ToString()))
 		}
 	}
 	return delTypes, errs.Return()
@@ -233,6 +232,14 @@ func (its *jsonArray) equal(o jsonType) bool {
 }
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
+
+func (its *jsonArray) GetBase() iface.BaseDatatype {
+	return its.getCommon().base
+}
+
+func (its *jsonArray) SetBase(base iface.BaseDatatype) {
+	its.getCommon().SetBase(base)
+}
 
 func (its *jsonArray) CloneSnapshot() iface.Snapshot {
 	panic("Implement me")

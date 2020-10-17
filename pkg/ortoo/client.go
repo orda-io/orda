@@ -62,7 +62,7 @@ func NewClient(conf *ClientConfig, alias string) Client {
 		Collection: conf.CollectionName,
 		SyncType:   conf.SyncType,
 	}
-	ctx := context.NewWithTag(gocontext.TODO(), context.CLIENT, conf.CollectionName, cm.GetSummary())
+	ctx := context.NewWithTags(gocontext.TODO(), context.CLIENT, context.MakeTagInClient(cm.Collection, cm.Alias, cm.CUID))
 	var notificationManager *managers.NotificationManager
 	switch conf.SyncType {
 	case model.SyncType_LOCAL_ONLY, model.SyncType_MANUALLY:
@@ -120,7 +120,7 @@ func (its *clientImpl) Connect() (err error) {
 
 func (its *clientImpl) Close() error {
 	its.state = notConnected
-	its.ctx.L().Infof("close client: %s", its.model.ToString())
+	its.ctx.L().Infof("close client")
 	return its.messageManager.Close()
 }
 
@@ -233,7 +233,7 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 		}
 	}
 	var datatype iface.Datatype
-	var impl interface{}
+	var impl Datatype
 
 	base := datatypes.NewBaseDatatype(key, typeOf, its.model)
 	switch typeOf {

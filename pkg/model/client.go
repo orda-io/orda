@@ -12,5 +12,5 @@ func (its *Client) ToString() string {
 }
 
 func (its *Client) GetSummary() string {
-	return utils.MakeSummary(its.Alias, its.CUID, "C")
+	return utils.MakeSummary(its.Alias, its.CUID, true)
 }

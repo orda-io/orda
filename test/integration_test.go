@@ -27,7 +27,7 @@ type IntegrationTestSuite struct {
 
 // SetupTest builds some prerequisite for testing.
 func (its *IntegrationTestSuite) SetupSuite() {
-	its.ctx = context.NewWithTag(gocontext.TODO(), context.TEST, its.T().Name())
+	its.ctx = context.NewWithTags(gocontext.TODO(), context.TEST, context.MakeTagInTest(its.T().Name()))
 	var err errors.OrtooError
 	its.server, err = server.NewOrtooServer(gocontext.TODO(), NewTestOrtooServerConfig(dbName))
 	if err != nil {
@@ -42,7 +42,7 @@ func (its *IntegrationTestSuite) SetupSuite() {
 
 func (its *IntegrationTestSuite) SetupTest() {
 	its.collectionName = strings.Split(its.T().Name(), "/")[1]
-	its.ctx.L().Infof("Setup OrtooIntegrationTest:%s", its.collectionName)
+	its.ctx.L().Infof("set collection: %s", its.collectionName)
 	var err error
 	require.NoError(its.T(), its.mongo.ResetCollections(its.ctx, its.collectionName))
 	its.collectionNum, err = mongodb.MakeCollection(its.ctx, its.server.Mongo, its.collectionName)

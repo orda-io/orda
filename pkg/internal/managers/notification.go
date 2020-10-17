@@ -105,7 +105,7 @@ func (its *NotificationManager) notificationLoop() {
 			its.ctx.L().Errorf("receive a notification error: %s", err.Error())
 			break
 		case notificationQuit:
-			its.ctx.L().Infof("Quit notification loop")
+			its.ctx.L().Infof("quit notification loop")
 			return
 		case notificationPushPull:
 			notification := note.msg.(model.NotificationPushPull)

@@ -29,7 +29,7 @@ func (its *MessageHeader) GetClient() string {
 }
 
 func (its *MessageHeader) GetClientSummary() string {
-	return utils.MakeSummary(its.ClientAlias, its.Cuid, "C")
+	return utils.MakeSummary(its.ClientAlias, its.Cuid, true)
 }
 
 // NewPushPullRequest creates a new PushPullRequest
