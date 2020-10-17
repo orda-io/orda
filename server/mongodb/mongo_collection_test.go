@@ -1,26 +1,30 @@
 package mongodb_test
 
 import (
-	"context"
+	gocontext "context"
+	"encoding/json"
 	"fmt"
-	"github.com/knowhunger/ortoo/integration_test"
-	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/ortoo/model"
-	"github.com/knowhunger/ortoo/ortoo/operations"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/iface"
+	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/pkg/operations"
+	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/knowhunger/ortoo/test"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"gotest.tools/assert"
 
-	// "log"
 	"sync"
 	"testing"
 	"time"
 )
 
 func TestMongo(t *testing.T) {
-	mongo, err := integration.GetMongo("ortoo_unit_test")
+	ctx := context.NewWithTags(gocontext.TODO(), context.TEST, t.Name())
+	mongo, err := integration.GetMongo(ctx, "ortoo_unit_test")
 	if err != nil {
 		t.Fatal("fail to initialize mongoDB")
 	}
@@ -29,7 +33,7 @@ func TestMongo(t *testing.T) {
 		madeCollections := make(map[uint32]*schema.CollectionDoc)
 
 		for i := 0; i < 10; i++ {
-			if err := mongo.DeleteCollection(context.TODO(), fmt.Sprintf("hello_%d", i)); err != nil {
+			if err := mongo.DeleteCollection(ctx, fmt.Sprintf("hello_%d", i)); err != nil {
 				t.Fail()
 			}
 		}
@@ -38,7 +42,7 @@ func TestMongo(t *testing.T) {
 		wg.Add(10)
 		for i := 0; i < 10; i++ {
 			go func(idx int) {
-				collection, err := mongo.InsertCollection(context.TODO(), fmt.Sprintf("hello_%d", idx))
+				collection, err := mongo.InsertCollection(ctx, fmt.Sprintf("hello_%d", idx))
 				if err != nil {
 					t.Fail()
 					return
@@ -68,43 +72,43 @@ func TestMongo(t *testing.T) {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		if err := mongo.UpdateClient(context.TODO(), c); err != nil {
+		if err := mongo.UpdateClient(ctx, c); err != nil {
 			t.Fatal(err)
 		}
-		clientWithoutCheckPoints, err := mongo.GetClientWithoutCheckPoints(context.TODO(), c.CUID)
+		clientWithoutCheckPoints, err := mongo.GetClientWithoutCheckPoints(ctx, c.CUID)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = mongo.UpdateCheckPointInClient(context.TODO(), c.CUID, "test_duid1", &model.CheckPoint{Cseq: 2, Sseq: 2})
+		err = mongo.UpdateCheckPointInClient(ctx, c.CUID, "test_duid1", &model.CheckPoint{Cseq: 2, Sseq: 2})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		clientWithCheckPoints, err := mongo.GetClient(context.TODO(), c.CUID)
+		clientWithCheckPoints, err := mongo.GetClient(ctx, c.CUID)
 		if err != nil {
 			t.Fatal(err)
 		}
 		assert.Equal(t, clientWithCheckPoints.CheckPoints["test_duid1"].Sseq, uint64(2))
 
-		if err := mongo.UnsubscribeDatatypeFromAllClient(context.TODO(), "test_duid2"); err != nil {
+		if err := mongo.UnsubscribeDatatypeFromAllClients(ctx, "test_duid2"); err != nil {
 			t.Fatal(err)
 		}
 
-		if err := mongo.UnsubscribeDatatypeFromClient(context.TODO(), c.CUID, "test_duid1"); err != nil {
+		if err := mongo.UnsubscribeDatatypeFromClient(ctx, c.CUID, "test_duid1"); err != nil {
 			t.Fatal(err)
 		}
-		clientWithCheckPoints2, err := mongo.GetClient(context.TODO(), c.CUID)
+		clientWithCheckPoints2, err := mongo.GetClient(ctx, c.CUID)
 		if err != nil {
 			t.Fatal(err)
 		}
 		_, ok := clientWithCheckPoints2.CheckPoints["test_duid1"]
 		assert.Equal(t, ok, false)
 
-		if err := mongo.DeleteClient(context.TODO(), c.CUID); err != nil {
+		if err := mongo.DeleteClient(ctx, c.CUID); err != nil {
 			t.Fatal(err)
 		}
-		if err := mongo.DeleteClient(context.TODO(), c.CUID); err != nil {
+		if err := mongo.DeleteClient(ctx, c.CUID); err != nil {
 			t.Fatal(err)
 		}
 
@@ -122,23 +126,23 @@ func TestMongo(t *testing.T) {
 			SseqEnd:       0,
 			CreatedAt:     time.Now(),
 		}
-		if err := mongo.UpdateDatatype(context.TODO(), d); err != nil {
+		if err := mongo.UpdateDatatype(ctx, d); err != nil {
 			t.Fatal(err)
 		}
 
-		datatypeDoc1, err := mongo.GetDatatype(context.TODO(), d.DUID)
+		datatypeDoc1, err := mongo.GetDatatype(ctx, d.DUID)
 		if err != nil {
 			t.Fatal(err)
 		}
 		log.Logger.Infof("%+v", datatypeDoc1)
-		datatypeDoc2, err := mongo.GetDatatype(context.TODO(), "not exist")
+		datatypeDoc2, err := mongo.GetDatatype(ctx, "not exist")
 		if err != nil {
 			t.Fatal(err)
 		}
 		if datatypeDoc2 != nil {
 			t.FailNow()
 		}
-		datatypeDoc3, err := mongo.GetDatatypeByKey(context.TODO(), d.CollectionNum, d.Key)
+		datatypeDoc3, err := mongo.GetDatatypeByKey(ctx, d.CollectionNum, d.Key)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -146,14 +150,14 @@ func TestMongo(t *testing.T) {
 	})
 
 	t.Run("Can manipulate operationDoc", func(t *testing.T) {
-		op, err := operations.NewSnapshotOperation(
-			model.TypeOfDatatype_INT_COUNTER,
+		snap, err := json.Marshal(&testSnapshot{Value: 1})
+		require.NoError(t, err)
+		op := operations.NewSnapshotOperation(
+			model.TypeOfDatatype_COUNTER,
 			model.StateOfDatatype_DUE_TO_CREATE,
-			&testSnapshot{Value: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		op.ID = model.NewOperationIDWithCuid(model.NewCUID())
+			string(snap))
+
+		op.ID = model.NewOperationIDWithCUID(types.NewCUID())
 		modelOp := op.ToModelOperation()
 		// opb, _ := proto.Marshal(op)
 
@@ -163,24 +167,20 @@ func TestMongo(t *testing.T) {
 		log.Logger.Infof("%+v", modelOp)
 		operations = append(operations, opDoc)
 
-		_, err = mongo.DeleteOperation(context.TODO(), opDoc.DUID, 1)
+		_, err = mongo.DeleteOperation(ctx, opDoc.DUID, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if err := mongo.InsertOperations(context.TODO(), operations); err != nil {
+		if err := mongo.InsertOperations(ctx, operations); err != nil {
 			t.Fatal(err)
 		}
 
-		err = mongo.GetOperations(context.TODO(), opDoc.DUID, 1, constants.InfinitySseq, nil)
+		opList, _, err := mongo.GetOperations(ctx, opDoc.DUID, 1, constants.InfinitySseq)
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		// deletedNum,  err := mongo.DeleteOperation(context.TODO(), opDoc.DUID, 1)
-		// if err != nil || deletedNum != 1{
-		//	t.Fatal(err)
-		// }
+		require.Equal(t, 1, len(opList))
 
 	})
 
@@ -202,6 +202,18 @@ type testSnapshot struct {
 	Value int32 `json:"value"`
 }
 
+func (its *testSnapshot) SetBase(base iface.BaseDatatype) {
+	panic("implement me")
+}
+
+func (its *testSnapshot) GetBase() iface.BaseDatatype {
+	panic("implement me")
+}
+
+func (its *testSnapshot) GetAsJSONCompatible() interface{} {
+	panic("implement me")
+}
+
 func (its *testSnapshot) GetAsJSON() interface{} {
 	// j, err := json.Marshal(its)
 	// if err != nil {
@@ -210,7 +222,7 @@ func (its *testSnapshot) GetAsJSON() interface{} {
 	return its
 }
 
-func (its *testSnapshot) CloneSnapshot() model.Snapshot {
+func (its *testSnapshot) CloneSnapshot() iface.Snapshot {
 	return &testSnapshot{
 		Value: its.Value,
 	}

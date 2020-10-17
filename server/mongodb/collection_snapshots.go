@@ -1,9 +1,9 @@
 package mongodb
 
 import (
-	"context"
 	"fmt"
-	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,29 +12,39 @@ import (
 )
 
 // GetLatestSnapshot gets the latest snapshot for the specified datatype.
-func (m *MongoCollections) GetLatestSnapshot(ctx context.Context, collectionNum uint32, duid string) (*schema.SnapshotDoc, error) {
+func (its *MongoCollections) GetLatestSnapshot(
+	ctx context.OrtooContext,
+	collectionNum uint32,
+	duid string,
+) (*schema.SnapshotDoc, errors.OrtooError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.SnapshotDocFields.DUID, duid)
 	opt := options.FindOne()
 	opt.SetSort(bson.D{{schema.SnapshotDocFields.Sseq, 1}})
-	result := m.snapshots.FindOne(ctx, f, opt)
+	result := its.snapshots.FindOne(ctx, f, opt)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	var snapshot schema.SnapshotDoc
 	if err := result.Decode(&snapshot); err != nil {
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
 	}
 	return &snapshot, nil
 }
 
 // InsertSnapshot inserts a snapshot for the specified datatype.
-func (m *MongoCollections) InsertSnapshot(ctx context.Context, collectionNum uint32, duid string, sseq uint64, meta []byte, snapshot string) error {
-
+func (its *MongoCollections) InsertSnapshot(
+	ctx context.OrtooContext,
+	collectionNum uint32,
+	duid string,
+	sseq uint64,
+	meta []byte,
+	snapshot []byte,
+) errors.OrtooError {
 	snap := schema.SnapshotDoc{
 		ID:            fmt.Sprintf("%s:%d", duid, sseq),
 		CollectionNum: collectionNum,
@@ -44,12 +54,12 @@ func (m *MongoCollections) InsertSnapshot(ctx context.Context, collectionNum uin
 		Snapshot:      snapshot,
 		CreatedAt:     time.Now(),
 	}
-	result, err := m.snapshots.InsertOne(ctx, snap.ToInsertBSON())
+	result, err := its.snapshots.InsertOne(ctx, snap.ToInsertBSON())
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.InsertedID == snap.ID {
-		log.Logger.Infof("insert snapshot: %s", result.InsertedID)
+		ctx.L().Infof("insert snapshot: %s", result.InsertedID)
 	}
 	return nil
 }

@@ -1,7 +1,8 @@
 package schema
 
 import (
-	"github.com/knowhunger/ortoo/ortoo/model"
+	"fmt"
+	"github.com/knowhunger/ortoo/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
@@ -44,8 +45,12 @@ var DatatypeDocFields = struct {
 	UpdatedAt:     "updatedAt",
 }
 
+func (its *DatatypeDoc) String() string {
+	return fmt.Sprintf("%s:%s:%d:%d", its.Type, its.Key, its.SseqBegin, its.SseqEnd)
+}
+
 // GetIndexModel returns the index models of the collection of ClientDoc
-func (c *DatatypeDoc) GetIndexModel() []mongo.IndexModel {
+func (its *DatatypeDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
 		Keys: bsonx.Doc{
 			{DatatypeDocFields.CollectionNum, bsonx.Int32(1)},
@@ -55,16 +60,16 @@ func (c *DatatypeDoc) GetIndexModel() []mongo.IndexModel {
 }
 
 // ToUpdateBSON transforms DatatypeDoc to BSON type
-func (c *DatatypeDoc) ToUpdateBSON() bson.D {
+func (its *DatatypeDoc) ToUpdateBSON() bson.D {
 	return bson.D{
 		{"$set", bson.D{
-			{DatatypeDocFields.Key, c.Key},
-			{DatatypeDocFields.CollectionNum, c.CollectionNum},
-			{DatatypeDocFields.Type, c.Type},
-			{DatatypeDocFields.SseqBegin, c.SseqBegin},
-			{DatatypeDocFields.Visible, c.Visible},
-			{DatatypeDocFields.SseqEnd, c.SseqEnd},
-			{DatatypeDocFields.CreatedAt, c.CreatedAt},
+			{DatatypeDocFields.Key, its.Key},
+			{DatatypeDocFields.CollectionNum, its.CollectionNum},
+			{DatatypeDocFields.Type, its.Type},
+			{DatatypeDocFields.SseqBegin, its.SseqBegin},
+			{DatatypeDocFields.Visible, its.Visible},
+			{DatatypeDocFields.SseqEnd, its.SseqEnd},
+			{DatatypeDocFields.CreatedAt, its.CreatedAt},
 		}},
 		{"$currentDate", bson.D{
 			{ClientDocFields.UpdatedAt, true},
@@ -73,6 +78,6 @@ func (c *DatatypeDoc) ToUpdateBSON() bson.D {
 }
 
 // GetType returns the type of datatype.
-func (c *DatatypeDoc) GetType() model.TypeOfDatatype {
-	return model.TypeOfDatatype(model.TypeOfDatatype_value[c.Type])
+func (its *DatatypeDoc) GetType() model.TypeOfDatatype {
+	return model.TypeOfDatatype(model.TypeOfDatatype_value[its.Type])
 }

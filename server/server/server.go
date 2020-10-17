@@ -1,10 +1,12 @@
 package server
 
 import (
-	"context"
-	"fmt"
-	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/ortoo/model"
+	gocontext "context"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
+	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/pkg/version"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/notification"
 	"github.com/knowhunger/ortoo/server/restful"
@@ -35,8 +37,8 @@ type OrtooServer struct {
 	mutex      sync.Mutex
 	closedCh   chan struct{}
 	rpcServer  *grpc.Server
-	httpServer *restful.Server
-	ctx        context.Context
+	ctrlServer *restful.ControlServer
+	ctx        context.OrtooContext
 	conf       *OrtooServerConfig
 	service    *service.OrtooService
 	notifier   *notification.Notifier
@@ -44,10 +46,16 @@ type OrtooServer struct {
 }
 
 // NewOrtooServer creates a new Ortoo server
-func NewOrtooServer(ctx context.Context, conf *OrtooServerConfig) (*OrtooServer, error) {
-	mongo, err := mongodb.New(ctx, &conf.Mongo)
+func NewOrtooServer(goCtx gocontext.Context, conf *OrtooServerConfig) (*OrtooServer, errors.OrtooError) {
+	host, err := os.Hostname()
 	if err != nil {
-		return nil, log.OrtooError(err)
+		return nil, errors.ServerInit.New(log.Logger, err.Error())
+	}
+	ctx := context.NewWithTags(goCtx, context.SERVER, context.MakeTagInServer(host, conf.RPCServerPort))
+	ctx.L().Infof("Config: %#v", conf)
+	mongo, oErr := mongodb.New(ctx, &conf.Mongo)
+	if oErr != nil {
+		return nil, oErr
 	}
 
 	return &OrtooServer{
@@ -60,44 +68,50 @@ func NewOrtooServer(ctx context.Context, conf *OrtooServerConfig) (*OrtooServer,
 }
 
 // Start start the Ortoo Server
-func (its *OrtooServer) Start() error {
+func (its *OrtooServer) Start() errors.OrtooError {
 	its.mutex.Lock()
 	defer its.mutex.Unlock()
 
 	lis, err := net.Listen("tcp", its.conf.getRPCServerAddr())
 	if err != nil {
-		log.Logger.Fatalf("fail to listen: %v", err)
+		return errors.ServerInit.New(its.ctx.L(), "cannot listen RPC:"+err.Error())
 	}
-	its.notifier, err = notification.NewNotifier(its.conf.Notification)
-	if err != nil {
-		return log.OrtooError(err)
+	var oErr errors.OrtooError
+	its.notifier, oErr = notification.NewNotifier(its.ctx, its.conf.Notification)
+	if oErr != nil {
+		return oErr
 	}
 
 	its.rpcServer = grpc.NewServer()
-	if its.service, err = service.NewOrtooService(its.Mongo, its.notifier); err != nil {
-		panic("fail to connect MongoDB")
-	}
+	its.service = service.NewOrtooService(its.Mongo, its.notifier)
 	model.RegisterOrtooServiceServer(its.rpcServer, its.service)
 
-	its.httpServer = restful.NewServer(its.conf.RestfulPort, its.Mongo)
-	fmt.Printf("%sStarted at %s\n", banner, time.Now().String())
+	its.ctrlServer = restful.New(its.ctx, its.conf.RestfulPort, its.Mongo)
+	its.ctx.L().Printf("%s(%s) Started at %s %s",
+		version.Version,
+		version.GitCommit,
+		time.Now().String(),
+		banner)
 	go func() {
 		if err := its.rpcServer.Serve(lis); err != nil {
-			_ = log.OrtooErrorf(err, "fail to serve grpc")
+			_ = errors.ServerInit.New(its.ctx.L(), err.Error())
+			panic("fail to serve RPC Server")
 		}
 
 	}()
 
 	go func() {
-		if err := its.httpServer.Start(); err != nil {
-			_ = log.OrtooErrorf(err, "fail to serve http")
+		if err := its.ctrlServer.Start(); err != nil {
+			_ = errors.ServerInit.New(its.ctx.L(), err.Error())
+			panic("fail to serve control server")
 		}
 	}()
 
-	log.Logger.Info("successfully start Ortoo server")
+	its.ctx.L().Info("successfully start Ortoo server")
 	return nil
 }
 
+// Close closes all the server threads.
 func (its *OrtooServer) Close(graceful bool) {
 	its.mutex.Lock()
 	defer func() {
@@ -106,16 +120,17 @@ func (its *OrtooServer) Close(graceful bool) {
 	}()
 
 	if graceful {
-		log.Logger.Infof("gracefully shutdown server")
+		its.ctx.L().Infof("gracefully shutdown server")
 		its.rpcServer.GracefulStop()
 	} else {
-		log.Logger.Infof("Stop server")
+		its.ctx.L().Infof("Stop server")
 		its.rpcServer.Stop()
 	}
 }
 
+// HandleSignals can handle signals to the server.
 func (its *OrtooServer) HandleSignals() int {
-	log.Logger.Infof("ready to handle signals")
+	its.ctx.L().Infof("ready to handle signals")
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 
@@ -127,7 +142,7 @@ func (its *OrtooServer) HandleSignals() int {
 		return 0
 	}
 
-	log.Logger.Infof("caught signal: %s", sig.String())
+	its.ctx.L().Infof("caught signal: %s", sig.String())
 	graceful := false
 	if sig == syscall.SIGINT || sig == syscall.SIGTERM {
 		graceful = true
@@ -145,7 +160,7 @@ func (its *OrtooServer) HandleSignals() int {
 	case <-time.After(defaultGracefulTimeout):
 		return 1
 	case <-gracefulCh:
-		log.Logger.Infof("closed successfully")
+		its.ctx.L().Infof("closed successfully")
 		return 0
 	}
 }

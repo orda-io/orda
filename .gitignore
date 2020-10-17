@@ -13,4 +13,6 @@
 *.sum
 .idea/
 docker_volumes/
-build/*
+deployments/docker_volumes
+build/
+bin/

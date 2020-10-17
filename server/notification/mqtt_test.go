@@ -12,7 +12,7 @@ func TestMqttPubSub(t *testing.T) {
 
 	const TOPIC = "mytopic/test"
 
-	opts := mqtt.NewClientOptions().AddBroker("127.0.0.1:1883")
+	opts := mqtt.NewClientOptions().AddBroker("127.0.0.1:11883")
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {

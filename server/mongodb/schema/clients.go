@@ -1,10 +1,13 @@
 package schema
 
 import (
-	"github.com/knowhunger/ortoo/ortoo/model"
+	"fmt"
+	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/pkg/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
+	"strings"
 	"time"
 )
 
@@ -38,24 +41,32 @@ var ClientDocFields = struct {
 	UpdatedAt:     "updatedAt",
 }
 
+func (its *ClientDoc) String() string {
+	return fmt.Sprintf("(%d)%s:%s:%d", its.CollectionNum, its.Alias, its.CUID[0:8], len(its.CheckPoints))
+}
+
+func (its *ClientDoc) GetShortCUID() string {
+	return types.ShortenUIDString(its.CUID)
+}
+
 // ToUpdateBSON returns a bson from a ClientDoc
-func (c *ClientDoc) ToUpdateBSON() bson.D {
+func (its *ClientDoc) ToUpdateBSON() bson.D {
 
 	var checkPointBson map[string]bson.M
 	checkPointBson = make(map[string]bson.M)
-	if c.CheckPoints != nil {
+	if its.CheckPoints != nil {
 
-		for k, v := range c.CheckPoints {
+		for k, v := range its.CheckPoints {
 			checkPointBson[k] = ToCheckPointBSON(v)
 		}
 	}
 	return bson.D{
 		{"$set", bson.D{
-			{ClientDocFields.Alias, c.Alias},
-			{ClientDocFields.CollectionNum, c.CollectionNum},
-			{ClientDocFields.SyncType, c.SyncType},
+			{ClientDocFields.Alias, its.Alias},
+			{ClientDocFields.CollectionNum, its.CollectionNum},
+			{ClientDocFields.SyncType, its.SyncType},
 			{ClientDocFields.CheckPoints, checkPointBson},
-			{ClientDocFields.CreatedAt, c.CreatedAt},
+			{ClientDocFields.CreatedAt, its.CreatedAt},
 		}},
 		{"$currentDate", bson.D{
 			{ClientDocFields.UpdatedAt, true},
@@ -65,7 +76,7 @@ func (c *ClientDoc) ToUpdateBSON() bson.D {
 }
 
 // GetIndexModel returns the index models of ClientDoc
-func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
+func (its *ClientDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{
 		{
 			Keys: bsonx.Doc{
@@ -81,8 +92,8 @@ func (c *ClientDoc) GetIndexModel() []mongo.IndexModel {
 }
 
 // GetCheckPoint returns a CheckPoint of a datatype
-func (c *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
-	if checkPoint, ok := c.CheckPoints[duid]; ok {
+func (its *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
+	if checkPoint, ok := its.CheckPoints[duid]; ok {
 		return checkPoint
 	}
 	return nil
@@ -91,9 +102,17 @@ func (c *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
 // ClientModelToBson returns a ClientDoc from a model.Client
 func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	return &ClientDoc{
-		CUID:          model.GetCUIDString(),
+		CUID:          types.UIDtoString(model.CUID),
 		Alias:         model.Alias,
 		CollectionNum: collectionNum,
 		SyncType:      model.SyncType.String(),
 	}
+}
+
+func (its *ClientDoc) GetClient() string {
+	return fmt.Sprintf("%s(%s)", its.Alias, its.CUID)
+}
+
+func (its *ClientDoc) GetClientSummary() string {
+	return fmt.Sprintf("%.10s(%.10s)", its.Alias, strings.ToUpper(its.CUID))
 }

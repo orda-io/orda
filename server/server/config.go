@@ -3,7 +3,8 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/knowhunger/ortoo/ortoo/log"
+	"github.com/knowhunger/ortoo/pkg/errors"
+	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"io/ioutil"
 )
@@ -16,7 +17,8 @@ type OrtooServerConfig struct {
 	Mongo         mongodb.Config `json:"Mongo"`
 }
 
-func LoadOrtooServerConfig(filePath string) (*OrtooServerConfig, error) {
+// LoadOrtooServerConfig loads config from file.
+func LoadOrtooServerConfig(filePath string) (*OrtooServerConfig, errors.OrtooError) {
 	conf := &OrtooServerConfig{}
 	if err := conf.loadConfig(filePath); err != nil {
 		return nil, err
@@ -24,13 +26,13 @@ func LoadOrtooServerConfig(filePath string) (*OrtooServerConfig, error) {
 	return conf, nil
 }
 
-func (its *OrtooServerConfig) loadConfig(filepath string) error {
+func (its *OrtooServerConfig) loadConfig(filepath string) errors.OrtooError {
 	data, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return log.OrtooErrorf(err, "fail to read server config file: %s", filepath)
+		return errors.ServerInit.New(log.Logger, "cannot read server config file "+filepath)
 	}
 	if err := json.Unmarshal(data, its); err != nil {
-		return log.OrtooErrorf(err, "fail to unmarshal server config file")
+		return errors.ServerInit.New(log.Logger, "cannot unmarshal server config file:"+err.Error())
 	}
 	return nil
 }

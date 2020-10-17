@@ -1,18 +1,29 @@
-BUILD_DIR = build
-GOSRCS := $(shell find . -path ./vendor -prune -o -type f -name '*.go' -print)
+VERSION = 0.0.1
+BUILD_DIR = bin
+
+GIT_COMMIT := $(shell git rev-parse --short HEAD)
+
+GO_SRCS := $(shell find . -path ./vendor -prune -o -type f -name "*.go" -print)
+
+GO_PROJECT = github.com/knowhunger/ortoo
+
+GO_LDFLAGS ?=
+GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.GitCommit=${GIT_COMMIT}
+GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.Version=${VERSION}
 
 .PHONY: protoc-gen
 protoc-gen:
-	protoc ortoo/model/*.proto \
-			-I=./ortoo/model/ \
-			--gofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,:./ortoo/model/
-#			--gotag_out=xxx="bson+\"-\"",output_path=./ortoo/model/:.
-	protoc-go-inject-tag -input=./ortoo/model/model.pb.go
+	-rm ./pkg/model/model.pb.go
+	protoc ./pkg/model/*.proto \
+			-I=./pkg/model/ \
+			--gofast_out=plugins=grpc,:./pkg/model/
+	protoc-go-inject-tag -input=./pkg/model/model.pb.go
 
 .PHONY: server
 server:
+	echo $(GO_SRCS)
 	mkdir -p $(BUILD_DIR)
-	cd server && go build -gcflags='all=-N -l' -o ../$(BUILD_DIR)
+	cd server && go build -gcflags='all=-N -l' -ldflags "${GO_LDFLAGS}" -o ../$(BUILD_DIR)
 
 .PHONY: dependency
 dependency:
@@ -30,8 +41,8 @@ dependency:
 
 .PHONY: fmt
 fmt:
-	gofmt -w $(GOSRCS)
-	goimports -w -local github.com/knowhunger $(GOSRCS)
+	gofmt -w $(GO_SRCS)
+	goimports -w -local github.com/knowhunger $(GO_SRCS)
 
 .PHONY: integration-test
 integration-test: docker-up dependency
@@ -43,15 +54,15 @@ unit-test: dependency
 
 .PHONY: docker-up
 docker-up:
-	@docker-compose up -d
+	@cd deployments; docker-compose up -d
 
 .PHONY: docker-down
 docker-down:
-	@docker-compose down
+	@cd deployments; docker-compose down
 
 .PHONY: run-local-server
 run-local-server: docker-up server
-	build/server --conf examples/local-config.json
+	$(BUILD_DIR)/server --conf examples/local-config.json
 
 .PHONY: clear
 clear: docker-down

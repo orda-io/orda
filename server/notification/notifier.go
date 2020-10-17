@@ -4,8 +4,10 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
-	"github.com/knowhunger/ortoo/ortoo/log"
-	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/knowhunger/ortoo/pkg/errors"
+	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/server/mongodb/schema"
 )
 
 // Notifier is a struct that takes responsibility for notification
@@ -14,30 +16,36 @@ type Notifier struct {
 }
 
 // NewNotifier creates an instance of Notifier
-func NewNotifier(pubSubAddr string) (*Notifier, error) {
+func NewNotifier(ctx context.OrtooContext, pubSubAddr string) (*Notifier, errors.OrtooError) {
 	pubSubOpts := mqtt.NewClientOptions().AddBroker(pubSubAddr)
 	pubSubClient := mqtt.NewClient(pubSubOpts)
 	if token := pubSubClient.Connect(); token.Wait() && token.Error() != nil {
-		return nil, log.OrtooError(token.Error())
+		return nil, errors.ServerInit.New(ctx.L(), token.Error())
 	}
 	return &Notifier{pubSubClient: pubSubClient}, nil
 }
 
 // NotifyAfterPushPull enables server to send a notification to MQTT server
-func (n *Notifier) NotifyAfterPushPull(collectionName, key, cuid, duid string, sseq uint64) error {
-	topic := fmt.Sprintf("%s/%s", collectionName, key)
+func (n *Notifier) NotifyAfterPushPull(
+	ctx context.OrtooContext,
+	collectionName string,
+	client *schema.ClientDoc,
+	datatype *schema.DatatypeDoc,
+	sseq uint64,
+) errors.OrtooError {
+	topic := fmt.Sprintf("%s/%s", collectionName, datatype.Key)
 	msg := model.NotificationPushPull{
-		CUID: cuid,
-		DUID: duid,
+		CUID: client.CUID,
+		DUID: datatype.DUID,
 		Sseq: sseq,
 	}
 	bMsg, err := proto.Marshal(&msg)
 	if err != nil {
-		return log.OrtooError(err)
+		return errors.ServerNotify.New(ctx.L(), err.Error())
 	}
 	if token := n.pubSubClient.Publish(topic, 0, false, bMsg); token.Wait() && token.Error() != nil {
-		return log.OrtooError(token.Error())
+		return errors.ServerNotify.New(ctx.L(), token.Error())
 	}
-	log.Logger.Infof("notify %+v", msg)
+	ctx.L().Infof("notify datatype topic:(%s) with sseq:%d by %s", topic, sseq, client.GetClientSummary())
 	return nil
 }

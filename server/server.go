@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"github.com/knowhunger/ortoo/ortoo/log"
 	"github.com/knowhunger/ortoo/server/server"
 	"os"
 
@@ -27,15 +25,13 @@ func main() {
 			if err != nil {
 				os.Exit(1)
 			}
-			log.Logger.Infof("Config: %#v", conf)
-			svr, err := server.NewOrtooServer(context.Background(), conf)
+			svr, err := server.NewOrtooServer(c.Context, conf)
 			if err != nil {
-				_ = log.OrtooError(err)
 				os.Exit(1)
 			}
 			go func() {
 				if err := svr.Start(); err != nil {
-					_ = log.OrtooError(err)
+
 					os.Exit(1)
 				}
 			}()
@@ -43,5 +39,7 @@ func main() {
 			return nil
 		},
 	}
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		// TODO: should close services and resources
+	}
 }

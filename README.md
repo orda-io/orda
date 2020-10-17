@@ -1,4 +1,12 @@
 # Ortoo
+````
+     _/_/                _/                         
+  _/    _/  _/  _/_/  _/_/_/_/    _/_/      _/_/    
+ _/    _/  _/_/        _/      _/    _/  _/    _/   
+_/    _/  _/          _/      _/    _/  _/    _/    
+ _/_/    _/            _/_/    _/_/      _/_/
+````
+
 [Ortoo (or Yam)](https://en.wikipedia.org/wiki/Yam_(route) was a mongolian messenger system. Ortoo project is a multi-device data synchronization platform based on MongoDB (which could be other document databases). Ortoo is based on CRDT(conflict-free data types), which enables operation-based syncronization.  
 
 
@@ -45,7 +53,7 @@ Created collection 'hello_world(1)'
 ```go
 clientConf := &ortoo.ClientConfig{
     ServerAddr:       "localhost:19061",         // Ortoo Server address.
-    NotificationAddr: "localhost:1883",          // notification server address.
+    NotificationAddr: "localhost:11883",          // notification server address.
     CollectionName:   "hello_world",             // the collection name of MongoDB which the client participates in.
     SyncType:         model.SyncType_NOTIFIABLE, // syncType that is notified in real-time from notification server.
 }
@@ -65,8 +73,31 @@ defer func() {
 ### Use Datatypes
 
 #### Creation and Subscription of Datatypes
+ - For using datatypes, a client should create or subscribe datatypes. 
+ - A datatype has a key which is used as a document ID; i.e., `_id' of MongoDB document.
+ - There are three ways to use a datatype. For a type of datatype `XXXX`, `XXXX` cam be one of IntCounter, HashMap, List... 
+```go
+// CreateXXXX() is used to create a new datatype. 
+// If there already exists a datatype for the key, it returns an error via error handler.
+intCounter := client.CreateIntCounter("key", ortoo.NewHandlers(...)
+
+// SubscribeXXXX() is used to subscribe an existing datatype. 
+// If there exists no datatype for the key, it returns an error via error handler
+intCounter := client.SubscribeIntCounter("key", ortoo.NewHandlers(...)
+
+// SubscribeOrCreateXXXX() is used to subscribe an existing datatype. 
+// If no datatype exists for the key, a new datatype is created. 
+// It is recommended to use this method to shorten code lines.
+intCounter := client.SubscribeOrCreateIntCounter("key", ortoo.NewHandlers(...)
+
+// Client should sync with Ortoo server.
+if err:= client.Sync(); err !=nil {
+    panic(err)
+}
+```
+#### Handlers   
 #### IntCounter
 #### HashMap
 #### List
 #### Transaction
-#### Handlers
+

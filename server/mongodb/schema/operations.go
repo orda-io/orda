@@ -2,7 +2,7 @@ package schema
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/pkg/model"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"time"
@@ -16,15 +16,24 @@ func NewOperationDoc(op *model.Operation, duid string, sseq uint64, colNum uint3
 		DUID:          duid,
 		CollectionNum: colNum,
 		OpType:        op.OpType.String(),
-		Era:           op.ID.Era,
-		Lamport:       op.ID.Lamport,
-		CUID:          op.ID.CUID,
-		Seq:           op.ID.Seq,
-		Sseq:          sseq,
-		JSON:          string(op.Json),
-		CreatedAt:     time.Now(),
+		OpID: OpID{
+			Era:     op.ID.Era,
+			Lamport: op.ID.Lamport,
+			CUID:    op.ID.CUID,
+			Seq:     op.ID.Seq,
+		},
+		Sseq:      sseq,
+		Body:      op.Body,
+		CreatedAt: time.Now(),
 	}
 
+}
+
+type OpID struct {
+	Era     uint32 `bson:"era"`
+	Lamport uint64 `bson:"lamport"`
+	CUID    []byte `bson:"cuid"`
+	Seq     uint64 `bson:"seq"`
 }
 
 // OperationDoc defines a document for operation, stored in MongoDB
@@ -33,27 +42,24 @@ type OperationDoc struct {
 	DUID          string    `bson:"duid"`
 	CollectionNum uint32    `bson:"colNum"`
 	OpType        string    `bson:"type"`
-	Era           uint32    `bson:"era"`
-	Lamport       uint64    `bson:"lamport"`
-	CUID          []byte    `bson:"cuid"`
-	Seq           uint64    `bson:"seq"`
+	OpID          OpID      `bson:"id"`
 	Sseq          uint64    `bson:"sseq"`
-	JSON          string    `bson:"json"`
+	Body          []byte    `bson:"body"`
 	CreatedAt     time.Time `bson:"createdAt"`
 }
 
 // GetOperation returns a model.Operation by composing parameters of OperationDoc.
 func (its *OperationDoc) GetOperation() *model.Operation {
 	opID := &model.OperationID{
-		Era:     its.Era,
-		Lamport: its.Lamport,
-		CUID:    its.CUID,
-		Seq:     its.Seq,
+		Era:     its.OpID.Era,
+		Lamport: its.OpID.Lamport,
+		CUID:    its.OpID.CUID,
+		Seq:     its.OpID.Seq,
 	}
 	return &model.Operation{
 		ID:     opID,
 		OpType: model.TypeOfOperation(model.TypeOfOperation_value[its.OpType]),
-		Json:   []byte(its.JSON),
+		Body:   its.Body,
 	}
 }
 

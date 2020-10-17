@@ -2,7 +2,7 @@ package schema
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/ortoo/model"
+	"github.com/knowhunger/ortoo/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
