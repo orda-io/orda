@@ -49,7 +49,7 @@ var (
 		})
 )
 
-func (its *IntegrationTestSuite) TestDocumentExploitCommutativity() {
+func (its *IntegrationTestSuite) TestDocument() {
 
 	its.Run("Can exploit OPX", func() {
 		config := NewTestOrtooClientConfig(its.collectionName)
@@ -88,9 +88,7 @@ func (its *IntegrationTestSuite) TestDocumentExploitCommutativity() {
 		// log.Logger.Infof("DOC2:%v", doc2.GetAsJSON())
 		// require.Equal(its.T(), doc1.GetAsJSON(), doc2.GetAsJSON())
 	})
-}
 
-func (its *IntegrationTestSuite) TestDocumentRealSnapshot() {
 	its.Run("Can store real snapshot for Document", func() {
 		config := NewTestOrtooClientConfig(its.collectionName)
 		client1 := ortoo.NewClient(config, its.getTestName())
@@ -154,14 +152,7 @@ func (its *IntegrationTestSuite) TestDocumentRealSnapshot() {
 		}, 10*time.Second, 1*time.Second, "cannot make snapshot")
 	})
 
-	its.Run("Can subscribe with snapshot", func() {
-
-	})
-
-}
-
-func (its *IntegrationTestSuite) TestDocumentTransaction() {
-	its.Run("Can store real snapshot for Document", func() {
+	its.Run("Can test a transaction for Document", func() {
 		config := NewTestOrtooClientConfig(its.collectionName)
 		client1 := ortoo.NewClient(config, "docClient1")
 		client2 := ortoo.NewClient(config, "docClient2")
