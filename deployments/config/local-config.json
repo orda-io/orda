@@ -1,0 +1,9 @@
+{
+  "RPCServerPort": 19061,
+  "RestfulPort": 19861,
+  "Notification": "mqtt-mosquitto:11883",
+  "Mongo": {
+    "MongoHost": "mongodb://root:ortoo-test@ortoo_mongodb_testing:27017",
+    "OrtooDB": "ortoodb"
+  }
+}

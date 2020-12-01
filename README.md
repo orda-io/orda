@@ -13,31 +13,28 @@ _/    _/  _/          _/      _/    _/  _/    _/
 ## Getting started
 
 ### Working envirnment (Maybe work on less versions of them)
- - go 1.13.5
- - docker 18.09.2 (for running MongoDB)
+ - go 1.14
+ - docker latest, docker-compose (for deploying local ortoo-server)  
  - [MongoDB latest](https://hub.docker.com/_/mongo)
  - MQTT: [eclipse mosquitto latest](https://hub.docker.com/_/eclipse-mosquitto) 
- - docker-compose
  - gogo/protobuf (how to install: http://google.github.io/proto-lens/installing-protoc.html)
+
+
+## How to use Ortoo
  
-### Install
+### Running local Ortoo server with docker-compose.
  ```bash
  # git clone https://github.com/knowhunger/ortoo.git
- # cd ortoo 
+ # cd ortoo
+ # make build-local-docker-server
  # make docker-up
  # make protoc-gen
  # make server
  ```
-
-## How to use Ortoo
-
-### Run Ortoo Server
-```bash
- $ make run-local-server 
-or 
- $ make server 
- $ ./build/server --conf ./examples/local-config.json 
-```
+- Port mapping
+  * The original ports for Ortoo Server are open at 19061 (gRPC) / 19861 (Rest).
+  * To prevent port conflicts while the development, docker-compose binds 19061 to 29065, and 19861 to 29865, respectively.
+  * The port 16091 is open for the proxy of gRPC by ortoo-js.    
 
 ### Use Ortoo client SDK
 

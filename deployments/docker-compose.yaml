@@ -13,19 +13,6 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: ortoo-test
 
-  mongo-express:
-    container_name: ortoo_mongo_express
-    image: mongo-express
-    restart: always
-    ports:
-      - 8081:8081
-    environment:
-      ME_CONFIG_MONGODB_SERVER: mongodb
-      ME_CONFIG_MONGODB_PORT: 27017
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ortoo-test
-    depends_on:
-      - mongodb
   mqtt-mosquitto:
     container_name: mqtt-mosquitto
     image: eclipse-mosquitto:latest
@@ -36,9 +23,48 @@ services:
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
-      - ./config:/mosquitto/config
+      - type: bind
+        source: ./config/mosquitto.conf
+        target: /mosquitto/config/mosquitto.conf
+        read_only: true
+
+  ortoo-server:
+    container_name: ortoo_server
+    image: knowhunger/ortoo:0.0.1
+    restart: always
+    command: /app/ortoo_server --conf /config/local-config.json
+    ports:
+      - 29065:19061
+      - 29865:19861
+    volumes:
+      - type: bind
+        source: ./config/local-config.json
+        target: /config/local-config.json
+        read_only: true
+    depends_on:
+      - mongodb
+      - mqtt-mosquitto
+
+  envoy-grpc-web-proxy:
+    container_name: envoy-grpc-web-proxy
+    image: envoyproxy/envoy:v1.16-latest
+    restart: always
+    command: envoy -c /config/envoy.yaml
+    ports:
+      - 16091:16091
+      - 9901:9901
+    volumes:
+      - type: bind
+        source: ./config/envoy.yaml
+        target: /config/envoy.yaml
+        read_only: true
+    depends_on:
+      - ortoo-server
+
 volumes:
   mongodb_configdb: { }
   mongodb_db: { }
   mosquitto_data: { }
   mosquitto_log: { }
+
+

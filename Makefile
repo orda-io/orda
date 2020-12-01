@@ -1,12 +1,13 @@
 VERSION = 0.0.1
+
 BUILD_DIR = bin
+DEPLOY_DIR = deployments
+CONFIG_DIR = config
 
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
 
 GO_SRCS := $(shell find . -path ./vendor -prune -o -type f -name "*.go" -print)
-
 GO_PROJECT = github.com/knowhunger/ortoo
-
 GO_LDFLAGS ?=
 GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.GitCommit=${GIT_COMMIT}
 GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.Version=${VERSION}
@@ -19,8 +20,8 @@ protoc-gen:
 			--gofast_out=plugins=grpc,:./pkg/model/
 	protoc-go-inject-tag -input=./pkg/model/model.pb.go
 
-.PHONY: server
-server:
+.PHONY: build-server
+build-server:
 	echo $(GO_SRCS)
 	mkdir -p $(BUILD_DIR)
 	cd server && go build -gcflags='all=-N -l' -ldflags "${GO_LDFLAGS}" -o ../$(BUILD_DIR)
@@ -54,15 +55,18 @@ unit-test: dependency
 
 .PHONY: docker-up
 docker-up:
-	@cd deployments; docker-compose up -d
+	@cd $(DEPLOY_DIR); docker-compose up -d
 
 .PHONY: docker-down
 docker-down:
-	@cd deployments; docker-compose down
+	@cd $(DEPLOY_DIR); docker-compose down
 
-.PHONY: run-local-server
-run-local-server: docker-up server
-	$(BUILD_DIR)/server --conf examples/local-config.json
+.PHONY: build-local-docker-server
+build-local-docker-server: build-server
+	-mkdir -p $(DEPLOY_DIR)/tmp
+	cp $(BUILD_DIR)/server  $(DEPLOY_DIR)/tmp
+	@cd $(DEPLOY_DIR) && docker build -t knowhunger/ortoo:$(VERSION) .
+	-rm -rf $(DEPLOY_DIR)/tmp
 
 .PHONY: clear
 clear: docker-down
