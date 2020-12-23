@@ -13,11 +13,13 @@ _/    _/  _/          _/      _/    _/  _/    _/
 ## Getting started
 
 ### Working envirnment (Maybe work on less versions of them)
- - go 1.14
- - docker latest, docker-compose (for deploying local ortoo-server)  
- - [MongoDB latest](https://hub.docker.com/_/mongo)
- - MQTT: [eclipse mosquitto latest](https://hub.docker.com/_/eclipse-mosquitto) 
- - gogo/protobuf (how to install: http://google.github.io/proto-lens/installing-protoc.html)
+
+- go 1.14
+- docker latest, docker-compose (for deploying local ortoo-server)
+- [MongoDB latest](https://hub.docker.com/_/mongo)
+- MQTT: [EQM](https://www.emqx.io/)
+- [envoy-proxy](https://www.envoyproxy.io/)
+- gogo/protobuf (how to install: http://google.github.io/proto-lens/installing-protoc.html)
 
 
 ## How to use Ortoo
@@ -26,15 +28,24 @@ _/    _/  _/          _/      _/    _/  _/    _/
  ```bash
  # git clone https://github.com/knowhunger/ortoo.git
  # cd ortoo
+ # make protoc-gen
  # make build-local-docker-server
  # make docker-up
- # make protoc-gen
  # make server
  ```
-- Port mapping
-  * The original ports for Ortoo Server are open at 19061 (gRPC) / 19861 (Rest).
-  * To prevent port conflicts while the development, docker-compose binds 19061 to 29065, and 19861 to 29865, respectively.
-  * The port 16091 is open for the proxy of gRPC by ortoo-js.    
+
+- Port mapping in docker-compose
+  * ortoo-server
+    - 19061: for gRPC protocol
+    - 19861: for HTTP REST control
+  * ortoo-mongodb
+    - 27017
+  * ortoo-emqx
+    - 18181(host):1883(internal) : for MQTT
+    - 18881(host):8083(internal) : for websocket / HTTP
+    - 18081(host):18083(internal) : for [dashboard](http://localhost:18081))
+  * ortoo-envoy-grpc-proxy
+    - 29065: for grpc-web (websocket of ortoo-emqx)
 
 ### Use Ortoo client SDK
 

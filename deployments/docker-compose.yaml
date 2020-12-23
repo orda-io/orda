@@ -1,58 +1,67 @@
 version: "3.4"
 services:
-  mongodb:
-    container_name: ortoo_mongodb_testing
+  ortoo-mongodb:
+    container_name: ortoo-mongodb
     image: mongo:latest
     restart: always
     volumes:
-      - mongodb_configdb:/data/configdb
-      - mongodb_db:/data/db
+      - mongodb-configdb:/data/configdb
+      - mongodb-db:/data/db
     ports:
       - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: ortoo-test
 
-  mqtt-mosquitto:
-    container_name: mqtt-mosquitto
-    image: eclipse-mosquitto:latest
+  ortoo-emqx:
+    container_name: ortoo-emqx
+    image: emqx/emqx:latest
     restart: always
     ports:
-      - 11883:11883
-      - 9001:9001
+      - 18181:1883  # port for MQTT
+      - 18881:8083  # for WebSocket/HTTP
+      - 18081:18083  # for dashboard
+    #      - "8883"  # port for MQTT(SSL)
+    #      - "8084"  # for WSS / HTTPS
+    #      - "11883" # port for internal MQTT/TCP
+    #      - "4369"  # for port mapping (epmd)
+    #      - "4370"  # for port mapping
+    #      - "5369"  # for gen_rpc port mapping
+    #      - "6369"  # for distributed node
+    #      - "8081"  # for mgmt API
+    environment:
+      EMQX_NAME: ortoo-emqx
+      EMQX_HOST: 127.0.0.1
+      EMQX_LOADED_PLUGINS: "emqx_recon,emqx_retainer,emqx_management,emqx_dashboard"
     volumes:
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_log:/mosquitto/log
-      - type: bind
-        source: ./config/mosquitto.conf
-        target: /mosquitto/config/mosquitto.conf
-        read_only: true
+      - emqx-data:/opt/emqx/data
+      - emqx-etc:/opt/emqx/etc
+      - emqx-log:/opt/emqx/log
 
   ortoo-server:
-    container_name: ortoo_server
+    container_name: ortoo-server
     image: knowhunger/ortoo:0.0.1
     restart: always
-    command: /app/ortoo_server --conf /config/local-config.json
+    command: sh -c "sleep 5 && /app/ortoo_server --conf /config/local-config.json"
     ports:
-      - 29065:19061
-      - 29865:19861
+      - 19061:19061  # for port gRPC protocol
+      - 19861:19861  # for port HTTP control
     volumes:
       - type: bind
         source: ./config/local-config.json
         target: /config/local-config.json
         read_only: true
     depends_on:
-      - mongodb
-      - mqtt-mosquitto
+      - ortoo-mongodb
+      - ortoo-emqx
 
-  envoy-grpc-web-proxy:
-    container_name: envoy-grpc-web-proxy
+  ortoo-envoy-grpc-proxy:
+    container_name: ortoo-envoy-grpc-proxy
     image: envoyproxy/envoy:v1.16-latest
     restart: always
     command: envoy -c /config/envoy.yaml
     ports:
-      - 16091:16091
-      - 9901:9901
+      - 29065:29065
     volumes:
       - type: bind
         source: ./config/envoy.yaml
@@ -62,9 +71,9 @@ services:
       - ortoo-server
 
 volumes:
-  mongodb_configdb: { }
-  mongodb_db: { }
-  mosquitto_data: { }
-  mosquitto_log: { }
-
+  mongodb-configdb: { }
+  mongodb-db: { }
+  emqx-data: { }
+  emqx-etc: { }
+  emqx-log: { }
 

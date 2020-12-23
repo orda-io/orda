@@ -18,6 +18,8 @@ type Notifier struct {
 // NewNotifier creates an instance of Notifier
 func NewNotifier(ctx context.OrtooContext, pubSubAddr string) (*Notifier, errors.OrtooError) {
 	pubSubOpts := mqtt.NewClientOptions().AddBroker(pubSubAddr)
+	pubSubOpts.SetClientID("ortoo-server")
+
 	pubSubClient := mqtt.NewClient(pubSubOpts)
 	if token := pubSubClient.Connect(); token.Wait() && token.Error() != nil {
 		return nil, errors.ServerInit.New(ctx.L(), token.Error())

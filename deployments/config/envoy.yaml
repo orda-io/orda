@@ -1,7 +1,7 @@
 admin:
   access_log_path: /tmp/admin_access.log
   address:
-    socket_address: { address: 0.0.0.0, port_value: 9901 }
+    socket_address: { address: 0.0.0.0, port_value: 29065 }
 
 static_resources:
   listeners:
@@ -23,7 +23,7 @@ static_resources:
                       routes:
                         - match: { prefix: "/" }
                           route:
-                            cluster: ortoo_service
+                            cluster: ortoo-service
                             max_grpc_timeout: 0s
                       cors:
                         allow_origin_string_match:
@@ -37,17 +37,17 @@ static_resources:
                   - name: envoy.filters.http.cors
                   - name: envoy.filters.http.router
   clusters:
-    - name: ortoo_service
+    - name: ortoo-service
       connect_timeout: 0.25s
-      type: logical_dns
+      type: strict_dns
       http2_protocol_options: { }
       lb_policy: round_robin
       load_assignment:
-        cluster_name: ortoo_service
+        cluster_name: ortoo-service
         endpoints:
           - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
-                      address: ortoo_server
+                      address: ortoo-server
                       port_value: 19061
