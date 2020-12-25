@@ -52,7 +52,7 @@ _/    _/  _/          _/      _/    _/  _/    _/
 #### Make a collection
  - To make Ortoo clients connect to Ortoo server, a `collection` should be prepared. The `collection` corresponds to the real collection of MongoDB. It can be created by restful API: `curl -X GET http://<SERVER_ADDR>/collections/<COLLECTION_NAME>`
 ```bash
- $ curl -s -X GET http://localhost:19861/collections/hello_world
+ $ curl -s -X PUT http://localhost:19861/collections/hello_world
 Created collection 'hello_world(1)'
 ```
 #### Make a client

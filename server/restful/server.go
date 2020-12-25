@@ -46,7 +46,7 @@ func (its *ControlServer) Start() error {
 
 func (its *ControlServer) createCollections(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-	case http.MethodGet:
+	case http.MethodPut:
 		collectionName := strings.TrimPrefix(req.URL.Path, collectionPath)
 		num, err := mongodb.MakeCollection(its.ctx, its.mongo, collectionName)
 		var msg string
