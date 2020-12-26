@@ -60,9 +60,10 @@ services:
     container_name: ortoo-envoy-grpc-proxy
     image: envoyproxy/envoy:v1.16-latest
     restart: always
-    command: envoy -c /config/envoy.yaml
+    command: envoy -c /config/envoy.yaml -l debug
     ports:
       - 29065:29065
+      - 9901:9901
     volumes:
       - type: bind
         source: ./config/envoy.yaml
