@@ -68,7 +68,7 @@ func NewClient(conf *ClientConfig, alias string) Client {
 	case model.SyncType_LOCAL_ONLY, model.SyncType_MANUALLY:
 		notificationManager = nil
 	case model.SyncType_NOTIFIABLE:
-		notificationManager = managers.NewNotificationManager(ctx, conf.NotificationAddr)
+		notificationManager = managers.NewNotificationManager(ctx, conf.NotificationAddr, cm)
 	}
 	var messageManager *managers.MessageManager = nil
 	var datatypeManager *managers.DatatypeManager = nil

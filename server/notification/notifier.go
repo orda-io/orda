@@ -12,19 +12,19 @@ import (
 
 // Notifier is a struct that takes responsibility for notification
 type Notifier struct {
-	pubSubClient mqtt.Client
+	mqttClient mqtt.Client
 }
 
 // NewNotifier creates an instance of Notifier
 func NewNotifier(ctx context.OrtooContext, pubSubAddr string) (*Notifier, errors.OrtooError) {
-	pubSubOpts := mqtt.NewClientOptions().AddBroker(pubSubAddr)
-	pubSubOpts.SetClientID("ortoo-server")
+	Opts := mqtt.NewClientOptions().AddBroker(pubSubAddr)
+	// Opts.SetClientID("ortoo-server")
 
-	pubSubClient := mqtt.NewClient(pubSubOpts)
-	if token := pubSubClient.Connect(); token.Wait() && token.Error() != nil {
+	client := mqtt.NewClient(Opts)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		return nil, errors.ServerInit.New(ctx.L(), token.Error())
 	}
-	return &Notifier{pubSubClient: pubSubClient}, nil
+	return &Notifier{mqttClient: client}, nil
 }
 
 // NotifyAfterPushPull enables server to send a notification to MQTT server
@@ -45,7 +45,7 @@ func (n *Notifier) NotifyAfterPushPull(
 	if err != nil {
 		return errors.ServerNotify.New(ctx.L(), err.Error())
 	}
-	if token := n.pubSubClient.Publish(topic, 0, false, bMsg); token.Wait() && token.Error() != nil {
+	if token := n.mqttClient.Publish(topic, 0, false, bMsg); token.Wait() && token.Error() != nil {
 		return errors.ServerNotify.New(ctx.L(), token.Error())
 	}
 	ctx.L().Infof("notify datatype topic:(%s) with sseq:%d by %s", topic, sseq, client.GetClientSummary())

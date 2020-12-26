@@ -45,9 +45,9 @@ func GetMongo(ctx context.OrtooContext, dbName string) (*mongodb.RepositoryMongo
 // NewTestOrtooClientConfig generates an OrtooClientConfig for testing.
 func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 	return &ortoo.ClientConfig{
-		ServerAddr:       "127.0.0.1:19061",
+		ServerAddr:       "127.0.0.1:59062",
 		CollectionName:   collectionName,
-		NotificationAddr: "127.0.0.1:11883",
+		NotificationAddr: "tcp://127.0.0.1:18181",
 		SyncType:         model.SyncType_NOTIFIABLE,
 	}
 }
@@ -55,9 +55,9 @@ func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 // NewTestOrtooServerConfig generates an OrtooServerConfig for testing.
 func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 	return &server.OrtooServerConfig{
-		RPCServerPort: 19061,
-		RestfulPort:   19861,
-		Notification:  "127.0.0.1:11883",
+		RPCServerPort: 59062,
+		RestfulPort:   59862,
+		Notification:  "tcp://127.0.0.1:18181",
 		Mongo:         *mongodb.NewTestMongoDBConfig(dbName),
 	}
 }

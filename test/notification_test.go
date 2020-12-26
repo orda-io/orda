@@ -43,12 +43,14 @@ func (its *IntegrationTestSuite) TestNotification() {
 				log.Logger.Infof("STATE: %s -> %s %d", old, new, intCounter.Get())
 				require.Equal(its.T(), int32(1), intCounter.Get())
 				wg.Done() // one time
+				log.Logger.Infof("%v", wg)
 			},
 			func(dt ortoo.Datatype, opList []interface{}) {
 				for _, op := range opList {
 					log.Logger.Infof("OPERATION: %+v", op)
 				}
 				wg.Done() // two times
+				log.Logger.Infof("%v", wg)
 			},
 			func(dt ortoo.Datatype, err ...errors.OrtooError) {
 				require.NoError(its.T(), err[0])
@@ -58,6 +60,7 @@ func (its *IntegrationTestSuite) TestNotification() {
 		_, _ = intCounter1.IncreaseBy(10)
 		require.NoError(its.T(), client1.Sync())
 		wg.Wait()
+		log.Logger.Infof("Wait group done")
 		require.Equal(its.T(), intCounter1.Get(), intCounter2.Get())
 	})
 }

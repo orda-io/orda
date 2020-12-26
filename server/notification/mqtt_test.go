@@ -12,13 +12,13 @@ func TestMqttPubSub(t *testing.T) {
 
 	const TOPIC = "mytopic/test"
 
-	opts := mqtt.NewClientOptions().AddBroker("127.0.0.1:11883")
-
-	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
+	opts := mqtt.NewClientOptions().AddBroker("tcp://127.0.0.1:18181")
+	opts.SetClientID("client1")
+	client1 := mqtt.NewClient(opts)
+	if token := client1.Connect(); token.Wait() && token.Error() != nil {
 		t.Fatal(token.Error())
 	}
-
+	opts.SetClientID("client2")
 	client2 := mqtt.NewClient(opts)
 	if token2 := client2.Connect(); token2.Wait() && token2.Error() != nil {
 		t.Fatal(token2.Error())
@@ -27,23 +27,21 @@ func TestMqttPubSub(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	if token := client.Subscribe(TOPIC, 0, func(client mqtt.Client, msg mqtt.Message) {
-		if string(msg.Payload()) != "mymessage" {
-			t.Fatalf("want mymessage, got %s", msg.Payload())
-		}
+	var subscribeFn = func(client mqtt.Client, msg mqtt.Message) {
+		reader := client.OptionsReader()
+		fmt.Printf("at %v: %s\n", reader.ClientID(), string(msg.Payload()))
 		wg.Done()
-	}); token.Wait() && token.Error() != nil {
+	}
+
+	if token := client1.Subscribe(TOPIC, 0, subscribeFn); token.Wait() && token.Error() != nil {
 		t.Fatal(token.Error())
 	}
 
-	if token2 := client2.Subscribe(TOPIC, 0, func(client2 mqtt.Client, msg mqtt.Message) {
-		fmt.Printf("at client2: %s\n", string(msg.Payload()))
-		wg.Done()
-	}); token2.Wait() && token2.Error() != nil {
+	if token2 := client2.Subscribe(TOPIC, 0, subscribeFn); token2.Wait() && token2.Error() != nil {
 		t.Fatal(token2.Error())
 	}
 
-	if token := client.Publish(TOPIC, 0, false, "mymessage"); token.Wait() && token.Error() != nil {
+	if token := client1.Publish(TOPIC, 0, false, "mymessage"); token.Wait() && token.Error() != nil {
 		t.Fatal(token.Error())
 	}
 	wg.Wait()
