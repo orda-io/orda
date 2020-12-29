@@ -27,20 +27,20 @@ func NewClientResponse(header *MessageHeader, state StateOfResponse, args ...int
 }
 
 // ToString returns customized string
-func (c *ClientResponse) ToString() string {
+func (its *ClientResponse) ToString() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, clientHeadFormat, c.Header.ToString())
-	b.WriteString(c.State.State.String())
+	_, _ = fmt.Fprintf(&b, clientHeadFormat, its.Header.ToString())
+	b.WriteString(its.State.State.String())
 	b.WriteString(":")
-	b.WriteString(c.State.Msg)
+	b.WriteString(its.State.Msg)
 	return b.String()
 }
 
 // ToString returns customized string
-func (p *PushPullResponse) ToString() string {
+func (its *PushPullResponse) ToString() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, pushPullHeadFormat, p.ID, p.Header.ToString(), len(p.PushPullPacks))
-	for _, ppp := range p.PushPullPacks {
+	_, _ = fmt.Fprintf(&b, pushPullHeadFormat, its.ID, its.Header.ToString(), len(its.PushPullPacks))
+	for _, ppp := range its.PushPullPacks {
 		b.WriteString(" ")
 		b.WriteString(ppp.ToString())
 	}

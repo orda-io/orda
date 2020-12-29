@@ -31,11 +31,11 @@ message OperationID {
     // @inject_tag: json:"e,omitempty"
     uint32 era = 1;
     // @inject_tag: json:"l,omitempty"
-    uint64 lamport = 2;
+    uint64 lamport = 2 [jstype = JS_STRING];
     // @inject_tag: json:"c,omitempty"
     bytes CUID = 3;
     // @inject_tag: json:"s,omitempty"
-    uint64 seq = 4;
+    uint64 seq = 4 [jstype = JS_STRING];
 }
 
 message Operation {
@@ -91,15 +91,15 @@ message PushPullPack {
 
 message CheckPoint {
     // @inject_tag: bson:"s",json:"s"
-    uint64 sseq = 1;
+    uint64 sseq = 1 [jstype = JS_STRING];
     // @inject_tag: bson:"c",json:"c"
-    uint64 cseq = 2;
+    uint64 cseq = 2 [jstype = JS_STRING];
 }
 
 message NotificationPushPull {
     string CUID = 1;
     string DUID = 2;
-    uint64 sseq = 3;
+    uint64 sseq = 3 [jstype = JS_STRING];
 }
 
 message DatatypeMeta {

@@ -9,21 +9,21 @@ func NewCheckPoint() *CheckPoint {
 }
 
 // Set sets the values of checkpoint
-func (c *CheckPoint) Set(sseq, cseq uint64) *CheckPoint {
-	c.Sseq = sseq
-	c.Cseq = cseq
-	return c
+func (its *CheckPoint) Set(sseq, cseq uint64) *CheckPoint {
+	its.Sseq = sseq
+	its.Cseq = cseq
+	return its
 }
 
 // SyncCseq syncs Cseq
-func (c *CheckPoint) SyncCseq(cseq uint64) *CheckPoint {
-	if c.Cseq < cseq {
-		c.Cseq = cseq
+func (its *CheckPoint) SyncCseq(cseq uint64) *CheckPoint {
+	if its.Cseq < cseq {
+		its.Cseq = cseq
 	}
-	return c
+	return its
 }
 
 // Clone makes a carbon copy of this one.
-func (c *CheckPoint) Clone() *CheckPoint {
-	return NewCheckPoint().Set(c.Sseq, c.Cseq)
+func (its *CheckPoint) Clone() *CheckPoint {
+	return NewCheckPoint().Set(its.Sseq, its.Cseq)
 }
