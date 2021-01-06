@@ -7,43 +7,49 @@ import (
 	"google.golang.org/grpc"
 )
 
-// MessageManager is a manager exchanging request and response with Ortoo server.
-type MessageManager struct {
+// SyncManager is a manager exchanging request and response with Ortoo server.
+type SyncManager struct {
 	seq                 uint32
-	host                string
 	ctx                 context.OrtooContext
 	conn                *grpc.ClientConn
 	client              *model.Client
+	serverAddr          string
 	serviceClient       model.OrtooServiceClient
 	notificationManager *NotificationManager
 }
 
-// NewMessageManager creates an instance of MessageManager.
-func NewMessageManager(
+// NewSyncManager creates an instance of SyncManager.
+func NewSyncManager(
 	ctx context.OrtooContext,
 	client *model.Client,
-	host string,
-	notifyManager *NotificationManager,
-) *MessageManager {
-
-	return &MessageManager{
+	serverAddr string,
+	notificationAddr string,
+) *SyncManager {
+	var notificationManager *NotificationManager
+	switch client.SyncType {
+	case model.SyncType_LOCAL_ONLY, model.SyncType_MANUALLY:
+		notificationManager = nil
+	case model.SyncType_NOTIFIABLE:
+		notificationManager = NewNotificationManager(ctx, notificationAddr, client)
+	}
+	return &SyncManager{
 		seq:                 0,
 		ctx:                 ctx,
-		host:                host,
+		serverAddr:          serverAddr,
 		client:              client,
-		notificationManager: notifyManager,
+		notificationManager: notificationManager,
 	}
 }
 
-func (its *MessageManager) nextSeq() uint32 {
+func (its *SyncManager) nextSeq() uint32 {
 	currentSeq := its.seq
 	its.seq++
 	return currentSeq
 }
 
 // Connect makes connections with Ortoo GRPC and notification servers.
-func (its *MessageManager) Connect() errors.OrtooError {
-	conn, err := grpc.Dial(its.host, grpc.WithInsecure())
+func (its *SyncManager) Connect() errors.OrtooError {
+	conn, err := grpc.Dial(its.serverAddr, grpc.WithInsecure())
 	if err != nil {
 		return errors.ClientConnect.New(its.ctx.L(), err.Error())
 	}
@@ -59,7 +65,7 @@ func (its *MessageManager) Connect() errors.OrtooError {
 }
 
 // Close closes connections with Ortoo GRPC and notification servers.
-func (its *MessageManager) Close() errors.OrtooError {
+func (its *SyncManager) Close() errors.OrtooError {
 
 	if its.notificationManager != nil {
 		its.notificationManager.Close()
@@ -71,7 +77,7 @@ func (its *MessageManager) Close() errors.OrtooError {
 }
 
 // Sync exchanges PUSHPULL_REQUEST and PUSHPULL_RESPONSE
-func (its *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, errors.OrtooError) {
+func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, errors.OrtooError) {
 	request := model.NewPushPullRequest(its.nextSeq(), its.client, pppList...)
 	its.ctx.L().Infof("SEND %s", request.ToString())
 	response, err := its.serviceClient.ProcessPushPull(its.ctx, request)
@@ -83,7 +89,7 @@ func (its *MessageManager) Sync(pppList ...*model.PushPullPack) (*model.PushPull
 }
 
 // ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
-func (its *MessageManager) ExchangeClientRequestResponse() errors.OrtooError {
+func (its *SyncManager) ExchangeClientRequestResponse() errors.OrtooError {
 	request := model.NewClientRequest(its.nextSeq(), its.client)
 	its.ctx.L().Infof("SEND %s", request.ToString())
 	response, err := its.serviceClient.ProcessClient(its.ctx, request)
@@ -92,4 +98,17 @@ func (its *MessageManager) ExchangeClientRequestResponse() errors.OrtooError {
 	}
 	its.ctx.L().Infof("RECV %s", response.ToString())
 	return nil
+}
+
+func (its *SyncManager) subscribeNotification(topic string) errors.OrtooError {
+	if its.notificationManager != nil {
+		return its.notificationManager.SubscribeNotification(topic)
+	}
+	return nil
+}
+
+func (its *SyncManager) setNotificationReceiver(receiver notificationReceiver) {
+	if its.notificationManager != nil {
+		its.notificationManager.SetReceiver(receiver)
+	}
 }

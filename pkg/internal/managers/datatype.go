@@ -12,12 +12,32 @@ import (
 
 // DatatypeManager manages Ortoo datatypes regarding operations
 type DatatypeManager struct {
-	ctx                 context.OrtooContext
-	cuid                string
-	collectionName      string
-	messageManager      *MessageManager
-	notificationManager *NotificationManager
-	dataMap             map[string]iface.Datatype
+	ctx            context.OrtooContext
+	cuid           string
+	collectionName string
+	syncManager    *SyncManager
+	// notificationManager *NotificationManager
+	dataMap map[string]iface.Datatype
+}
+
+// NewDatatypeManager creates a new instance of DatatypeManager
+func NewDatatypeManager(
+	ctx context.OrtooContext,
+	client *model.Client,
+	sm *SyncManager,
+) *DatatypeManager {
+
+	dm := &DatatypeManager{
+		ctx:            ctx,
+		cuid:           types.UIDtoString(client.CUID),
+		collectionName: client.Collection,
+		dataMap:        make(map[string]iface.Datatype),
+		syncManager:    sm,
+	}
+	if sm != nil {
+		sm.setNotificationReceiver(dm)
+	}
+	return dm
 }
 
 // DeliverTransaction delivers a transaction
@@ -44,36 +64,14 @@ func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model
 	switch state {
 	case model.StateOfDatatype_SUBSCRIBED:
 		topic := fmt.Sprintf("%s/%s", its.collectionName, dt.GetKey())
-		if its.notificationManager != nil {
-			if err := its.notificationManager.SubscribeNotification(topic); err != nil {
+		if its.syncManager != nil {
+			if err := its.syncManager.subscribeNotification(topic); err != nil {
 				return errors.DatatypeSubscribe.New(nil, err.Error())
 			}
 			its.ctx.L().Infof("subscribe datatype topic(%s)", topic)
 		}
 	}
 	return nil
-}
-
-// NewDatatypeManager creates a new instance of DatatypeManager
-func NewDatatypeManager(
-	ctx context.OrtooContext,
-	mm *MessageManager,
-	nm *NotificationManager,
-	collectionName string,
-	cuid types.CUID,
-) *DatatypeManager {
-	dm := &DatatypeManager{
-		ctx:                 ctx,
-		cuid:                cuid.String(),
-		collectionName:      collectionName,
-		dataMap:             make(map[string]iface.Datatype),
-		messageManager:      mm,
-		notificationManager: nm,
-	}
-	if nm != nil {
-		nm.SetReceiver(dm)
-	}
-	return dm
 }
 
 // Get returns a datatype for the specified key
@@ -100,7 +98,7 @@ func (its *DatatypeManager) SubscribeOrCreate(dt iface.Datatype, state model.Sta
 func (its *DatatypeManager) Sync(key string) errors.OrtooError {
 	data := its.dataMap[key]
 	ppp := data.CreatePushPullPack()
-	pushPullResponse, err := its.messageManager.Sync(ppp)
+	pushPullResponse, err := its.syncManager.Sync(ppp)
 	if err != nil {
 		return err
 	}
@@ -134,7 +132,7 @@ func (its *DatatypeManager) SyncAll() errors.OrtooError {
 		ppp := data.CreatePushPullPack()
 		pushPullPacks = append(pushPullPacks, ppp)
 	}
-	pushPullResponse, err := its.messageManager.Sync(pushPullPacks...)
+	pushPullResponse, err := its.syncManager.Sync(pushPullPacks...)
 	if err != nil {
 		return err
 	}

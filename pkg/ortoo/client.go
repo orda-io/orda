@@ -49,7 +49,7 @@ type clientImpl struct {
 	model           *model.Client
 	conf            *ClientConfig
 	ctx             context.OrtooContext
-	messageManager  *managers.MessageManager
+	syncManager     *managers.SyncManager
 	datatypeManager *managers.DatatypeManager
 }
 
@@ -63,25 +63,19 @@ func NewClient(conf *ClientConfig, alias string) Client {
 		SyncType:   conf.SyncType,
 	}
 	ctx := context.NewWithTags(gocontext.TODO(), context.CLIENT, context.MakeTagInClient(cm.Collection, cm.Alias, cm.CUID))
-	var notificationManager *managers.NotificationManager
-	switch conf.SyncType {
-	case model.SyncType_LOCAL_ONLY, model.SyncType_MANUALLY:
-		notificationManager = nil
-	case model.SyncType_NOTIFIABLE:
-		notificationManager = managers.NewNotificationManager(ctx, conf.NotificationAddr, cm)
-	}
-	var messageManager *managers.MessageManager = nil
+
+	var syncManager *managers.SyncManager = nil
 	var datatypeManager *managers.DatatypeManager = nil
 	if conf.SyncType != model.SyncType_LOCAL_ONLY {
-		messageManager = managers.NewMessageManager(ctx, cm, conf.ServerAddr, notificationManager)
-		datatypeManager = managers.NewDatatypeManager(ctx, messageManager, notificationManager, cm.Collection, cm.CUID)
+		syncManager = managers.NewSyncManager(ctx, cm, conf.ServerAddr, conf.NotificationAddr)
+		datatypeManager = managers.NewDatatypeManager(ctx, cm, syncManager)
 	}
 	return &clientImpl{
 		conf:            conf,
 		ctx:             ctx,
 		model:           cm,
 		state:           notConnected,
-		messageManager:  messageManager,
+		syncManager:     syncManager,
 		datatypeManager: datatypeManager,
 	}
 }
@@ -110,18 +104,18 @@ func (its *clientImpl) Connect() (err error) {
 			its.state = connected
 		}
 	}()
-	if err = its.messageManager.Connect(); err != nil {
+	if err = its.syncManager.Connect(); err != nil {
 		return errors.ClientConnect.New(its.ctx.L(), err.Error())
 	}
 
-	err = its.messageManager.ExchangeClientRequestResponse()
+	err = its.syncManager.ExchangeClientRequestResponse()
 	return
 }
 
 func (its *clientImpl) Close() error {
 	its.state = notConnected
 	its.ctx.L().Infof("close client")
-	return its.messageManager.Close()
+	return its.syncManager.Close()
 }
 
 // methods for Document

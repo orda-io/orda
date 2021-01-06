@@ -23,6 +23,12 @@ type notificationReceiver interface {
 
 type pubSubNotificationType uint8
 
+type notificationMsg struct {
+	typeOf pubSubNotificationType
+	topic  string
+	msg    interface{}
+}
+
 const (
 	notificationError pubSubNotificationType = iota
 	notificationQuit
@@ -42,12 +48,6 @@ func NewNotificationManager(ctx context.OrtooContext, pubSubAddr string, cm *mod
 		client:  client,
 		channel: channel,
 	}
-}
-
-type notificationMsg struct {
-	typeOf pubSubNotificationType
-	topic  string
-	msg    interface{}
 }
 
 // SubscribeNotification subscribes notification for a topic.
