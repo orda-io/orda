@@ -187,18 +187,18 @@ func (its *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfD
 // methods for Counter
 
 func (its *clientImpl) CreateCounter(key string, handlers *Handlers) Counter {
-	return its.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
+	return its.subscribeOrCreateCounter(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
 func (its *clientImpl) SubscribeCounter(key string, handlers *Handlers) Counter {
-	return its.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
+	return its.subscribeOrCreateCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
 func (its *clientImpl) SubscribeOrCreateCounter(key string, handlers *Handlers) Counter {
-	return its.subscribeOrCreateIntCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
+	return its.subscribeOrCreateCounter(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (its *clientImpl) subscribeOrCreateIntCounter(key string, state model.StateOfDatatype, handlers *Handlers) Counter {
+func (its *clientImpl) subscribeOrCreateCounter(key string, state model.StateOfDatatype, handlers *Handlers) Counter {
 	datatype := its.subscribeOrCreateDatatype(key, model.TypeOfDatatype_COUNTER, state, handlers)
 	if datatype != nil {
 		return datatype.(Counter)
@@ -212,6 +212,7 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 	state model.StateOfDatatype,
 	handler *Handlers,
 ) iface.Datatype {
+	// TODO: this would be better go into datatypeManager
 	if its.datatypeManager != nil {
 		datatypeFromDM := its.datatypeManager.Get(key)
 		if datatypeFromDM != nil {

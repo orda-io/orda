@@ -16,7 +16,7 @@ import (
 type List interface {
 	Datatype
 	ListInTxn
-	DoTransaction(tag string, txnFunc func(listTxn ListInTxn) error) error
+	DoTransaction(tag string, txFunc func(listTxn ListInTxn) error) error
 }
 
 // ListInTxn is an Ortoo datatype which provides the list interfaces in a transaction.
@@ -48,13 +48,13 @@ type list struct {
 	*datatypes.SnapshotDatatype
 }
 
-func (its *list) DoTransaction(tag string, txnFunc func(list ListInTxn) error) error {
-	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+func (its *list) DoTransaction(tag string, txFunc func(list ListInTxn) error) error {
+	return its.ManageableDatatype.DoTransaction(tag, func(txCtx *datatypes.TransactionContext) error {
 		clone := &list{
-			datatype:         its.newDatatype(txnCtx),
+			datatype:         its.newDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
-		return txnFunc(clone)
+		return txFunc(clone)
 	})
 }
 
@@ -124,7 +124,7 @@ func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, errors
 		return nil, errors.DatatypeIllegalParameters.New(its.Logger, err2.Error())
 	}
 	op := operations.NewInsertOperation(pos, jsonValues)
-	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (its *list) Update(pos int, values ...interface{}) ([]interface{}, errors.O
 		return nil, errors.DatatypeIllegalParameters.New(its.Logger, err2.Error())
 	}
 	op := operations.NewUpdateOperation(pos, jsonValues)
-	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, errors.Ortoo
 		return nil, err
 	}
 	op := operations.NewDeleteOperation(pos, numOfNode)
-	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
 	}

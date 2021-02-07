@@ -20,11 +20,11 @@ type datatype struct {
 	handlers *Handlers
 }
 
-func (its *datatype) newDatatype(txnCtx *datatypes.TransactionContext) *datatype {
+func (its *datatype) newDatatype(txCtx *datatypes.TransactionContext) *datatype {
 	return &datatype{
 		ManageableDatatype: &datatypes.ManageableDatatype{
 			TransactionDatatype: its.ManageableDatatype.TransactionDatatype,
-			TransactionCtx:      txnCtx,
+			TransactionCtx:      txCtx,
 		},
 		handlers: its.handlers,
 	}

@@ -73,10 +73,10 @@ enum StateOfDatatype {
     DUE_TO_CREATE = 0;
     DUE_TO_SUBSCRIBE = 1;
     DUE_TO_SUBSCRIBE_CREATE = 2;
-    SUBSCRIBED = 4;
-    DUE_TO_UNSUBSCRIBE = 5;
-    UNSUBSCRIBED = 6;
-    DELETED = 7;
+    SUBSCRIBED = 3;
+    DUE_TO_UNSUBSCRIBE = 4;
+    UNSUBSCRIBED = 5;
+    DELETED = 6;
 }
 
 message PushPullPack {

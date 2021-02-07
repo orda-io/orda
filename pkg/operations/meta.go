@@ -20,7 +20,7 @@ type baseOperation struct {
 	ID *model.OperationID
 }
 
-func (its *baseOperation) SetOperationID(opID *model.OperationID) {
+func (its *baseOperation) SetID(opID *model.OperationID) {
 	its.ID = opID
 }
 

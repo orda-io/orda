@@ -79,7 +79,7 @@ func (its *BaseDatatype) Replay(op iface.Operation) errors.OrtooError {
 
 // SetNextOpID proceeds the operation ID next.
 func (its *BaseDatatype) SetNextOpID(op iface.Operation) {
-	op.SetOperationID(its.opID.Next())
+	op.SetID(its.opID.Next())
 }
 
 func (its *BaseDatatype) executeRemoteBase(op iface.Operation) {

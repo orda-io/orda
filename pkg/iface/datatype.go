@@ -11,7 +11,7 @@ type Datatype interface {
 	ManageableDatatype
 	OperationalDatatype
 	SnapshotDatatype
-	TransactionDatabase
+	TransactionDatatype
 	Handler
 }
 

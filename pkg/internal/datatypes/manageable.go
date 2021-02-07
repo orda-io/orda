@@ -35,15 +35,15 @@ func (its *ManageableDatatype) Initialize(
 // DoTransaction enables datatypes to perform a transaction.
 func (its *ManageableDatatype) DoTransaction(
 	tag string,
-	funcWithCloneDatatype func(txnCtx *TransactionContext) error,
+	funcWithCloneDatatype func(txCtx *TransactionContext) error,
 ) errors.OrtooError {
-	txnCtx := its.BeginTransaction(tag, its.TransactionCtx, true)
+	txCtx := its.BeginTransaction(tag, its.TransactionCtx, true)
 	defer func() {
-		if err := its.EndTransaction(txnCtx, true, true); err != nil {
+		if err := its.EndTransaction(txCtx, true, true); err != nil {
 			// do nothing
 		}
 	}()
-	if err := funcWithCloneDatatype(txnCtx); err != nil {
+	if err := funcWithCloneDatatype(txCtx); err != nil {
 		its.SetTransactionFail()
 		return errors.DatatypeTransaction.New(its.Logger, err.Error())
 	}
@@ -61,7 +61,7 @@ func (its *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) er
 		return errors.DatatypeSubscribe.New(its.Logger, err.Error())
 	}
 	subscribeOp := operations.NewSnapshotOperation(its.TypeOf, state, string(snap))
-	_, err = its.ExecuteOperationWithTransaction(its.TransactionCtx, subscribeOp, true)
+	_, err = its.SentenceInTransaction(its.TransactionCtx, subscribeOp, true)
 	if err != nil {
 		return errors.DatatypeSubscribe.New(its.Logger, err.Error())
 	}
@@ -73,18 +73,18 @@ func (its ManageableDatatype) ExecuteRemoteTransaction(
 	transaction []*model.Operation,
 	obtainList bool,
 ) ([]interface{}, errors.OrtooError) {
-	var trxCtx *TransactionContext
+	var txCtx *TransactionContext
 	if len(transaction) > 1 {
-		trxOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
+		txOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
 		if !ok {
 			return nil, errors.DatatypeTransaction.New(its.Logger, "no transaction operation")
 		}
-		if int(trxOp.GetNumOfOps()) != len(transaction) {
+		if int(txOp.GetNumOfOps()) != len(transaction) {
 			return nil, errors.DatatypeTransaction.New(its.Logger, "not matched number of operations")
 		}
-		trxCtx = its.BeginTransaction(trxOp.C.Tag, its.TransactionCtx, false)
+		txCtx = its.BeginTransaction(txOp.C.Tag, its.TransactionCtx, false)
 		defer func() {
-			if err := its.EndTransaction(trxCtx, false, false); err != nil {
+			if err := its.EndTransaction(txCtx, false, false); err != nil {
 				// _ = log.OrtooError(err)
 			}
 		}()
@@ -96,7 +96,7 @@ func (its ManageableDatatype) ExecuteRemoteTransaction(
 		if obtainList {
 			opList = append(opList, op.GetAsJSON())
 		}
-		_, err := its.ExecuteOperationWithTransaction(trxCtx, op, false)
+		_, err := its.SentenceInTransaction(txCtx, op, false)
 		if err != nil {
 			return nil, errors.DatatypeTransaction.New(its.Logger, err.Error())
 		}

@@ -20,7 +20,7 @@ type TransactionDatatype struct {
 	rollbackSnapshot []byte
 	rollbackMeta     []byte
 	rollbackOps      []iface.Operation
-	currentTrxCtx    *TransactionContext
+	txCtx            *TransactionContext
 }
 
 // TransactionContext is a context used for transactions
@@ -41,7 +41,7 @@ func newTransactionDatatype(w *WiredDatatype, snapshot iface.Snapshot) *Transact
 		mutex:         new(sync.RWMutex),
 		isLocked:      false,
 		success:       true,
-		currentTrxCtx: nil,
+		txCtx:         nil,
 		rollbackOps:   nil,
 	}
 }
@@ -68,9 +68,9 @@ func (its *TransactionDatatype) GetWired() *WiredDatatype {
 	return its.WiredDatatype
 }
 
-// ExecuteOperationWithTransaction is a method to execute an operation with a transaction.
+// SentenceInTransaction is a method to execute an operation with a transaction.
 // an operation can be either local or remote
-func (its *TransactionDatatype) ExecuteOperationWithTransaction(
+func (its *TransactionDatatype) SentenceInTransaction(
 	ctx *TransactionContext,
 	op iface.Operation,
 	isLocal bool,
@@ -87,11 +87,11 @@ func (its *TransactionDatatype) ExecuteOperationWithTransaction(
 		if err != nil {
 			return ret, err
 		}
-		its.currentTrxCtx.appendOperation(op)
+		its.txCtx.appendOperation(op)
 		return ret, nil
 	}
 	its.executeRemoteBase(op)
-	its.currentTrxCtx.appendOperation(op)
+	its.txCtx.appendOperation(op)
 	return nil, nil
 }
 
@@ -109,29 +109,29 @@ func (its *TransactionDatatype) setTransactionContextAndLock(tag string) *Transa
 }
 
 // BeginTransaction is called before a transaction is executed.
-// This sets TransactionDatatype.currentTrxCtx, lock, and generates a transaction operation
-// This is called in either DoTransaction() or ExecuteOperationWithTransaction().
-// Note that TransactionDatatype.currentTrxCtx is currently working transaction context.
+// This sets TransactionDatatype.txCtx, lock, and generates a transaction operation
+// This is called in either DoTransaction() or SentenceInTransaction().
+// Note that TransactionDatatype.txCtx is currently working transaction context.
 func (its *TransactionDatatype) BeginTransaction(
 	tag string,
-	tnxCtx *TransactionContext,
+	txCtx *TransactionContext,
 	newTxnOp bool,
 ) *TransactionContext {
-	if its.isLocked && its.currentTrxCtx == tnxCtx {
+	if its.isLocked && its.txCtx == txCtx {
 		return nil // called after DoTransaction() succeeds.
 	}
-	its.currentTrxCtx = its.setTransactionContextAndLock(tag)
+	its.txCtx = its.setTransactionContextAndLock(tag)
 	if newTxnOp {
 		op := operations.NewTransactionOperation(tag)
 		its.SetNextOpID(op)
-		its.currentTrxCtx.appendOperation(op)
+		its.txCtx.appendOperation(op)
 	}
-	return its.currentTrxCtx
+	return its.txCtx
 }
 
 // Rollback is called to rollback a transaction
 func (its *TransactionDatatype) Rollback() errors.OrtooError {
-	its.Logger.Infof("Begin the rollback: '%s'", its.currentTrxCtx.tag)
+	its.Logger.Infof("Begin the rollback: '%s'", its.txCtx.tag)
 	snapshotDatatype, _ := its.datatype.(iface.SnapshotDatatype)
 	err := snapshotDatatype.SetMetaAndSnapshot(its.rollbackMeta, its.rollbackSnapshot)
 	if err != nil {
@@ -148,7 +148,7 @@ func (its *TransactionDatatype) Rollback() errors.OrtooError {
 		return errors.DatatypeTransaction.New(its.Logger, "rollback failed")
 	}
 	its.rollbackOps = nil
-	its.Logger.Infof("End the rollback: '%s'", its.currentTrxCtx.tag)
+	its.Logger.Infof("End the rollback: '%s'", its.txCtx.tag)
 	return nil
 }
 
@@ -158,29 +158,28 @@ func (its *TransactionDatatype) SetTransactionFail() {
 }
 
 // EndTransaction is called when a transaction ends
-func (its *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withOp, isLocal bool) errors.OrtooError {
-	if trxCtx == its.currentTrxCtx {
+func (its *TransactionDatatype) EndTransaction(txCtx *TransactionContext, withOp, isLocal bool) errors.OrtooError {
+	if txCtx == its.txCtx {
 		defer its.unlock()
 		if its.success {
 			if withOp {
-				beginOp, ok := its.currentTrxCtx.opBuffer[0].(*operations.TransactionOperation)
+				beginOp, ok := its.txCtx.opBuffer[0].(*operations.TransactionOperation)
 				if !ok {
 					return errors.DatatypeTransaction.New(its.Logger, "no transaction operation")
 				}
-				beginOp.SetNumOfOps(len(its.currentTrxCtx.opBuffer))
+				beginOp.SetNumOfOps(len(its.txCtx.opBuffer))
 			}
-			its.rollbackOps = append(its.rollbackOps, its.currentTrxCtx.opBuffer...)
+			its.rollbackOps = append(its.rollbackOps, its.txCtx.opBuffer...)
 			if isLocal {
-				its.deliverTransaction(its.currentTrxCtx.opBuffer)
+				its.deliverTransaction(its.txCtx.opBuffer)
 			}
-			if its.currentTrxCtx.tag != NotUserTransactionTag {
-				its.Logger.Infof("End the transaction: `%s`", its.currentTrxCtx.tag)
+			if its.txCtx.tag != NotUserTransactionTag {
+				its.Logger.Infof("End the transaction: `%s`", its.txCtx.tag)
 			}
 		} else {
 			if err := its.Rollback(); err != nil {
 				panic(err)
 			}
-
 		}
 	}
 	return nil
@@ -188,7 +187,7 @@ func (its *TransactionDatatype) EndTransaction(trxCtx *TransactionContext, withO
 
 func (its *TransactionDatatype) unlock() {
 	if its.isLocked {
-		its.currentTrxCtx = nil
+		its.txCtx = nil
 		its.success = true
 		its.mutex.Unlock()
 		its.isLocked = false

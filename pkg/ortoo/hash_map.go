@@ -15,7 +15,7 @@ import (
 type HashMap interface {
 	Datatype
 	HashMapInTxn
-	DoTransaction(tag string, txnFunc func(hashMap HashMapInTxn) error) error
+	DoTransaction(tag string, txFunc func(hashMap HashMapInTxn) error) error
 }
 
 // HashMapInTxn is an Ortoo datatype which provides hash map interface in a transaction.
@@ -44,13 +44,13 @@ type hashMap struct {
 	*datatypes.SnapshotDatatype
 }
 
-func (its *hashMap) DoTransaction(tag string, txnFunc func(hm HashMapInTxn) error) error {
-	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+func (its *hashMap) DoTransaction(tag string, txFunc func(hm HashMapInTxn) error) error {
+	return its.ManageableDatatype.DoTransaction(tag, func(txCtx *datatypes.TransactionContext) error {
 		clone := &hashMap{
-			datatype:         its.newDatatype(txnCtx),
+			datatype:         its.newDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
-		return txnFunc(clone)
+		return txFunc(clone)
 	})
 }
 
@@ -92,7 +92,7 @@ func (its *hashMap) Put(key string, value interface{}) (interface{}, errors.Orto
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
 	op := operations.NewPutOperation(key, jsonSupportedType)
-	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	return its.SentenceInTransaction(its.TransactionCtx, op, true)
 }
 
 func (its *hashMap) Get(key string) interface{} {
@@ -107,7 +107,7 @@ func (its *hashMap) Remove(key string) (interface{}, errors.OrtooError) {
 		return nil, errors.DatatypeIllegalParameters.New(its.Logger, "empty key is not allowed")
 	}
 	op := operations.NewRemoveOperation(key)
-	return its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	return its.SentenceInTransaction(its.TransactionCtx, op, true)
 }
 
 func (its *hashMap) Size() int {

@@ -16,8 +16,7 @@ type DatatypeManager struct {
 	cuid           string
 	collectionName string
 	syncManager    *SyncManager
-	// notificationManager *NotificationManager
-	dataMap map[string]iface.Datatype
+	dataMap        map[string]iface.Datatype
 }
 
 // NewDatatypeManager creates a new instance of DatatypeManager
@@ -56,7 +55,9 @@ func (its *DatatypeManager) ReceiveNotification(topic string, notification model
 
 	if err := its.SyncIfNeeded(datatypeKey, notification.DUID, notification.Sseq); err != nil {
 		// _ = log.OrtooError(err)
+
 	}
+
 }
 
 // OnChangeDatatypeState deals with what datatypeManager has to do when the state of datatype changes.

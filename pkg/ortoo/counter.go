@@ -12,7 +12,7 @@ import (
 type Counter interface {
 	Datatype
 	CounterInTxn
-	DoTransaction(tag string, txnFunc func(intCounter CounterInTxn) error) error
+	DoTransaction(tag string, txFunc func(counter CounterInTxn) error) error
 }
 
 // CounterInTxn is an Ortoo datatype which provides int counter interfaces in a transaction.
@@ -41,13 +41,13 @@ func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handler *Handlers
 	return counter, counter.Initialize(base, wire, counter.GetSnapshot(), counter)
 }
 
-func (its *counter) DoTransaction(tag string, txnFunc func(intCounter CounterInTxn) error) error {
-	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+func (its *counter) DoTransaction(tag string, txFunc func(counter CounterInTxn) error) error {
+	return its.ManageableDatatype.DoTransaction(tag, func(txCtx *datatypes.TransactionContext) error {
 		clone := &counter{
-			datatype:         its.newDatatype(txnCtx),
+			datatype:         its.newDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
-		return txnFunc(clone)
+		return txFunc(clone)
 	})
 }
 
@@ -88,7 +88,7 @@ func (its *counter) snapshot() *counterSnapshot {
 
 func (its *counter) IncreaseBy(delta int32) (int32, errors.OrtooError) {
 	op := operations.NewIncreaseOperation(delta)
-	ret, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return its.snapshot().Value, err
 	}

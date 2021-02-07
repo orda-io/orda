@@ -42,7 +42,7 @@ func (its *WiredDatatype) String() string {
 
 // ExecuteRemote ...
 func (its *WiredDatatype) ExecuteRemote(op iface.Operation) {
-	its.opID.SyncLamport(op.GetID().Lamport)
+	its.opID.SyncLamport(op.GetID().Lamport) // TODO: this should move to baseDatatype
 	its.executeRemoteBase(op)
 }
 
@@ -55,19 +55,19 @@ func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation, o
 		var transaction []*model.Operation
 		switch modelOp.GetOpType() {
 		case model.TypeOfOperation_TRANSACTION:
-			trxOp := operations.ModelToOperation(modelOp).(*operations.TransactionOperation)
-			opList = append(opList, trxOp)
-			transaction = ops[i : i+int(trxOp.GetNumOfOps())]
-			i += int(trxOp.GetNumOfOps())
+			txOp := operations.ModelToOperation(modelOp).(*operations.TransactionOperation)
+			opList = append(opList, txOp)
+			transaction = ops[i : i+int(txOp.GetNumOfOps())]
+			i += int(txOp.GetNumOfOps())
 		default:
 			transaction = []*model.Operation{modelOp}
 			i++
 		}
-		trxList, err := datatype.ExecuteRemoteTransaction(transaction, obtainList)
+		txList, err := datatype.ExecuteRemoteTransaction(transaction, obtainList)
 		if err != nil {
 			return nil, err
 		}
-		opList = append(opList, trxList)
+		opList = append(opList, txList)
 	}
 	return opList, nil
 }
@@ -97,6 +97,21 @@ func (its *WiredDatatype) CreatePushPullPack() *model.PushPullPack {
 		Type:       int32(its.TypeOf),
 		Operations: modelOps,
 	}
+}
+
+func (its *WiredDatatype) getModelOperations(cseq uint64) []*model.Operation {
+
+	if len(its.localBuffer) == 0 {
+		return []*model.Operation{}
+	}
+	op := its.localBuffer[0]
+	startCseq := op.ID.GetSeq()
+	var start = int(cseq - startCseq)
+	if start >= 0 && len(its.localBuffer) > start {
+		return its.localBuffer[start:]
+	}
+	// FIXME: return error?
+	return []*model.Operation{}
 }
 
 func (its *WiredDatatype) calculatePullingOperations(newCheckPoint *model.CheckPoint) int {
@@ -129,7 +144,7 @@ func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error
 		modelOp := ppp.GetOperations()[0]
 		_, ok := operations.ModelToOperation(modelOp).(*operations.SnapshotOperation)
 		if !ok {
-			return errors.DatatypeSnapshot.New(its.Logger, "subscribe without SnapshotOp")
+			return errors.DatatypeSubscribe.New(its.Logger, "subscribe without SnapshotOp")
 		}
 		its.datatype.ResetRollBackContext()
 		its.checkPoint.Cseq = ppp.CheckPoint.Cseq
@@ -234,20 +249,6 @@ func (its *WiredDatatype) applyPushPullPackCallHandler(
 	if len(opList) > 0 {
 		its.datatype.HandleRemoteOperations(opList)
 	}
-}
-
-func (its *WiredDatatype) getModelOperations(cseq uint64) []*model.Operation {
-
-	if len(its.localBuffer) == 0 {
-		return []*model.Operation{}
-	}
-	op := its.localBuffer[0]
-	startCseq := op.ID.GetSeq()
-	var start = int(cseq - startCseq)
-	if start >= 0 && len(its.localBuffer) > start {
-		return its.localBuffer[start:]
-	}
-	return []*model.Operation{}
 }
 
 func (its *WiredDatatype) deliverTransaction(transaction []iface.Operation) {

@@ -12,7 +12,7 @@ import (
 type Document interface {
 	Datatype
 	DocumentInTxn
-	DoTransaction(tag string, txnFunc func(document DocumentInTxn) error) error
+	DoTransaction(tag string, txFunc func(document DocumentInTxn) error) error
 }
 
 // DocumentInTxn is an Ortoo datatype which provides document (JSON-like) interfaces in a transaction.
@@ -60,7 +60,7 @@ type document struct {
 			-> funcWithCloneDatatype()
 				-> userFunc()
 					document.Operation ->
-						-> TransactionDatatype.ExecuteOperationWithTransaction()
+						-> TransactionDatatype.SentenceInTransaction()
 							-> TransactionDatatype.BeginTransaction(NotUserTransactionTag)
 							-> BaseDatatype.executeLocalBase()
 								-> op.ExecuteLocal(document)
@@ -69,9 +69,9 @@ type document struct {
 							-> TransactionDatatype.EndTransaction()
 */
 func (its *document) DoTransaction(tag string, userFunc func(document DocumentInTxn) error) error {
-	return its.ManageableDatatype.DoTransaction(tag, func(txnCtx *datatypes.TransactionContext) error {
+	return its.ManageableDatatype.DoTransaction(tag, func(txCtx *datatypes.TransactionContext) error {
 		clone := &document{
-			datatype:         its.newDatatype(txnCtx),
+			datatype:         its.newDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
 		return userFunc(clone)
@@ -153,7 +153,7 @@ func (its *document) PutToObject(key string, value interface{}) (Document, error
 		return nil, err
 	}
 	op := operations.NewDocPutInObjectOperation(its.snapshot().getCreateTime(), key, value)
-	removed, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	removed, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (its *document) DeleteInObject(key string) (Document, errors.OrtooError) {
 		return nil, err
 	}
 	op := operations.NewDocDeleteInObjectOperation(its.snapshot().getCreateTime(), key)
-	removed, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	removed, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +208,7 @@ func (its *document) InsertToArray(pos int, values ...interface{}) (Document, er
 		return its, err
 	}
 	op := operations.NewDocInsertToArrayOperation(its.snapshot().getCreateTime(), pos, values)
-	if _, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true); err != nil {
+	if _, err := its.SentenceInTransaction(its.TransactionCtx, op, true); err != nil {
 		return its, err
 	}
 	return its, nil
@@ -236,7 +236,7 @@ func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]Document, err
 		return nil, err
 	}
 	op := operations.NewDocDeleteInArrayOperation(its.snapshot().getCreateTime(), pos, numOfNodes)
-	delJSONTypes, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	delJSONTypes, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (its *document) UpdateManyInArray(pos int, values ...interface{}) ([]Docume
 		return nil, err
 	}
 	op := operations.NewDocUpdateInArrayOperation(its.snapshot().getCreateTime(), pos, values)
-	oldOnes, err := its.ExecuteOperationWithTransaction(its.TransactionCtx, op, true)
+	oldOnes, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
