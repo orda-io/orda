@@ -1,0 +1,400 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Ortoo gRPC gateway APIs",
+    "version": "v1"
+  },
+  "tags": [
+    {
+      "name": "OrtooService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/collections/{collection}": {
+      "put": {
+        "operationId": "OrtooService_ProcessCollections",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ortooCollectionMessage"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrtooService"
+        ]
+      }
+    },
+    "/api/v1/{header.collection}/clients/{header.cuid}": {
+      "post": {
+        "operationId": "OrtooService_ProcessClient",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ortooClientResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "header.collection",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "header.cuid",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ortooClientRequest"
+            }
+          }
+        ],
+        "tags": [
+          "OrtooService"
+        ]
+      }
+    },
+    "/api/v1/{header.collection}/pushpulls/{header.cuid}": {
+      "post": {
+        "operationId": "OrtooService_ProcessPushPull",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ortooPushPullResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "header.collection",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "header.cuid",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ortooPushPullRequest"
+            }
+          }
+        ],
+        "tags": [
+          "OrtooService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ortooCheckPoint": {
+      "type": "object",
+      "properties": {
+        "sseq": {
+          "type": "string",
+          "format": "uint64",
+          "title": "@inject_tag: bson:\"s\",json:\"s\""
+        },
+        "cseq": {
+          "type": "string",
+          "format": "uint64",
+          "title": "@inject_tag: bson:\"c\",json:\"c\""
+        }
+      }
+    },
+    "ortooClientRequest": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/ortooHeader"
+        },
+        "syncType": {
+          "$ref": "#/definitions/ortooSyncType"
+        }
+      }
+    },
+    "ortooClientResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/ortooHeader"
+        },
+        "state": {
+          "$ref": "#/definitions/ortooResponseState"
+        }
+      }
+    },
+    "ortooCollectionMessage": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "collection": {
+          "type": "string"
+        }
+      }
+    },
+    "ortooHeader": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "collection": {
+          "type": "string"
+        },
+        "cuid": {
+          "type": "string",
+          "format": "byte"
+        },
+        "clientAlias": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/ortooRequestType"
+        }
+      }
+    },
+    "ortooOperation": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "$ref": "#/definitions/ortooOperationID"
+        },
+        "opType": {
+          "$ref": "#/definitions/ortooTypeOfOperation"
+        },
+        "body": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "ortooOperationID": {
+      "type": "object",
+      "properties": {
+        "era": {
+          "type": "integer",
+          "format": "int64",
+          "title": "@inject_tag: json:\"e,omitempty\""
+        },
+        "lamport": {
+          "type": "string",
+          "format": "uint64",
+          "title": "@inject_tag: json:\"l,omitempty\""
+        },
+        "CUID": {
+          "type": "string",
+          "format": "byte",
+          "title": "@inject_tag: json:\"c,omitempty\""
+        },
+        "seq": {
+          "type": "string",
+          "format": "uint64",
+          "title": "@inject_tag: json:\"s,omitempty\""
+        }
+      }
+    },
+    "ortooPushPullPack": {
+      "type": "object",
+      "properties": {
+        "DUID": {
+          "type": "string",
+          "format": "byte"
+        },
+        "key": {
+          "type": "string"
+        },
+        "option": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "checkPoint": {
+          "$ref": "#/definitions/ortooCheckPoint"
+        },
+        "era": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "type": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ortooOperation"
+          }
+        }
+      }
+    },
+    "ortooPushPullRequest": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/ortooHeader"
+        },
+        "PushPullPacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ortooPushPullPack"
+          }
+        }
+      }
+    },
+    "ortooPushPullResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/ortooHeader"
+        },
+        "PushPullPacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ortooPushPullPack"
+          }
+        }
+      }
+    },
+    "ortooRequestType": {
+      "type": "string",
+      "enum": [
+        "CLIENTS",
+        "PUSHPULLS"
+      ],
+      "default": "CLIENTS"
+    },
+    "ortooResponseState": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "$ref": "#/definitions/ortooStateOfResponse"
+        },
+        "msg": {
+          "type": "string"
+        }
+      }
+    },
+    "ortooStateOfResponse": {
+      "type": "string",
+      "enum": [
+        "OK",
+        "ERR_CLIENT_INVALID_COLLECTION",
+        "ERR_CLIENT_INVALID_SYNC_TYPE"
+      ],
+      "default": "OK"
+    },
+    "ortooSyncType": {
+      "type": "string",
+      "enum": [
+        "LOCAL_ONLY",
+        "MANUALLY",
+        "NOTIFIABLE"
+      ],
+      "default": "LOCAL_ONLY"
+    },
+    "ortooTypeOfOperation": {
+      "type": "string",
+      "enum": [
+        "SNAPSHOT",
+        "DELETE",
+        "ERROR",
+        "TRANSACTION",
+        "COUNTER_INCREASE",
+        "MAP_PUT",
+        "MAP_REMOVE",
+        "LIST_INSERT",
+        "LIST_DELETE",
+        "LIST_UPDATE",
+        "DOC_PUT_OBJ",
+        "DOC_DEL_OBJ",
+        "DOC_INS_ARR",
+        "DOC_DEL_ARR",
+        "DOC_UPD_ARR"
+      ],
+      "default": "SNAPSHOT"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "typeUrl": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

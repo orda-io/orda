@@ -12,11 +12,22 @@ GO_LDFLAGS ?=
 GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.GitCommit=${GIT_COMMIT}
 GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.Version=${VERSION}
 
+PROTOC_INCLUDE := -I=./proto -I=./proto/third_party
+PROTOC_PROTO_FILES := ortoo.enum.proto ortoo.proto ortoo.grpc.proto
+
 .PHONY: protoc-gen
 protoc-gen:
-	-rm ./pkg/model/model.pb.go
-	protoc -I=./pkg/model/ ortoo.proto --gofast_out=plugins=grpc,:./pkg/model/
+	-rm ./pkg/model/*.pb.go ./pkg/model/*.pb.gw.go ./server/swagger-ui/ortoo.grpc.swagger.json
+	protoc $(PROTOC_INCLUDE) \
+		--gofast_out=,plugins=grpc,:./pkg/model/ \
+		$(PROTOC_PROTO_FILES)
 	protoc-go-inject-tag -input=./pkg/model/ortoo.pb.go
+	protoc $(PROTOC_INCLUDE) \
+		--grpc-gateway_out ./pkg/model \
+		--grpc-gateway_opt logtostderr=true \
+		--openapiv2_out ./server/swagger-ui \
+		--openapiv2_opt logtostderr=true \
+		ortoo.grpc.proto
 
 .PHONY: build-server
 build-server:
@@ -37,6 +48,20 @@ dependency:
 	go get github.com/AlekSi/gocov-xml
 	go get github.com/favadi/protoc-go-inject-tag
 	go get github.com/amsokol/protoc-gen-gotag
+	go get github.com/protoc-gen-swagger
+	go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+	go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+	go get google.golang.org/protobuf/cmd/protoc-gen-go
+	go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
+
+
+.PHONY: copy-assets
+copy-assets:
+	-rm -rf ./proto/third_party
+	-mkdir -p ./proto/third_party/google
+	-mkdir -p ./proto/third_party/protoc-gen-openapiv2
+	cp -rf $(shell go env GOMODCACHE)/github.com/grpc-ecosystem/grpc-gateway/v2@v2.1.0/third_party/googleapis/google/api ./proto/third_party/google
+	cp -rf $(shell go env GOMODCACHE)/github.com/grpc-ecosystem/grpc-gateway/v2@v2.1.0/protoc-gen-openapiv2/options ./proto/third_party/protoc-gen-openapiv2
 
 .PHONY: fmt
 fmt:

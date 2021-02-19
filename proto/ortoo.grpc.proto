@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+option go_package = ".;model";
+package ortoo;
+
+import "ortoo.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Ortoo gRPC gateway APIs",
+    version: "v1",
+  }
+};
+
+
+service OrtooService {
+  rpc ProcessPushPull (PushPullRequest) returns (PushPullResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/{header.collection}/pushpulls/{header.cuid}"
+      body: "*"
+    };
+  }
+  rpc ProcessClient (ClientRequest) returns (ClientResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/{header.collection}/clients/{header.cuid}"
+      body: "*"
+    };
+  }
+
+  rpc ProcessCollections(CollectionMessage) returns (CollectionMessage) {
+    option (google.api.http) = {
+      put: "/api/v1/collections/{collection}"
+    };
+  }
+}

@@ -38,14 +38,14 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
-	case model.TypeOfOperation_HASH_MAP_PUT:
+	case model.TypeOfOperation_MAP_PUT:
 		var c putContent
 		unmarshalContent(op.Body, &c)
 		return &PutOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
-	case model.TypeOfOperation_HASH_MAP_REMOVE:
+	case model.TypeOfOperation_MAP_REMOVE:
 		var c removeContent
 		unmarshalContent(op.Body, &c)
 		return &RemoveOperation{
@@ -73,28 +73,28 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
-	case model.TypeOfOperation_DOCUMENT_PUT_OBJ:
+	case model.TypeOfOperation_DOC_PUT_OBJ:
 		var c docPutInObjectContent
 		unmarshalContent(op.Body, &c)
 		return &DocPutInObjectOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
-	case model.TypeOfOperation_DOCUMENT_INS_ARR:
+	case model.TypeOfOperation_DOC_INS_ARR:
 		var c docInsertToArrayContent
 		unmarshalContent(op.Body, &c)
 		return &DocInsertToArrayOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
-	case model.TypeOfOperation_DOCUMENT_DEL_OBJ:
+	case model.TypeOfOperation_DOC_DEL_OBJ:
 		var c docDeleteInObjectContent
 		unmarshalContent(op.Body, &c)
 		return &DocDeleteInObjectOperation{
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             c,
 		}
-	case model.TypeOfOperation_DOCUMENT_DEL_ARR:
+	case model.TypeOfOperation_DOC_DEL_ARR:
 		var c docDeleteInArrayContent
 		unmarshalContent(op.Body, &c)
 		return &DocDeleteInArrayOperation{

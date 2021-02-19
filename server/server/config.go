@@ -37,10 +37,10 @@ func (its *OrtooServerConfig) loadConfig(filepath string) errors.OrtooError {
 	return nil
 }
 
-func (its *OrtooServerConfig) getRPCServerAddr() string {
+func (its *OrtooServerConfig) GetRPCServerAddr() string {
 	return fmt.Sprintf(":%d", its.RPCServerPort)
 }
 
-func (its *OrtooServerConfig) getRestfulAddr() string {
+func (its *OrtooServerConfig) GetRestfulAddr() string {
 	return fmt.Sprintf(":%d", its.RestfulPort)
 }

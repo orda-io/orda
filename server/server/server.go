@@ -2,6 +2,7 @@ package server
 
 import (
 	gocontext "context"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
@@ -9,10 +10,10 @@ import (
 	"github.com/knowhunger/ortoo/pkg/version"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/notification"
-	"github.com/knowhunger/ortoo/server/restful"
 	"github.com/knowhunger/ortoo/server/service"
 	"google.golang.org/grpc"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -37,7 +38,7 @@ type OrtooServer struct {
 	mutex      sync.Mutex
 	closedCh   chan struct{}
 	rpcServer  *grpc.Server
-	ctrlServer *restful.ControlServer
+	restServer *RestServer
 	ctx        context.OrtooContext
 	conf       *OrtooServerConfig
 	service    *service.OrtooService
@@ -72,42 +73,66 @@ func (its *OrtooServer) Start() errors.OrtooError {
 	its.mutex.Lock()
 	defer its.mutex.Unlock()
 
-	lis, err := net.Listen("tcp", its.conf.getRPCServerAddr())
-	if err != nil {
-		return errors.ServerInit.New(its.ctx.L(), "cannot listen RPC:"+err.Error())
-	}
 	var oErr errors.OrtooError
 	its.notifier, oErr = notification.NewNotifier(its.ctx, its.conf.Notification)
 	if oErr != nil {
 		return oErr
 	}
 
+	lis, err := net.Listen("tcp", its.conf.GetRPCServerAddr())
+	if err != nil {
+		return errors.ServerInit.New(its.ctx.L(), "cannot listen RPC:"+err.Error())
+	}
 	its.rpcServer = grpc.NewServer()
 	its.service = service.NewOrtooService(its.Mongo, its.notifier)
 	model.RegisterOrtooServiceServer(its.rpcServer, its.service)
 
-	its.ctrlServer = restful.New(its.ctx, its.conf.RestfulPort, its.Mongo)
+	go func() {
+		its.ctx.L().Infof("open port: tcp://0.0.0.0%s", its.conf.GetRPCServerAddr())
+		if err := its.rpcServer.Serve(lis); err != nil {
+			_ = errors.ServerInit.New(its.ctx.L(), err.Error())
+			panic("fail to serve RPC Server")
+		}
+	}()
+
 	its.ctx.L().Printf("%s(%s) Started at %s %s",
 		version.Version,
 		version.GitCommit,
 		time.Now().String(),
 		banner)
-	go func() {
-		if err := its.rpcServer.Serve(lis); err != nil {
-			_ = errors.ServerInit.New(its.ctx.L(), err.Error())
-			panic("fail to serve RPC Server")
-		}
 
-	}()
-
+	its.restServer = New(its.ctx, its.conf, its.Mongo)
 	go func() {
-		if err := its.ctrlServer.Start(); err != nil {
+		if err := its.restServer.Start(); err != nil {
 			_ = errors.ServerInit.New(its.ctx.L(), err.Error())
 			panic("fail to serve control server")
 		}
 	}()
 
 	its.ctx.L().Info("successfully start Ortoo server")
+	return nil
+}
+
+func (its *OrtooServer) runRpcGwServer() errors.OrtooError {
+	gwMux := runtime.NewServeMux()
+	gwOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	gwErr := model.RegisterOrtooServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts)
+	if gwErr != nil {
+		return errors.ServerNoResource.New(its.ctx.L(), gwErr.Error())
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/api/", gwMux)
+
+	fs := http.FileServer(http.Dir("./server/swagger-ui"))
+	mux.Handle("/swaggerui/", http.StripPrefix("/swaggerui/", fs))
+
+	go func() {
+		if err := http.ListenAndServe(":22222", mux); err != nil {
+			panic("fail to serve rpc gateway server")
+		}
+	}()
 	return nil
 }
 

@@ -37,7 +37,6 @@ func (its *OrtooService) ProcessPushPull(goctx gocontext.Context, in *model.Push
 
 	response := &model.PushPullResponse{
 		Header: in.Header,
-		ID:     in.ID,
 	}
 
 	var chanList []<-chan *model.PushPullPack
@@ -56,12 +55,8 @@ func (its *OrtooService) ProcessPushPull(goctx gocontext.Context, in *model.Push
 		_, value, ok := reflect.Select(cases)
 		remainingChan--
 		if !ok {
-			// errors.PushPullMissingOps.New(ctx.L(), "fail to ") // TODO: return errors.
-			// _ = log.OrtooErrorf(nil, "fail to run")
 			continue
 		} else {
-			// ch := chanList[chosen]
-			// log.Logger.Infof("%v %v", ch, msg)
 			ppp := value.Interface().(*model.PushPullPack)
 			response.PushPullPacks = append(response.PushPullPacks, ppp)
 		}

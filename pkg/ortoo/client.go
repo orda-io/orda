@@ -88,7 +88,7 @@ func (its *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, h
 	switch typeOf {
 	case model.TypeOfDatatype_COUNTER:
 		return its.CreateCounter(key, handlers).(Datatype)
-	case model.TypeOfDatatype_HASH_MAP:
+	case model.TypeOfDatatype_MAP:
 		return its.CreateHashMap(key, handlers).(Datatype)
 	case model.TypeOfDatatype_LIST:
 		return its.CreateList(key, handlers).(Datatype)
@@ -177,7 +177,7 @@ func (its *clientImpl) SubscribeOrCreateHashMap(key string, handlers *Handlers) 
 }
 
 func (its *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfDatatype, handlers *Handlers) HashMap {
-	datatype := its.subscribeOrCreateDatatype(key, model.TypeOfDatatype_HASH_MAP, state, handlers)
+	datatype := its.subscribeOrCreateDatatype(key, model.TypeOfDatatype_MAP, state, handlers)
 	if datatype != nil {
 		return datatype.(HashMap)
 	}
@@ -235,7 +235,7 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 	switch typeOf {
 	case model.TypeOfDatatype_COUNTER:
 		impl, err = newCounter(base, its.datatypeManager, handler)
-	case model.TypeOfDatatype_HASH_MAP:
+	case model.TypeOfDatatype_MAP:
 		impl, err = newHashMap(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_LIST:
 		impl, err = newList(base, its.datatypeManager, handler)

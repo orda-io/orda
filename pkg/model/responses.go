@@ -12,13 +12,13 @@ var (
 )
 
 // NewClientResponse creates a new ClientReply
-func NewClientResponse(header *MessageHeader, state StateOfResponse, args ...interface{}) *ClientResponse {
+func NewClientResponse(header *Header, state StateOfResponse, args ...interface{}) *ClientResponse {
 	msg := ""
 	if state != StateOfResponse_OK {
 		msg = fmt.Sprintf(responseFormat[state], args)
 	}
 	return &ClientResponse{
-		Header: NewMessageHeader(header.Seq, TypeOfMessage_RESPONSE_CLIENT, header.Collection, header.ClientAlias, header.Cuid),
+		Header: NewMessageHeader(RequestType_CLIENTS, header.Collection, header.ClientAlias, header.Cuid),
 		State: &ResponseState{
 			State: state,
 			Msg:   msg,
@@ -39,7 +39,7 @@ func (its *ClientResponse) ToString() string {
 // ToString returns customized string
 func (its *PushPullResponse) ToString() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, pushPullHeadFormat, its.ID, its.Header.ToString(), len(its.PushPullPacks))
+	_, _ = fmt.Fprintf(&b, pushPullHeadFormat, its.Header.ToString(), len(its.PushPullPacks))
 	for _, ppp := range its.PushPullPacks {
 		b.WriteString(" ")
 		b.WriteString(ppp.ToString())

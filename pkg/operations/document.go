@@ -47,14 +47,14 @@ func (its *DocPutInObjectOperation) ExecuteRemote(datatype iface.Datatype) (inte
 func (its *DocPutInObjectOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOCUMENT_PUT_OBJ,
+		OpType: model.TypeOfOperation_DOC_PUT_OBJ,
 		Body:   marshalContent(its.C),
 	}
 }
 
 // GetType returns the type of operation.
 func (its *DocPutInObjectOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOCUMENT_PUT_OBJ
+	return model.TypeOfOperation_DOC_PUT_OBJ
 }
 
 func (its *DocPutInObjectOperation) String() string {
@@ -108,14 +108,14 @@ func (its *DocInsertToArrayOperation) ExecuteRemote(datatype iface.Datatype) (in
 func (its *DocInsertToArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOCUMENT_INS_ARR,
+		OpType: model.TypeOfOperation_DOC_INS_ARR,
 		Body:   marshalContent(its.C),
 	}
 }
 
 // GetType returns the type of operation.
 func (its *DocInsertToArrayOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOCUMENT_INS_ARR
+	return model.TypeOfOperation_DOC_INS_ARR
 }
 
 // GetType returns the type of operation.
@@ -168,14 +168,14 @@ func (its *DocDeleteInObjectOperation) ExecuteRemote(datatype iface.Datatype) (i
 func (its *DocDeleteInObjectOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOCUMENT_DEL_OBJ,
+		OpType: model.TypeOfOperation_DOC_DEL_OBJ,
 		Body:   marshalContent(its.C),
 	}
 }
 
 // GetType returns the type of operation.
 func (its *DocDeleteInObjectOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOCUMENT_DEL_OBJ
+	return model.TypeOfOperation_DOC_DEL_OBJ
 }
 
 func (its *DocDeleteInObjectOperation) String() string {
@@ -227,14 +227,14 @@ func (its *DocUpdateInArrayOperation) ExecuteRemote(datatype iface.Datatype) (in
 func (its *DocUpdateInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOCUMENT_UPD_ARR,
+		OpType: model.TypeOfOperation_DOC_UPD_ARR,
 		Body:   marshalContent(its.C),
 	}
 }
 
 // GetType returns the type of operation.
 func (its *DocUpdateInArrayOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOCUMENT_UPD_ARR
+	return model.TypeOfOperation_DOC_UPD_ARR
 }
 
 func (its *DocUpdateInArrayOperation) String() string {
@@ -287,14 +287,14 @@ func (its *DocDeleteInArrayOperation) ExecuteRemote(datatype iface.Datatype) (in
 func (its *DocDeleteInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
 		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOCUMENT_DEL_ARR,
+		OpType: model.TypeOfOperation_DOC_DEL_ARR,
 		Body:   marshalContent(its.C),
 	}
 }
 
 // GetType returns the type of operation.
 func (its *DocDeleteInArrayOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOCUMENT_DEL_ARR
+	return model.TypeOfOperation_DOC_DEL_ARR
 }
 
 func (its *DocDeleteInArrayOperation) String() string {

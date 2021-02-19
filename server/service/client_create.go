@@ -14,13 +14,13 @@ import (
 // ProcessClient processes ClientRequest and returns ClientResponse
 func (its *OrtooService) ProcessClient(goCtx gocontext.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
 	ctx := context.New(goCtx)
-	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Client.Collection)
+	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.GetClient().Collection)
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
-	clientDocFromReq := schema.ClientModelToBson(in.Client, collectionDoc.Num)
+	clientDocFromReq := schema.ClientModelToBson(in.GetClient(), collectionDoc.Num)
 
-	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagClient, collectionDoc.Num, in.Client.CUID))
+	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagClient, collectionDoc.Num, in.GetClient().CUID))
 	ctx.L().Infof("RECV %s", in.ToString())
 
 	clientDocFromDB, err := its.mongo.GetClient(ctx, clientDocFromReq.CUID)
@@ -30,7 +30,7 @@ func (its *OrtooService) ProcessClient(goCtx gocontext.Context, in *model.Client
 	if clientDocFromDB == nil {
 		clientDocFromReq.CreatedAt = time.Now()
 		ctx.L().Infof("create a new client:%+v", clientDocFromReq)
-		if err := its.mongo.GetOrCreateRealCollection(ctx, in.Client.Collection); err != nil {
+		if err := its.mongo.GetOrCreateRealCollection(ctx, in.GetClient().Collection); err != nil {
 			return nil, errors.NewRPCError(err)
 		}
 	} else {
