@@ -14,7 +14,7 @@ import (
 
 type jsonObject struct {
 	jsonType
-	*hashMapSnapshot
+	*mapSnapshot
 }
 
 func newJSONObject(base iface.BaseDatatype, parent jsonType, ts *model.Timestamp) *jsonObject {
@@ -35,7 +35,7 @@ func newJSONObject(base iface.BaseDatatype, parent jsonType, ts *model.Timestamp
 			parent: parent,
 			C:      ts,
 		},
-		hashMapSnapshot: newHashMapSnapshot(base),
+		mapSnapshot: newMapSnapshot(base),
 	}
 	if parent == nil {
 		obj.jsonType.setRoot(obj)
@@ -47,7 +47,7 @@ func (its *jsonObject) putCommon(key string, value interface{}, ts *model.Timest
 	newChild := its.createJSONType(its, value, ts)
 	its.addToNodeMap(newChild)
 	// removed can be either the existing one or newChild.
-	removed, put := its.putCommonWithTimedType(key, newChild) // by hashMapSnapshot
+	removed, put := its.putCommonWithTimedType(key, newChild) // by mapSnapshot
 
 	if removed != nil {
 		removedJSON := removed.(jsonType)
@@ -132,7 +132,7 @@ func (its *jsonObject) String() string {
 	if parent != nil {
 		parentTS = parent.getCreateTime().ToString()
 	}
-	return fmt.Sprintf("JO(%v)[C%v|V%v]", parentTS, its.getCreateTime().ToString(), its.hashMapSnapshot.String())
+	return fmt.Sprintf("JO(%v)[C%v|V%v]", parentTS, its.getCreateTime().ToString(), its.mapSnapshot.String())
 }
 
 func (its *jsonObject) Equal(o *jsonObject) bool {

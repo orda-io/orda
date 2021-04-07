@@ -24,9 +24,9 @@ type Client interface {
 	SubscribeOrCreateCounter(key string, handlers *Handlers) Counter
 	SubscribeCounter(key string, handlers *Handlers) Counter
 
-	CreateHashMap(key string, handlers *Handlers) HashMap
-	SubscribeOrCreateHashMap(key string, handlers *Handlers) HashMap
-	SubscribeHashMap(key string, handlers *Handlers) HashMap
+	CreateMap(key string, handlers *Handlers) Map
+	SubscribeOrCreateMap(key string, handlers *Handlers) Map
+	SubscribeMap(key string, handlers *Handlers) Map
 
 	CreateList(key string, handlers *Handlers) List
 	SubscribeOrCreateList(key string, handlers *Handlers) List
@@ -60,6 +60,7 @@ func NewClient(conf *ClientConfig, alias string) Client {
 		CUID:       types.NewCUID(),
 		Alias:      alias,
 		Collection: conf.CollectionName,
+		Type:       model.ClientType_PERSISTENT,
 		SyncType:   conf.SyncType,
 	}
 	ctx := context.NewWithTags(gocontext.TODO(), context.CLIENT, context.MakeTagInClient(cm.Collection, cm.Alias, cm.CUID))
@@ -89,7 +90,7 @@ func (its *clientImpl) CreateDatatype(key string, typeOf model.TypeOfDatatype, h
 	case model.TypeOfDatatype_COUNTER:
 		return its.CreateCounter(key, handlers).(Datatype)
 	case model.TypeOfDatatype_MAP:
-		return its.CreateHashMap(key, handlers).(Datatype)
+		return its.CreateMap(key, handlers).(Datatype)
 	case model.TypeOfDatatype_LIST:
 		return its.CreateList(key, handlers).(Datatype)
 	case model.TypeOfDatatype_DOCUMENT:
@@ -162,24 +163,24 @@ func (its *clientImpl) subscribeOrCreateList(key string, state model.StateOfData
 	return nil
 }
 
-// methods for HashMap
+// methods for Map
 
-func (its *clientImpl) CreateHashMap(key string, handlers *Handlers) HashMap {
-	return its.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
+func (its *clientImpl) CreateMap(key string, handlers *Handlers) Map {
+	return its.subscribeOrCreateMap(key, model.StateOfDatatype_DUE_TO_CREATE, handlers)
 }
 
-func (its *clientImpl) SubscribeHashMap(key string, handlers *Handlers) HashMap {
-	return its.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
+func (its *clientImpl) SubscribeMap(key string, handlers *Handlers) Map {
+	return its.subscribeOrCreateMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE, handlers)
 }
 
-func (its *clientImpl) SubscribeOrCreateHashMap(key string, handlers *Handlers) HashMap {
-	return its.subscribeOrCreateHashMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
+func (its *clientImpl) SubscribeOrCreateMap(key string, handlers *Handlers) Map {
+	return its.subscribeOrCreateMap(key, model.StateOfDatatype_DUE_TO_SUBSCRIBE_CREATE, handlers)
 }
 
-func (its *clientImpl) subscribeOrCreateHashMap(key string, state model.StateOfDatatype, handlers *Handlers) HashMap {
+func (its *clientImpl) subscribeOrCreateMap(key string, state model.StateOfDatatype, handlers *Handlers) Map {
 	datatype := its.subscribeOrCreateDatatype(key, model.TypeOfDatatype_MAP, state, handlers)
 	if datatype != nil {
-		return datatype.(HashMap)
+		return datatype.(Map)
 	}
 	return nil
 }
@@ -236,7 +237,7 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 	case model.TypeOfDatatype_COUNTER:
 		impl, err = newCounter(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_MAP:
-		impl, err = newHashMap(base, its.datatypeManager, handler)
+		impl, err = newMap(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_LIST:
 		impl, err = newList(base, its.datatypeManager, handler)
 	case model.TypeOfDatatype_DOCUMENT:

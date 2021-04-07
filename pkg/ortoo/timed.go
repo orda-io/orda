@@ -61,7 +61,7 @@ func (its *timedNode) setTime(ts *model.Timestamp) {
 	its.T = ts
 }
 
-// this is for hashMap and list
+// this is for ortooMap and list
 func (its *timedNode) makeTomb(ts *model.Timestamp) {
 	its.T = ts
 	its.V = nil

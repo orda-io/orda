@@ -44,10 +44,27 @@ func (its *RestServer) Start() errors.OrtooError {
 		return err
 	}
 
-	if err := http.ListenAndServe(its.conf.GetRestfulAddr(), mux); err != nil {
+	if err := http.ListenAndServe(its.conf.GetRestfulAddr(), its.allowCors(mux)); err != nil {
 		return errors.ServerInit.New(its.ctx.L(), err)
 	}
 	return nil
+}
+
+func (its *RestServer) allowCors(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+				headers := []string{"Content-Type", "Accept"}
+				w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
+				methods := []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodDelete}
+				w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
+				its.ctx.L().Infof("send preflight: %s", r.URL.Path)
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrtooError {

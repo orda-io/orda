@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (its *IntegrationTestSuite) TestHashMap() {
+func (its *IntegrationTestSuite) TestMap() {
 	key := GetFunctionName()
 
 	its.Run("Can update snapshot for hash map", func() {
@@ -20,7 +20,7 @@ func (its *IntegrationTestSuite) TestHashMap() {
 			_ = client1.Close()
 		}()
 
-		hashMap1 := client1.CreateHashMap(key, ortoo.NewHandlers(
+		hashMap1 := client1.CreateMap(key, ortoo.NewHandlers(
 			func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 
 			},

@@ -77,8 +77,8 @@ func (its *SyncManager) Close() errors.OrtooError {
 }
 
 // Sync exchanges PUSHPULL_REQUEST and PUSHPULL_RESPONSE
-func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullResponse, errors.OrtooError) {
-	request := model.NewPushPullRequest(its.nextSeq(), its.client, pppList...)
+func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullMessage, errors.OrtooError) {
+	request := model.NewPushPullMessage(its.nextSeq(), its.client, pppList...)
 	its.ctx.L().Infof("SEND %s", request.ToString())
 	response, err := its.serviceClient.ProcessPushPull(its.ctx, request)
 	if err != nil {
@@ -90,7 +90,7 @@ func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullRes
 
 // ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
 func (its *SyncManager) ExchangeClientRequestResponse() errors.OrtooError {
-	request := model.NewClientRequest(its.nextSeq(), its.client)
+	request := model.NewClientMessage(its.nextSeq(), its.client)
 	its.ctx.L().Infof("SEND %s", request.ToString())
 	response, err := its.serviceClient.ProcessClient(its.ctx, request)
 	if err != nil {

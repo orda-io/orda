@@ -22,7 +22,10 @@ func NewOrtooService(mongo *mongodb.RepositoryMongo, notifier *notification.Noti
 	}
 }
 
-func (its *OrtooService) getCollectionDocWithRPCError(ctx context.OrtooContext, collection string) (*schema.CollectionDoc, error) {
+func (its *OrtooService) getCollectionDocWithRPCError(
+	ctx context.OrtooContext,
+	collection string,
+) (*schema.CollectionDoc, error) {
 	collectionDoc, err := its.mongo.GetCollection(ctx, collection)
 	if err != nil {
 		return nil, errors.NewRPCError(err)

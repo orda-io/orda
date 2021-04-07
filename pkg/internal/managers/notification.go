@@ -6,7 +6,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/types"
 )
 
 // NotificationManager manages notifications from Ortoo Server
@@ -39,7 +38,7 @@ const (
 func NewNotificationManager(ctx context.OrtooContext, pubSubAddr string, cm *model.Client) *NotificationManager {
 	pubSubOpts := mqtt.NewClientOptions().
 		AddBroker(pubSubAddr).
-		SetClientID(types.UIDtoString(cm.GetCUID())).
+		SetClientID(cm.GetCUID()).
 		SetUsername(cm.Alias)
 	client := mqtt.NewClient(pubSubOpts)
 	channel := make(chan *notificationMsg)

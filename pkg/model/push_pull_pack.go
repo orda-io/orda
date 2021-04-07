@@ -132,8 +132,15 @@ func (its *PushPullPack) ToString() string {
 	var b strings.Builder
 	var option = PushPullPackOption(its.Option)
 
-	_, _ = fmt.Fprintf(&b, "%s(%s) %s CP(%v) OP(%d){",
-		its.Key, types.UID(its.DUID).ShortString(), option.String(), its.CheckPoint.String(), len(its.Operations))
+	_, _ = fmt.Fprintf(
+		&b,
+		"%s(%s) %s CP(%v) OP(%d){",
+		its.Key,
+		types.ShortenUID(its.DUID),
+		option.String(),
+		its.CheckPoint.String(),
+		len(its.Operations),
+	)
 	init := true
 	for _, op := range its.Operations {
 		if !init {

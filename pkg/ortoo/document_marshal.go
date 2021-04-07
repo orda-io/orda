@@ -107,7 +107,7 @@ func (its *jsonObject) marshal() *marshaledJSONType {
 		S: its.Size,
 		M: make(map[string]*model.Timestamp),
 	}
-	for k, v := range its.hashMapSnapshot.Map {
+	for k, v := range its.mapSnapshot.Map {
 		jt := v.(jsonType)
 		value.M[k] = jt.getCreateTime() // store only create timestamp
 	}
@@ -199,14 +199,14 @@ func (its *jsonElement) unmarshal(marshaled *marshaledJSONType, assistant *unmar
 
 func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
 	marshaledJO := marshaled.O
-	its.hashMapSnapshot = &hashMapSnapshot{
+	its.mapSnapshot = &mapSnapshot{
 		base: its.GetBase(),
 		Map:  make(map[string]timedType),
 		Size: marshaledJO.S,
 	}
 	for k, ts := range marshaledJO.M {
 		realInstance, _ := its.findJSONType(ts)
-		its.hashMapSnapshot.Map[k] = realInstance
+		its.mapSnapshot.Map[k] = realInstance
 	}
 }
 

@@ -15,5 +15,5 @@ func call1() errors.OrtooError {
 }
 
 func call2() errors.OrtooError {
-	return errors.DatatypeNoOp.New(log.Logger, "sample error")
+	return errors.DatatypeNoOp.New(log.Logger, "This is a generated sample error")
 }

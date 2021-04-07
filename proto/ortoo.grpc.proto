@@ -14,22 +14,38 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   }
 };
 
+message SnapshotRequest {
+  string key = 1;
+  string collection = 2;
+  string duid = 3;
+  uint64 sseq = 4 [jstype = JS_STRING];
+}
+
+message SnapshotResponse {
+  DatatypeMeta meta = 1;
+  string json = 2;
+}
+
 
 service OrtooService {
-  rpc ProcessPushPull (PushPullRequest) returns (PushPullResponse) {
+  rpc ProcessPushPull (PushPullMessage) returns (PushPullMessage) {
     option (google.api.http) = {
-      post: "/api/v1/{header.collection}/pushpulls/{header.cuid}"
+      post: "/api/v1/collections/{collection}/pushpulls/{cuid}"
       body: "*"
     };
   }
-  rpc ProcessClient (ClientRequest) returns (ClientResponse) {
+  rpc ProcessClient (ClientMessage) returns (ClientMessage) {
     option (google.api.http) = {
-      post: "/api/v1/{header.collection}/clients/{header.cuid}"
+      post: "/api/v1/collections/{collection}/clients/{cuid}"
       body: "*"
     };
   }
-
-  rpc ProcessCollections(CollectionMessage) returns (CollectionMessage) {
+  rpc SnapshotDatatype (SnapshotRequest) returns (SnapshotResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/collections/{collection}/datatypes/{key}"
+    };
+  }
+  rpc CreateCollections(CollectionMessage) returns (CollectionMessage) {
     option (google.api.http) = {
       put: "/api/v1/collections/{collection}"
     };

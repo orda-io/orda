@@ -34,7 +34,7 @@ var _ = descriptor.ForMessage
 var _ = metadata.Join
 
 func request_OrtooService_ProcessPushPull_0(ctx context.Context, marshaler runtime.Marshaler, client OrtooServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PushPullRequest
+	var protoReq PushPullMessage
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -52,26 +52,26 @@ func request_OrtooService_ProcessPushPull_0(ctx context.Context, marshaler runti
 		_   = err
 	)
 
-	val, ok = pathParams["header.collection"]
+	val, ok = pathParams["collection"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "header.collection")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collection")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "header.collection", val)
+	protoReq.Collection, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.collection", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collection", err)
 	}
 
-	val, ok = pathParams["header.cuid"]
+	val, ok = pathParams["cuid"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "header.cuid")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cuid")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "header.cuid", val)
+	protoReq.Cuid, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.cuid", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cuid", err)
 	}
 
 	msg, err := client.ProcessPushPull(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -80,7 +80,7 @@ func request_OrtooService_ProcessPushPull_0(ctx context.Context, marshaler runti
 }
 
 func local_request_OrtooService_ProcessPushPull_0(ctx context.Context, marshaler runtime.Marshaler, server OrtooServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PushPullRequest
+	var protoReq PushPullMessage
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -98,26 +98,26 @@ func local_request_OrtooService_ProcessPushPull_0(ctx context.Context, marshaler
 		_   = err
 	)
 
-	val, ok = pathParams["header.collection"]
+	val, ok = pathParams["collection"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "header.collection")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collection")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "header.collection", val)
+	protoReq.Collection, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.collection", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collection", err)
 	}
 
-	val, ok = pathParams["header.cuid"]
+	val, ok = pathParams["cuid"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "header.cuid")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cuid")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "header.cuid", val)
+	protoReq.Cuid, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.cuid", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cuid", err)
 	}
 
 	msg, err := server.ProcessPushPull(ctx, &protoReq)
@@ -126,7 +126,7 @@ func local_request_OrtooService_ProcessPushPull_0(ctx context.Context, marshaler
 }
 
 func request_OrtooService_ProcessClient_0(ctx context.Context, marshaler runtime.Marshaler, client OrtooServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ClientRequest
+	var protoReq ClientMessage
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -144,26 +144,26 @@ func request_OrtooService_ProcessClient_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["header.collection"]
+	val, ok = pathParams["collection"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "header.collection")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collection")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "header.collection", val)
+	protoReq.Collection, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.collection", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collection", err)
 	}
 
-	val, ok = pathParams["header.cuid"]
+	val, ok = pathParams["cuid"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "header.cuid")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cuid")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "header.cuid", val)
+	protoReq.Cuid, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.cuid", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cuid", err)
 	}
 
 	msg, err := client.ProcessClient(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -172,7 +172,7 @@ func request_OrtooService_ProcessClient_0(ctx context.Context, marshaler runtime
 }
 
 func local_request_OrtooService_ProcessClient_0(ctx context.Context, marshaler runtime.Marshaler, server OrtooServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ClientRequest
+	var protoReq ClientMessage
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -190,26 +190,26 @@ func local_request_OrtooService_ProcessClient_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["header.collection"]
+	val, ok = pathParams["collection"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "header.collection")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collection")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "header.collection", val)
+	protoReq.Collection, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.collection", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collection", err)
 	}
 
-	val, ok = pathParams["header.cuid"]
+	val, ok = pathParams["cuid"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "header.cuid")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cuid")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "header.cuid", val)
+	protoReq.Cuid, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.cuid", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cuid", err)
 	}
 
 	msg, err := server.ProcessClient(ctx, &protoReq)
@@ -218,11 +218,11 @@ func local_request_OrtooService_ProcessClient_0(ctx context.Context, marshaler r
 }
 
 var (
-	filter_OrtooService_ProcessCollections_0 = &utilities.DoubleArray{Encoding: map[string]int{"collection": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_OrtooService_SnapshotDatatype_0 = &utilities.DoubleArray{Encoding: map[string]int{"collection": 0, "key": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_OrtooService_ProcessCollections_0(ctx context.Context, marshaler runtime.Marshaler, client OrtooServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CollectionMessage
+func request_OrtooService_SnapshotDatatype_0(ctx context.Context, marshaler runtime.Marshaler, client OrtooServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq SnapshotRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -243,19 +243,75 @@ func request_OrtooService_ProcessCollections_0(ctx context.Context, marshaler ru
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collection", err)
 	}
 
+	val, ok = pathParams["key"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "key")
+	}
+
+	protoReq.Key, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "key", err)
+	}
+
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrtooService_ProcessCollections_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrtooService_SnapshotDatatype_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ProcessCollections(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.SnapshotDatatype(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_OrtooService_ProcessCollections_0(ctx context.Context, marshaler runtime.Marshaler, server OrtooServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_OrtooService_SnapshotDatatype_0(ctx context.Context, marshaler runtime.Marshaler, server OrtooServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq SnapshotRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["collection"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collection")
+	}
+
+	protoReq.Collection, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collection", err)
+	}
+
+	val, ok = pathParams["key"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "key")
+	}
+
+	protoReq.Key, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "key", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrtooService_SnapshotDatatype_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.SnapshotDatatype(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_OrtooService_CreateCollections_0(ctx context.Context, marshaler runtime.Marshaler, client OrtooServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CollectionMessage
 	var metadata runtime.ServerMetadata
 
@@ -277,14 +333,34 @@ func local_request_OrtooService_ProcessCollections_0(ctx context.Context, marsha
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collection", err)
 	}
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrtooService_ProcessCollections_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	msg, err := client.CreateCollections(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_OrtooService_CreateCollections_0(ctx context.Context, marshaler runtime.Marshaler, server OrtooServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CollectionMessage
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["collection"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collection")
 	}
 
-	msg, err := server.ProcessCollections(ctx, &protoReq)
+	protoReq.Collection, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collection", err)
+	}
+
+	msg, err := server.CreateCollections(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -341,7 +417,7 @@ func RegisterOrtooServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("PUT", pattern_OrtooService_ProcessCollections_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_OrtooService_SnapshotDatatype_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -352,7 +428,7 @@ func RegisterOrtooServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_OrtooService_ProcessCollections_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_OrtooService_SnapshotDatatype_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -360,7 +436,30 @@ func RegisterOrtooServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_OrtooService_ProcessCollections_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_OrtooService_SnapshotDatatype_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("PUT", pattern_OrtooService_CreateCollections_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_OrtooService_CreateCollections_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_OrtooService_CreateCollections_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -445,7 +544,7 @@ func RegisterOrtooServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("PUT", pattern_OrtooService_ProcessCollections_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_OrtooService_SnapshotDatatype_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -454,14 +553,34 @@ func RegisterOrtooServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_OrtooService_ProcessCollections_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_OrtooService_SnapshotDatatype_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_OrtooService_ProcessCollections_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_OrtooService_SnapshotDatatype_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("PUT", pattern_OrtooService_CreateCollections_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_OrtooService_CreateCollections_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_OrtooService_CreateCollections_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -469,11 +588,13 @@ func RegisterOrtooServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 }
 
 var (
-	pattern_OrtooService_ProcessPushPull_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "header.collection", "pushpulls", "header.cuid"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_OrtooService_ProcessPushPull_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "collections", "collection", "pushpulls", "cuid"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_OrtooService_ProcessClient_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "header.collection", "clients", "header.cuid"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_OrtooService_ProcessClient_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "collections", "collection", "clients", "cuid"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_OrtooService_ProcessCollections_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "collections", "collection"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_OrtooService_SnapshotDatatype_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "collections", "collection", "datatypes", "key"}, "", runtime.AssumeColonVerbOpt(true)))
+
+	pattern_OrtooService_CreateCollections_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "collections", "collection"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
@@ -481,5 +602,7 @@ var (
 
 	forward_OrtooService_ProcessClient_0 = runtime.ForwardResponseMessage
 
-	forward_OrtooService_ProcessCollections_0 = runtime.ForwardResponseMessage
+	forward_OrtooService_SnapshotDatatype_0 = runtime.ForwardResponseMessage
+
+	forward_OrtooService_CreateCollections_0 = runtime.ForwardResponseMessage
 )

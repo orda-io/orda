@@ -9,7 +9,7 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb"
 )
 
-func (its *OrtooService) ProcessCollections(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
+func (its *OrtooService) CreateCollections(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
 	ctx := context.New(goCtx)
 	// collectionName := strings.TrimPrefix(req.URL.Path, apiCollections)
 	num, err := mongodb.MakeCollection(ctx, its.mongo, in.Collection)

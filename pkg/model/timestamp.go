@@ -1,7 +1,6 @@
 package model
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/types"
 	"strings"
@@ -12,12 +11,12 @@ func OldestTimestamp() *Timestamp {
 	return &Timestamp{
 		Era:       0,
 		Lamport:   0,
-		CUID:      make([]byte, 16),
+		CUID:      types.NewNilCUID(),
 		Delimiter: 0,
 	}
 }
 
-func NewTimestamp(era uint32, lamport uint64, cuid []byte, delimiter uint32) *Timestamp {
+func NewTimestamp(era uint32, lamport uint64, cuid string, delimiter uint32) *Timestamp {
 	return &Timestamp{
 		Era:       era,
 		Lamport:   lamport,
@@ -40,14 +39,14 @@ func (its *Timestamp) Compare(o *Timestamp) int {
 	} else if diff < 0 {
 		return -1
 	}
-	return bytes.Compare(its.CUID, o.CUID)
+	return strings.Compare(its.CUID, o.CUID)
 }
 
 // ToString is used to get string for Timestamp
 func (its *Timestamp) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]", its.Era, its.Lamport,
-		types.UIDtoShortString(its.CUID), its.Delimiter)
+		types.ShortenUID(its.CUID), its.Delimiter)
 	return b.String()
 }
 
@@ -55,7 +54,7 @@ func (its *Timestamp) ToString() string {
 // DON'T change this because protocol can be broken : TODO: this can be improved.
 func (its *Timestamp) Hash() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, "%d%d%s%d", its.Era, its.Lamport, types.UIDtoString(its.CUID), its.Delimiter)
+	_, _ = fmt.Fprintf(&b, "%d%d%s%d", its.Era, its.Lamport, its.CUID, its.Delimiter)
 	return b.String()
 }
 

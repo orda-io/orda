@@ -6,7 +6,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"strings"
 )
 
@@ -28,7 +27,7 @@ func NewDatatypeManager(
 
 	dm := &DatatypeManager{
 		ctx:            ctx,
-		cuid:           types.UIDtoString(client.CUID),
+		cuid:           client.CUID,
 		collectionName: client.Collection,
 		dataMap:        make(map[string]iface.Datatype),
 		syncManager:    sm,
@@ -116,7 +115,7 @@ func (its *DatatypeManager) SyncIfNeeded(key, duid string, sseq uint64) errors.O
 	data, ok := its.dataMap[key]
 	if ok {
 		its.ctx.L().Infof("receive a notification for datatype %s(%s) sseq:%d", key, duid[0:8], sseq)
-		if data.GetDUID().String() == duid && data.NeedSync(sseq) {
+		if data.GetDUID() == duid && data.NeedSync(sseq) {
 			its.ctx.L().Infof("need to sync after notification: %s (sseq:%d)", key, sseq)
 			return its.Sync(key)
 		}

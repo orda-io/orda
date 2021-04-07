@@ -9,6 +9,11 @@ enum SyncType {
   NOTIFIABLE = 2;
 }
 
+enum ClientType {
+  PERSISTENT = 0;
+  EPHEMERAL = 1;
+}
+
 enum TypeOfOperation {
   SNAPSHOT = 0;
   DELETE = 2;
@@ -27,12 +32,6 @@ enum TypeOfOperation {
   DOC_UPD_ARR = 45;
 }
 
-enum TypeOfDatatype {
-  COUNTER = 0;
-  MAP = 1;
-  LIST = 2;
-  DOCUMENT = 3;
-}
 
 enum StateOfDatatype {
   DUE_TO_CREATE = 0;
@@ -54,3 +53,4 @@ enum RequestType {
   CLIENTS = 0;
   PUSHPULLS = 1;
 }
+

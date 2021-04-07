@@ -18,7 +18,6 @@ _/    _/  _/          _/      _/    _/  _/    _/
 - docker latest, docker-compose (for deploying local ortoo-server)
 - [MongoDB latest](https://hub.docker.com/_/mongo)
 - MQTT: [EQM](https://www.emqx.io/)
-- [envoy-proxy](https://www.envoyproxy.io/)
 - gogo/protobuf (how to install: http://google.github.io/proto-lens/installing-protoc.html)
 
 
@@ -87,25 +86,30 @@ defer func() {
 ```go
 // CreateXXXX() is used to create a new datatype. 
 // If there already exists a datatype for the key, it returns an error via error handler.
-intCounter := client.CreateIntCounter("key", ortoo.NewHandlers(...)
+intCounter := client.CreateCounter("key", ortoo.NewHandlers(...)
 
 // SubscribeXXXX() is used to subscribe an existing datatype. 
 // If there exists no datatype for the key, it returns an error via error handler
-intCounter := client.SubscribeIntCounter("key", ortoo.NewHandlers(...)
+intCounter := client.SubscribeCounter("key", ortoo.NewHandlers(...)
 
 // SubscribeOrCreateXXXX() is used to subscribe an existing datatype. 
 // If no datatype exists for the key, a new datatype is created. 
 // It is recommended to use this method to shorten code lines.
-intCounter := client.SubscribeOrCreateIntCounter("key", ortoo.NewHandlers(...)
+intCounter := client.SubscribeOrCreateCounter("key", ortoo.NewHandlers(...)
 
 // Client should sync with Ortoo server.
 if err:= client.Sync(); err !=nil {
     panic(err)
 }
 ```
-#### Handlers   
-#### IntCounter
-#### HashMap
+
+#### Handlers
+
+#### Counter
+
+#### Map
+
 #### List
+
 #### Transaction
 

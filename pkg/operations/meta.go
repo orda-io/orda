@@ -5,7 +5,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/types"
 )
 
 // ////////////////// baseOperation ////////////////////
@@ -42,7 +41,7 @@ func (its *baseOperation) GetAsJSON() interface{} {
 	}{
 		Era:     its.ID.Era,
 		Lamport: its.ID.Lamport,
-		CUID:    types.UIDtoString(its.ID.CUID),
+		CUID:    its.ID.CUID,
 		Seq:     its.ID.Seq,
 	}
 }

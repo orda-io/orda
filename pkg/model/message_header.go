@@ -2,30 +2,19 @@ package model
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/types"
+	"google.golang.org/grpc"
 )
 
 // NewMessageHeader generates a message header.
-func NewMessageHeader(typeOf RequestType, collection string, clientAlias string, cuid []byte) *Header {
+func NewMessageHeader(typeOf RequestType) *Header {
 	return &Header{
-		Version:     ProtocolVersion,
-		Collection:  collection,
-		Type:        typeOf,
-		ClientAlias: clientAlias,
-		Cuid:        cuid,
+		Version: ProtocolVersion,
+		Agent:   fmt.Sprintf("%s-%v", Agent, grpc.Version),
+		Type:    typeOf,
 	}
 }
 
-func (its *Header) GetClient() string {
-	return fmt.Sprintf("%s(%s)", its.ClientAlias, types.UIDtoString(its.Cuid))
-}
-
-// func (its *MessageHeader) GetClientSummary() string {
-// 	return utils.MakeSummary(its.ClientAlias, its.Cuid, true)
-// }
-
 // ToString returns customized string
 func (its *Header) ToString() string {
-	return fmt.Sprintf("v%s|%s|%s|%s",
-		its.Version, its.Type, its.Collection, types.UID(its.Cuid).ShortString())
+	return fmt.Sprintf("%s|%s", its.Version, its.Type)
 }

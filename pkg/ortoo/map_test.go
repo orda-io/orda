@@ -15,11 +15,11 @@ func TestHashMap(t *testing.T) {
 
 	t.Run("Can run transaction", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
-		hashMap1, _ := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), tw, nil)
+		hashMap1, _ := newMap(testonly.NewBase("key1", model.TypeOfDatatype_MAP), tw, nil)
 		key1 := "k1"
 		key2 := "k2"
 
-		require.NoError(t, hashMap1.DoTransaction("transaction success", func(hm HashMapInTxn) error {
+		require.NoError(t, hashMap1.DoTransaction("transaction success", func(hm MapInTxn) error {
 			_, _ = hm.Put(key1, 2)
 			require.Equal(t, float64(2), hm.Get(key1))
 			oldVal, _ := hm.Put(key1, 3)
@@ -29,7 +29,7 @@ func TestHashMap(t *testing.T) {
 		}))
 		require.Equal(t, float64(3), hashMap1.Get(key1))
 
-		require.Error(t, hashMap1.DoTransaction("transaction failure", func(hm HashMapInTxn) error {
+		require.Error(t, hashMap1.DoTransaction("transaction failure", func(hm MapInTxn) error {
 			oldVal, _ := hm.Remove(key1)
 			require.Equal(t, float64(3), oldVal)
 			require.Equal(t, nil, hm.Get(key1))
@@ -40,26 +40,26 @@ func TestHashMap(t *testing.T) {
 		require.Equal(t, float64(3), hashMap1.Get(key1))
 		require.Equal(t, nil, hashMap1.Get(key2))
 
-		m, err := json.Marshal(hashMap1.(*hashMap).GetSnapshot())
+		m, err := json.Marshal(hashMap1.(*ortooMap).GetSnapshot())
 		require.NoError(t, err)
 		log.Logger.Infof("%v", string(m))
-		clone := hashMapSnapshot{}
+		clone := mapSnapshot{}
 		err = json.Unmarshal(m, &clone)
 		require.NoError(t, err)
-		m2, err := json.Marshal(hashMap1.(*hashMap).GetSnapshot())
+		m2, err := json.Marshal(hashMap1.(*ortooMap).GetSnapshot())
 		require.NoError(t, err)
 		log.Logger.Infof("%v", string(m2))
 		require.Equal(t, m, m2)
 	})
 
-	t.Run("Can set and get hashMapSnapshot", func(t *testing.T) {
-		hashMap1, _ := newHashMap(testonly.NewBase("key1", model.TypeOfDatatype_HASH_MAP), nil, nil)
+	t.Run("Can set and get mapSnapshot", func(t *testing.T) {
+		hashMap1, _ := newMap(testonly.NewBase("key1", model.TypeOfDatatype_MAP), nil, nil)
 		_, _ = hashMap1.Put("k1", 1)
 		_, _ = hashMap1.Put("k2", "2")
 		_, _ = hashMap1.Put("k3", 3.141592)
 		_, _ = hashMap1.Remove("k2")
 
-		clone, _ := newHashMap(testonly.NewBase("key2", model.TypeOfDatatype_HASH_MAP), nil, nil)
+		clone, _ := newMap(testonly.NewBase("key2", model.TypeOfDatatype_MAP), nil, nil)
 		meta1, snap1, err := hashMap1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
 		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)
@@ -73,18 +73,18 @@ func TestHashMap(t *testing.T) {
 		require.Equal(t, snap1, snap2)
 		require.Equal(t, meta1, meta2)
 
-		snapshot := cloneDT.GetSnapshot().(*hashMapSnapshot)
+		snapshot := cloneDT.GetSnapshot().(*mapSnapshot)
 		tt := snapshot.getFromMap("k2")
 		require.True(t, tt.isTomb())
 	})
 
-	t.Run("Can do operations with hashMapSnapshot", func(t *testing.T) {
+	t.Run("Can do operations with mapSnapshot", func(t *testing.T) {
 
 		opID1 := model.NewOperationID()
 		opID2 := model.NewOperationID().Next()
 
-		base := testonly.NewBase("test", model.TypeOfDatatype_HASH_MAP)
-		snap := newHashMapSnapshot(base)
+		base := testonly.NewBase("test", model.TypeOfDatatype_MAP)
+		snap := newMapSnapshot(base)
 		old1, err := snap.putCommon("key1", "v1", opID1.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Nil(t, old1)
@@ -116,7 +116,7 @@ func TestHashMap(t *testing.T) {
 		snap1, err2 := json.Marshal(snap)
 		require.NoError(t, err2)
 		log.Logger.Infof("%v", string(snap1))
-		clone := newHashMapSnapshot(base)
+		clone := newMapSnapshot(base)
 		err2 = json.Unmarshal(snap1, clone)
 		require.NoError(t, err2)
 		snap2, err2 := json.Marshal(clone)

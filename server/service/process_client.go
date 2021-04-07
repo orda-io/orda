@@ -12,16 +12,20 @@ import (
 )
 
 // ProcessClient processes ClientRequest and returns ClientResponse
-func (its *OrtooService) ProcessClient(goCtx gocontext.Context, in *model.ClientRequest) (*model.ClientResponse, error) {
+func (its *OrtooService) ProcessClient(
+	goCtx gocontext.Context,
+	req *model.ClientMessage,
+) (*model.ClientMessage, error) {
 	ctx := context.New(goCtx)
-	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.GetClient().Collection)
+	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, req.GetClient().Collection)
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
-	clientDocFromReq := schema.ClientModelToBson(in.GetClient(), collectionDoc.Num)
+	clientDocFromReq := schema.ClientModelToBson(req.GetClient(), collectionDoc.Num)
 
-	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagClient, collectionDoc.Num, in.GetClient().CUID))
-	ctx.L().Infof("RECV %s", in.ToString())
+	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagClient, collectionDoc.Num, req.GetClient().CUID))
+
+	ctx.L().Infof("RECV %s %v %v", req.ToString(), len(req.Cuid), req.Cuid)
 
 	clientDocFromDB, err := its.mongo.GetClient(ctx, clientDocFromReq.CUID)
 	if err != nil {
@@ -30,7 +34,7 @@ func (its *OrtooService) ProcessClient(goCtx gocontext.Context, in *model.Client
 	if clientDocFromDB == nil {
 		clientDocFromReq.CreatedAt = time.Now()
 		ctx.L().Infof("create a new client:%+v", clientDocFromReq)
-		if err := its.mongo.GetOrCreateRealCollection(ctx, in.GetClient().Collection); err != nil {
+		if err := its.mongo.GetOrCreateRealCollection(ctx, req.GetClient().Collection); err != nil {
 			return nil, errors.NewRPCError(err)
 		}
 	} else {
@@ -45,7 +49,6 @@ func (its *OrtooService) ProcessClient(goCtx gocontext.Context, in *model.Client
 	if err = its.mongo.UpdateClient(ctx, clientDocFromReq); err != nil {
 		return nil, errors.NewRPCError(err)
 	}
-	out := model.NewClientResponse(in.Header, model.StateOfResponse_OK)
-	ctx.L().Infof("SENDBACK %s", out.ToString())
-	return out, nil
+	ctx.L().Infof("SENDBACK %s", req.ToString())
+	return req, nil
 }

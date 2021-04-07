@@ -3,11 +3,11 @@ package server
 import (
 	gocontext "context"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/knowhunger/ortoo/pkg/constants"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/version"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/notification"
 	"github.com/knowhunger/ortoo/server/service"
@@ -96,8 +96,8 @@ func (its *OrtooServer) Start() errors.OrtooError {
 	}()
 
 	its.ctx.L().Printf("%s(%s) Started at %s %s",
-		version.Version,
-		version.GitCommit,
+		constants.Version,
+		constants.GitCommit,
 		time.Now().String(),
 		banner)
 

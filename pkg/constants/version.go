@@ -1,4 +1,4 @@
-package version
+package constants
 
 var (
 	// GitCommit is a git commit hash which is injected by Makefile

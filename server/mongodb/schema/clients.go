@@ -46,7 +46,7 @@ func (its *ClientDoc) String() string {
 }
 
 func (its *ClientDoc) GetShortCUID() string {
-	return types.ShortenUIDString(its.CUID)
+	return types.ShortenUID(its.CUID)
 }
 
 // ToUpdateBSON returns a bson from a ClientDoc
@@ -102,7 +102,7 @@ func (its *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
 // ClientModelToBson returns a ClientDoc from a model.Client
 func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	return &ClientDoc{
-		CUID:          types.UIDtoString(model.CUID),
+		CUID:          model.CUID,
 		Alias:         model.Alias,
 		CollectionNum: collectionNum,
 		SyncType:      model.SyncType.String(),

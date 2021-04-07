@@ -23,14 +23,46 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+type TypeOfDatatype int32
+
+const (
+	TypeOfDatatype_COUNTER  TypeOfDatatype = 0
+	TypeOfDatatype_MAP      TypeOfDatatype = 1
+	TypeOfDatatype_LIST     TypeOfDatatype = 2
+	TypeOfDatatype_DOCUMENT TypeOfDatatype = 3
+)
+
+var TypeOfDatatype_name = map[int32]string{
+	0: "COUNTER",
+	1: "MAP",
+	2: "LIST",
+	3: "DOCUMENT",
+}
+
+var TypeOfDatatype_value = map[string]int32{
+	"COUNTER":  0,
+	"MAP":      1,
+	"LIST":     2,
+	"DOCUMENT": 3,
+}
+
+func (x TypeOfDatatype) String() string {
+	return proto.EnumName(TypeOfDatatype_name, int32(x))
+}
+
+func (TypeOfDatatype) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_30a908b65ec6aa42, []int{0}
+}
+
 type Client struct {
-	CUID                 []byte   `protobuf:"bytes,1,opt,name=CUID,proto3" json:"CUID,omitempty"`
-	Alias                string   `protobuf:"bytes,2,opt,name=alias,proto3" json:"alias,omitempty"`
-	Collection           string   `protobuf:"bytes,3,opt,name=collection,proto3" json:"collection,omitempty"`
-	SyncType             SyncType `protobuf:"varint,4,opt,name=syncType,proto3,enum=ortoo.SyncType" json:"syncType,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	CUID                 string     `protobuf:"bytes,1,opt,name=CUID,proto3" json:"CUID,omitempty"`
+	Alias                string     `protobuf:"bytes,2,opt,name=alias,proto3" json:"alias,omitempty"`
+	Collection           string     `protobuf:"bytes,3,opt,name=collection,proto3" json:"collection,omitempty"`
+	Type                 ClientType `protobuf:"varint,4,opt,name=type,proto3,enum=ortoo.ClientType" json:"type,omitempty"`
+	SyncType             SyncType   `protobuf:"varint,5,opt,name=syncType,proto3,enum=ortoo.SyncType" json:"syncType,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
 func (m *Client) Reset()         { *m = Client{} }
@@ -66,11 +98,11 @@ func (m *Client) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Client proto.InternalMessageInfo
 
-func (m *Client) GetCUID() []byte {
+func (m *Client) GetCUID() string {
 	if m != nil {
 		return m.CUID
 	}
-	return nil
+	return ""
 }
 
 func (m *Client) GetAlias() string {
@@ -87,6 +119,13 @@ func (m *Client) GetCollection() string {
 	return ""
 }
 
+func (m *Client) GetType() ClientType {
+	if m != nil {
+		return m.Type
+	}
+	return ClientType_PERSISTENT
+}
+
 func (m *Client) GetSyncType() SyncType {
 	if m != nil {
 		return m.SyncType
@@ -100,7 +139,7 @@ type Timestamp struct {
 	// @inject_tag: json:"l,omitempty"
 	Lamport uint64 `protobuf:"varint,2,opt,name=lamport,proto3" json:"l,omitempty"`
 	// @inject_tag: json:"c,omitempty"
-	CUID []byte `protobuf:"bytes,3,opt,name=CUID,proto3" json:"c,omitempty"`
+	CUID string `protobuf:"bytes,3,opt,name=CUID,proto3" json:"c,omitempty"`
 	// @inject_tag: json:"d,omitempty"
 	Delimiter            uint32   `protobuf:"varint,4,opt,name=delimiter,proto3" json:"d,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -155,11 +194,11 @@ func (m *Timestamp) GetLamport() uint64 {
 	return 0
 }
 
-func (m *Timestamp) GetCUID() []byte {
+func (m *Timestamp) GetCUID() string {
 	if m != nil {
 		return m.CUID
 	}
-	return nil
+	return ""
 }
 
 func (m *Timestamp) GetDelimiter() uint32 {
@@ -175,7 +214,7 @@ type OperationID struct {
 	// @inject_tag: json:"l,omitempty"
 	Lamport uint64 `protobuf:"varint,2,opt,name=lamport,proto3" json:"l,omitempty"`
 	// @inject_tag: json:"c,omitempty"
-	CUID []byte `protobuf:"bytes,3,opt,name=CUID,proto3" json:"c,omitempty"`
+	CUID string `protobuf:"bytes,3,opt,name=CUID,proto3" json:"c,omitempty"`
 	// @inject_tag: json:"s,omitempty"
 	Seq                  uint64   `protobuf:"varint,4,opt,name=seq,proto3" json:"s,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -230,11 +269,11 @@ func (m *OperationID) GetLamport() uint64 {
 	return 0
 }
 
-func (m *OperationID) GetCUID() []byte {
+func (m *OperationID) GetCUID() string {
 	if m != nil {
 		return m.CUID
 	}
-	return nil
+	return ""
 }
 
 func (m *OperationID) GetSeq() uint64 {
@@ -308,16 +347,16 @@ func (m *Operation) GetBody() []byte {
 }
 
 type PushPullPack struct {
-	DUID                 []byte       `protobuf:"bytes,1,opt,name=DUID,proto3" json:"DUID,omitempty"`
-	Key                  string       `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
-	Option               uint32       `protobuf:"fixed32,3,opt,name=option,proto3" json:"option,omitempty"`
-	CheckPoint           *CheckPoint  `protobuf:"bytes,4,opt,name=checkPoint,proto3" json:"checkPoint,omitempty"`
-	Era                  uint32       `protobuf:"varint,5,opt,name=era,proto3" json:"era,omitempty"`
-	Type                 int32        `protobuf:"varint,6,opt,name=type,proto3" json:"type,omitempty"`
-	Operations           []*Operation `protobuf:"bytes,7,rep,name=operations,proto3" json:"operations,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
+	DUID                 string         `protobuf:"bytes,1,opt,name=DUID,proto3" json:"DUID,omitempty"`
+	Key                  string         `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Option               uint32         `protobuf:"fixed32,3,opt,name=option,proto3" json:"option,omitempty"`
+	CheckPoint           *CheckPoint    `protobuf:"bytes,4,opt,name=checkPoint,proto3" json:"checkPoint,omitempty"`
+	Era                  uint32         `protobuf:"varint,5,opt,name=era,proto3" json:"era,omitempty"`
+	Type                 TypeOfDatatype `protobuf:"varint,6,opt,name=type,proto3,enum=ortoo.TypeOfDatatype" json:"type,omitempty"`
+	Operations           []*Operation   `protobuf:"bytes,7,rep,name=operations,proto3" json:"operations,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
 func (m *PushPullPack) Reset()         { *m = PushPullPack{} }
@@ -353,11 +392,11 @@ func (m *PushPullPack) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PushPullPack proto.InternalMessageInfo
 
-func (m *PushPullPack) GetDUID() []byte {
+func (m *PushPullPack) GetDUID() string {
 	if m != nil {
 		return m.DUID
 	}
-	return nil
+	return ""
 }
 
 func (m *PushPullPack) GetKey() string {
@@ -388,11 +427,11 @@ func (m *PushPullPack) GetEra() uint32 {
 	return 0
 }
 
-func (m *PushPullPack) GetType() int32 {
+func (m *PushPullPack) GetType() TypeOfDatatype {
 	if m != nil {
 		return m.Type
 	}
-	return 0
+	return TypeOfDatatype_COUNTER
 }
 
 func (m *PushPullPack) GetOperations() []*Operation {
@@ -524,7 +563,7 @@ func (m *NotificationPushPull) GetSseq() uint64 {
 
 type DatatypeMeta struct {
 	Key                  string          `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	DUID                 []byte          `protobuf:"bytes,2,opt,name=DUID,proto3" json:"DUID,omitempty"`
+	DUID                 string          `protobuf:"bytes,2,opt,name=DUID,proto3" json:"DUID,omitempty"`
 	OpID                 *OperationID    `protobuf:"bytes,3,opt,name=opID,proto3" json:"opID,omitempty"`
 	TypeOf               TypeOfDatatype  `protobuf:"varint,4,opt,name=typeOf,proto3,enum=ortoo.TypeOfDatatype" json:"typeOf,omitempty"`
 	State                StateOfDatatype `protobuf:"varint,5,opt,name=state,proto3,enum=ortoo.StateOfDatatype" json:"state,omitempty"`
@@ -573,11 +612,11 @@ func (m *DatatypeMeta) GetKey() string {
 	return ""
 }
 
-func (m *DatatypeMeta) GetDUID() []byte {
+func (m *DatatypeMeta) GetDUID() string {
 	if m != nil {
 		return m.DUID
 	}
-	return nil
+	return ""
 }
 
 func (m *DatatypeMeta) GetOpID() *OperationID {
@@ -601,67 +640,10 @@ func (m *DatatypeMeta) GetState() StateOfDatatype {
 	return StateOfDatatype_DUE_TO_CREATE
 }
 
-type ResponseState struct {
-	State                StateOfResponse `protobuf:"varint,1,opt,name=state,proto3,enum=ortoo.StateOfResponse" json:"state,omitempty"`
-	Msg                  string          `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *ResponseState) Reset()         { *m = ResponseState{} }
-func (m *ResponseState) String() string { return proto.CompactTextString(m) }
-func (*ResponseState) ProtoMessage()    {}
-func (*ResponseState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_30a908b65ec6aa42, []int{8}
-}
-func (m *ResponseState) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ResponseState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ResponseState.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ResponseState) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ResponseState.Merge(m, src)
-}
-func (m *ResponseState) XXX_Size() int {
-	return m.Size()
-}
-func (m *ResponseState) XXX_DiscardUnknown() {
-	xxx_messageInfo_ResponseState.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ResponseState proto.InternalMessageInfo
-
-func (m *ResponseState) GetState() StateOfResponse {
-	if m != nil {
-		return m.State
-	}
-	return StateOfResponse_OK
-}
-
-func (m *ResponseState) GetMsg() string {
-	if m != nil {
-		return m.Msg
-	}
-	return ""
-}
-
 type Header struct {
 	Version              string      `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
-	Collection           string      `protobuf:"bytes,2,opt,name=collection,proto3" json:"collection,omitempty"`
-	Cuid                 []byte      `protobuf:"bytes,3,opt,name=cuid,proto3" json:"cuid,omitempty"`
-	ClientAlias          string      `protobuf:"bytes,4,opt,name=clientAlias,proto3" json:"clientAlias,omitempty"`
-	Type                 RequestType `protobuf:"varint,5,opt,name=type,proto3,enum=ortoo.RequestType" json:"type,omitempty"`
+	Agent                string      `protobuf:"bytes,2,opt,name=agent,proto3" json:"agent,omitempty"`
+	Type                 RequestType `protobuf:"varint,3,opt,name=type,proto3,enum=ortoo.RequestType" json:"type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -671,7 +653,7 @@ func (m *Header) Reset()         { *m = Header{} }
 func (m *Header) String() string { return proto.CompactTextString(m) }
 func (*Header) ProtoMessage()    {}
 func (*Header) Descriptor() ([]byte, []int) {
-	return fileDescriptor_30a908b65ec6aa42, []int{9}
+	return fileDescriptor_30a908b65ec6aa42, []int{8}
 }
 func (m *Header) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -707,23 +689,9 @@ func (m *Header) GetVersion() string {
 	return ""
 }
 
-func (m *Header) GetCollection() string {
+func (m *Header) GetAgent() string {
 	if m != nil {
-		return m.Collection
-	}
-	return ""
-}
-
-func (m *Header) GetCuid() []byte {
-	if m != nil {
-		return m.Cuid
-	}
-	return nil
-}
-
-func (m *Header) GetClientAlias() string {
-	if m != nil {
-		return m.ClientAlias
+		return m.Agent
 	}
 	return ""
 }
@@ -735,26 +703,30 @@ func (m *Header) GetType() RequestType {
 	return RequestType_CLIENTS
 }
 
-type ClientRequest struct {
-	Header               *Header  `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	SyncType             SyncType `protobuf:"varint,2,opt,name=syncType,proto3,enum=ortoo.SyncType" json:"syncType,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+type ClientMessage struct {
+	Header               *Header    `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	Collection           string     `protobuf:"bytes,2,opt,name=collection,proto3" json:"collection,omitempty"`
+	Cuid                 string     `protobuf:"bytes,3,opt,name=cuid,proto3" json:"cuid,omitempty"`
+	ClientAlias          string     `protobuf:"bytes,4,opt,name=clientAlias,proto3" json:"clientAlias,omitempty"`
+	ClientType           ClientType `protobuf:"varint,5,opt,name=clientType,proto3,enum=ortoo.ClientType" json:"clientType,omitempty"`
+	SyncType             SyncType   `protobuf:"varint,6,opt,name=syncType,proto3,enum=ortoo.SyncType" json:"syncType,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
-func (m *ClientRequest) Reset()         { *m = ClientRequest{} }
-func (m *ClientRequest) String() string { return proto.CompactTextString(m) }
-func (*ClientRequest) ProtoMessage()    {}
-func (*ClientRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_30a908b65ec6aa42, []int{10}
+func (m *ClientMessage) Reset()         { *m = ClientMessage{} }
+func (m *ClientMessage) String() string { return proto.CompactTextString(m) }
+func (*ClientMessage) ProtoMessage()    {}
+func (*ClientMessage) Descriptor() ([]byte, []int) {
+	return fileDescriptor_30a908b65ec6aa42, []int{9}
 }
-func (m *ClientRequest) XXX_Unmarshal(b []byte) error {
+func (m *ClientMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ClientRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ClientMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ClientRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ClientMessage.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -764,107 +736,82 @@ func (m *ClientRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (m *ClientRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClientRequest.Merge(m, src)
+func (m *ClientMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClientMessage.Merge(m, src)
 }
-func (m *ClientRequest) XXX_Size() int {
+func (m *ClientMessage) XXX_Size() int {
 	return m.Size()
 }
-func (m *ClientRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ClientRequest.DiscardUnknown(m)
+func (m *ClientMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_ClientMessage.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ClientRequest proto.InternalMessageInfo
+var xxx_messageInfo_ClientMessage proto.InternalMessageInfo
 
-func (m *ClientRequest) GetHeader() *Header {
+func (m *ClientMessage) GetHeader() *Header {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *ClientRequest) GetSyncType() SyncType {
+func (m *ClientMessage) GetCollection() string {
+	if m != nil {
+		return m.Collection
+	}
+	return ""
+}
+
+func (m *ClientMessage) GetCuid() string {
+	if m != nil {
+		return m.Cuid
+	}
+	return ""
+}
+
+func (m *ClientMessage) GetClientAlias() string {
+	if m != nil {
+		return m.ClientAlias
+	}
+	return ""
+}
+
+func (m *ClientMessage) GetClientType() ClientType {
+	if m != nil {
+		return m.ClientType
+	}
+	return ClientType_PERSISTENT
+}
+
+func (m *ClientMessage) GetSyncType() SyncType {
 	if m != nil {
 		return m.SyncType
 	}
 	return SyncType_LOCAL_ONLY
 }
 
-type ClientResponse struct {
-	Header               *Header        `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	State                *ResponseState `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
-}
-
-func (m *ClientResponse) Reset()         { *m = ClientResponse{} }
-func (m *ClientResponse) String() string { return proto.CompactTextString(m) }
-func (*ClientResponse) ProtoMessage()    {}
-func (*ClientResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_30a908b65ec6aa42, []int{11}
-}
-func (m *ClientResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ClientResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ClientResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ClientResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClientResponse.Merge(m, src)
-}
-func (m *ClientResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *ClientResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ClientResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ClientResponse proto.InternalMessageInfo
-
-func (m *ClientResponse) GetHeader() *Header {
-	if m != nil {
-		return m.Header
-	}
-	return nil
-}
-
-func (m *ClientResponse) GetState() *ResponseState {
-	if m != nil {
-		return m.State
-	}
-	return nil
-}
-
-type PushPullRequest struct {
+type PushPullMessage struct {
 	Header               *Header         `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	PushPullPacks        []*PushPullPack `protobuf:"bytes,2,rep,name=PushPullPacks,proto3" json:"PushPullPacks,omitempty"`
+	Collection           string          `protobuf:"bytes,2,opt,name=collection,proto3" json:"collection,omitempty"`
+	Cuid                 string          `protobuf:"bytes,3,opt,name=cuid,proto3" json:"cuid,omitempty"`
+	PushPullPacks        []*PushPullPack `protobuf:"bytes,4,rep,name=PushPullPacks,proto3" json:"PushPullPacks,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *PushPullRequest) Reset()         { *m = PushPullRequest{} }
-func (m *PushPullRequest) String() string { return proto.CompactTextString(m) }
-func (*PushPullRequest) ProtoMessage()    {}
-func (*PushPullRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_30a908b65ec6aa42, []int{12}
+func (m *PushPullMessage) Reset()         { *m = PushPullMessage{} }
+func (m *PushPullMessage) String() string { return proto.CompactTextString(m) }
+func (*PushPullMessage) ProtoMessage()    {}
+func (*PushPullMessage) Descriptor() ([]byte, []int) {
+	return fileDescriptor_30a908b65ec6aa42, []int{10}
 }
-func (m *PushPullRequest) XXX_Unmarshal(b []byte) error {
+func (m *PushPullMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *PushPullRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *PushPullMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_PushPullRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_PushPullMessage.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -874,81 +821,40 @@ func (m *PushPullRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *PushPullRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PushPullRequest.Merge(m, src)
+func (m *PushPullMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PushPullMessage.Merge(m, src)
 }
-func (m *PushPullRequest) XXX_Size() int {
+func (m *PushPullMessage) XXX_Size() int {
 	return m.Size()
 }
-func (m *PushPullRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_PushPullRequest.DiscardUnknown(m)
+func (m *PushPullMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_PushPullMessage.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_PushPullRequest proto.InternalMessageInfo
+var xxx_messageInfo_PushPullMessage proto.InternalMessageInfo
 
-func (m *PushPullRequest) GetHeader() *Header {
+func (m *PushPullMessage) GetHeader() *Header {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *PushPullRequest) GetPushPullPacks() []*PushPullPack {
+func (m *PushPullMessage) GetCollection() string {
 	if m != nil {
-		return m.PushPullPacks
+		return m.Collection
 	}
-	return nil
+	return ""
 }
 
-type PushPullResponse struct {
-	Header               *Header         `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	PushPullPacks        []*PushPullPack `protobuf:"bytes,2,rep,name=PushPullPacks,proto3" json:"PushPullPacks,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *PushPullResponse) Reset()         { *m = PushPullResponse{} }
-func (m *PushPullResponse) String() string { return proto.CompactTextString(m) }
-func (*PushPullResponse) ProtoMessage()    {}
-func (*PushPullResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_30a908b65ec6aa42, []int{13}
-}
-func (m *PushPullResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *PushPullResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_PushPullResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *PushPullResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PushPullResponse.Merge(m, src)
-}
-func (m *PushPullResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *PushPullResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_PushPullResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_PushPullResponse proto.InternalMessageInfo
-
-func (m *PushPullResponse) GetHeader() *Header {
+func (m *PushPullMessage) GetCuid() string {
 	if m != nil {
-		return m.Header
+		return m.Cuid
 	}
-	return nil
+	return ""
 }
 
-func (m *PushPullResponse) GetPushPullPacks() []*PushPullPack {
+func (m *PushPullMessage) GetPushPullPacks() []*PushPullPack {
 	if m != nil {
 		return m.PushPullPacks
 	}
@@ -956,8 +862,7 @@ func (m *PushPullResponse) GetPushPullPacks() []*PushPullPack {
 }
 
 type CollectionMessage struct {
-	Version              string   `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
-	Collection           string   `protobuf:"bytes,2,opt,name=collection,proto3" json:"collection,omitempty"`
+	Collection           string   `protobuf:"bytes,1,opt,name=collection,proto3" json:"collection,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -967,7 +872,7 @@ func (m *CollectionMessage) Reset()         { *m = CollectionMessage{} }
 func (m *CollectionMessage) String() string { return proto.CompactTextString(m) }
 func (*CollectionMessage) ProtoMessage()    {}
 func (*CollectionMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_30a908b65ec6aa42, []int{14}
+	return fileDescriptor_30a908b65ec6aa42, []int{11}
 }
 func (m *CollectionMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -996,13 +901,6 @@ func (m *CollectionMessage) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CollectionMessage proto.InternalMessageInfo
 
-func (m *CollectionMessage) GetVersion() string {
-	if m != nil {
-		return m.Version
-	}
-	return ""
-}
-
 func (m *CollectionMessage) GetCollection() string {
 	if m != nil {
 		return m.Collection
@@ -1011,6 +909,7 @@ func (m *CollectionMessage) GetCollection() string {
 }
 
 func init() {
+	proto.RegisterEnum("ortoo.TypeOfDatatype", TypeOfDatatype_name, TypeOfDatatype_value)
 	proto.RegisterType((*Client)(nil), "ortoo.Client")
 	proto.RegisterType((*Timestamp)(nil), "ortoo.Timestamp")
 	proto.RegisterType((*OperationID)(nil), "ortoo.OperationID")
@@ -1019,66 +918,64 @@ func init() {
 	proto.RegisterType((*CheckPoint)(nil), "ortoo.CheckPoint")
 	proto.RegisterType((*NotificationPushPull)(nil), "ortoo.NotificationPushPull")
 	proto.RegisterType((*DatatypeMeta)(nil), "ortoo.DatatypeMeta")
-	proto.RegisterType((*ResponseState)(nil), "ortoo.ResponseState")
 	proto.RegisterType((*Header)(nil), "ortoo.Header")
-	proto.RegisterType((*ClientRequest)(nil), "ortoo.ClientRequest")
-	proto.RegisterType((*ClientResponse)(nil), "ortoo.ClientResponse")
-	proto.RegisterType((*PushPullRequest)(nil), "ortoo.PushPullRequest")
-	proto.RegisterType((*PushPullResponse)(nil), "ortoo.PushPullResponse")
+	proto.RegisterType((*ClientMessage)(nil), "ortoo.ClientMessage")
+	proto.RegisterType((*PushPullMessage)(nil), "ortoo.PushPullMessage")
 	proto.RegisterType((*CollectionMessage)(nil), "ortoo.CollectionMessage")
 }
 
 func init() { proto.RegisterFile("ortoo.proto", fileDescriptor_30a908b65ec6aa42) }
 
 var fileDescriptor_30a908b65ec6aa42 = []byte{
-	// 739 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0x4d, 0x6f, 0xd3, 0x4c,
-	0x10, 0xee, 0x3a, 0x8e, 0xf3, 0x66, 0xd2, 0xb4, 0xe9, 0xbe, 0xa1, 0x0a, 0xa8, 0x8a, 0x22, 0x4b,
-	0xa0, 0x88, 0x8f, 0xa8, 0x84, 0x13, 0x82, 0x0b, 0x4d, 0x0e, 0xf4, 0x50, 0x1a, 0x6d, 0x0b, 0x07,
-	0x6e, 0xae, 0xb3, 0x4d, 0xad, 0xda, 0x59, 0xd7, 0xbb, 0x41, 0xca, 0x89, 0xbf, 0xc1, 0x91, 0xbf,
-	0xc1, 0x3f, 0xe0, 0xc8, 0x8d, 0x2b, 0x2a, 0x7f, 0x04, 0xed, 0x97, 0xed, 0x94, 0x4a, 0x50, 0xe0,
-	0x36, 0x1f, 0xcf, 0xe6, 0x99, 0x79, 0x66, 0x3c, 0x81, 0x06, 0xcb, 0x04, 0x63, 0x83, 0x34, 0x63,
-	0x82, 0xe1, 0xaa, 0x72, 0xee, 0xb4, 0x74, 0x8c, 0xce, 0x17, 0x89, 0x4e, 0xf8, 0xef, 0xc1, 0x1b,
-	0xc5, 0x11, 0x9d, 0x0b, 0x8c, 0xc1, 0x1d, 0xbd, 0xde, 0x1f, 0x77, 0x50, 0x0f, 0xf5, 0xd7, 0x89,
-	0xb2, 0x71, 0x1b, 0xaa, 0x41, 0x1c, 0x05, 0xbc, 0xe3, 0xf4, 0x50, 0xbf, 0x4e, 0xb4, 0x83, 0xbb,
-	0x00, 0x21, 0x8b, 0x63, 0x1a, 0x8a, 0x88, 0xcd, 0x3b, 0x15, 0x95, 0x2a, 0x45, 0xf0, 0x03, 0xf8,
-	0x8f, 0x2f, 0xe7, 0xe1, 0xf1, 0x32, 0xa5, 0x1d, 0xb7, 0x87, 0xfa, 0x1b, 0xc3, 0xcd, 0x81, 0x26,
-	0x3e, 0x32, 0x61, 0x92, 0x03, 0xfc, 0x04, 0xea, 0xc7, 0x51, 0x42, 0xb9, 0x08, 0x92, 0x14, 0xb7,
-	0xa0, 0x42, 0xb3, 0x40, 0x95, 0xd0, 0x24, 0xd2, 0xc4, 0x3b, 0x50, 0x8b, 0x83, 0x24, 0x65, 0x99,
-	0x50, 0x35, 0xb8, 0x7b, 0xce, 0x2e, 0x22, 0x36, 0x94, 0xd7, 0x5c, 0x29, 0xd5, 0xbc, 0x03, 0xf5,
-	0x29, 0x8d, 0xa3, 0x24, 0x12, 0x34, 0x53, 0xf4, 0x4d, 0x52, 0x04, 0xfc, 0x19, 0x34, 0x0e, 0x53,
-	0x9a, 0x05, 0xb2, 0xd0, 0xfd, 0xf1, 0x3f, 0x21, 0x6c, 0x43, 0x85, 0xd3, 0x0b, 0x45, 0xa5, 0xd1,
-	0xd2, 0xf5, 0x39, 0xd4, 0x73, 0x22, 0xec, 0x83, 0x63, 0x94, 0x6d, 0x0c, 0xb1, 0xd1, 0xa2, 0x54,
-	0x06, 0x71, 0xf6, 0xc7, 0x78, 0x00, 0x1e, 0x4b, 0x95, 0x66, 0x8e, 0xd2, 0x6c, 0xdb, 0xe0, 0x64,
-	0xe8, 0xf0, 0x34, 0x47, 0x13, 0x83, 0x92, 0xa5, 0x9c, 0xb0, 0xe9, 0xd2, 0x96, 0x22, 0x6d, 0xff,
-	0x2b, 0x82, 0xf5, 0xc9, 0x82, 0x9f, 0x4d, 0x16, 0x71, 0x3c, 0x09, 0xc2, 0x73, 0x09, 0x1a, 0x97,
-	0x86, 0x2a, 0x6d, 0xd9, 0xf3, 0x39, 0x5d, 0x9a, 0x91, 0x4a, 0x13, 0x6f, 0x4b, 0xea, 0x7c, 0x98,
-	0x35, 0x62, 0x3c, 0xfc, 0x18, 0x20, 0x3c, 0xa3, 0xe1, 0xf9, 0x84, 0x45, 0x73, 0xa1, 0x1a, 0x6c,
-	0x0c, 0xb7, 0x4c, 0x59, 0xa3, 0x3c, 0x41, 0x4a, 0x20, 0x2b, 0x68, 0xb5, 0x10, 0x14, 0x83, 0x2b,
-	0x64, 0x57, 0x5e, 0x0f, 0xf5, 0xab, 0x44, 0xd9, 0x78, 0x17, 0x80, 0xd9, 0x86, 0x78, 0xa7, 0xd6,
-	0xab, 0xf4, 0x1b, 0xc3, 0xd6, 0x55, 0x5d, 0x48, 0x09, 0xe3, 0x3f, 0x07, 0x28, 0x18, 0xf1, 0x36,
-	0xb8, 0x5c, 0x6a, 0x8e, 0x72, 0xcd, 0x95, 0x2f, 0xe3, 0xa1, 0x8c, 0x17, 0x93, 0x53, 0xbe, 0xff,
-	0x06, 0xda, 0xaf, 0x98, 0x88, 0x4e, 0xa3, 0x50, 0xfd, 0x9c, 0x95, 0x68, 0x65, 0xe7, 0xeb, 0x66,
-	0x9c, 0x56, 0x32, 0xad, 0x8f, 0x96, 0xcc, 0xf2, 0x55, 0x56, 0xf9, 0xfc, 0x4f, 0x08, 0xd6, 0xc7,
-	0x81, 0x08, 0x64, 0x53, 0x07, 0x54, 0x04, 0x56, 0x5b, 0x54, 0x68, 0x5b, 0xfe, 0x39, 0x3b, 0x81,
-	0x7b, 0xe0, 0xb2, 0xd4, 0x6c, 0xd1, 0xf5, 0x0b, 0xa1, 0xf2, 0xf8, 0x11, 0x78, 0x42, 0x4d, 0xdf,
-	0x7c, 0x46, 0xb7, 0x56, 0x56, 0xc2, 0x12, 0x13, 0x03, 0xc2, 0x0f, 0xa1, 0xca, 0x45, 0x20, 0xa8,
-	0x52, 0xbf, 0x58, 0xa0, 0x23, 0x19, 0x2b, 0xc1, 0x35, 0xc8, 0x3f, 0x84, 0x26, 0xa1, 0x3c, 0x65,
-	0x73, 0x4e, 0x15, 0xa2, 0x78, 0x8e, 0xae, 0x7b, 0x6e, 0xb1, 0xe6, 0xb9, 0xec, 0x34, 0xe1, 0x33,
-	0xbb, 0x45, 0x09, 0x9f, 0xf9, 0x1f, 0x11, 0x78, 0x2f, 0x69, 0x30, 0xa5, 0x19, 0xee, 0x40, 0xed,
-	0x1d, 0xcd, 0xb8, 0xdc, 0x28, 0x2d, 0x85, 0x75, 0xaf, 0xdc, 0x0e, 0xe7, 0xa7, 0xdb, 0x81, 0xc1,
-	0x0d, 0x17, 0xd1, 0xd4, 0x6e, 0xb5, 0xb4, 0x71, 0x0f, 0x1a, 0xa1, 0xba, 0x51, 0x2f, 0xd4, 0x2d,
-	0x72, 0xd5, 0xa3, 0x72, 0x48, 0x0a, 0xaa, 0x76, 0x4c, 0x37, 0x6e, 0x05, 0x25, 0xf4, 0x62, 0x41,
-	0xb9, 0x50, 0x07, 0x47, 0xe5, 0xfd, 0x10, 0x9a, 0xfa, 0xda, 0x99, 0x14, 0xbe, 0x0b, 0xde, 0x99,
-	0x2a, 0xd9, 0x7c, 0x9c, 0x4d, 0xf3, 0x54, 0xf7, 0x41, 0x4c, 0x72, 0xe5, 0xa2, 0x39, 0xbf, 0xba,
-	0x68, 0x21, 0x6c, 0x58, 0x12, 0x2d, 0xd9, 0xef, 0xb2, 0xdc, 0xb7, 0x03, 0x70, 0x14, 0xaa, 0x9d,
-	0xb7, 0x51, 0x9a, 0x92, 0x9d, 0x1e, 0x87, 0x4d, 0xbb, 0xc5, 0x37, 0xec, 0xe5, 0x29, 0x34, 0xcb,
-	0x27, 0x42, 0xde, 0x76, 0xf9, 0xf9, 0xfd, 0x6f, 0xd0, 0xe5, 0x1c, 0x59, 0x45, 0xfa, 0x02, 0x5a,
-	0x05, 0xe9, 0xcd, 0x7a, 0xfb, 0x0b, 0xd6, 0x03, 0xd8, 0x1a, 0xe5, 0x0b, 0x72, 0x40, 0x39, 0x0f,
-	0x66, 0xf4, 0xcf, 0x37, 0x6c, 0xef, 0xf6, 0xe7, 0xcb, 0x2e, 0xfa, 0x72, 0xd9, 0x45, 0xdf, 0x2e,
-	0xbb, 0xe8, 0xc3, 0xf7, 0xee, 0xda, 0xdb, 0xda, 0xe0, 0x59, 0xc2, 0xa6, 0x34, 0x9e, 0xac, 0x9d,
-	0x78, 0xea, 0x5f, 0xf1, 0xc9, 0x8f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x92, 0x66, 0xc0, 0x21, 0x3d,
-	0x07, 0x00, 0x00,
+	// 760 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0xdd, 0x6e, 0xd3, 0x4a,
+	0x10, 0xee, 0xda, 0x8e, 0xd3, 0x4c, 0x92, 0x36, 0xdd, 0xd3, 0x53, 0xe5, 0x1c, 0x55, 0x51, 0x64,
+	0xa9, 0x47, 0x3d, 0xfc, 0x44, 0xa5, 0xbd, 0x42, 0x20, 0xa4, 0x36, 0xa9, 0x44, 0x24, 0xd2, 0x44,
+	0xdb, 0x94, 0x0b, 0xae, 0x70, 0x9d, 0x6d, 0x6b, 0xd5, 0x89, 0x5d, 0x7b, 0x83, 0x94, 0x37, 0xe1,
+	0x09, 0xe0, 0x19, 0x78, 0x03, 0x2e, 0x79, 0x04, 0x54, 0x6e, 0x11, 0xcf, 0x80, 0x76, 0xbc, 0xeb,
+	0x38, 0x25, 0x88, 0x1b, 0xc4, 0xdd, 0xce, 0xcc, 0x17, 0xcf, 0x37, 0xdf, 0xfc, 0x04, 0xca, 0x61,
+	0x2c, 0xc2, 0xb0, 0x15, 0xc5, 0xa1, 0x08, 0x69, 0x01, 0x8d, 0x7f, 0x6b, 0xa9, 0x8f, 0x4f, 0xa6,
+	0xe3, 0x34, 0xe0, 0xbc, 0x23, 0x60, 0xb7, 0x03, 0x9f, 0x4f, 0x04, 0xa5, 0x60, 0xb5, 0xcf, 0xba,
+	0x9d, 0x3a, 0x69, 0x92, 0xdd, 0x12, 0xc3, 0x37, 0xdd, 0x84, 0x82, 0x1b, 0xf8, 0x6e, 0x52, 0x37,
+	0xd0, 0x99, 0x1a, 0xb4, 0x01, 0xe0, 0x85, 0x41, 0xc0, 0x3d, 0xe1, 0x87, 0x93, 0xba, 0x89, 0xa1,
+	0x9c, 0x87, 0xee, 0x80, 0x25, 0x66, 0x11, 0xaf, 0x5b, 0x4d, 0xb2, 0xbb, 0xb6, 0xbf, 0xd1, 0x4a,
+	0xb3, 0xa6, 0x69, 0x86, 0xb3, 0x88, 0x33, 0x0c, 0xd3, 0xfb, 0xb0, 0x9a, 0xcc, 0x26, 0x9e, 0xf4,
+	0xd4, 0x0b, 0x08, 0x5d, 0x57, 0xd0, 0x53, 0xe5, 0x66, 0x19, 0xc0, 0x19, 0x43, 0x69, 0xe8, 0x8f,
+	0x79, 0x22, 0xdc, 0x71, 0x44, 0x6b, 0x60, 0xf2, 0xd8, 0x45, 0xa6, 0x55, 0x26, 0x9f, 0x74, 0x1b,
+	0x8a, 0x81, 0x3b, 0x8e, 0xc2, 0x58, 0x20, 0x55, 0xeb, 0xc8, 0xd8, 0x23, 0x4c, 0xbb, 0xb2, 0xd2,
+	0xcc, 0x5c, 0x69, 0xdb, 0x50, 0x1a, 0xf1, 0xc0, 0x1f, 0xfb, 0x82, 0xc7, 0xc8, 0xb4, 0xca, 0xe6,
+	0x0e, 0xe7, 0x12, 0xca, 0xfd, 0x88, 0xc7, 0xae, 0xac, 0xa7, 0xdb, 0xf9, 0x2d, 0x09, 0x37, 0xc1,
+	0x4c, 0xf8, 0x0d, 0xa6, 0x4a, 0xd1, 0xd2, 0x74, 0x12, 0x28, 0x65, 0x89, 0xa8, 0x03, 0x86, 0x6a,
+	0x40, 0x79, 0x9f, 0x2a, 0x2d, 0x72, 0x34, 0x98, 0xd1, 0xed, 0xd0, 0x16, 0xd8, 0x61, 0x84, 0x9a,
+	0x19, 0xa8, 0xd9, 0x96, 0xc2, 0x49, 0x57, 0xff, 0x22, 0x43, 0x33, 0x85, 0x92, 0x54, 0xce, 0xc3,
+	0xd1, 0x0c, 0xa9, 0x54, 0x18, 0xbe, 0x9d, 0x6f, 0x04, 0x2a, 0x83, 0x69, 0x72, 0x35, 0x98, 0x06,
+	0xc1, 0xc0, 0xf5, 0xae, 0x25, 0xa8, 0x93, 0xeb, 0xbd, 0x7c, 0xcb, 0x9a, 0xaf, 0xf9, 0x4c, 0x75,
+	0x5e, 0x3e, 0xe9, 0x96, 0x4c, 0x9d, 0xf5, 0xbc, 0xc8, 0x94, 0x45, 0x1f, 0x01, 0x78, 0x57, 0xdc,
+	0xbb, 0x1e, 0x84, 0xfe, 0x44, 0x60, 0x81, 0xe5, 0x79, 0xd7, 0xb3, 0x00, 0xcb, 0x81, 0xb4, 0xa0,
+	0x85, 0xb9, 0xa0, 0xff, 0xab, 0xa1, 0xb1, 0xb1, 0xaa, 0xbf, 0x17, 0xaa, 0xea, 0xb8, 0xc2, 0x15,
+	0xf3, 0xc1, 0xd9, 0x03, 0x08, 0x75, 0x9d, 0x49, 0xbd, 0xd8, 0x34, 0x77, 0xcb, 0xfb, 0xb5, 0xbb,
+	0x72, 0xb1, 0x1c, 0xc6, 0x79, 0x0a, 0x30, 0x27, 0x42, 0xb7, 0xc0, 0x4a, 0x64, 0x2b, 0x48, 0xd6,
+	0x0a, 0xb4, 0xa5, 0xdf, 0x93, 0xfe, 0x79, 0x43, 0xd1, 0x76, 0x5e, 0xc2, 0xe6, 0x49, 0x28, 0xfc,
+	0x0b, 0xdf, 0xc3, 0xcf, 0x69, 0xe5, 0x96, 0x6e, 0x8c, 0x56, 0xd2, 0xc8, 0x29, 0xa9, 0xf3, 0x99,
+	0x8b, 0xf9, 0x9c, 0x0f, 0x04, 0x2a, 0xba, 0xb4, 0x1e, 0x17, 0xae, 0x96, 0x9c, 0xcc, 0x25, 0x5f,
+	0xf6, 0xb9, 0xff, 0xc0, 0x0a, 0x23, 0x35, 0x5c, 0xcb, 0xe7, 0x04, 0xe3, 0xf4, 0x21, 0xd8, 0x02,
+	0xe5, 0x53, 0x8b, 0xf8, 0x13, 0x4d, 0x15, 0x88, 0x3e, 0x80, 0x42, 0x22, 0x5c, 0xa1, 0x77, 0x51,
+	0xcf, 0xd5, 0xa9, 0xf4, 0xe5, 0xe0, 0x29, 0xc8, 0x79, 0x0d, 0xf6, 0x73, 0xee, 0x8e, 0x78, 0x4c,
+	0xeb, 0x50, 0x7c, 0xc3, 0xe3, 0x44, 0x8e, 0x45, 0x4a, 0x5c, 0x9b, 0x78, 0x3d, 0x2e, 0xf9, 0x44,
+	0x64, 0xd7, 0x43, 0x1a, 0x92, 0x3e, 0x36, 0xda, 0xc4, 0x34, 0x9a, 0x3e, 0xe3, 0x37, 0x53, 0x9e,
+	0xe4, 0xce, 0x83, 0xf3, 0x95, 0x40, 0x35, 0xbd, 0x19, 0x3d, 0x9e, 0x24, 0xee, 0x25, 0xa7, 0x3b,
+	0x60, 0x5f, 0x61, 0x4e, 0xb5, 0x22, 0x55, 0xf5, 0xdb, 0x94, 0x08, 0x53, 0xc1, 0x3b, 0xe7, 0xc9,
+	0xf8, 0xe1, 0x3c, 0x51, 0xb0, 0xbc, 0xa9, 0x3f, 0xd2, 0xcb, 0x29, 0xdf, 0xb4, 0x09, 0x65, 0x0f,
+	0x73, 0x1d, 0xe2, 0xb9, 0xb3, 0x30, 0x94, 0x77, 0xe1, 0x90, 0x67, 0x17, 0x4c, 0x69, 0xb4, 0xe4,
+	0xb4, 0xe5, 0x40, 0x0b, 0x07, 0xce, 0xfe, 0xd5, 0x81, 0x7b, 0x4f, 0x60, 0x5d, 0x4f, 0xd6, 0x1f,
+	0x28, 0xf8, 0x31, 0x54, 0xf3, 0x17, 0x40, 0x96, 0x2c, 0xd7, 0xe8, 0x2f, 0x95, 0x21, 0x1f, 0x63,
+	0x8b, 0x48, 0xe7, 0x00, 0x36, 0xda, 0xd9, 0xc7, 0x35, 0xd5, 0x45, 0x0e, 0xe4, 0x2e, 0x87, 0x7b,
+	0xcf, 0x60, 0x6d, 0x71, 0xee, 0x68, 0x19, 0x8a, 0xed, 0xfe, 0xd9, 0xc9, 0xf0, 0x98, 0xd5, 0x56,
+	0x68, 0x11, 0xcc, 0xde, 0xe1, 0xa0, 0x46, 0xe8, 0x2a, 0x58, 0x2f, 0xba, 0xa7, 0xc3, 0x9a, 0x41,
+	0x2b, 0xb0, 0xda, 0xe9, 0xb7, 0xcf, 0x7a, 0xc7, 0x27, 0xc3, 0x9a, 0x79, 0xf4, 0xcf, 0xc7, 0xdb,
+	0x06, 0xf9, 0x74, 0xdb, 0x20, 0x9f, 0x6f, 0x1b, 0xe4, 0xed, 0x97, 0xc6, 0xca, 0xab, 0x62, 0xeb,
+	0xc9, 0x38, 0x1c, 0xf1, 0xe0, 0xdc, 0xc6, 0xbf, 0xb2, 0x83, 0xef, 0x01, 0x00, 0x00, 0xff, 0xff,
+	0x80, 0x87, 0x14, 0x74, 0xf2, 0x06, 0x00, 0x00,
 }
 
 func (m *Client) Marshal() (dAtA []byte, err error) {
@@ -1107,6 +1004,11 @@ func (m *Client) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	if m.SyncType != 0 {
 		i = encodeVarintOrtoo(dAtA, i, uint64(m.SyncType))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Type != 0 {
+		i = encodeVarintOrtoo(dAtA, i, uint64(m.Type))
 		i--
 		dAtA[i] = 0x20
 	}
@@ -1512,45 +1414,6 @@ func (m *DatatypeMeta) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ResponseState) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ResponseState) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ResponseState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.Msg) > 0 {
-		i -= len(m.Msg)
-		copy(dAtA[i:], m.Msg)
-		i = encodeVarintOrtoo(dAtA, i, uint64(len(m.Msg)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.State != 0 {
-		i = encodeVarintOrtoo(dAtA, i, uint64(m.State))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *Header) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1578,6 +1441,57 @@ func (m *Header) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.Type != 0 {
 		i = encodeVarintOrtoo(dAtA, i, uint64(m.Type))
 		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Agent) > 0 {
+		i -= len(m.Agent)
+		copy(dAtA[i:], m.Agent)
+		i = encodeVarintOrtoo(dAtA, i, uint64(len(m.Agent)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Version) > 0 {
+		i -= len(m.Version)
+		copy(dAtA[i:], m.Version)
+		i = encodeVarintOrtoo(dAtA, i, uint64(len(m.Version)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ClientMessage) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ClientMessage) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ClientMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.SyncType != 0 {
+		i = encodeVarintOrtoo(dAtA, i, uint64(m.SyncType))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.ClientType != 0 {
+		i = encodeVarintOrtoo(dAtA, i, uint64(m.ClientType))
+		i--
 		dAtA[i] = 0x28
 	}
 	if len(m.ClientAlias) > 0 {
@@ -1601,45 +1515,6 @@ func (m *Header) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Version) > 0 {
-		i -= len(m.Version)
-		copy(dAtA[i:], m.Version)
-		i = encodeVarintOrtoo(dAtA, i, uint64(len(m.Version)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ClientRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ClientRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ClientRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.SyncType != 0 {
-		i = encodeVarintOrtoo(dAtA, i, uint64(m.SyncType))
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.Header != nil {
 		{
 			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
@@ -1655,7 +1530,7 @@ func (m *ClientRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ClientResponse) Marshal() (dAtA []byte, err error) {
+func (m *PushPullMessage) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1665,12 +1540,12 @@ func (m *ClientResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ClientResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *PushPullMessage) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ClientResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *PushPullMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1679,123 +1554,33 @@ func (m *ClientResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.State != nil {
-		{
-			size, err := m.State.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
+	if len(m.PushPullPacks) > 0 {
+		for iNdEx := len(m.PushPullPacks) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.PushPullPacks[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintOrtoo(dAtA, i, uint64(size))
 			}
-			i -= size
-			i = encodeVarintOrtoo(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
 		}
+	}
+	if len(m.Cuid) > 0 {
+		i -= len(m.Cuid)
+		copy(dAtA[i:], m.Cuid)
+		i = encodeVarintOrtoo(dAtA, i, uint64(len(m.Cuid)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Collection) > 0 {
+		i -= len(m.Collection)
+		copy(dAtA[i:], m.Collection)
+		i = encodeVarintOrtoo(dAtA, i, uint64(len(m.Collection)))
 		i--
 		dAtA[i] = 0x12
-	}
-	if m.Header != nil {
-		{
-			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintOrtoo(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *PushPullRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *PushPullRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *PushPullRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.PushPullPacks) > 0 {
-		for iNdEx := len(m.PushPullPacks) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.PushPullPacks[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintOrtoo(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if m.Header != nil {
-		{
-			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintOrtoo(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *PushPullResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *PushPullResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *PushPullResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.PushPullPacks) > 0 {
-		for iNdEx := len(m.PushPullPacks) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.PushPullPacks[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintOrtoo(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
 	}
 	if m.Header != nil {
 		{
@@ -1841,13 +1626,6 @@ func (m *CollectionMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], m.Collection)
 		i = encodeVarintOrtoo(dAtA, i, uint64(len(m.Collection)))
 		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Version) > 0 {
-		i -= len(m.Version)
-		copy(dAtA[i:], m.Version)
-		i = encodeVarintOrtoo(dAtA, i, uint64(len(m.Version)))
-		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
@@ -1881,6 +1659,9 @@ func (m *Client) Size() (n int) {
 	l = len(m.Collection)
 	if l > 0 {
 		n += 1 + l + sovOrtoo(uint64(l))
+	}
+	if m.Type != 0 {
+		n += 1 + sovOrtoo(uint64(m.Type))
 	}
 	if m.SyncType != 0 {
 		n += 1 + sovOrtoo(uint64(m.SyncType))
@@ -2074,25 +1855,6 @@ func (m *DatatypeMeta) Size() (n int) {
 	return n
 }
 
-func (m *ResponseState) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.State != 0 {
-		n += 1 + sovOrtoo(uint64(m.State))
-	}
-	l = len(m.Msg)
-	if l > 0 {
-		n += 1 + l + sovOrtoo(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
 func (m *Header) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2101,6 +1863,29 @@ func (m *Header) Size() (n int) {
 	_ = l
 	l = len(m.Version)
 	if l > 0 {
+		n += 1 + l + sovOrtoo(uint64(l))
+	}
+	l = len(m.Agent)
+	if l > 0 {
+		n += 1 + l + sovOrtoo(uint64(l))
+	}
+	if m.Type != 0 {
+		n += 1 + sovOrtoo(uint64(m.Type))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ClientMessage) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
 		n += 1 + l + sovOrtoo(uint64(l))
 	}
 	l = len(m.Collection)
@@ -2115,24 +1900,8 @@ func (m *Header) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovOrtoo(uint64(l))
 	}
-	if m.Type != 0 {
-		n += 1 + sovOrtoo(uint64(m.Type))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *ClientRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Header != nil {
-		l = m.Header.Size()
-		n += 1 + l + sovOrtoo(uint64(l))
+	if m.ClientType != 0 {
+		n += 1 + sovOrtoo(uint64(m.ClientType))
 	}
 	if m.SyncType != 0 {
 		n += 1 + sovOrtoo(uint64(m.SyncType))
@@ -2143,7 +1912,7 @@ func (m *ClientRequest) Size() (n int) {
 	return n
 }
 
-func (m *ClientResponse) Size() (n int) {
+func (m *PushPullMessage) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2153,46 +1922,12 @@ func (m *ClientResponse) Size() (n int) {
 		l = m.Header.Size()
 		n += 1 + l + sovOrtoo(uint64(l))
 	}
-	if m.State != nil {
-		l = m.State.Size()
+	l = len(m.Collection)
+	if l > 0 {
 		n += 1 + l + sovOrtoo(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *PushPullRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Header != nil {
-		l = m.Header.Size()
-		n += 1 + l + sovOrtoo(uint64(l))
-	}
-	if len(m.PushPullPacks) > 0 {
-		for _, e := range m.PushPullPacks {
-			l = e.Size()
-			n += 1 + l + sovOrtoo(uint64(l))
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *PushPullResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Header != nil {
-		l = m.Header.Size()
+	l = len(m.Cuid)
+	if l > 0 {
 		n += 1 + l + sovOrtoo(uint64(l))
 	}
 	if len(m.PushPullPacks) > 0 {
@@ -2213,10 +1948,6 @@ func (m *CollectionMessage) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Version)
-	if l > 0 {
-		n += 1 + l + sovOrtoo(uint64(l))
-	}
 	l = len(m.Collection)
 	if l > 0 {
 		n += 1 + l + sovOrtoo(uint64(l))
@@ -2266,7 +1997,7 @@ func (m *Client) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CUID", wireType)
 			}
-			var byteLen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowOrtoo
@@ -2276,25 +2007,23 @@ func (m *Client) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthOrtoo
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CUID = append(m.CUID[:0], dAtA[iNdEx:postIndex]...)
-			if m.CUID == nil {
-				m.CUID = []byte{}
-			}
+			m.CUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -2361,6 +2090,25 @@ func (m *Client) Unmarshal(dAtA []byte) error {
 			m.Collection = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOrtoo
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Type |= ClientType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SyncType", wireType)
 			}
@@ -2475,7 +2223,7 @@ func (m *Timestamp) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CUID", wireType)
 			}
-			var byteLen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowOrtoo
@@ -2485,25 +2233,23 @@ func (m *Timestamp) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthOrtoo
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CUID = append(m.CUID[:0], dAtA[iNdEx:postIndex]...)
-			if m.CUID == nil {
-				m.CUID = []byte{}
-			}
+			m.CUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -2620,7 +2366,7 @@ func (m *OperationID) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CUID", wireType)
 			}
-			var byteLen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowOrtoo
@@ -2630,25 +2376,23 @@ func (m *OperationID) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthOrtoo
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CUID = append(m.CUID[:0], dAtA[iNdEx:postIndex]...)
-			if m.CUID == nil {
-				m.CUID = []byte{}
-			}
+			m.CUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -2870,7 +2614,7 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DUID", wireType)
 			}
-			var byteLen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowOrtoo
@@ -2880,25 +2624,23 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthOrtoo
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DUID = append(m.DUID[:0], dAtA[iNdEx:postIndex]...)
-			if m.DUID == nil {
-				m.DUID = []byte{}
-			}
+			m.DUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3011,7 +2753,7 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= TypeOfDatatype(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3369,7 +3111,7 @@ func (m *DatatypeMeta) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DUID", wireType)
 			}
-			var byteLen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowOrtoo
@@ -3379,25 +3121,23 @@ func (m *DatatypeMeta) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthOrtoo
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DUID = append(m.DUID[:0], dAtA[iNdEx:postIndex]...)
-			if m.DUID == nil {
-				m.DUID = []byte{}
-			}
+			m.DUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -3498,111 +3238,6 @@ func (m *DatatypeMeta) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ResponseState) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrtoo
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ResponseState: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ResponseState: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
-			}
-			m.State = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrtoo
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.State |= StateOfResponse(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Msg", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrtoo
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Msg = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrtoo(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *Header) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3666,7 +3301,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Collection", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Agent", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3694,75 +3329,9 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Collection = string(dAtA[iNdEx:postIndex])
+			m.Agent = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Cuid", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrtoo
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Cuid = append(m.Cuid[:0], dAtA[iNdEx:postIndex]...)
-			if m.Cuid == nil {
-				m.Cuid = []byte{}
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ClientAlias", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrtoo
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ClientAlias = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
 			}
@@ -3806,7 +3375,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ClientRequest) Unmarshal(dAtA []byte) error {
+func (m *ClientMessage) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3829,10 +3398,10 @@ func (m *ClientRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ClientRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: ClientMessage: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ClientRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ClientMessage: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3872,6 +3441,121 @@ func (m *ClientRequest) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Collection", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOrtoo
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Collection = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cuid", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOrtoo
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Cuid = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientAlias", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOrtoo
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClientAlias = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientType", wireType)
+			}
+			m.ClientType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowOrtoo
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ClientType |= ClientType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SyncType", wireType)
 			}
@@ -3915,7 +3599,7 @@ func (m *ClientRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ClientResponse) Unmarshal(dAtA []byte) error {
+func (m *PushPullMessage) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3938,10 +3622,10 @@ func (m *ClientResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ClientResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: PushPullMessage: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ClientResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: PushPullMessage: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3982,9 +3666,9 @@ func (m *ClientResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Collection", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowOrtoo
@@ -3994,87 +3678,29 @@ func (m *ClientResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthOrtoo
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.State == nil {
-				m.State = &ResponseState{}
-			}
-			if err := m.State.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.Collection = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrtoo(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *PushPullRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrtoo
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: PushPullRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: PushPullRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
+		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Cuid", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowOrtoo
@@ -4084,153 +3710,25 @@ func (m *PushPullRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthOrtoo
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Header == nil {
-				m.Header = &Header{}
-			}
-			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.Cuid = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PushPullPacks", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrtoo
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.PushPullPacks = append(m.PushPullPacks, &PushPullPack{})
-			if err := m.PushPullPacks[len(m.PushPullPacks)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrtoo(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *PushPullResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrtoo
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: PushPullResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: PushPullResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrtoo
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Header == nil {
-				m.Header = &Header{}
-			}
-			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PushPullPacks", wireType)
 			}
@@ -4319,38 +3817,6 @@ func (m *CollectionMessage) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrtoo
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrtoo
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Version = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Collection", wireType)
 			}

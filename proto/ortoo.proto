@@ -6,11 +6,20 @@ package ortoo;
 import "ortoo.enum.proto";
 
 message Client {
-  bytes CUID = 1;
+  string CUID = 1;
   string alias = 2;
   string collection = 3;
-  SyncType syncType = 4;
+  ClientType type = 4;
+  SyncType syncType = 5;
 }
+
+enum TypeOfDatatype {
+  COUNTER = 0;
+  MAP = 1;
+  LIST = 2;
+  DOCUMENT = 3;
+}
+
 
 message Timestamp {
   // @inject_tag: json:"e,omitempty"
@@ -18,7 +27,7 @@ message Timestamp {
   // @inject_tag: json:"l,omitempty"
   uint64 lamport = 2 [jstype = JS_STRING];
   // @inject_tag: json:"c,omitempty"
-  bytes CUID = 3;
+  string CUID = 3;
   // @inject_tag: json:"d,omitempty"
   uint32 delimiter = 4;
 }
@@ -29,7 +38,7 @@ message OperationID {
   // @inject_tag: json:"l,omitempty"
   uint64 lamport = 2 [jstype = JS_STRING];
   // @inject_tag: json:"c,omitempty"
-  bytes CUID = 3;
+  string CUID = 3;
   // @inject_tag: json:"s,omitempty"
   uint64 seq = 4 [jstype = JS_STRING];
 }
@@ -42,12 +51,12 @@ message Operation {
 
 
 message PushPullPack {
-  bytes DUID = 1;
+  string DUID = 1;
   string key = 2;
   fixed32 option = 3;
   CheckPoint checkPoint = 4;
   uint32 era = 5;
-  int32 type = 6;
+  TypeOfDatatype type = 6;
   repeated Operation operations = 7;
 }
 
@@ -66,47 +75,34 @@ message NotificationPushPull {
 
 message DatatypeMeta {
   string key = 1;
-  bytes DUID = 2;
+  string DUID = 2;
   OperationID opID = 3;
   TypeOfDatatype typeOf = 4;
   StateOfDatatype state = 5;
 }
 
-message ResponseState {
-  StateOfResponse state = 1;
-  string msg = 2;
-}
-
 message Header {
   string version = 1;
+  string agent = 2;
+  RequestType type = 3;
+}
+
+message ClientMessage {
+  Header header = 1;
   string collection = 2;
-  bytes cuid = 3;
+  string cuid = 3;
   string clientAlias = 4;
-  RequestType type = 5;
+  ClientType clientType = 5;
+  SyncType syncType = 6;
 }
 
-message ClientRequest {
+message PushPullMessage {
   Header header = 1;
-  SyncType syncType = 2;
-}
-
-message ClientResponse {
-  Header header = 1;
-  ResponseState state = 2;
-}
-
-
-message PushPullRequest {
-  Header header = 1;
-  repeated PushPullPack PushPullPacks = 2;
-}
-
-message PushPullResponse {
-  Header header = 1;
-  repeated PushPullPack PushPullPacks = 2;
+  string collection = 2;
+  string cuid = 3;
+  repeated PushPullPack PushPullPacks = 4;
 }
 
 message CollectionMessage {
-  string version = 1;
-  string collection = 2;
+  string collection = 1;
 }

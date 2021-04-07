@@ -32,7 +32,7 @@ func NewOperationDoc(op *model.Operation, duid string, sseq uint64, colNum uint3
 type OpID struct {
 	Era     uint32 `bson:"era"`
 	Lamport uint64 `bson:"lamport"`
-	CUID    []byte `bson:"cuid"`
+	CUID    string `bson:"cuid"`
 	Seq     uint64 `bson:"seq"`
 }
 

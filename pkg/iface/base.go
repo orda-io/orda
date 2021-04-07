@@ -4,7 +4,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/types"
 )
 
 // PublicBaseDatatype is a public interface for a datatype.
@@ -18,7 +17,7 @@ type PublicBaseDatatype interface {
 type BaseDatatype interface {
 	PublicBaseDatatype
 	GetDatatype() Datatype                // @baseDatatype
-	GetDUID() types.DUID                  // @baseDatatype
+	GetDUID() string                      // @baseDatatype
 	GetCUID() string                      // @baseDatatype
 	SetState(state model.StateOfDatatype) // @baseDatatype
 	SetLogger(l *log.OrtooLog)            // @baseDatatype

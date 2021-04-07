@@ -11,42 +11,42 @@ import (
 	"strings"
 )
 
-// HashMap is an Ortoo datatype which provides the hash map interfaces.
-type HashMap interface {
+// Map is an Ortoo datatype which provides the hash map interfaces.
+type Map interface {
 	Datatype
-	HashMapInTxn
-	DoTransaction(tag string, txFunc func(hashMap HashMapInTxn) error) error
+	MapInTxn
+	DoTransaction(tag string, txFunc func(hashMap MapInTxn) error) error
 }
 
-// HashMapInTxn is an Ortoo datatype which provides hash map interface in a transaction.
-type HashMapInTxn interface {
+// MapInTxn is an Ortoo datatype which provides hash map interface in a transaction.
+type MapInTxn interface {
 	Get(key string) interface{}
 	Put(key string, value interface{}) (interface{}, errors.OrtooError)
 	Remove(key string) (interface{}, errors.OrtooError)
 	Size() int
 }
 
-func newHashMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (HashMap, errors.OrtooError) {
-	hashMap := &hashMap{
+func newMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Map, errors.OrtooError) {
+	oMap := &ortooMap{
 		datatype: &datatype{
 			ManageableDatatype: &datatypes.ManageableDatatype{},
 			handlers:           handlers,
 		},
 		SnapshotDatatype: &datatypes.SnapshotDatatype{
-			Snapshot: newHashMapSnapshot(base),
+			Snapshot: newMapSnapshot(base),
 		},
 	}
-	return hashMap, hashMap.Initialize(base, wire, hashMap.GetSnapshot(), hashMap)
+	return oMap, oMap.Initialize(base, wire, oMap.GetSnapshot(), oMap)
 }
 
-type hashMap struct {
+type ortooMap struct {
 	*datatype
 	*datatypes.SnapshotDatatype
 }
 
-func (its *hashMap) DoTransaction(tag string, txFunc func(hm HashMapInTxn) error) error {
+func (its *ortooMap) DoTransaction(tag string, txFunc func(hm MapInTxn) error) error {
 	return its.ManageableDatatype.DoTransaction(tag, func(txCtx *datatypes.TransactionContext) error {
-		clone := &hashMap{
+		clone := &ortooMap{
 			datatype:         its.newDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
@@ -54,15 +54,15 @@ func (its *hashMap) DoTransaction(tag string, txFunc func(hm HashMapInTxn) error
 	})
 }
 
-func (its *hashMap) ResetSnapshot() {
-	its.SnapshotDatatype.SetSnapshot(newHashMapSnapshot(its.BaseDatatype))
+func (its *ortooMap) ResetSnapshot() {
+	its.SnapshotDatatype.SetSnapshot(newMapSnapshot(its.BaseDatatype))
 }
 
-func (its *hashMap) snapshot() *hashMapSnapshot {
-	return its.GetSnapshot().(*hashMapSnapshot)
+func (its *ortooMap) snapshot() *mapSnapshot {
+	return its.GetSnapshot().(*mapSnapshot)
 }
 
-func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
+func (its *ortooMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.PutOperation:
 		return its.snapshot().putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
@@ -72,10 +72,10 @@ func (its *hashMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError
 	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
 }
 
-func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
+func (its *ortooMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		err := its.ApplySnapshotOperation(cast.GetContent(), newHashMapSnapshot(its.BaseDatatype))
+		err := its.ApplySnapshotOperation(cast.GetContent(), newMapSnapshot(its.BaseDatatype))
 		return nil, err
 	case *operations.PutOperation:
 		return its.snapshot().putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
@@ -85,7 +85,7 @@ func (its *hashMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
 }
 
-func (its *hashMap) Put(key string, value interface{}) (interface{}, errors.OrtooError) {
+func (its *ortooMap) Put(key string, value interface{}) (interface{}, errors.OrtooError) {
 	if key == "" || value == nil {
 		return nil, errors.DatatypeIllegalParameters.New(its.Logger, "empty key or nil value is not allowed")
 	}
@@ -95,14 +95,14 @@ func (its *hashMap) Put(key string, value interface{}) (interface{}, errors.Orto
 	return its.SentenceInTransaction(its.TransactionCtx, op, true)
 }
 
-func (its *hashMap) Get(key string) interface{} {
+func (its *ortooMap) Get(key string) interface{} {
 	if obj, ok := its.snapshot().Map[key]; ok {
 		return obj.getValue()
 	}
 	return nil
 }
 
-func (its *hashMap) Remove(key string) (interface{}, errors.OrtooError) {
+func (its *ortooMap) Remove(key string) (interface{}, errors.OrtooError) {
 	if key == "" {
 		return nil, errors.DatatypeIllegalParameters.New(its.Logger, "empty key is not allowed")
 	}
@@ -110,29 +110,29 @@ func (its *hashMap) Remove(key string) (interface{}, errors.OrtooError) {
 	return its.SentenceInTransaction(its.TransactionCtx, op, true)
 }
 
-func (its *hashMap) Size() int {
+func (its *ortooMap) Size() int {
 	return its.snapshot().size()
 }
 
 // ////////////////////////////////////////////////////////////////
-//  hashMapSnapshot
+//  mapSnapshot
 // ////////////////////////////////////////////////////////////////
 
-type hashMapSnapshot struct {
+type mapSnapshot struct {
 	base
 	Map  map[string]timedType `json:"map"`
 	Size int                  `json:"size"`
 }
 
-func newHashMapSnapshot(base iface.BaseDatatype) *hashMapSnapshot {
-	return &hashMapSnapshot{
+func newMapSnapshot(base iface.BaseDatatype) *mapSnapshot {
+	return &mapSnapshot{
 		base: base,
 		Map:  make(map[string]timedType),
 		Size: 0,
 	}
 }
 
-func (its *hashMapSnapshot) UnmarshalJSON(bytes []byte) error {
+func (its *mapSnapshot) UnmarshalJSON(bytes []byte) error {
 	var temp = struct {
 		Map  map[string]*timedNode `json:"map"`
 		Size int                   `json:"size"`
@@ -149,29 +149,29 @@ func (its *hashMapSnapshot) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-func (its *hashMapSnapshot) CloneSnapshot() iface.Snapshot {
+func (its *mapSnapshot) CloneSnapshot() iface.Snapshot {
 	var cloneMap = make(map[string]timedType)
 	for k, v := range its.Map {
 		cloneMap[k] = v
 	}
-	return &hashMapSnapshot{
+	return &mapSnapshot{
 		Map: cloneMap,
 	}
 }
 
-func (its *hashMapSnapshot) GetBase() iface.BaseDatatype {
+func (its *mapSnapshot) GetBase() iface.BaseDatatype {
 	return its.base
 }
 
-func (its *hashMapSnapshot) SetBase(base iface.BaseDatatype) {
+func (its *mapSnapshot) SetBase(base iface.BaseDatatype) {
 	its.base = base
 }
 
-func (its *hashMapSnapshot) getFromMap(key string) timedType {
+func (its *mapSnapshot) getFromMap(key string) timedType {
 	return its.Map[key]
 }
 
-func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, errors.OrtooError) {
+func (its *mapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, errors.OrtooError) {
 	removed, _ := its.putCommonWithTimedType(key, newTimedNode(value, ts))
 	if removed != nil {
 		return removed.getValue(), nil
@@ -179,7 +179,7 @@ func (its *hashMapSnapshot) putCommon(key string, value interface{}, ts *model.T
 	return nil, nil
 }
 
-func (its *hashMapSnapshot) putCommonWithTimedType(key string, newOne timedType) (o timedType, n timedType) {
+func (its *mapSnapshot) putCommonWithTimedType(key string, newOne timedType) (o timedType, n timedType) {
 	oldOne, ok := its.Map[key]
 	if !ok { // empty
 		its.Map[key] = newOne
@@ -194,7 +194,7 @@ func (its *hashMapSnapshot) putCommonWithTimedType(key string, newOne timedType)
 	return newOne, oldOne
 }
 
-func (its *hashMapSnapshot) GetAsJSONCompatible() interface{} {
+func (its *mapSnapshot) GetAsJSONCompatible() interface{} {
 	m := make(map[string]interface{})
 	for k, v := range its.Map {
 		if v.getValue() != nil {
@@ -204,17 +204,17 @@ func (its *hashMapSnapshot) GetAsJSONCompatible() interface{} {
 	return m
 }
 
-func (its *hashMapSnapshot) removeLocal(key string, ts *model.Timestamp) (interface{}, errors.OrtooError) {
+func (its *mapSnapshot) removeLocal(key string, ts *model.Timestamp) (interface{}, errors.OrtooError) {
 	_, oldV, err := its.removeLocalWithTimedType(key, ts)
 	return oldV, err
 }
 
-func (its *hashMapSnapshot) removeRemote(key string, ts *model.Timestamp) (interface{}, errors.OrtooError) {
+func (its *mapSnapshot) removeRemote(key string, ts *model.Timestamp) (interface{}, errors.OrtooError) {
 	_, oldV, err := its.removeRemoteWithTimedType(key, ts)
 	return oldV, err
 }
 
-func (its *hashMapSnapshot) removeLocalWithTimedType(
+func (its *mapSnapshot) removeLocalWithTimedType(
 	key string,
 	ts *model.Timestamp,
 ) (timedType, types.JSONValue, errors.OrtooError) {
@@ -231,7 +231,7 @@ func (its *hashMapSnapshot) removeLocalWithTimedType(
 	return nil, nil, errors.DatatypeNoOp.New(its.GetLogger(), "remove the value for not existing key")
 }
 
-func (its *hashMapSnapshot) removeRemoteWithTimedType(
+func (its *mapSnapshot) removeRemoteWithTimedType(
 	key string,
 	ts *model.Timestamp,
 ) (timedType, types.JSONValue, errors.OrtooError) {
@@ -249,11 +249,11 @@ func (its *hashMapSnapshot) removeRemoteWithTimedType(
 	return nil, nil, errors.DatatypeNoTarget.New(its.GetLogger(), key)
 }
 
-func (its *hashMapSnapshot) size() int {
+func (its *mapSnapshot) size() int {
 	return its.Size
 }
 
-func (its *hashMapSnapshot) String() string {
+func (its *mapSnapshot) String() string {
 	var sb strings.Builder
 	sb.WriteString("[")
 	for k, v := range its.Map {

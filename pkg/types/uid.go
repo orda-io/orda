@@ -1,7 +1,6 @@
 package types
 
 import (
-	"bytes"
 	"encoding/hex"
 	"github.com/google/uuid"
 )
@@ -10,10 +9,7 @@ const (
 	ShortUIDLength = 10
 )
 
-// UID is unique ID in the format of UUID.
-type UID []byte
-
-func newUniqueID() UID {
+func newUniqueID() string {
 	u, err := uuid.NewRandom()
 	if err != nil {
 		panic(err) // panic because it cannot happen
@@ -22,33 +18,38 @@ func newUniqueID() UID {
 	if err != nil {
 		panic(err) // panic because it cannot happen
 	}
-	return b
+	return hex.EncodeToString(b)
 }
 
-func (its UID) String() string {
-	return UIDtoString(its)
-}
-
-// ShortString returns a short string.
-func (its UID) ShortString() string {
-	return UIDtoShortString(its)
-}
-
-// CompareUID compares two UIDs.
-func CompareUID(a, b UID) int {
-	return bytes.Compare(a, b)
-}
-
-// UIDtoShortString returns a short UID string.
-func UIDtoShortString(uid []byte) string {
-	return hex.EncodeToString(uid)[:ShortUIDLength]
-}
-
-// UIDtoString returns a string of UID.
-func UIDtoString(uid []byte) string {
-	return hex.EncodeToString(uid)
-}
-
-func ShortenUIDString(uid string) string {
+func ShortenUID(uid string) string {
 	return uid[:ShortUIDLength]
+}
+
+// NewDUID creates a new DUID.
+func NewDUID() string {
+	return newUniqueID()
+}
+
+// ValidateUID validate UID from string.
+func ValidateUID(uidStr string) bool {
+	uid, err := uuid.Parse(uidStr)
+	if err != nil {
+		return false
+	}
+	_, err = uid.MarshalBinary()
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// NewCUID creates a new CUID
+func NewCUID() string {
+	return newUniqueID()
+}
+
+// NewNilCUID creates an instance of Nil CUID.
+func NewNilCUID() string {
+	var bin = make([]byte, 16)
+	return hex.EncodeToString(bin)
 }

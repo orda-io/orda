@@ -7,7 +7,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
@@ -80,7 +79,7 @@ func newPushPullHandler(
 		context.MakeTagInPushPull(constants.TagPushPull, collectionDoc.Num, clientDoc.CUID, ppp.DUID))
 	return &PushPullHandler{
 		Key:             ppp.Key,
-		DUID:            types.UIDtoString(ppp.DUID),
+		DUID:            ppp.DUID,
 		CUID:            clientDoc.CUID,
 		ctx:             ortooCtx,
 		err:             &errors.MultipleOrtooErrors{},
@@ -316,11 +315,7 @@ func (its *PushPullHandler) subscribeDatatype() errors.OrtooError {
 	its.DUID = its.datatypeDoc.DUID
 	its.clientDoc.CheckPoints[its.CUID] = its.currentCheckPoint
 	its.gotPushPullPack.Operations = nil
-	duid, err := types.DUIDFromString(its.datatypeDoc.DUID)
-	if err != nil {
-		return errors.PushPullAbortedForClient.New(its.ctx.L(), err.Error())
-	}
-	its.resPushPullPack.DUID = duid
+	its.resPushPullPack.DUID = its.datatypeDoc.DUID
 	option := model.PushPullBitNormal
 	its.resPushPullPack.Option = uint32(*option.SetSubscribeBit())
 	its.ctx.L().Infof("subscribe %s by %s", its.datatypeDoc, its.clientDoc)
@@ -332,7 +327,7 @@ func (its *PushPullHandler) createDatatype() {
 		DUID:          its.DUID,
 		Key:           its.Key,
 		CollectionNum: its.collectionDoc.Num,
-		Type:          model.TypeOfDatatype_name[its.gotPushPullPack.Type],
+		Type:          its.gotPushPullPack.Type.String(), // model.TypeOfDatatype_name[its.gotPushPullPack.Type],
 		SseqBegin:     1,
 		SseqEnd:       0,
 		Visible:       true,
@@ -359,7 +354,7 @@ func (its *PushPullHandler) evaluatePushPullCase() (pushPullCase, errors.OrtooEr
 		}
 		return caseUsedDUID, nil
 	}
-	if its.datatypeDoc.Type == model.TypeOfDatatype_name[its.gotPushPullPack.Type] {
+	if its.datatypeDoc.Type == its.gotPushPullPack.Type.String() {
 		if its.datatypeDoc.Visible {
 			checkPoint := its.clientDoc.GetCheckPoint(its.DUID)
 			if checkPoint != nil {

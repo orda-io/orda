@@ -9,8 +9,8 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD)
 GO_SRCS := $(shell find . -path ./vendor -prune -o -type f -name "*.go" -print)
 GO_PROJECT = github.com/knowhunger/ortoo
 GO_LDFLAGS ?=
-GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.GitCommit=${GIT_COMMIT}
-GO_LDFLAGS += -X ${GO_PROJECT}/ortoo/version.Version=${VERSION}
+GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.GitCommit=${GIT_COMMIT}'
+GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.Version=${VERSION}'
 
 PROTOC_INCLUDE := -I=./proto -I=./proto/third_party
 PROTOC_PROTO_FILES := ortoo.enum.proto ortoo.proto ortoo.grpc.proto

@@ -1,7 +1,6 @@
 package model
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/types"
 	"strings"
@@ -12,13 +11,13 @@ func NewOperationID() *OperationID {
 	return &OperationID{
 		Era:     0,
 		Lamport: 0,
-		CUID:    make([]byte, 16),
+		CUID:    types.NewNilCUID(),
 		Seq:     0,
 	}
 }
 
 // NewOperationIDWithCUID creates a new OperationID with CUID.
-func NewOperationIDWithCUID(cuid []byte) *OperationID {
+func NewOperationIDWithCUID(cuid string) *OperationID {
 	return &OperationID{
 		Era:     0,
 		Lamport: 0,
@@ -73,11 +72,6 @@ func (its *OperationID) SyncLamport(other uint64) uint64 {
 	return its.Lamport
 }
 
-// SetClient sets clientID
-func (its *OperationID) SetClient(cuid []byte) {
-	its.CUID = cuid
-}
-
 // Clone ...
 func (its *OperationID) Clone() *OperationID {
 	return &OperationID{
@@ -92,7 +86,7 @@ func (its *OperationID) Clone() *OperationID {
 func (its *OperationID) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]",
-		its.Era, its.Lamport, types.UID(its.CUID).ShortString(), its.Seq)
+		its.Era, its.Lamport, types.ShortenUID(its.CUID), its.Seq)
 	return b.String()
 }
 
@@ -110,5 +104,5 @@ func (its *OperationID) Compare(other *OperationID) int {
 	} else if diff < 0 {
 		return -1
 	}
-	return bytes.Compare(its.CUID, other.CUID)
+	return strings.Compare(its.CUID, other.CUID)
 }

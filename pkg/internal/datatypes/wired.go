@@ -94,7 +94,7 @@ func (its *WiredDatatype) CreatePushPullPack() *model.PushPullPack {
 		Option:     uint32(option),
 		CheckPoint: cp,
 		Era:        its.GetEra(),
-		Type:       int32(its.TypeOf),
+		Type:       its.TypeOf,
 		Operations: modelOps,
 	}
 }

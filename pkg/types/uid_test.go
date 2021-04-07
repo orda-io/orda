@@ -2,20 +2,25 @@ package types
 
 import (
 	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 )
 
-func TestOperationID(t *testing.T) {
-	t.Run("DUID string to DUID", func(t *testing.T) {
+func TestUID(t *testing.T) {
+	t.Run("Validate UID", func(t *testing.T) {
 		duid := NewDUID()
-		str := duid.String()
-		log.Logger.Infof("%s", str)
-		toDUID, err := DUIDFromString(str)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if CompareUID(UID(duid), UID(toDUID)) != 0 {
-			t.Fatal(err)
-		}
+		log.Logger.Infof("%s", duid)
+		assert.True(t, ValidateUID(duid))
+
+		invalidUID1 := "X"
+		assert.False(t, ValidateUID(invalidUID1))
+
+		invalidUID2 := "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+		assert.False(t, ValidateUID(invalidUID2))
+
+		cuid1 := "abc"
+		cuid2 := "def"
+		assert.True(t, strings.Compare(cuid1, cuid2) < 0)
 	})
 }

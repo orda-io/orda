@@ -18,7 +18,7 @@
   "paths": {
     "/api/v1/collections/{collection}": {
       "put": {
-        "operationId": "OrtooService_ProcessCollections",
+        "operationId": "OrtooService_CreateCollections",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -46,14 +46,14 @@
         ]
       }
     },
-    "/api/v1/{header.collection}/clients/{header.cuid}": {
+    "/api/v1/collections/{collection}/clients/{cuid}": {
       "post": {
         "operationId": "OrtooService_ProcessClient",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ortooClientResponse"
+              "$ref": "#/definitions/ortooClientMessage"
             }
           },
           "default": {
@@ -65,24 +65,23 @@
         },
         "parameters": [
           {
-            "name": "header.collection",
+            "name": "collection",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "header.cuid",
+            "name": "cuid",
             "in": "path",
             "required": true,
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           },
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ortooClientRequest"
+              "$ref": "#/definitions/ortooClientMessage"
             }
           }
         ],
@@ -91,14 +90,14 @@
         ]
       }
     },
-    "/api/v1/{header.collection}/pushpulls/{header.cuid}": {
-      "post": {
-        "operationId": "OrtooService_ProcessPushPull",
+    "/api/v1/collections/{collection}/datatypes/{key}": {
+      "get": {
+        "operationId": "OrtooService_SnapshotDatatype",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ortooPushPullResponse"
+              "$ref": "#/definitions/ortooSnapshotResponse"
             }
           },
           "default": {
@@ -110,24 +109,72 @@
         },
         "parameters": [
           {
-            "name": "header.collection",
+            "name": "collection",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "header.cuid",
+            "name": "key",
             "in": "path",
             "required": true,
+            "type": "string"
+          },
+          {
+            "name": "duid",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "sseq",
+            "in": "query",
+            "required": false,
             "type": "string",
-            "format": "byte"
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "OrtooService"
+        ]
+      }
+    },
+    "/api/v1/collections/{collection}/pushpulls/{cuid}": {
+      "post": {
+        "operationId": "OrtooService_ProcessPushPull",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ortooPushPullMessage"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "cuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
           },
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ortooPushPullRequest"
+              "$ref": "#/definitions/ortooPushPullMessage"
             }
           }
         ],
@@ -153,36 +200,62 @@
         }
       }
     },
-    "ortooClientRequest": {
+    "ortooClientMessage": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/ortooHeader"
+        },
+        "collection": {
+          "type": "string"
+        },
+        "cuid": {
+          "type": "string"
+        },
+        "clientAlias": {
+          "type": "string"
+        },
+        "clientType": {
+          "$ref": "#/definitions/ortooClientType"
         },
         "syncType": {
           "$ref": "#/definitions/ortooSyncType"
         }
       }
     },
-    "ortooClientResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/ortooHeader"
-        },
-        "state": {
-          "$ref": "#/definitions/ortooResponseState"
-        }
-      }
+    "ortooClientType": {
+      "type": "string",
+      "enum": [
+        "PERSISTENT",
+        "EPHEMERAL"
+      ],
+      "default": "PERSISTENT"
     },
     "ortooCollectionMessage": {
       "type": "object",
       "properties": {
-        "version": {
-          "type": "string"
-        },
         "collection": {
           "type": "string"
+        }
+      }
+    },
+    "ortooDatatypeMeta": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "DUID": {
+          "type": "string"
+        },
+        "opID": {
+          "$ref": "#/definitions/ortooOperationID"
+        },
+        "typeOf": {
+          "$ref": "#/definitions/ortooTypeOfDatatype"
+        },
+        "state": {
+          "$ref": "#/definitions/ortooStateOfDatatype"
         }
       }
     },
@@ -192,14 +265,7 @@
         "version": {
           "type": "string"
         },
-        "collection": {
-          "type": "string"
-        },
-        "cuid": {
-          "type": "string",
-          "format": "byte"
-        },
-        "clientAlias": {
+        "agent": {
           "type": "string"
         },
         "type": {
@@ -237,7 +303,6 @@
         },
         "CUID": {
           "type": "string",
-          "format": "byte",
           "title": "@inject_tag: json:\"c,omitempty\""
         },
         "seq": {
@@ -247,12 +312,31 @@
         }
       }
     },
+    "ortooPushPullMessage": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/ortooHeader"
+        },
+        "collection": {
+          "type": "string"
+        },
+        "cuid": {
+          "type": "string"
+        },
+        "PushPullPacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ortooPushPullPack"
+          }
+        }
+      }
+    },
     "ortooPushPullPack": {
       "type": "object",
       "properties": {
         "DUID": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "key": {
           "type": "string"
@@ -269,41 +353,12 @@
           "format": "int64"
         },
         "type": {
-          "type": "integer",
-          "format": "int32"
+          "$ref": "#/definitions/ortooTypeOfDatatype"
         },
         "operations": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/ortooOperation"
-          }
-        }
-      }
-    },
-    "ortooPushPullRequest": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/ortooHeader"
-        },
-        "PushPullPacks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ortooPushPullPack"
-          }
-        }
-      }
-    },
-    "ortooPushPullResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/ortooHeader"
-        },
-        "PushPullPacks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ortooPushPullPack"
           }
         }
       }
@@ -316,25 +371,29 @@
       ],
       "default": "CLIENTS"
     },
-    "ortooResponseState": {
+    "ortooSnapshotResponse": {
       "type": "object",
       "properties": {
-        "state": {
-          "$ref": "#/definitions/ortooStateOfResponse"
+        "meta": {
+          "$ref": "#/definitions/ortooDatatypeMeta"
         },
-        "msg": {
+        "json": {
           "type": "string"
         }
       }
     },
-    "ortooStateOfResponse": {
+    "ortooStateOfDatatype": {
       "type": "string",
       "enum": [
-        "OK",
-        "ERR_CLIENT_INVALID_COLLECTION",
-        "ERR_CLIENT_INVALID_SYNC_TYPE"
+        "DUE_TO_CREATE",
+        "DUE_TO_SUBSCRIBE",
+        "DUE_TO_SUBSCRIBE_CREATE",
+        "SUBSCRIBED",
+        "DUE_TO_UNSUBSCRIBE",
+        "UNSUBSCRIBED",
+        "DELETED"
       ],
-      "default": "OK"
+      "default": "DUE_TO_CREATE"
     },
     "ortooSyncType": {
       "type": "string",
@@ -344,6 +403,16 @@
         "NOTIFIABLE"
       ],
       "default": "LOCAL_ONLY"
+    },
+    "ortooTypeOfDatatype": {
+      "type": "string",
+      "enum": [
+        "COUNTER",
+        "MAP",
+        "LIST",
+        "DOCUMENT"
+      ],
+      "default": "COUNTER"
     },
     "ortooTypeOfOperation": {
       "type": "string",

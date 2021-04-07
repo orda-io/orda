@@ -56,22 +56,6 @@ services:
       - ortoo-mongodb
       - ortoo-emqx
 
-  ortoo-envoy-grpc-proxy:
-    container_name: ortoo-envoy-grpc-proxy
-    image: envoyproxy/envoy:v1.16-latest
-    restart: always
-    command: envoy -c /config/envoy.yaml -l debug
-    ports:
-      - 29065:29065
-      - 9901:9901
-    volumes:
-      - type: bind
-        source: ./config/envoy.yaml
-        target: /config/envoy.yaml
-        read_only: true
-    depends_on:
-      - ortoo-server
-
 volumes:
   mongodb-configdb: { }
   mongodb-db: { }

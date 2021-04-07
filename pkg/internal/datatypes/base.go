@@ -1,7 +1,6 @@
 package datatypes
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/context"
@@ -15,7 +14,7 @@ import (
 // BaseDatatype is the base datatype which contains
 type BaseDatatype struct {
 	Key      string
-	id       types.DUID
+	id       string
 	opID     *model.OperationID
 	TypeOf   model.TypeOfDatatype
 	state    model.StateOfDatatype
@@ -39,7 +38,7 @@ func NewBaseDatatype(key string, t model.TypeOfDatatype, client *model.Client) *
 
 // GetCUID returns CUID of the client which this datatype subecribes to.
 func (its *BaseDatatype) GetCUID() string {
-	return types.UIDtoString(its.opID.CUID)
+	return its.opID.CUID
 }
 
 // GetEra returns the era of operation ID.
@@ -66,7 +65,7 @@ func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, erro
 
 // Replay replays an already executed operation.
 func (its *BaseDatatype) Replay(op iface.Operation) errors.OrtooError {
-	if bytes.Compare(its.opID.CUID, op.GetID().CUID) == 0 {
+	if its.opID.CUID == op.GetID().CUID {
 		_, err := its.executeLocalBase(op)
 		if err != nil { // TODO: if an operation fails to be executed, opID should be rollbacked.
 			return err
@@ -117,12 +116,12 @@ func (its *BaseDatatype) GetKey() string {
 }
 
 // GetDUID returns DUID.
-func (its *BaseDatatype) GetDUID() types.DUID {
+func (its *BaseDatatype) GetDUID() string {
 	return its.id
 }
 
 // SetDUID sets the DUID.
-func (its *BaseDatatype) SetDUID(duid types.DUID) {
+func (its *BaseDatatype) SetDUID(duid string) {
 	its.id = duid
 }
 

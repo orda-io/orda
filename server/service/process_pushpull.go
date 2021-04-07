@@ -12,22 +12,22 @@ import (
 )
 
 // ProcessPushPull processes a GRPC for Push-Pull
-func (its *OrtooService) ProcessPushPull(goctx gocontext.Context, in *model.PushPullRequest) (*model.PushPullResponse, error) {
-	ctx := context.New(goctx)
-	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Header.GetCollection())
+func (its *OrtooService) ProcessPushPull(goCtx gocontext.Context, in *model.PushPullMessage) (*model.PushPullMessage, error) {
+	ctx := context.New(goCtx)
+	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Collection)
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
 
-	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagPushPull, collectionDoc.Num, in.Header.Cuid))
+	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagPushPull, collectionDoc.Num, in.Cuid))
 	ctx.L().Infof("RECV %v", in.ToString())
 
-	clientDoc, err := its.mongo.GetClient(ctx, types.UIDtoString(in.Header.GetCuid()))
+	clientDoc, err := its.mongo.GetClient(ctx, in.Cuid)
 	if err != nil {
 		return nil, errors.NewRPCError(err)
 	}
 	if clientDoc == nil {
-		msg := fmt.Sprintf("client '%s'", in.Header.GetClient())
+		msg := fmt.Sprintf("no client '%s:%s'", in.Collection, types.ShortenUID(in.Cuid))
 		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), msg))
 	}
 	if clientDoc.CollectionNum != collectionDoc.Num {
@@ -35,14 +35,16 @@ func (its *OrtooService) ProcessPushPull(goctx gocontext.Context, in *model.Push
 		return nil, errors.NewRPCError(errors.ServerNoPermission.New(ctx.L(), msg))
 	}
 
-	response := &model.PushPullResponse{
-		Header: in.Header,
+	response := &model.PushPullMessage{
+		Header:     in.Header,
+		Collection: in.Collection,
+		Cuid:       in.Cuid,
 	}
 
 	var chanList []<-chan *model.PushPullPack
 
 	for _, ppp := range in.PushPullPacks {
-		handler := newPushPullHandler(goctx, ppp, clientDoc, collectionDoc, its)
+		handler := newPushPullHandler(goCtx, ppp, clientDoc, collectionDoc, its)
 		chanList = append(chanList, handler.Start())
 	}
 	remainingChan := len(chanList)
