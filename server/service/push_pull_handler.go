@@ -144,7 +144,7 @@ func (its *PushPullHandler) finalize() {
 }
 
 func (its *PushPullHandler) logInitialConditions() {
-	its.ctx.L().Infof("initial condition| case: %s, opt: %s, cp(%v), ops:%d, sseqEnd:%d",
+	its.ctx.L().Infof("initial condition | case: %s, opt: %s, cp(%v), ops:%d, sseqEnd:%d",
 		pushPullCaseMap[its.casePushPull],
 		its.gotOption.String(),
 		its.initialCheckPoint,

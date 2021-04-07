@@ -6,7 +6,6 @@ import (
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/knowhunger/ortoo/server/constants"
 	"reflect"
 )
@@ -27,7 +26,7 @@ func (its *OrtooService) ProcessPushPull(goCtx gocontext.Context, in *model.Push
 		return nil, errors.NewRPCError(err)
 	}
 	if clientDoc == nil {
-		msg := fmt.Sprintf("no client '%s:%s'", in.Collection, types.ShortenUID(in.Cuid))
+		msg := fmt.Sprintf("no client '%s:%s'", in.Collection, in.Cuid)
 		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), msg))
 	}
 	if clientDoc.CollectionNum != collectionDoc.Num {

@@ -162,7 +162,7 @@ func TestJSONArray(t *testing.T) {
 		array := initJSONArrayAndInsertTest(t, root, opID)
 
 		// delete NOT_EXISTING remotely
-		tsNotExisting := model.NewTimestamp(0, 0, types.NewCUID(), 0)
+		tsNotExisting := model.NewTimestamp(0, 0, types.NewUID(), 0)
 		del1, errs := root.DeleteRemoteInArray(array.getCreateTime(), opID.Next().GetTimestamp(), []*model.Timestamp{tsNotExisting})
 		require.Error(t, errs)
 		require.Nil(t, del1)
@@ -267,7 +267,7 @@ func TestJSONArray(t *testing.T) {
 
 	t.Run("Can update value remotely in JSONArray", func(t *testing.T) {
 		opID1 := model.NewOperationID()
-		opID2 := model.NewOperationIDWithCUID(types.NewCUID())
+		opID2 := model.NewOperationIDWithCUID(types.NewUID())
 		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
 		root := newJSONObject(base, nil, model.OldestTimestamp())
 

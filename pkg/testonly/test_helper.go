@@ -32,7 +32,7 @@ func Marshal(t *testing.T, j interface{}) string {
 
 func NewBase(key string, t model.TypeOfDatatype) *datatypes.BaseDatatype {
 	cm := &model.Client{
-		CUID:       types.NewCUID(),
+		CUID:       types.NewUID(),
 		Alias:      "",
 		Collection: "",
 		SyncType:   0,

@@ -1,55 +1,43 @@
 package types
 
 import (
-	"encoding/hex"
-	"github.com/google/uuid"
+	"bytes"
+	"github.com/matoous/go-nanoid/v2"
+	"strings"
 )
 
 const (
-	ShortUIDLength = 10
+	DefaultUIDLength    = 16
+	defaultIDCharacters = "_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 func newUniqueID() string {
-	u, err := uuid.NewRandom()
-	if err != nil {
-		panic(err) // panic because it cannot happen
-	}
-	b, err := u.MarshalBinary()
-	if err != nil {
-		panic(err) // panic because it cannot happen
-	}
-	return hex.EncodeToString(b)
+	return gonanoid.Must(DefaultUIDLength)
 }
 
-func ShortenUID(uid string) string {
-	return uid[:ShortUIDLength]
-}
-
-// NewDUID creates a new DUID.
-func NewDUID() string {
+// NewUID creates a new DUID.
+func NewUID() string {
 	return newUniqueID()
 }
 
 // ValidateUID validate UID from string.
 func ValidateUID(uidStr string) bool {
-	uid, err := uuid.Parse(uidStr)
-	if err != nil {
+	if len(uidStr) != DefaultUIDLength {
 		return false
 	}
-	_, err = uid.MarshalBinary()
-	if err != nil {
-		return false
+	for _, c := range uidStr {
+		if !strings.Contains(defaultIDCharacters, string(c)) {
+			return false
+		}
 	}
 	return true
 }
 
-// NewCUID creates a new CUID
-func NewCUID() string {
-	return newUniqueID()
-}
-
 // NewNilCUID creates an instance of Nil CUID.
-func NewNilCUID() string {
-	var bin = make([]byte, 16)
-	return hex.EncodeToString(bin)
+func NewNilUID() string {
+	var b bytes.Buffer
+	for i := 0; i < DefaultUIDLength; i++ {
+		b.WriteString("0")
+	}
+	return b.String()
 }

@@ -57,7 +57,7 @@ type clientImpl struct {
 func NewClient(conf *ClientConfig, alias string) Client {
 
 	cm := &model.Client{
-		CUID:       types.NewCUID(),
+		CUID:       types.NewUID(),
 		Alias:      alias,
 		Collection: conf.CollectionName,
 		Type:       model.ClientType_PERSISTENT,

@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/knowhunger/ortoo/pkg/utils"
 	"strings"
 )
@@ -136,7 +135,7 @@ func (its *PushPullPack) ToString() string {
 		&b,
 		"%s(%s) %s CP(%v) OP(%d){",
 		its.Key,
-		types.ShortenUID(its.DUID),
+		its.DUID,
 		option.String(),
 		its.CheckPoint.String(),
 		len(its.Operations),

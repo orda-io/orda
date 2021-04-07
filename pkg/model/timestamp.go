@@ -11,7 +11,7 @@ func OldestTimestamp() *Timestamp {
 	return &Timestamp{
 		Era:       0,
 		Lamport:   0,
-		CUID:      types.NewNilCUID(),
+		CUID:      types.NewNilUID(),
 		Delimiter: 0,
 	}
 }
@@ -46,7 +46,7 @@ func (its *Timestamp) Compare(o *Timestamp) int {
 func (its *Timestamp) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]", its.Era, its.Lamport,
-		types.ShortenUID(its.CUID), its.Delimiter)
+		its.CUID, its.Delimiter)
 	return b.String()
 }
 

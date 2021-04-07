@@ -24,7 +24,7 @@ type BaseDatatype struct {
 
 // NewBaseDatatype creates a new base datatype
 func NewBaseDatatype(key string, t model.TypeOfDatatype, client *model.Client) *BaseDatatype {
-	duid := types.NewDUID()
+	duid := types.NewUID()
 	return &BaseDatatype{
 		Key:    key,
 		id:     duid,

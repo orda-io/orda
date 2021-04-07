@@ -3,7 +3,6 @@ package schema
 import (
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
@@ -42,11 +41,11 @@ var ClientDocFields = struct {
 }
 
 func (its *ClientDoc) String() string {
-	return fmt.Sprintf("(%d)%s:%s:%d", its.CollectionNum, its.Alias, its.CUID[0:8], len(its.CheckPoints))
+	return fmt.Sprintf("(%d)%s:%s:%d", its.CollectionNum, its.Alias, its.CUID, len(its.CheckPoints))
 }
 
 func (its *ClientDoc) GetShortCUID() string {
-	return types.ShortenUID(its.CUID)
+	return its.CUID
 }
 
 // ToUpdateBSON returns a bson from a ClientDoc

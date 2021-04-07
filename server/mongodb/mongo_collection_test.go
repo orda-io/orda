@@ -157,7 +157,7 @@ func TestMongo(t *testing.T) {
 			model.StateOfDatatype_DUE_TO_CREATE,
 			string(snap))
 
-		op.ID = model.NewOperationIDWithCUID(types.NewCUID())
+		op.ID = model.NewOperationIDWithCUID(types.NewUID())
 		modelOp := op.ToModelOperation()
 		// opb, _ := proto.Marshal(op)
 

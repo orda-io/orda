@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/types"
 	"strings"
 )
 
@@ -29,7 +28,7 @@ func (its *PushPullMessage) ToString() string {
 		pushPullHeadFormat,
 		its.Header.ToString(),
 		its.Collection,
-		types.ShortenUID(its.Cuid),
+		its.Cuid,
 		len(its.PushPullPacks),
 	)
 	for _, ppp := range its.PushPullPacks {
@@ -53,7 +52,7 @@ func NewClientMessage(seq uint32, client *Client) *ClientMessage {
 // ToString returns customized string
 func (its *ClientMessage) ToString() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, clientHeadFormat, its.Header.ToString(), its.Collection, types.ShortenUID(its.Cuid))
+	_, _ = fmt.Fprintf(&b, clientHeadFormat, its.Header.ToString(), its.Collection, its.Cuid)
 	b.WriteString(" SyncType:")
 	b.WriteString(its.SyncType.String())
 	return b.String()

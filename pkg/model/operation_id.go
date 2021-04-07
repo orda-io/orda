@@ -11,7 +11,7 @@ func NewOperationID() *OperationID {
 	return &OperationID{
 		Era:     0,
 		Lamport: 0,
-		CUID:    types.NewNilCUID(),
+		CUID:    types.NewNilUID(),
 		Seq:     0,
 	}
 }
@@ -86,7 +86,7 @@ func (its *OperationID) Clone() *OperationID {
 func (its *OperationID) ToString() string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]",
-		its.Era, its.Lamport, types.ShortenUID(its.CUID), its.Seq)
+		its.Era, its.Lamport, its.CUID, its.Seq)
 	return b.String()
 }
 
