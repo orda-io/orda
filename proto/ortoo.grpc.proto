@@ -45,9 +45,15 @@ service OrtooService {
       get: "/api/v1/collections/{collection}/datatypes/{key}"
     };
   }
-  rpc CreateCollections(CollectionMessage) returns (CollectionMessage) {
+  rpc CreateCollection (CollectionMessage) returns (CollectionMessage) {
     option (google.api.http) = {
       put: "/api/v1/collections/{collection}"
+    };
+  }
+
+  rpc ResetCollection (CollectionMessage) returns (CollectionMessage) {
+    option (google.api.http) = {
+      put: "/api/v1/collections/{collection}/reset"
     };
   }
 }

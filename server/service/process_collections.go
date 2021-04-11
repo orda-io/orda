@@ -9,9 +9,9 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb"
 )
 
-func (its *OrtooService) CreateCollections(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
+// CreateCollection creates a collection
+func (its *OrtooService) CreateCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
 	ctx := context.New(goCtx)
-	// collectionName := strings.TrimPrefix(req.URL.Path, apiCollections)
 	num, err := mongodb.MakeCollection(ctx, its.mongo, in.Collection)
 	var msg string
 	if err != nil {
@@ -22,4 +22,13 @@ func (its *OrtooService) CreateCollections(goCtx goctx.Context, in *model.Collec
 	}
 	ctx.L().Infof("%s", msg)
 	return in, nil
+}
+
+// ResetCollection resets a collection
+func (its *OrtooService) ResetCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
+	ctx := context.New(goCtx)
+	if err := its.mongo.PurgeCollection(ctx, in.Collection); err != nil {
+		return nil, errors.NewRPCError(err)
+	}
+	return its.CreateCollection(goCtx, in)
 }

@@ -89,8 +89,8 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.OrtooContext) errors
 	return nil
 }
 
-// ResetCollections resets all collections related to collectionName
-func (r *RepositoryMongo) ResetCollections(ctx context.OrtooContext, collectionName string) errors.OrtooError {
+// PurgeCollection purges all collections related to collectionName
+func (r *RepositoryMongo) PurgeCollection(ctx context.OrtooContext, collectionName string) errors.OrtooError {
 	if err := r.PurgeAllDocumentsOfCollection(ctx, collectionName); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
@@ -98,6 +98,7 @@ func (r *RepositoryMongo) ResetCollections(ctx context.OrtooContext, collectionN
 	if err := collection.Drop(ctx); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
+	ctx.L().Infof("Purged collection: %v", collectionName)
 	return nil
 }
 

@@ -44,7 +44,7 @@ func (its *IntegrationTestSuite) SetupTest() {
 	its.collectionName = strings.Split(its.T().Name(), "/")[1]
 	its.ctx.L().Infof("set collection: %s", its.collectionName)
 	var err error
-	require.NoError(its.T(), its.mongo.ResetCollections(its.ctx, its.collectionName))
+	require.NoError(its.T(), its.mongo.PurgeCollection(its.ctx, its.collectionName))
 	its.collectionNum, err = mongodb.MakeCollection(its.ctx, its.server.Mongo, its.collectionName)
 	require.NoError(its.T(), err)
 }

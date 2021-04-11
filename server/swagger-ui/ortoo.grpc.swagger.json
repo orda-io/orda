@@ -18,7 +18,7 @@
   "paths": {
     "/api/v1/collections/{collection}": {
       "put": {
-        "operationId": "OrtooService_CreateCollections",
+        "operationId": "OrtooService_CreateCollection",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -176,6 +176,36 @@
             "schema": {
               "$ref": "#/definitions/ortooPushPullMessage"
             }
+          }
+        ],
+        "tags": [
+          "OrtooService"
+        ]
+      }
+    },
+    "/api/v1/collections/{collection}/reset": {
+      "put": {
+        "operationId": "OrtooService_ResetCollection",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ortooCollectionMessage"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
