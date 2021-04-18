@@ -15,10 +15,10 @@ func (its *OrtooService) CreateCollection(goCtx goctx.Context, in *model.Collect
 	num, err := mongodb.MakeCollection(ctx, its.mongo, in.Collection)
 	var msg string
 	if err != nil {
-		msg = fmt.Sprintf("Fail to create collection '%s'", in.Collection)
+		msg = fmt.Sprintf("fail to create collection '%s'", in.Collection)
 		return nil, errors.NewRPCError(err)
 	} else {
-		msg = fmt.Sprintf("Created collection '%s(%d)'", in.Collection, num)
+		msg = fmt.Sprintf("create collection '%s(%d)'", in.Collection, num)
 	}
 	ctx.L().Infof("%s", msg)
 	return in, nil
@@ -30,5 +30,6 @@ func (its *OrtooService) ResetCollection(goCtx goctx.Context, in *model.Collecti
 	if err := its.mongo.PurgeCollection(ctx, in.Collection); err != nil {
 		return nil, errors.NewRPCError(err)
 	}
+	ctx.L().Infof("reset %s collection", in.Collection)
 	return its.CreateCollection(goCtx, in)
 }

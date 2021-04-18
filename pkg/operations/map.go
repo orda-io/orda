@@ -53,7 +53,7 @@ func (its *PutOperation) GetType() model.TypeOfOperation {
 }
 
 func (its *PutOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
 
 // GetAsJSON returns the operation in the format of JSON compatible struct.
@@ -116,7 +116,7 @@ func (its *RemoveOperation) GetType() model.TypeOfOperation {
 }
 
 func (its *RemoveOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
 
 // GetAsJSON returns the operation in the format of JSON compatible struct.

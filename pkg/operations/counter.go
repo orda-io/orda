@@ -51,7 +51,7 @@ func (its *IncreaseOperation) GetType() model.TypeOfOperation {
 }
 
 func (its *IncreaseOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
 
 // GetAsJSON returns the operation in the format of JSON compatible struct.

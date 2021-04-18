@@ -46,8 +46,8 @@ func (its *baseOperation) GetAsJSON() interface{} {
 	}
 }
 
-func toString(id *model.OperationID, content interface{}) string {
-	return fmt.Sprintf("%s|%v", id.ToString(), content)
+func (its *baseOperation) toString(typeOf model.TypeOfOperation, content interface{}) string {
+	return fmt.Sprintf("%s(%s|%v)", typeOf.String(), its.ID.ToString(), content)
 }
 
 // ////////////////// TransactionOperation ////////////////////
@@ -90,7 +90,7 @@ func (its *TransactionOperation) ExecuteRemote(datatype iface.Datatype) (interfa
 
 // ToModelOperation transforms this operation to the model.Operation.
 func (its *TransactionOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.
@@ -174,7 +174,7 @@ func (its *ErrorOperation) GetType() model.TypeOfOperation {
 }
 
 func (its *ErrorOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
 
 // GetAsJSON returns the operation in the format of JSON compatible struct.
@@ -214,7 +214,6 @@ func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDataty
 }
 
 type snapshotContent struct {
-	// Type     model.TypeOfDatatype
 	State    model.StateOfDatatype
 	Snapshot string
 }
@@ -259,7 +258,7 @@ func (its *SnapshotOperation) GetType() model.TypeOfOperation {
 }
 
 func (its *SnapshotOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
 
 // GetAsJSON returns the operation in the format of JSON compatible struct.

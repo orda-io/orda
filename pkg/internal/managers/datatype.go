@@ -44,7 +44,7 @@ func (its *DatatypeManager) DeliverTransaction(wired iface.WiredDatatype) {
 }
 
 // ReceiveNotification enables datatype to sync when it receive notification
-func (its *DatatypeManager) ReceiveNotification(topic string, notification model.NotificationPushPull) {
+func (its *DatatypeManager) ReceiveNotification(topic string, notification model.Notification) {
 	if its.cuid == notification.CUID {
 		its.ctx.L().Infof("drain own notification")
 		return
@@ -53,10 +53,8 @@ func (its *DatatypeManager) ReceiveNotification(topic string, notification model
 	datatypeKey := splitTopic[1]
 
 	if err := its.SyncIfNeeded(datatypeKey, notification.DUID, notification.Sseq); err != nil {
-		// _ = log.OrtooError(err)
-
+		its.ctx.L().Errorf("%v", err)
 	}
-
 }
 
 // OnChangeDatatypeState deals with what datatypeManager has to do when the state of datatype changes.

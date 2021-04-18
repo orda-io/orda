@@ -447,6 +447,7 @@
     "ortooTypeOfOperation": {
       "type": "string",
       "enum": [
+        "NO_OP",
         "SNAPSHOT",
         "DELETE",
         "ERROR",
@@ -463,7 +464,7 @@
         "DOC_DEL_ARR",
         "DOC_UPD_ARR"
       ],
-      "default": "SNAPSHOT"
+      "default": "NO_OP"
     },
     "protobufAny": {
       "type": "object",

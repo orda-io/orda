@@ -9,13 +9,13 @@ import (
 
 // SyncManager is a manager exchanging request and response with Ortoo server.
 type SyncManager struct {
-	seq                 uint32
-	ctx                 context.OrtooContext
-	conn                *grpc.ClientConn
-	client              *model.Client
-	serverAddr          string
-	serviceClient       model.OrtooServiceClient
-	notificationManager *NotificationManager
+	seq           uint32
+	ctx           context.OrtooContext
+	conn          *grpc.ClientConn
+	client        *model.Client
+	serverAddr    string
+	serviceClient model.OrtooServiceClient
+	notifyManager *NotifyManager
 }
 
 // NewSyncManager creates an instance of SyncManager.
@@ -25,19 +25,19 @@ func NewSyncManager(
 	serverAddr string,
 	notificationAddr string,
 ) *SyncManager {
-	var notificationManager *NotificationManager
+	var notifyManager *NotifyManager
 	switch client.SyncType {
 	case model.SyncType_LOCAL_ONLY, model.SyncType_MANUALLY:
-		notificationManager = nil
+		notifyManager = nil
 	case model.SyncType_NOTIFIABLE:
-		notificationManager = NewNotificationManager(ctx, notificationAddr, client)
+		notifyManager = NewNotifyManager(ctx, notificationAddr, client)
 	}
 	return &SyncManager{
-		seq:                 0,
-		ctx:                 ctx,
-		serverAddr:          serverAddr,
-		client:              client,
-		notificationManager: notificationManager,
+		seq:           0,
+		ctx:           ctx,
+		serverAddr:    serverAddr,
+		client:        client,
+		notifyManager: notifyManager,
 	}
 }
 
@@ -56,8 +56,8 @@ func (its *SyncManager) Connect() errors.OrtooError {
 	its.conn = conn
 	its.serviceClient = model.NewOrtooServiceClient(its.conn)
 	its.ctx.L().Info("connect to grpc server")
-	if its.notificationManager != nil {
-		if err := its.notificationManager.Connect(); err != nil {
+	if its.notifyManager != nil {
+		if err := its.notifyManager.Connect(); err != nil {
 			return err
 		}
 	}
@@ -66,9 +66,8 @@ func (its *SyncManager) Connect() errors.OrtooError {
 
 // Close closes connections with Ortoo GRPC and notification servers.
 func (its *SyncManager) Close() errors.OrtooError {
-
-	if its.notificationManager != nil {
-		its.notificationManager.Close()
+	if its.notifyManager != nil {
+		its.notifyManager.Close()
 	}
 	if err := its.conn.Close(); err != nil {
 		return errors.ClientClose.New(its.ctx.L(), err.Error())
@@ -101,14 +100,14 @@ func (its *SyncManager) ExchangeClientRequestResponse() errors.OrtooError {
 }
 
 func (its *SyncManager) subscribeNotification(topic string) errors.OrtooError {
-	if its.notificationManager != nil {
-		return its.notificationManager.SubscribeNotification(topic)
+	if its.notifyManager != nil {
+		return its.notifyManager.SubscribeNotification(topic)
 	}
 	return nil
 }
 
 func (its *SyncManager) setNotificationReceiver(receiver notificationReceiver) {
-	if its.notificationManager != nil {
-		its.notificationManager.SetReceiver(receiver)
+	if its.notifyManager != nil {
+		its.notifyManager.SetReceiver(receiver)
 	}
 }

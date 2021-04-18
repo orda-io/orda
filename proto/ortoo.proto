@@ -67,7 +67,7 @@ message CheckPoint {
   uint64 cseq = 2 [jstype = JS_STRING];
 }
 
-message NotificationPushPull {
+message Notification {
   string CUID = 1;
   string DUID = 2;
   uint64 sseq = 3 [jstype = JS_STRING];

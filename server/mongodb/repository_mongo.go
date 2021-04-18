@@ -44,7 +44,6 @@ func New(ctx context.OrtooContext, conf *Config) (*RepositoryMongo, errors.Ortoo
 
 // InitializeCollections initializes collections
 func (r *RepositoryMongo) InitializeCollections(ctx context.OrtooContext) errors.OrtooError {
-
 	r.clients = r.db.Collection(schema.CollectionNameClients)
 	r.counters = r.db.Collection(schema.CollectionNameColNumGenerator)
 	r.snapshots = r.db.Collection(schema.CollectionNameSnapshot)
@@ -98,13 +97,11 @@ func (r *RepositoryMongo) PurgeCollection(ctx context.OrtooContext, collectionNa
 	if err := collection.Drop(ctx); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-	ctx.L().Infof("Purged collection: %v", collectionName)
 	return nil
 }
 
 // GetOrCreateRealCollection is a method that gets or creates a collection of snapshot
 func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrtooContext, name string) errors.OrtooError {
-
 	names, err := r.db.ListCollectionNames(ctx, schema.FilterByName(name))
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())

@@ -2,6 +2,7 @@ package server
 
 import (
 	gocontext "context"
+	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/knowhunger/ortoo/pkg/constants"
 	"github.com/knowhunger/ortoo/pkg/context"
@@ -73,8 +74,10 @@ func (its *OrtooServer) Start() errors.OrtooError {
 	its.mutex.Lock()
 	defer its.mutex.Unlock()
 
+	server := fmt.Sprintf("Ortoo-Server-%s(%s)", constants.Version, constants.GitCommit)
+
 	var oErr errors.OrtooError
-	its.notifier, oErr = notification.NewNotifier(its.ctx, its.conf.Notification)
+	its.notifier, oErr = notification.NewNotifier(its.ctx, its.conf.Notification, server)
 	if oErr != nil {
 		return oErr
 	}
@@ -95,11 +98,7 @@ func (its *OrtooServer) Start() errors.OrtooError {
 		}
 	}()
 
-	its.ctx.L().Printf("%s(%s) Started at %s %s",
-		constants.Version,
-		constants.GitCommit,
-		time.Now().String(),
-		banner)
+	its.ctx.L().Printf("%s Started at %s %s", server, time.Now().String(), banner)
 
 	its.restServer = New(its.ctx, its.conf, its.Mongo)
 	go func() {

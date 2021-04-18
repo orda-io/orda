@@ -12,6 +12,7 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"github.com/knowhunger/ortoo/server/notification"
 	"github.com/knowhunger/ortoo/server/snapshot"
+	"runtime/debug"
 	"time"
 )
 
@@ -124,7 +125,9 @@ func (its *PushPullHandler) finalize() {
 		if len(its.pushingOperations) > 0 {
 			newCtx := context.NewWithTags(gocontext.TODO(), context.SERVER,
 				context.MakeTagInPushPull(constants.TagPostPushPull, its.collectionDoc.Num, its.clientDoc.CUID, its.resPushPullPack.DUID))
+
 			go func() {
+				defer its.recoveryFromPanic()
 				if err := its.sendNotification(newCtx); err == nil {
 					// continue
 				}
@@ -141,6 +144,14 @@ func (its *PushPullHandler) finalize() {
 	}
 	its.ctx.L().Infof("SENDBACK %s", its.resPushPullPack.ToString())
 	its.retCh <- its.resPushPullPack
+}
+
+func (its *PushPullHandler) recoveryFromPanic() {
+	if r := recover(); r != nil {
+		its.ctx.L().Infof("finished from panic")
+		debug.PrintStack()
+		// TODO: need recovery process
+	}
 }
 
 func (its *PushPullHandler) logInitialConditions() {
@@ -183,15 +194,12 @@ func (its *PushPullHandler) process(retCh chan *model.PushPullPack) {
 }
 
 func (its *PushPullHandler) sendNotification(ctx context.OrtooContext) errors.OrtooError {
-	if err := its.notifier.NotifyAfterPushPull(
+	return its.notifier.NotifyAfterPushPull(
 		ctx,
 		its.collectionDoc.Name,
 		its.clientDoc,
 		its.datatypeDoc,
-		its.currentCheckPoint.Sseq); err != nil {
-		return err
-	}
-	return nil
+		its.currentCheckPoint.Sseq)
 }
 
 func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrtooContext) error {
@@ -244,30 +252,18 @@ func (its *PushPullHandler) pushOperations() errors.OrtooError {
 
 	sseq := its.datatypeDoc.SseqEnd
 	for _, op := range its.gotPushPullPack.Operations {
-		// op := model.ToOperation(modelOp)
-		if its.currentCheckPoint.Cseq+1 == op.ID.GetSeq() {
+
+		switch {
+		case its.currentCheckPoint.Cseq+1 == op.ID.GetSeq():
 			sseq++
-			// marshaledOp, err := proto.Marshal(op)
-			// if err != nil {
-			// 	return model.NewPushPullError(model.PushPullPushOperations, its.getPushPullTag(), err)
-			// }
 			opDoc := schema.NewOperationDoc(op, its.DUID, sseq, its.collectionDoc.Num)
-			// opDoc := &schema.OperationDoc{
-			// 	ID:            fmt.Sprintf("%s:%d", its.DUID, sseq),
-			// 	DUID:          its.DUID,
-			// 	CollectionNum: its.collectionDoc.Num,
-			// 	OpType:        op.OpType.String(),
-			// 	Sseq:          sseq,
-			// 	// Operation:     string(marshaledOp),
-			// 	CreatedAt:     time.Now(),
-			// }
 			its.pushingOperations = append(its.pushingOperations, opDoc)
-			// its.resPushPullPack.Operations = append(its.resPushPullPack.Operations, modelOp)
+			its.ctx.L().Infof("push %v", operations.ModelToOperation(op).String())
 			its.currentCheckPoint.SyncCseq(op.ID.GetSeq())
 			its.currentCheckPoint.Sseq = sseq
-		} else if its.currentCheckPoint.Cseq >= op.ID.GetSeq() {
+		case its.currentCheckPoint.Cseq >= op.ID.GetSeq():
 			its.ctx.L().Warnf("reject operation due to duplicate: %v", op.String())
-		} else {
+		default:
 			msg := fmt.Sprintf("cp.Cseq=%d < op.Seq=%d", its.initialCheckPoint.Cseq, op.ID.GetSeq())
 			return errors.PushPullMissingOps.New(its.ctx.L(), msg)
 		}

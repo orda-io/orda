@@ -133,7 +133,8 @@ func (its *PushPullPack) ToString() string {
 
 	_, _ = fmt.Fprintf(
 		&b,
-		"%s(%s) %s CP(%v) OP(%d){",
+		"%s %s(%s) %s CP(%v) OP(%d){",
+		its.Type,
 		its.Key,
 		its.DUID,
 		option.String(),
@@ -146,8 +147,7 @@ func (its *PushPullPack) ToString() string {
 			b.WriteString(" => ")
 			init = false
 		}
-		b.WriteString(op.OpType.String())
-		b.WriteString(op.ID.ToString())
+		b.WriteString(op.ToString())
 		init = false
 	}
 	b.WriteString("}")

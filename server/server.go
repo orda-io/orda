@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	app := &cli.App{
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -31,7 +30,6 @@ func main() {
 			}
 			go func() {
 				if err := svr.Start(); err != nil {
-
 					os.Exit(1)
 				}
 			}()

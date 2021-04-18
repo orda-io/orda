@@ -3,6 +3,7 @@ package operations
 import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/iface"
+	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
@@ -107,6 +108,7 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 
 func unmarshalContent(b []byte, c interface{}) {
 	if err := json.Unmarshal(b, c); err != nil {
+		log.Logger.Errorf("%v", string(b))
 		panic(err) // TODO: this should ne handled
 	}
 }

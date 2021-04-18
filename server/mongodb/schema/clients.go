@@ -6,7 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
-	"strings"
 	"time"
 )
 
@@ -50,11 +49,8 @@ func (its *ClientDoc) GetShortCUID() string {
 
 // ToUpdateBSON returns a bson from a ClientDoc
 func (its *ClientDoc) ToUpdateBSON() bson.D {
-
-	var checkPointBson map[string]bson.M
-	checkPointBson = make(map[string]bson.M)
+	checkPointBson := make(map[string]bson.M)
 	if its.CheckPoints != nil {
-
 		for k, v := range its.CheckPoints {
 			checkPointBson[k] = ToCheckPointBSON(v)
 		}
@@ -71,7 +67,6 @@ func (its *ClientDoc) ToUpdateBSON() bson.D {
 			{ClientDocFields.UpdatedAt, true},
 		}},
 	}
-
 }
 
 // GetIndexModel returns the index models of ClientDoc
@@ -110,8 +105,4 @@ func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 
 func (its *ClientDoc) GetClient() string {
 	return fmt.Sprintf("%s(%s)", its.Alias, its.CUID)
-}
-
-func (its *ClientDoc) GetClientSummary() string {
-	return fmt.Sprintf("%.10s(%.10s)", its.Alias, strings.ToUpper(its.CUID))
 }

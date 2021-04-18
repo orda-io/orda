@@ -15,7 +15,8 @@ enum ClientType {
 }
 
 enum TypeOfOperation {
-  SNAPSHOT = 0;
+  NO_OP = 0;
+  SNAPSHOT = 1;
   DELETE = 2;
   ERROR = 3;
   TRANSACTION = 5;

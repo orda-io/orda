@@ -54,7 +54,7 @@ func (its *InsertOperation) GetType() model.TypeOfOperation {
 }
 
 func (its *InsertOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
 
 // ////////////////// DeleteOperation ////////////////////
@@ -106,7 +106,7 @@ func (its *DeleteOperation) GetType() model.TypeOfOperation {
 }
 
 func (its *DeleteOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
 
 // ////////////////// UpdateOperation ////////////////////
@@ -159,5 +159,5 @@ func (its *UpdateOperation) GetType() model.TypeOfOperation {
 }
 
 func (its *UpdateOperation) String() string {
-	return toString(its.ID, its.C)
+	return its.toString(its.GetType(), its.C)
 }
