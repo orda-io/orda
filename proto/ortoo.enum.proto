@@ -6,7 +6,7 @@ package ortoo;
 enum SyncType {
   LOCAL_ONLY = 0;
   MANUALLY = 1;
-  NOTIFIABLE = 2;
+  REALTIME = 2;
 }
 
 enum ClientType {

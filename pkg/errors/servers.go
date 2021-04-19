@@ -6,7 +6,7 @@ import (
 	"github.com/ztrue/tracerr"
 )
 
-// NewPushPullError generates a PushPullError.
+// New generates a ServerErrorCode
 func (its ServerErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooError {
 	format := fmt.Sprintf("[ServerError: %d] %s", its, serverErrFormats[its])
 	err := &singleOrtooError{

@@ -2,7 +2,7 @@ package integration
 
 import (
 	gocontext "context"
-	"github.com/knowhunger/ortoo/pkg/context"
+	context "github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/server"
@@ -13,7 +13,10 @@ import (
 	"time"
 )
 
-const dbName = "test"
+const (
+	dbName  = "test"
+	TagTest = "TEST"
+)
 
 // IntegrationTestSuite is the base test suite for integration test.
 type IntegrationTestSuite struct {
@@ -27,7 +30,7 @@ type IntegrationTestSuite struct {
 
 // SetupTest builds some prerequisite for testing.
 func (its *IntegrationTestSuite) SetupSuite() {
-	its.ctx = context.NewWithTags(gocontext.TODO(), context.TEST, context.MakeTagInTest(its.T().Name()))
+	its.ctx = context.NewOrtooContext(gocontext.TODO(), TagTest, context.MakeTagInTest(its.T().Name()))
 	var err errors.OrtooError
 	its.server, err = server.NewOrtooServer(gocontext.TODO(), NewTestOrtooServerConfig(dbName))
 	if err != nil {

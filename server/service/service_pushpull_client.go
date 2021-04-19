@@ -3,23 +3,21 @@ package service
 import (
 	gocontext "context"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/server/constants"
+	"github.com/knowhunger/ortoo/server/svrcontext"
 	"reflect"
 )
 
 // ProcessPushPull processes a GRPC for Push-Pull
 func (its *OrtooService) ProcessPushPull(goCtx gocontext.Context, in *model.PushPullMessage) (*model.PushPullMessage, error) {
-	ctx := context.New(goCtx)
+	ctx := svrcontext.NewServerContext(goCtx, constants.TagPushPull).UpdateClient(in.Cuid)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Collection)
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
-
-	ctx.SetNewLogger(context.SERVER, context.MakeTagInRPCProcess(constants.TagPushPull, collectionDoc.Num, in.Cuid))
-	ctx.L().Infof("RECV %v", in.ToString())
+	ctx.UpdateCollection(collectionDoc.GetSummary())
 
 	clientDoc, err := its.mongo.GetClient(ctx, in.Cuid)
 	if err != nil {
@@ -29,8 +27,10 @@ func (its *OrtooService) ProcessPushPull(goCtx gocontext.Context, in *model.Push
 		msg := fmt.Sprintf("no client '%s:%s'", in.Collection, in.Cuid)
 		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), msg))
 	}
+	ctx.UpdateClient(clientDoc.ToString())
+	ctx.L().Infof("RECV %v", in.ToString())
 	if clientDoc.CollectionNum != collectionDoc.Num {
-		msg := fmt.Sprintf("client '%s' accesses collection(%d)", clientDoc.GetClient(), collectionDoc.Num)
+		msg := fmt.Sprintf("client '%s' accesses collection(%d)", clientDoc.ToString(), collectionDoc.Num)
 		return nil, errors.NewRPCError(errors.ServerNoPermission.New(ctx.L(), msg))
 	}
 
@@ -43,7 +43,7 @@ func (its *OrtooService) ProcessPushPull(goCtx gocontext.Context, in *model.Push
 	var chanList []<-chan *model.PushPullPack
 
 	for _, ppp := range in.PushPullPacks {
-		handler := newPushPullHandler(goCtx, ppp, clientDoc, collectionDoc, its)
+		handler := newPushPullHandler(ctx, ppp, clientDoc, collectionDoc, its)
 		chanList = append(chanList, handler.Start())
 	}
 	remainingChan := len(chanList)

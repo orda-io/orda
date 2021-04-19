@@ -8,6 +8,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/internal/managers"
+	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
 )
@@ -46,16 +47,14 @@ const (
 
 type clientImpl struct {
 	state           clientState
-	model           *model.Client
 	conf            *ClientConfig
-	ctx             context.OrtooContext
+	ctx             *context.ClientContext
 	syncManager     *managers.SyncManager
 	datatypeManager *managers.DatatypeManager
 }
 
 // NewClient creates a new Ortoo client
 func NewClient(conf *ClientConfig, alias string) Client {
-
 	cm := &model.Client{
 		CUID:       types.NewUID(),
 		Alias:      alias,
@@ -63,7 +62,7 @@ func NewClient(conf *ClientConfig, alias string) Client {
 		Type:       model.ClientType_PERSISTENT,
 		SyncType:   conf.SyncType,
 	}
-	ctx := context.NewWithTags(gocontext.TODO(), context.CLIENT, context.MakeTagInClient(cm.Collection, cm.Alias, cm.CUID))
+	ctx := context.NewClientContext(gocontext.TODO(), cm)
 
 	var syncManager *managers.SyncManager = nil
 	var datatypeManager *managers.DatatypeManager = nil
@@ -74,7 +73,6 @@ func NewClient(conf *ClientConfig, alias string) Client {
 	return &clientImpl{
 		conf:            conf,
 		ctx:             ctx,
-		model:           cm,
 		state:           notConnected,
 		syncManager:     syncManager,
 		datatypeManager: datatypeManager,
@@ -232,7 +230,7 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 	var impl Datatype
 	var errs errors.OrtooError = &errors.MultipleOrtooErrors{}
 	var err errors.OrtooError
-	base := datatypes.NewBaseDatatype(key, typeOf, its.model)
+	base := datatypes.NewBaseDatatype(key, typeOf, its.ctx)
 	switch typeOf {
 	case model.TypeOfDatatype_COUNTER:
 		impl, err = newCounter(base, its.datatypeManager, handler)
@@ -258,6 +256,10 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 		handler.errorHandler(nil, errs.ToArray()...)
 	}
 	return datatype
+}
+
+func (its *clientImpl) SetLogger(logger *log.OrtooLog) {
+	its.ctx.SetLogger(logger)
 }
 
 func (its *clientImpl) Sync() error {

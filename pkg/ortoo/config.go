@@ -16,6 +16,6 @@ func NewLocalClientConfig(collectionName string) *ClientConfig {
 		ServerAddr:       "",
 		NotificationAddr: "",
 		CollectionName:   collectionName,
-		SyncType:         0,
+		SyncType:         model.SyncType_LOCAL_ONLY,
 	}
 }

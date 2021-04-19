@@ -44,10 +44,10 @@ func main() {
 
 func createClient(alias string) (ortoo.Client, error) {
 	clientConf := &ortoo.ClientConfig{
-		ServerAddr:       "localhost:29065",         // Ortoo Server address. The port 29065 is the port when it is running on docker
-		NotificationAddr: "localhost:11883",         // notification server address.
-		CollectionName:   "hello_world",             // the collection name of MongoDB which the client participates in.
-		SyncType:         model.SyncType_NOTIFIABLE, // syncType that is notified in real-time from notification server.
+		ServerAddr:       "localhost:29065",       // Ortoo Server address. The port 29065 is the port when it is running on docker
+		NotificationAddr: "localhost:11883",       // notification server address.
+		CollectionName:   "hello_world",           // the collection name of MongoDB which the client participates in.
+		SyncType:         model.SyncType_REALTIME, // syncType that is notified in real-time from notification server.
 	}
 
 	client1 := ortoo.NewClient(clientConf, alias) // create a client with alias "client1".

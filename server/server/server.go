@@ -9,9 +9,11 @@ import (
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
+	svrConstant "github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb"
 	"github.com/knowhunger/ortoo/server/notification"
 	"github.com/knowhunger/ortoo/server/service"
+	"github.com/knowhunger/ortoo/server/svrcontext"
 	"google.golang.org/grpc"
 	"net"
 	"net/http"
@@ -53,7 +55,8 @@ func NewOrtooServer(goCtx gocontext.Context, conf *OrtooServerConfig) (*OrtooSer
 	if err != nil {
 		return nil, errors.ServerInit.New(log.Logger, err.Error())
 	}
-	ctx := context.NewWithTags(goCtx, context.SERVER, context.MakeTagInServer(host, conf.RPCServerPort))
+	ctx := svrcontext.NewServerContext(goCtx, svrConstant.TagServer).
+		UpdateCollection(context.MakeTagInServer(host, conf.RPCServerPort))
 	ctx.L().Infof("Config: %#v", conf)
 	mongo, oErr := mongodb.New(ctx, &conf.Mongo)
 	if oErr != nil {
@@ -108,7 +111,7 @@ func (its *OrtooServer) Start() errors.OrtooError {
 		}
 	}()
 
-	its.ctx.L().Info("successfully start Ortoo server")
+	its.ctx.L().Info("start Ortoo server successfully")
 	return nil
 }
 

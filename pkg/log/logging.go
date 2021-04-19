@@ -42,6 +42,19 @@ func New() *OrtooLog {
 	return &OrtooLog{logrus.NewEntry(logger)}
 }
 
+func (its *OrtooLog) GetTag1() string {
+	return its.Data[tag1Field].(string)
+}
+
+func (its *OrtooLog) GetTag2() string {
+	return its.Data[tag2Field].(string)
+}
+
+func (its *OrtooLog) SetTags(tag1, tag2 string) {
+	its.Data[tag1Field] = tag1
+	its.Data[tag2Field] = tag2
+}
+
 // NewWithTags creates a new OrtooLog with a tag.
 func NewWithTags(tag1, tag2 string) *OrtooLog {
 	return &OrtooLog{

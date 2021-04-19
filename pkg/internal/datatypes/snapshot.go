@@ -18,9 +18,9 @@ func (its *SnapshotDatatype) ApplySnapshotOperation(
 	sc iface.SnapshotContent,
 	newSnap iface.Snapshot,
 ) errors.OrtooError {
-	its.GetBase().GetLogger().Infof("apply SnapshotOperation")
+	its.GetBase().L().Infof("apply SnapshotOperation")
 	if err := json.Unmarshal([]byte(sc.GetS()), newSnap); err != nil {
-		return errors.DatatypeSnapshot.New(its.GetBase().GetLogger(), err.Error())
+		return errors.DatatypeSnapshot.New(its.GetBase().L(), err.Error())
 	}
 	its.Snapshot = newSnap
 	return nil
@@ -41,7 +41,7 @@ func (its *SnapshotDatatype) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooE
 	}
 	snap, err := json.Marshal(its.GetSnapshot())
 	if err != nil {
-		return nil, nil, errors.DatatypeMarshal.New(its.GetBase().GetLogger(), err.Error())
+		return nil, nil, errors.DatatypeMarshal.New(its.GetBase().L(), err.Error())
 	}
 	return meta, snap, nil
 }
@@ -51,7 +51,7 @@ func (its *SnapshotDatatype) SetMetaAndSnapshot(meta []byte, snap []byte) errors
 		return err
 	}
 	if err := json.Unmarshal(snap, its.GetSnapshot()); err != nil {
-		return errors.DatatypeMarshal.New(its.GetBase().GetLogger(), err.Error())
+		return errors.DatatypeMarshal.New(its.GetBase().L(), err.Error())
 	}
 	return nil
 }

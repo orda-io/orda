@@ -110,7 +110,7 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 		cast.C.T = uptTargets
 		return oldOnes, nil
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op.(iface.Operation).GetType())
+	return nil, errors.DatatypeIllegalParameters.New(its.L(), op.(iface.Operation).GetType())
 }
 
 func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -131,7 +131,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 	case *operations.DocUpdateInArrayOperation:
 		return its.snapshot().UpdateRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T, cast.C.V)
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
 }
 
 // GetFromObject returns the child associated with the given key as a Document.
@@ -241,10 +241,9 @@ func (its *document) DeleteManyInArray(pos int, numOfNodes int) ([]Document, err
 		return nil, err
 	}
 	return its.toDocuments(delJSONTypes.([]jsonType)), nil
-
 }
 
-// UpdateInArray updates the child from the given position, and returns the previous child Documents
+// UpdateManyInArray updates the child from the given position, and returns the previous child Documents
 func (its *document) UpdateManyInArray(pos int, values ...interface{}) ([]Document, errors.OrtooError) {
 	if err := its.assertLocalOp("UpdateManyInArray", TypeJSONArray, false); err != nil {
 		return nil, err
@@ -315,10 +314,10 @@ func (its *document) toDocument(child jsonType) Document {
 }
 func (its *document) assertLocalOp(opName string, ofJSON TypeOfJSON, workOnGarbage bool) errors.OrtooError {
 	if its.GetJSONType() != ofJSON {
-		return errors.DatatypeInvalidParent.New(its.Logger, opName, " is not allowed to ")
+		return errors.DatatypeInvalidParent.New(its.L(), opName, " is not allowed to ")
 	}
 	if !workOnGarbage && its.snapshot().isGarbage() {
-		return errors.DatatypeNoOp.New(its.Logger, "already deleted from the root Document")
+		return errors.DatatypeNoOp.New(its.L(), "already deleted from the root Document")
 	}
 	return nil
 }

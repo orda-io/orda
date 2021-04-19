@@ -10,7 +10,7 @@ import (
 // SyncManager is a manager exchanging request and response with Ortoo server.
 type SyncManager struct {
 	seq           uint32
-	ctx           context.OrtooContext
+	ctx           *context.ClientContext
 	conn          *grpc.ClientConn
 	client        *model.Client
 	serverAddr    string
@@ -20,7 +20,7 @@ type SyncManager struct {
 
 // NewSyncManager creates an instance of SyncManager.
 func NewSyncManager(
-	ctx context.OrtooContext,
+	ctx *context.ClientContext,
 	client *model.Client,
 	serverAddr string,
 	notificationAddr string,
@@ -29,7 +29,7 @@ func NewSyncManager(
 	switch client.SyncType {
 	case model.SyncType_LOCAL_ONLY, model.SyncType_MANUALLY:
 		notifyManager = nil
-	case model.SyncType_NOTIFIABLE:
+	case model.SyncType_REALTIME:
 		notifyManager = NewNotifyManager(ctx, notificationAddr, client)
 	}
 	return &SyncManager{
@@ -89,7 +89,7 @@ func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullMes
 
 // ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
 func (its *SyncManager) ExchangeClientRequestResponse() errors.OrtooError {
-	request := model.NewClientMessage(its.nextSeq(), its.client)
+	request := model.NewClientMessage(its.client)
 	its.ctx.L().Infof("SEND %s", request.ToString())
 	response, err := its.serviceClient.ProcessClient(its.ctx, request)
 	if err != nil {

@@ -152,7 +152,7 @@ func (its *jsonArray) updateRemote(
 			its.funeral(deleted, updated.getCreateTime())
 			delTypes = append(delTypes, deleted)
 		} else {
-			_ = errs.Append(errors.DatatypeNoTarget.New(its.GetLogger(), t.ToString()))
+			_ = errs.Append(errors.DatatypeNoTarget.New(its.L(), t.ToString()))
 		}
 	}
 	return delTypes, errs.Return()

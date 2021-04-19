@@ -69,7 +69,7 @@ func (its *ortooMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 	case *operations.RemoveOperation:
 		return its.snapshot().removeLocal(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
 }
 
 func (its *ortooMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -82,12 +82,12 @@ func (its *ortooMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 	case *operations.RemoveOperation:
 		return its.snapshot().removeRemote(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
 }
 
 func (its *ortooMap) Put(key string, value interface{}) (interface{}, errors.OrtooError) {
 	if key == "" || value == nil {
-		return nil, errors.DatatypeIllegalParameters.New(its.Logger, "empty key or nil value is not allowed")
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), "empty key or nil value is not allowed")
 	}
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
@@ -104,7 +104,7 @@ func (its *ortooMap) Get(key string) interface{} {
 
 func (its *ortooMap) Remove(key string) (interface{}, errors.OrtooError) {
 	if key == "" {
-		return nil, errors.DatatypeIllegalParameters.New(its.Logger, "empty key is not allowed")
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), "empty key is not allowed")
 	}
 	op := operations.NewRemoveOperation(key)
 	return its.SentenceInTransaction(its.TransactionCtx, op, true)
@@ -139,7 +139,7 @@ func (its *mapSnapshot) UnmarshalJSON(bytes []byte) error {
 	}{}
 	err := json.Unmarshal(bytes, &temp)
 	if err != nil {
-		return errors.DatatypeMarshal.New(its.GetLogger(), err.Error())
+		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
 	its.Map = make(map[string]timedType)
 	for k, v := range temp.Map {
@@ -228,7 +228,7 @@ func (its *mapSnapshot) removeLocalWithTimedType(
 			}
 		}
 	}
-	return nil, nil, errors.DatatypeNoOp.New(its.GetLogger(), "remove the value for not existing key")
+	return nil, nil, errors.DatatypeNoOp.New(its.L(), "remove the value for not existing key")
 }
 
 func (its *mapSnapshot) removeRemoteWithTimedType(
@@ -246,7 +246,7 @@ func (its *mapSnapshot) removeRemoteWithTimedType(
 		}
 		return nil, nil, nil
 	}
-	return nil, nil, errors.DatatypeNoTarget.New(its.GetLogger(), key)
+	return nil, nil, errors.DatatypeNoTarget.New(its.L(), key)
 }
 
 func (its *mapSnapshot) size() int {

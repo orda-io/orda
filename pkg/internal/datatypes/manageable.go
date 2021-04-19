@@ -45,7 +45,7 @@ func (its *ManageableDatatype) DoTransaction(
 	}()
 	if err := funcWithCloneDatatype(txCtx); err != nil {
 		its.SetTransactionFail()
-		return errors.DatatypeTransaction.New(its.Logger, err.Error())
+		return errors.DatatypeTransaction.New(its.L(), err.Error())
 	}
 	return nil
 }
@@ -58,12 +58,12 @@ func (its *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) er
 	}
 	snap, err := json.Marshal(its.datatype.GetSnapshot())
 	if err != nil {
-		return errors.DatatypeSubscribe.New(its.Logger, err.Error())
+		return errors.DatatypeSubscribe.New(its.L(), err.Error())
 	}
 	subscribeOp := operations.NewSnapshotOperation(its.TypeOf, state, string(snap))
 	_, err = its.SentenceInTransaction(its.TransactionCtx, subscribeOp, true)
 	if err != nil {
-		return errors.DatatypeSubscribe.New(its.Logger, err.Error())
+		return errors.DatatypeSubscribe.New(its.L(), err.Error())
 	}
 	return nil
 }
@@ -77,10 +77,10 @@ func (its ManageableDatatype) ExecuteRemoteTransaction(
 	if len(transaction) > 1 {
 		txOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
 		if !ok {
-			return nil, errors.DatatypeTransaction.New(its.Logger, "no transaction operation")
+			return nil, errors.DatatypeTransaction.New(its.L(), "no transaction operation")
 		}
 		if int(txOp.GetNumOfOps()) != len(transaction) {
-			return nil, errors.DatatypeTransaction.New(its.Logger, "not matched number of operations")
+			return nil, errors.DatatypeTransaction.New(its.L(), "not matched number of operations")
 		}
 		txCtx = its.BeginTransaction(txOp.C.Tag, its.TransactionCtx, false)
 		defer func() {
@@ -98,7 +98,7 @@ func (its ManageableDatatype) ExecuteRemoteTransaction(
 		}
 		_, err := its.SentenceInTransaction(txCtx, op, false)
 		if err != nil {
-			return nil, errors.DatatypeTransaction.New(its.Logger, err.Error())
+			return nil, errors.DatatypeTransaction.New(its.L(), err.Error())
 		}
 	}
 	return opList, nil

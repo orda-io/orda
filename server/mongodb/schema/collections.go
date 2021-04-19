@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"time"
@@ -25,8 +26,13 @@ var CollectionDocFields = struct {
 }
 
 // GetIndexModel returns the index models of CollectionDoc
-func (c *CollectionDoc) GetIndexModel() []mongo.IndexModel {
+func (its *CollectionDoc) GetIndexModel() []mongo.IndexModel {
 	return []mongo.IndexModel{{
 		Keys: bsonx.Doc{{Key: CollectionDocFields.Num, Value: bsonx.Int32(1)}},
 	}}
+}
+
+// GetSummary returns the summary of CollectionDoc
+func (its *CollectionDoc) GetSummary() string {
+	return fmt.Sprintf("%s(%d)", its.Name, its.Num)
 }

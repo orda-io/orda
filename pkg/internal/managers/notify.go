@@ -11,7 +11,7 @@ import (
 // NotifyManager manages notifications from Ortoo Server
 type NotifyManager struct {
 	client   mqtt.Client
-	ctx      context.OrtooContext
+	ctx      *context.ClientContext
 	channel  chan *notificationMsg
 	receiver notificationReceiver
 }
@@ -35,7 +35,7 @@ const (
 )
 
 // NewNotifyManager creates an instance of NotifyManager
-func NewNotifyManager(ctx context.OrtooContext, pubSubAddr string, cm *model.Client) *NotifyManager {
+func NewNotifyManager(ctx *context.ClientContext, pubSubAddr string, cm *model.Client) *NotifyManager {
 	pubSubOpts := mqtt.NewClientOptions().
 		AddBroker(pubSubAddr).
 		SetClientID(cm.GetCUID()).

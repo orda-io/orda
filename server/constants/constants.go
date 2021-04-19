@@ -6,7 +6,11 @@ import "math"
 const InfinitySseq uint64 = math.MaxUint64
 
 const (
-	TagClient       = "CLIENT"
-	TagPushPull     = "PUSHPULL"
-	TagPostPushPull = "POST_PP"
+	TagServer       = "SERV"
+	TagReset        = "CORS"
+	TagCreate       = "COCR"
+	TagClient       = "CLIE"
+	TagPushPull     = "PUPU"
+	TagPostPushPull = "POPP"
+	TagTest         = "TEST"
 )

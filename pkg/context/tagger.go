@@ -23,23 +23,23 @@ func MakeTagInPushPull(tag2 string, collectionNum uint32, cuid string, duid stri
 
 func MakeTagInClient(collectionName string, clientAlias string, cuid string) string {
 	return fmt.Sprintf("%s|%s|%s",
-		utils.TrimLong(collectionName, maxCollectionName),
-		utils.TrimLong(clientAlias, maxClientAlias),
+		utils.MakeShort(collectionName, maxCollectionName),
+		utils.MakeShort(clientAlias, maxClientAlias),
 		cuid)
 }
 
 func MakeTagInDatatype(collectionName string, key string, cuid, duid string) string {
 	return fmt.Sprintf("%s|%s|%s|%s",
-		utils.TrimLong(collectionName, maxCollectionName),
-		utils.TrimLong(key, maxDatatypeKey),
+		utils.MakeShort(collectionName, maxCollectionName),
+		utils.MakeShort(key, maxDatatypeKey),
 		cuid,
 		duid)
 }
 
 func MakeTagInServer(host string, port int) string {
-	return fmt.Sprintf("%s:%d", utils.TrimLong(host, maxServerName), port)
+	return fmt.Sprintf("%s:%d", utils.MakeShort(host, maxServerName), port)
 }
 
 func MakeTagInTest(test string) string {
-	return utils.TrimLong(test, maxTestName)
+	return utils.MakeShort(test, maxTestName)
 }

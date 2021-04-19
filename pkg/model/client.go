@@ -11,5 +11,5 @@ func (its *Client) ToString() string {
 }
 
 func (its *Client) GetSummary() string {
-	return utils.MakeSummary(its.Alias, its.CUID, true)
+	return fmt.Sprintf("%s|%s(%s)", its.Collection, utils.MakeDefaultShort(its.Alias), its.CUID)
 }

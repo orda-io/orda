@@ -47,6 +47,6 @@ func (n *Notifier) NotifyAfterPushPull(
 	if token := n.mqttClient.Publish(topic, 0, false, bMsg); token.Wait() && token.Error() != nil {
 		return errors.ServerNotify.New(ctx.L(), token.Error())
 	}
-	ctx.L().Infof("notify datatype topic:(%s) with sseq:%d by %s", topic, sseq, client.GetClient())
+	ctx.L().Infof("notify datatype topic:(%s) with sseq:%d by %s", topic, sseq, client.ToString())
 	return nil
 }

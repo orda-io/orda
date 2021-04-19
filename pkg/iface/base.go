@@ -23,6 +23,7 @@ type BaseDatatype interface {
 	SetLogger(l *log.OrtooLog)            // @baseDatatype
 	GetMeta() ([]byte, errors.OrtooError)
 	SetMeta(meta []byte) errors.OrtooError
-	GetLogger() *log.OrtooLog
+	GetSummary() string
+	L() *log.OrtooLog
 	GetOpID() *model.OperationID
 }

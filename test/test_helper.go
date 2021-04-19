@@ -48,7 +48,7 @@ func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
 		ServerAddr:       "127.0.0.1:59062",
 		CollectionName:   collectionName,
 		NotificationAddr: "tcp://127.0.0.1:18181",
-		SyncType:         model.SyncType_NOTIFIABLE,
+		SyncType:         model.SyncType_REALTIME,
 	}
 }
 

@@ -132,7 +132,7 @@ func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error
 			case errors.PushPullAbortedForClient:
 				// TODO: implement me.
 			case errors.PushPullDuplicateKey:
-				return errors.DatatypeCreate.New(its.Logger, fmt.Sprintf("duplicated key:'%s'", its.Key))
+				return errors.DatatypeCreate.New(its.L(), fmt.Sprintf("duplicated key:'%s'", its.Key))
 			case errors.PushPullMissingOps:
 				// TODO: implement me.
 			}
@@ -144,12 +144,12 @@ func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error
 		modelOp := ppp.GetOperations()[0]
 		_, ok := operations.ModelToOperation(modelOp).(*operations.SnapshotOperation)
 		if !ok {
-			return errors.DatatypeSubscribe.New(its.Logger, "subscribe without SnapshotOp")
+			return errors.DatatypeSubscribe.New(its.L(), "subscribe without SnapshotOp")
 		}
 		its.datatype.ResetRollBackContext()
 		its.checkPoint.Cseq = ppp.CheckPoint.Cseq
 		its.checkPoint.Sseq = ppp.CheckPoint.Sseq - uint64(len(ppp.Operations))
-		its.Logger.Infof("ready to subscribe: (%v)", its.checkPoint)
+		its.L().Infof("ready to subscribe: (%v)", its.checkPoint)
 	}
 	return nil
 }
@@ -162,7 +162,7 @@ func (its *WiredDatatype) applyPushPullPackExcludeDuplicatedOperations(ppp *mode
 		// o_1 and o_2 should be skipped
 		skip := len(ppp.Operations) - pulled
 		ppp.Operations = ppp.Operations[skip:]
-		its.Logger.Infof("skip %d operations", skip)
+		its.L().Infof("skip %d operations", skip)
 	}
 }
 
@@ -174,7 +174,7 @@ func (its *WiredDatatype) applyPushPullPackSyncCheckPoint(newCheckPoint *model.C
 	if its.checkPoint.Sseq < newCheckPoint.Sseq {
 		its.checkPoint.Sseq = newCheckPoint.Sseq
 	}
-	its.Logger.Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, its.checkPoint)
+	its.L().Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, its.checkPoint)
 }
 
 func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
@@ -191,7 +191,7 @@ func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
 			newOpID := model.NewOperationIDWithCUID(its.opID.CUID)
 			newOpID.Lamport = 1 // Because of SnapshotOperation
 			its.SetOpID(newOpID)
-			its.Logger.Infof("reset buffer and opID:%s because DUE_TO_SUBSCRIBE_CREATE = > SUBSCRIBE", its.opID.ToString())
+			its.L().Infof("reset buffer and opID:%s because DUE_TO_SUBSCRIBE_CREATE = > SUBSCRIBE", its.opID.ToString())
 		}
 
 		its.state = model.StateOfDatatype_SUBSCRIBED
@@ -204,15 +204,15 @@ func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
 	case model.StateOfDatatype_DELETED:
 	}
 	if oldState != its.state {
-		its.Logger.Infof("update state: %v -> %v", oldState, its.state)
+		its.L().Infof("update state: %v -> %v", oldState, its.state)
 	}
 	return oldState, its.state, err
 }
 
 // ApplyPushPullPack ...
 func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
-	its.Logger.Infof("begin ApplyPushPull:%v", ppp.ToString())
-	defer its.Logger.Infof("end ApplyPushPull")
+	its.L().Infof("begin ApplyPushPull:%v", ppp.ToString())
+	defer its.L().Infof("end ApplyPushPull")
 	var oldState, newState model.StateOfDatatype
 	var errs errors.OrtooError = &errors.MultipleOrtooErrors{}
 	var opList []interface{}

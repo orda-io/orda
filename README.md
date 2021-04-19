@@ -62,7 +62,7 @@ clientConf := &ortoo.ClientConfig{
     ServerAddr:       "localhost:19061",         // Ortoo Server address.
     NotificationAddr: "localhost:11883",          // notification server address.
     CollectionName:   "hello_world",             // the collection name of MongoDB which the client participates in.
-    SyncType:         model.SyncType_NOTIFIABLE, // syncType that is notified in real-time from notification server.
+    SyncType:         model.SyncType_REALTIME, // syncType that is notified in real-time from notification server.
 }
 
 client1 := ortoo.NewClient(clientConf, "client1") // create a client with alias "client1".

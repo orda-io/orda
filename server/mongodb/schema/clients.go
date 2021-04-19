@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
+	"strconv"
 	"time"
 )
 
@@ -14,7 +15,8 @@ type ClientDoc struct {
 	CUID          string                       `bson:"_id"`
 	Alias         string                       `bson:"alias"`
 	CollectionNum uint32                       `bson:"colNum"`
-	SyncType      string                       `bson:"syncType"`
+	Type          int8                         `bson:"type"`
+	SyncType      int8                         `bson:"syncType"`
 	CheckPoints   map[string]*model.CheckPoint `bson:"checkpoints,omitempty"`
 	CreatedAt     time.Time                    `bson:"createdAt"`
 	UpdatedAt     time.Time                    `bson:"updatedAt"`
@@ -25,6 +27,7 @@ var ClientDocFields = struct {
 	CUID          string
 	Alias         string
 	CollectionNum string
+	Type          string
 	SyncType      string
 	CheckPoints   string
 	CreatedAt     string
@@ -33,6 +36,7 @@ var ClientDocFields = struct {
 	CUID:          "_id",
 	Alias:         "alias",
 	CollectionNum: "colNum",
+	Type:          "type",
 	SyncType:      "syncType",
 	CheckPoints:   "checkpoints",
 	CreatedAt:     "createdAt",
@@ -59,6 +63,7 @@ func (its *ClientDoc) ToUpdateBSON() bson.D {
 		{"$set", bson.D{
 			{ClientDocFields.Alias, its.Alias},
 			{ClientDocFields.CollectionNum, its.CollectionNum},
+			{ClientDocFields.Type, its.Type},
 			{ClientDocFields.SyncType, its.SyncType},
 			{ClientDocFields.CheckPoints, checkPointBson},
 			{ClientDocFields.CreatedAt, its.CreatedAt},
@@ -99,10 +104,21 @@ func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 		CUID:          model.CUID,
 		Alias:         model.Alias,
 		CollectionNum: collectionNum,
-		SyncType:      model.SyncType.String(),
+		Type:          int8(model.Type),
+		SyncType:      int8(model.SyncType),
 	}
 }
 
-func (its *ClientDoc) GetClient() string {
+func (its *ClientDoc) GetModel() *model.Client {
+	return &model.Client{
+		CUID:       its.CUID,
+		Alias:      its.Alias,
+		Collection: strconv.Itoa(int(its.CollectionNum)),
+		Type:       model.ClientType(its.Type),
+		SyncType:   model.SyncType(its.SyncType),
+	}
+}
+
+func (its *ClientDoc) ToString() string {
 	return fmt.Sprintf("%s(%s)", its.Alias, its.CUID)
 }

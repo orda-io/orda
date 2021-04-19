@@ -41,7 +41,6 @@ func (its *MongoCollections) InsertCollection(
 	ctx context.OrtooContext,
 	name string,
 ) (collection *schema.CollectionDoc, err errors.OrtooError) {
-
 	if err := its.doTransaction(ctx, func() errors.OrtooError {
 		num, err := its.GetNextCollectionNum(ctx)
 		if err != nil {

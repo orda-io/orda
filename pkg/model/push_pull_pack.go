@@ -110,8 +110,9 @@ func (its *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
 	return option
 }
 
+// GetDatatypeTag returns datatype tag
 func (its *PushPullPack) GetDatatypeTag() string {
-	return utils.MakeSummary(its.Key, its.DUID, false)
+	return fmt.Sprintf("%s(%s)", utils.MakeDefaultShort(its.Key), its.DUID)
 }
 
 // GetResponsePushPullPack returns the PushPullPack that can be used for response.

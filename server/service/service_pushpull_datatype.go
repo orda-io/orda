@@ -1,7 +1,6 @@
 package service
 
 import (
-	gocontext "context"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
@@ -12,6 +11,7 @@ import (
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
 	"github.com/knowhunger/ortoo/server/notification"
 	"github.com/knowhunger/ortoo/server/snapshot"
+	"github.com/knowhunger/ortoo/server/svrcontext"
 	"runtime/debug"
 	"time"
 )
@@ -47,7 +47,7 @@ type PushPullHandler struct {
 	CUID string
 
 	err      errors.OrtooError
-	ctx      context.OrtooContext
+	ctx      *svrcontext.ServerContext
 	mongo    *mongodb.RepositoryMongo
 	notifier *notification.Notifier
 
@@ -70,19 +70,22 @@ type PushPullHandler struct {
 }
 
 func newPushPullHandler(
-	ctx gocontext.Context,
+	ctx *svrcontext.ServerContext,
 	ppp *model.PushPullPack,
 	clientDoc *schema.ClientDoc,
 	collectionDoc *schema.CollectionDoc,
 	service *OrtooService,
 ) *PushPullHandler {
-	ortooCtx := context.NewWithTags(ctx, context.SERVER,
-		context.MakeTagInPushPull(constants.TagPushPull, collectionDoc.Num, clientDoc.CUID, ppp.DUID))
+
+	newCtx := svrcontext.NewServerContext(ctx.Ctx(), constants.TagPushPull).
+		UpdateCollection(collectionDoc.GetSummary()).
+		UpdateClient(clientDoc.ToString()).UpdateDatatype(ppp.GetDatatypeTag())
+
 	return &PushPullHandler{
 		Key:             ppp.Key,
 		DUID:            ppp.DUID,
 		CUID:            clientDoc.CUID,
-		ctx:             ortooCtx,
+		ctx:             newCtx,
 		err:             &errors.MultipleOrtooErrors{},
 		mongo:           service.mongo,
 		notifier:        service.notifier,
@@ -123,8 +126,8 @@ func (its *PushPullHandler) finalize() {
 		its.ctx.L().Infof("finish with CP (%v) -> (%v) and pulled ops: %d",
 			its.initialCheckPoint, its.currentCheckPoint, len(its.resPushPullPack.Operations))
 		if len(its.pushingOperations) > 0 {
-			newCtx := context.NewWithTags(gocontext.TODO(), context.SERVER,
-				context.MakeTagInPushPull(constants.TagPostPushPull, its.collectionDoc.Num, its.clientDoc.CUID, its.resPushPullPack.DUID))
+
+			newCtx := its.ctx.CloneWithNewContext(constants.TagPostPushPull)
 
 			go func() {
 				defer its.recoveryFromPanic()

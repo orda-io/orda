@@ -4,7 +4,6 @@ import (
 	gocontext "context"
 	"encoding/json"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
@@ -12,6 +11,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/types"
 	"github.com/knowhunger/ortoo/server/constants"
 	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/knowhunger/ortoo/server/svrcontext"
 	"github.com/knowhunger/ortoo/test"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,7 +23,7 @@ import (
 )
 
 func TestMongo(t *testing.T) {
-	ctx := context.NewWithTags(gocontext.TODO(), context.TEST, t.Name())
+	ctx := svrcontext.NewServerContext(gocontext.TODO(), constants.TagTest).UpdateCollection(t.Name())
 	mongo, err := integration.GetMongo(ctx, "ortoo_unit_test")
 	if err != nil {
 		t.Fatal("fail to initialize mongoDB")
@@ -64,7 +64,8 @@ func TestMongo(t *testing.T) {
 			CUID:          "test_cuid",
 			Alias:         "test_alias",
 			CollectionNum: 1,
-			SyncType:      "MANUAL",
+			Type:          0,
+			SyncType:      0,
 			CheckPoints: map[string]*model.CheckPoint{
 				"test_duid1": model.NewCheckPoint().Set(1, 2),
 				"test_duid2": model.NewCheckPoint().Set(3, 4),

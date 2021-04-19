@@ -88,7 +88,7 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 		cast.C.T = uptTargets
 		return uptValues, nil
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
 }
 
 func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -104,7 +104,7 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) 
 		ret, _ := its.snapshot().updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
 		return ret, nil
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
 }
 
 func (its *list) Size() int {
@@ -121,7 +121,7 @@ func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, errors
 	}
 	jsonValues, err2 := types.ConvertValueList(values)
 	if err2 != nil {
-		return nil, errors.DatatypeIllegalParameters.New(its.Logger, err2.Error())
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), err2.Error())
 	}
 	op := operations.NewInsertOperation(pos, jsonValues)
 	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
@@ -137,7 +137,7 @@ func (its *list) Update(pos int, values ...interface{}) ([]interface{}, errors.O
 	}
 	jsonValues, err2 := types.ConvertValueList(values)
 	if err2 != nil {
-		return nil, errors.DatatypeIllegalParameters.New(its.Logger, err2.Error())
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), err2.Error())
 	}
 	op := operations.NewUpdateOperation(pos, jsonValues)
 	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
@@ -256,7 +256,7 @@ func (its *listSnapshot) insertRemoteWithTimedTypes(
 		}
 		return nil
 	}
-	return errors.DatatypeNoTarget.New(its.GetLogger(), pos.Hash())
+	return errors.DatatypeNoTarget.New(its.L(), pos.Hash())
 }
 
 func (its *listSnapshot) insertLocal(
@@ -330,7 +330,7 @@ func (its *listSnapshot) updateRemote(
 				node.setTime(thisTS)
 			}
 		} else {
-			_ = errs.Append(errors.DatatypeNoTarget.New(its.GetLogger(), t.ToString()))
+			_ = errs.Append(errors.DatatypeNoTarget.New(its.L(), t.ToString()))
 		}
 	}
 	return updated, errs.Return()
@@ -377,7 +377,7 @@ func (its *listSnapshot) deleteRemote(
 				}
 			}
 		} else {
-			_ = errs.Append(errors.DatatypeNoTarget.New(its.GetLogger(), t.ToString()))
+			_ = errs.Append(errors.DatatypeNoTarget.New(its.L(), t.ToString()))
 		}
 	}
 	return deleted, errs.Return()
@@ -416,33 +416,33 @@ func (its *listSnapshot) validateGetRange(pos int, numOfNodes int) errors.OrtooE
 	// 1st condition: if size==4, pos==3 is ok, but 4 is not ok
 	// 2nd condition: if size==4, (pos==3, numOfNodes==1) is ok, (pos==3, numOfNodes=2) is not ok.
 	if pos < 0 {
-		return errors.DatatypeIllegalParameters.New(its.GetLogger(), "negative position")
+		return errors.DatatypeIllegalParameters.New(its.L(), "negative position")
 	}
 	if numOfNodes < 1 {
-		return errors.DatatypeIllegalParameters.New(its.GetLogger(), "numOfNodes should be more than 0")
+		return errors.DatatypeIllegalParameters.New(its.L(), "numOfNodes should be more than 0")
 	}
 	if its.size-1 < pos || pos+numOfNodes > its.size {
-		return errors.DatatypeIllegalParameters.New(its.GetLogger(), "out of bound index")
+		return errors.DatatypeIllegalParameters.New(its.L(), "out of bound index")
 	}
 	return nil
 }
 
 func (its *listSnapshot) validateInsertPosition(pos int) errors.OrtooError {
 	if pos < 0 {
-		return errors.DatatypeIllegalParameters.New(its.GetLogger(), "negative position")
+		return errors.DatatypeIllegalParameters.New(its.L(), "negative position")
 	}
 	if pos > its.size { // size:0 => pos{0} , size:1 => pos{0, 1}
-		return errors.DatatypeIllegalParameters.New(its.GetLogger(), "out of bound index")
+		return errors.DatatypeIllegalParameters.New(its.L(), "out of bound index")
 	}
 	return nil
 }
 
 func (its *listSnapshot) validateGetPosition(pos int) errors.OrtooError {
 	if pos < 0 {
-		return errors.DatatypeIllegalParameters.New(its.GetLogger(), "negative position")
+		return errors.DatatypeIllegalParameters.New(its.L(), "negative position")
 	}
 	if pos >= its.size { // size: 1 => pos {0}, size: 2 => pos {0, 1}
-		return errors.DatatypeIllegalParameters.New(its.GetLogger(), "out of bound index")
+		return errors.DatatypeIllegalParameters.New(its.L(), "out of bound index")
 	}
 	return nil
 }

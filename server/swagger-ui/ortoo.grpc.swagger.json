@@ -430,7 +430,7 @@
       "enum": [
         "LOCAL_ONLY",
         "MANUALLY",
-        "NOTIFIABLE"
+        "REALTIME"
       ],
       "default": "LOCAL_ONLY"
     },

@@ -1,7 +1,9 @@
 package testonly
 
 import (
+	gocontext "context"
 	"encoding/json"
+	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
@@ -37,5 +39,6 @@ func NewBase(key string, t model.TypeOfDatatype) *datatypes.BaseDatatype {
 		Collection: "",
 		SyncType:   0,
 	}
-	return datatypes.NewBaseDatatype(key, t, cm)
+	ctx := context.NewClientContext(gocontext.TODO(), cm)
+	return datatypes.NewBaseDatatype(key, t, ctx)
 }

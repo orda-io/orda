@@ -133,7 +133,7 @@ func (its *jsonCommon) equal(o *jsonCommon) bool {
 	for k, v1 := range its.nodeMap {
 		v2 := o.nodeMap[k]
 		if !v1.equal(v2) {
-			its.base.GetLogger().Errorf("\n%v\n%v", v1, v2)
+			its.base.L().Errorf("\n%v\n%v", v1, v2)
 			return false
 		}
 	}
@@ -243,7 +243,7 @@ func (its *jsonPrimitive) getType() TypeOfJSON {
 }
 
 func (its *jsonPrimitive) getLogger() *log.OrtooLog {
-	return its.common.base.GetLogger()
+	return its.common.base.L()
 }
 
 func (its *jsonPrimitive) findJSONType(ts *model.Timestamp) (j jsonType, ok bool) {

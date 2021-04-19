@@ -11,7 +11,7 @@ import (
 
 // DatatypeManager manages Ortoo datatypes regarding operations
 type DatatypeManager struct {
-	ctx            context.OrtooContext
+	ctx            *context.ClientContext
 	cuid           string
 	collectionName string
 	syncManager    *SyncManager
@@ -19,12 +19,7 @@ type DatatypeManager struct {
 }
 
 // NewDatatypeManager creates a new instance of DatatypeManager
-func NewDatatypeManager(
-	ctx context.OrtooContext,
-	client *model.Client,
-	sm *SyncManager,
-) *DatatypeManager {
-
+func NewDatatypeManager(ctx *context.ClientContext, client *model.Client, sm *SyncManager) *DatatypeManager {
 	dm := &DatatypeManager{
 		ctx:            ctx,
 		cuid:           client.CUID,
@@ -40,6 +35,7 @@ func NewDatatypeManager(
 
 // DeliverTransaction delivers a transaction
 func (its *DatatypeManager) DeliverTransaction(wired iface.WiredDatatype) {
+
 	// panic("implement me")
 }
 
@@ -59,8 +55,7 @@ func (its *DatatypeManager) ReceiveNotification(topic string, notification model
 
 // OnChangeDatatypeState deals with what datatypeManager has to do when the state of datatype changes.
 func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model.StateOfDatatype) errors.OrtooError {
-	switch state {
-	case model.StateOfDatatype_SUBSCRIBED:
+	if state == model.StateOfDatatype_SUBSCRIBED {
 		topic := fmt.Sprintf("%s/%s", its.collectionName, dt.GetKey())
 		if its.syncManager != nil {
 			if err := its.syncManager.subscribeNotification(topic); err != nil {
@@ -125,7 +120,7 @@ func (its *DatatypeManager) SyncIfNeeded(key, duid string, sseq uint64) errors.O
 
 // SyncAll enables all the subscribed datatypes to be synchronized.
 func (its *DatatypeManager) SyncAll() errors.OrtooError {
-	var pushPullPacks []*model.PushPullPack
+	var pushPullPacks []*model.PushPullPack //nolint:preallocate
 	for _, data := range its.dataMap {
 		ppp := data.CreatePushPullPack()
 		pushPullPacks = append(pushPullPacks, ppp)

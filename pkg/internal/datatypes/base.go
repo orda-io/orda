@@ -9,6 +9,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
+	"github.com/knowhunger/ortoo/pkg/utils"
 )
 
 // BaseDatatype is the base datatype which contains
@@ -18,22 +19,22 @@ type BaseDatatype struct {
 	opID     *model.OperationID
 	TypeOf   model.TypeOfDatatype
 	state    model.StateOfDatatype
+	ctx      *context.DatatypeContext
 	datatype iface.Datatype
-	Logger   *log.OrtooLog
 }
 
 // NewBaseDatatype creates a new base datatype
-func NewBaseDatatype(key string, t model.TypeOfDatatype, client *model.Client) *BaseDatatype {
+func NewBaseDatatype(key string, t model.TypeOfDatatype, clientCtx *context.ClientContext) *BaseDatatype {
 	duid := types.NewUID()
-	return &BaseDatatype{
+	base := &BaseDatatype{
 		Key:    key,
 		id:     duid,
 		TypeOf: t,
-		opID:   model.NewOperationIDWithCUID(client.CUID),
+		opID:   model.NewOperationIDWithCUID(clientCtx.Client.CUID),
 		state:  model.StateOfDatatype_DUE_TO_CREATE,
-		Logger: log.NewWithTags(string(context.DATATYPE),
-			context.MakeTagInDatatype(client.Collection, key, client.CUID, duid)),
 	}
+	base.ctx = context.NewDatatypeContext(clientCtx, base)
+	return base
 }
 
 // GetCUID returns CUID of the client which this datatype subecribes to.
@@ -47,7 +48,7 @@ func (its *BaseDatatype) GetEra() uint32 {
 }
 
 func (its *BaseDatatype) SetLogger(l *log.OrtooLog) {
-	its.Logger = l
+	its.ctx.SetLogger(l)
 }
 
 func (its *BaseDatatype) String() string {
@@ -145,7 +146,7 @@ func (its *BaseDatatype) GetMeta() ([]byte, errors.OrtooError) {
 	}
 	metab, err := json.Marshal(&meta)
 	if err != nil {
-		return nil, errors.DatatypeMarshal.New(its.Logger, meta)
+		return nil, errors.DatatypeMarshal.New(its.ctx.L(), meta)
 	}
 	return metab, nil
 }
@@ -154,7 +155,7 @@ func (its *BaseDatatype) GetMeta() ([]byte, errors.OrtooError) {
 func (its *BaseDatatype) SetMeta(meta []byte) errors.OrtooError {
 	m := model.DatatypeMeta{}
 	if err := json.Unmarshal(meta, &m); err != nil {
-		return errors.DatatypeMarshal.New(its.Logger, string(meta))
+		return errors.DatatypeMarshal.New(its.ctx.L(), string(meta))
 	}
 	its.Key = m.Key
 	its.id = m.DUID
@@ -164,6 +165,10 @@ func (its *BaseDatatype) SetMeta(meta []byte) errors.OrtooError {
 	return nil
 }
 
-func (its *BaseDatatype) GetLogger() *log.OrtooLog {
-	return its.Logger
+func (its *BaseDatatype) L() *log.OrtooLog {
+	return its.ctx.L()
+}
+
+func (its *BaseDatatype) GetSummary() string {
+	return fmt.Sprintf("%s(%s)", utils.MakeDefaultShort(its.Key), its.id)
 }

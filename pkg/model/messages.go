@@ -38,8 +38,17 @@ func (its *PushPullMessage) ToString() string {
 	return b.String()
 }
 
+func (its *PushPullMessage) GetClient() *Client {
+	return &Client{
+		CUID:       its.Cuid,
+		Alias:      "",
+		Collection: its.Collection,
+		SyncType:   SyncType_LOCAL_ONLY,
+	}
+}
+
 // NewClientMessage creates a new ClientRequest
-func NewClientMessage(seq uint32, client *Client) *ClientMessage {
+func NewClientMessage(client *Client) *ClientMessage {
 	return &ClientMessage{
 		Header:      NewMessageHeader(RequestType_CLIENTS),
 		Collection:  client.Collection,
@@ -66,4 +75,8 @@ func (its *ClientMessage) GetClient() *Client {
 		Type:       its.ClientType,
 		SyncType:   its.SyncType,
 	}
+}
+
+func (its *ClientMessage) GetClientSummary() string {
+	return fmt.Sprintf("%s(%s)", its.ClientAlias, its.Cuid)
 }

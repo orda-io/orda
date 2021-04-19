@@ -67,7 +67,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 		return its.snapshot().increaseCommon(cast.C.Delta), nil
 	}
 
-	return nil, errors.DatatypeIllegalParameters.New(its.Logger, op)
+	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
 }
 
 func (its *counter) ResetSnapshot() {
@@ -116,7 +116,7 @@ func (its *counterSnapshot) GetAsJSONCompatible() interface{} {
 }
 
 func (its *counterSnapshot) increaseCommon(delta int32) int32 {
-	its.Value = its.Value + delta
+	its.Value += delta
 	return its.Value
 }
 

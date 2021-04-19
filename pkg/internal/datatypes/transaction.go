@@ -51,11 +51,11 @@ func (its *TransactionDatatype) ResetRollBackContext() errors.OrtooError {
 	its.datatype.ResetSnapshot()
 	snap, err := json.Marshal(its.datatype.GetSnapshot())
 	if err != nil {
-		return errors.DatatypeMarshal.New(its.Logger, err.Error())
+		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
 	meta, err := its.GetMeta()
 	if err != nil {
-		return errors.DatatypeMarshal.New(its.Logger, err.Error())
+		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
 	its.rollbackSnapshot = snap
 	its.rollbackMeta = meta
@@ -98,7 +98,7 @@ func (its *TransactionDatatype) SentenceInTransaction(
 // make a transaction and lock
 func (its *TransactionDatatype) setTransactionContextAndLock(tag string) *TransactionContext {
 	if tag != NotUserTransactionTag {
-		its.Logger.Infof("Begin the transaction: `%s`", tag)
+		its.L().Infof("Begin the transaction: `%s`", tag)
 	}
 	its.mutex.Lock()
 	its.isLocked = true
@@ -131,24 +131,24 @@ func (its *TransactionDatatype) BeginTransaction(
 
 // Rollback is called to rollback a transaction
 func (its *TransactionDatatype) Rollback() errors.OrtooError {
-	its.Logger.Infof("Begin the rollback: '%s'", its.txCtx.tag)
+	its.L().Infof("Begin the rollback: '%s'", its.txCtx.tag)
 	snapshotDatatype, _ := its.datatype.(iface.SnapshotDatatype)
 	err := snapshotDatatype.SetMetaAndSnapshot(its.rollbackMeta, its.rollbackSnapshot)
 	if err != nil {
-		return errors.DatatypeTransaction.New(its.Logger, "rollback failed")
+		return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 	}
 	for _, op := range its.rollbackOps {
 		err := its.Replay(op)
 		if err != nil {
-			return errors.DatatypeTransaction.New(its.Logger, "rollback failed")
+			return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 		}
 	}
 	its.rollbackMeta, its.rollbackSnapshot, err = snapshotDatatype.GetMetaAndSnapshot()
 	if err != nil {
-		return errors.DatatypeTransaction.New(its.Logger, "rollback failed")
+		return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 	}
 	its.rollbackOps = nil
-	its.Logger.Infof("End the rollback: '%s'", its.txCtx.tag)
+	its.L().Infof("End the rollback: '%s'", its.txCtx.tag)
 	return nil
 }
 
@@ -165,7 +165,7 @@ func (its *TransactionDatatype) EndTransaction(txCtx *TransactionContext, withOp
 			if withOp {
 				beginOp, ok := its.txCtx.opBuffer[0].(*operations.TransactionOperation)
 				if !ok {
-					return errors.DatatypeTransaction.New(its.Logger, "no transaction operation")
+					return errors.DatatypeTransaction.New(its.L(), "no transaction operation")
 				}
 				beginOp.SetNumOfOps(len(its.txCtx.opBuffer))
 			}
@@ -174,12 +174,10 @@ func (its *TransactionDatatype) EndTransaction(txCtx *TransactionContext, withOp
 				its.deliverTransaction(its.txCtx.opBuffer)
 			}
 			if its.txCtx.tag != NotUserTransactionTag {
-				its.Logger.Infof("End the transaction: `%s`", its.txCtx.tag)
+				its.L().Infof("End the transaction: `%s`", its.txCtx.tag)
 			}
-		} else {
-			if err := its.Rollback(); err != nil {
-				panic(err)
-			}
+		} else if err := its.Rollback(); err != nil {
+			panic(err)
 		}
 	}
 	return nil

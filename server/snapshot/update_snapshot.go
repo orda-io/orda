@@ -37,7 +37,7 @@ func NewManager(
 // UpdateSnapshot updates snapshot for specified datatype
 func (its *Manager) UpdateSnapshot() errors.OrtooError {
 	var lastSseq uint64 = 0
-	client := ortoo.NewClient(ortoo.NewLocalClientConfig(its.collectionDoc.Name), "server")
+	client := ortoo.NewClient(ortoo.NewLocalClientConfig(its.collectionDoc.Name), "ortoo-server")
 	datatype := client.CreateDatatype(its.datatypeDoc.Key, its.datatypeDoc.GetType(), nil).(iface.Datatype)
 	datatype.SetLogger(its.ctx.L())
 	snapshotDoc, err := its.mongo.GetLatestSnapshot(its.ctx, its.collectionDoc.Num, its.datatypeDoc.DUID)
