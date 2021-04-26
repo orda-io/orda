@@ -121,7 +121,7 @@ func (its *WiredDatatype) calculatePullingOperations(newCheckPoint *model.CheckP
 	return int((newCheckPoint.Sseq - its.checkPoint.Sseq) - (newCheckPoint.Cseq - its.checkPoint.Cseq))
 }
 
-func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) errors.OrtooError {
+func (its *WiredDatatype) checkPushPullPackOptionAndError(ppp *model.PushPullPack) errors.OrtooError {
 	if ppp.GetPushPullPackOption().HasErrorBit() {
 		modelOp := ppp.GetOperations()[0]
 		errOp, ok := operations.ModelToOperation(modelOp).(*operations.ErrorOperation)
@@ -135,7 +135,10 @@ func (its *WiredDatatype) checkPushPullPackOption(ppp *model.PushPullPack) error
 				return errors.DatatypeCreate.New(its.L(), fmt.Sprintf("duplicated key:'%s'", its.Key))
 			case errors.PushPullMissingOps:
 				// TODO: implement me.
+			case errors.PushPullNoDatatypeToSubscribe:
+				return errors.DatatypeSubscribe.New(its.L(), fmt.Sprintf("%v", errOp.GetPushPullError().Msg))
 			}
+			panic("Not implemented yet")
 		} else {
 			panic("Not implemented yet")
 		}
@@ -216,7 +219,7 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	var oldState, newState model.StateOfDatatype
 	var errs errors.OrtooError = &errors.MultipleOrtooErrors{}
 	var opList []interface{}
-	err := its.checkPushPullPackOption(ppp)
+	err := its.checkPushPullPackOptionAndError(ppp)
 	if err == nil {
 		its.applyPushPullPackExcludeDuplicatedOperations(ppp)
 		its.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
@@ -252,16 +255,23 @@ func (its *WiredDatatype) applyPushPullPackCallHandler(
 }
 
 func (its *WiredDatatype) deliverTransaction(transaction []iface.Operation) {
-	if its.wire == nil {
-		return
-	}
+
 	for _, op := range transaction {
 		its.localBuffer = append(its.localBuffer, op.ToModelOperation())
 	}
+	if its.wire == nil && its.ctx.Client.SyncType != model.SyncType_REALTIME {
+		return
+	}
+	its.ctx.L().Infof("call deliverTransaction: %v", transaction)
 	its.wire.DeliverTransaction(its)
 }
 
-// NeedSync verifies if the datatype needs to sync
-func (its *WiredDatatype) NeedSync(sseq uint64) bool {
+// NeedPull verifies if the datatype needs to pull
+func (its *WiredDatatype) NeedPull(sseq uint64) bool {
 	return its.checkPoint.Sseq < sseq
+}
+
+// NeedPush verifies if the datatype needs to push
+func (its *WiredDatatype) NeedPush() bool {
+	return its.checkPoint.Cseq < its.opID.GetSeq()
 }

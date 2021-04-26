@@ -8,8 +8,6 @@ import (
 // Operation defines the interfaces of any operation
 type Operation interface {
 	SetID(opID *model.OperationID)
-	ExecuteLocal(datatype Datatype) (interface{}, errors.OrtooError)
-	ExecuteRemote(datatype Datatype) (interface{}, errors.OrtooError)
 	ToModelOperation() *model.Operation
 	GetType() model.TypeOfOperation
 	String() string

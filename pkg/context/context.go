@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"github.com/knowhunger/ortoo/pkg/constants"
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
@@ -45,13 +46,13 @@ func NewOrtooContext(ctx context.Context, tag1 string, tag2 string) OrtooContext
 
 func NewClientContext(ctx context.Context, client *model.Client) *ClientContext {
 	return &ClientContext{
-		OrtooContext: NewOrtooContext(ctx, client.GetAlias(), client.GetSummary()),
+		OrtooContext: NewOrtooContext(ctx, constants.TagSdkClient, client.GetSummary()),
 		Client:       client,
 	}
 }
 
 func NewDatatypeContext(clientContext *ClientContext, baseDatatype iface.BaseDatatype) *DatatypeContext {
-	logger := log.NewWithTags(clientContext.Client.GetAlias(), baseDatatype.GetSummary())
+	logger := log.NewWithTags(constants.TagSdkDatatype, clientContext.Client.GetSummary()+"|"+baseDatatype.GetSummary())
 	return &DatatypeContext{
 		ClientContext: &ClientContext{
 			OrtooContext: &ortooContext{

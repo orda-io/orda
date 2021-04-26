@@ -1,8 +1,6 @@
 package operations
 
 import (
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
@@ -27,16 +25,6 @@ type InsertOperation struct {
 	*baseOperation
 	Pos int // for local
 	C   insertContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *InsertOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *InsertOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.
@@ -81,16 +69,6 @@ type DeleteOperation struct {
 	C          deleteContent
 }
 
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *DeleteOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *DeleteOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
-}
-
 // ToModelOperation transforms this operation to the model.Operation.
 func (its *DeleteOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
@@ -132,16 +110,6 @@ type UpdateOperation struct {
 	*baseOperation
 	Pos int
 	C   updateContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *UpdateOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *UpdateOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.

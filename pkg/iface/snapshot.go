@@ -2,6 +2,7 @@ package iface
 
 import (
 	"github.com/knowhunger/ortoo/pkg/errors"
+	"github.com/knowhunger/ortoo/pkg/model"
 )
 
 // PublicSnapshotDatatype defines public operations related to snapshot
@@ -10,7 +11,8 @@ type PublicSnapshotDatatype interface {
 }
 
 type SnapshotContent interface {
-	GetS() string
+	GetSnapshot() string
+	GetState() model.StateOfDatatype
 }
 
 // SnapshotDatatype defines the interfaces of the datatype that enables the snapshot.

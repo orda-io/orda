@@ -1,8 +1,6 @@
 package operations
 
 import (
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/model"
 )
 
@@ -26,16 +24,6 @@ type putContent struct {
 type PutOperation struct {
 	*baseOperation
 	C putContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *PutOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *PutOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.
@@ -89,16 +77,6 @@ type removeContent struct {
 type RemoveOperation struct {
 	*baseOperation
 	C removeContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *RemoveOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *RemoveOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.

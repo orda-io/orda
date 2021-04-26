@@ -18,5 +18,6 @@ type WiredDatatype interface {
 	ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrtooError)
 	ApplyPushPullPack(*model.PushPullPack)
 	CreatePushPullPack() *model.PushPullPack
-	NeedSync(sseq uint64) bool
+	NeedPull(sseq uint64) bool
+	NeedPush() bool
 }

@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
+	"time"
 )
 
 var mongoDB = make(map[string]*mongodb.RepositoryMongo)
@@ -43,12 +45,12 @@ func GetMongo(ctx context.OrtooContext, dbName string) (*mongodb.RepositoryMongo
 }
 
 // NewTestOrtooClientConfig generates an OrtooClientConfig for testing.
-func NewTestOrtooClientConfig(collectionName string) *ortoo.ClientConfig {
+func NewTestOrtooClientConfig(collectionName string, syncType model.SyncType) *ortoo.ClientConfig {
 	return &ortoo.ClientConfig{
 		ServerAddr:       "127.0.0.1:59062",
 		CollectionName:   collectionName,
 		NotificationAddr: "tcp://127.0.0.1:18181",
-		SyncType:         model.SyncType_REALTIME,
+		SyncType:         syncType,
 	}
 }
 
@@ -59,5 +61,19 @@ func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
 		RestfulPort:   59862,
 		Notification:  "tcp://127.0.0.1:18181",
 		Mongo:         *mongodb.NewTestMongoDBConfig(dbName),
+	}
+}
+
+func WaitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	select {
+	case <-c:
+		return true
+	case <-time.After(timeout):
+		return false
 	}
 }

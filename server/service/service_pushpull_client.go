@@ -28,7 +28,7 @@ func (its *OrtooService) ProcessPushPull(goCtx gocontext.Context, in *model.Push
 		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), msg))
 	}
 	ctx.UpdateClient(clientDoc.ToString())
-	ctx.L().Infof("RECV %v", in.ToString())
+	ctx.L().Infof("REQ[PUPU] %v", in.ToString())
 	if clientDoc.CollectionNum != collectionDoc.Num {
 		msg := fmt.Sprintf("client '%s' accesses collection(%d)", clientDoc.ToString(), collectionDoc.Num)
 		return nil, errors.NewRPCError(errors.ServerNoPermission.New(ctx.L(), msg))
@@ -62,5 +62,6 @@ func (its *OrtooService) ProcessPushPull(goCtx gocontext.Context, in *model.Push
 			response.PushPullPacks = append(response.PushPullPacks, ppp)
 		}
 	}
+	ctx.L().Infof("RES[PUPU] %v", response.ToString())
 	return response, nil
 }

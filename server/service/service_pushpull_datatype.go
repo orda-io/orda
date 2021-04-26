@@ -118,6 +118,7 @@ func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.Or
 
 	its.initialCheckPoint = checkPoint.Clone()
 	its.currentCheckPoint = checkPoint.Clone()
+	its.ctx.L().Infof("REQ[PUPU] %v", its.gotPushPullPack.ToString())
 	return nil
 }
 
@@ -145,7 +146,7 @@ func (its *PushPullHandler) finalize() {
 		errOp := operations.NewErrorOperation(its.err)
 		its.resPushPullPack.Operations = append(its.resPushPullPack.Operations, errOp.ToModelOperation())
 	}
-	its.ctx.L().Infof("SENDBACK %s", its.resPushPullPack.ToString())
+	its.ctx.L().Infof("RES[PUPU] %s", its.resPushPullPack.ToString())
 	its.retCh <- its.resPushPullPack
 }
 
@@ -286,6 +287,7 @@ func (its *PushPullHandler) processSubscribeOrCreate(code pushPullCase) errors.O
 	} else if its.gotOption.HasSubscribeBit() {
 		switch code {
 		case caseMatchNothing:
+			return errors.PushPullNoDatatypeToSubscribe.New(its.ctx.L(), its.Key)
 		case caseUsedDUID:
 		case caseMatchKeyNotType:
 		case caseAllMatchedSubscribed:

@@ -2,7 +2,6 @@ package ortoo
 
 import (
 	gocontext "context"
-	"fmt"
 	"github.com/knowhunger/ortoo/pkg/context"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
@@ -68,8 +67,8 @@ func NewClient(conf *ClientConfig, alias string) Client {
 	var datatypeManager *managers.DatatypeManager = nil
 	if conf.SyncType != model.SyncType_LOCAL_ONLY {
 		syncManager = managers.NewSyncManager(ctx, cm, conf.ServerAddr, conf.NotificationAddr)
-		datatypeManager = managers.NewDatatypeManager(ctx, cm, syncManager)
 	}
+	datatypeManager = managers.NewDatatypeManager(ctx, syncManager)
 	return &clientImpl{
 		conf:            conf,
 		ctx:             ctx,
@@ -213,17 +212,13 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 ) iface.Datatype {
 	// TODO: this would be better go into datatypeManager
 	if its.datatypeManager != nil {
-		datatypeFromDM := its.datatypeManager.Get(key)
-		if datatypeFromDM != nil {
-			if datatypeFromDM.GetType() == typeOf {
-				its.ctx.L().Warnf("already subscribed datatype '%s'", key)
-				return datatypeFromDM
-			}
-			err := errors.DatatypeSubscribe.New(nil,
-				fmt.Sprintf("not matched type: %s vs %s", typeOf.String(), datatypeFromDM.GetType().String()))
-			if handler != nil {
-				handler.errorHandler(nil, err)
-			}
+		data, err := its.datatypeManager.ExistDatatype(key, typeOf)
+		if err != nil && handler != nil {
+			handler.errorHandler(nil, err)
+			return nil
+		}
+		if data != nil {
+			return data
 		}
 	}
 	var datatype iface.Datatype

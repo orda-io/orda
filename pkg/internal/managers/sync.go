@@ -78,24 +78,24 @@ func (its *SyncManager) Close() errors.OrtooError {
 // Sync exchanges PUSHPULL_REQUEST and PUSHPULL_RESPONSE
 func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullMessage, errors.OrtooError) {
 	request := model.NewPushPullMessage(its.nextSeq(), its.client, pppList...)
-	its.ctx.L().Infof("SEND %s", request.ToString())
+	its.ctx.L().Infof("REQ[PUPU] %s", request.ToString())
 	response, err := its.serviceClient.ProcessPushPull(its.ctx, request)
 	if err != nil {
 		return nil, errors.ClientSync.New(its.ctx.L(), err.Error())
 	}
-	its.ctx.L().Infof("RECV %v", response.ToString())
+	its.ctx.L().Infof("RES[PUPU] %v", response.ToString())
 	return response, nil
 }
 
 // ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
 func (its *SyncManager) ExchangeClientRequestResponse() errors.OrtooError {
 	request := model.NewClientMessage(its.client)
-	its.ctx.L().Infof("SEND %s", request.ToString())
+	its.ctx.L().Infof("REQ[CLIE] %s", request.ToString())
 	response, err := its.serviceClient.ProcessClient(its.ctx, request)
 	if err != nil {
 		return errors.ClientSync.New(its.ctx.L(), err.Error())
 	}
-	its.ctx.L().Infof("RECV %s", response.ToString())
+	its.ctx.L().Infof("RES[CLIE] %s", response.ToString())
 	return nil
 }
 

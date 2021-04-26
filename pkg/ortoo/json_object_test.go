@@ -166,7 +166,7 @@ func TestJSONObject(t *testing.T) {
 		// delete not existing
 		old0, err := root.DeleteCommonInObject(root.getCreateTime(), "NOT_EXISTING", opID.Next().GetTimestamp(), true)
 		require.Error(t, err)
-		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), err.GetCode())
+		require.Equal(t, errors.DatatypeNoOp, err.GetCode())
 		require.Nil(t, old0)
 
 		// delete a jsonElement
@@ -179,7 +179,7 @@ func TestJSONObject(t *testing.T) {
 		// delete again: it should be ignored.
 		old2, err := root.DeleteCommonInObject(root.getCreateTime(), "K1", opID.Next().GetTimestamp(), true)
 		require.Error(t, err)
-		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), err.GetCode())
+		require.Equal(t, errors.DatatypeNoOp, err.GetCode())
 		require.Nil(t, old2)
 		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
 
@@ -212,7 +212,7 @@ func TestJSONObject(t *testing.T) {
 		old0, err := root.DeleteCommonInObject(root.getCreateTime(), "NOT_EXISTING", opID.Next().GetTimestamp(), false)
 		require.Nil(t, old0)
 		require.Error(t, err)
-		require.Equal(t, errors.DatatypeNoTarget.ToErrorCode(), err.GetCode())
+		require.Equal(t, errors.DatatypeNoTarget, err.GetCode())
 
 		// delete a JSONElement remotely
 		old1, err := root.DeleteCommonInObject(root.getCreateTime(), "K1", opID.Next().GetTimestamp(), false)

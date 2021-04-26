@@ -16,5 +16,5 @@ func NewMessageHeader(typeOf RequestType) *Header {
 
 // ToString returns customized string
 func (its *Header) ToString() string {
-	return fmt.Sprintf("%s|%s", its.Version, its.Type)
+	return fmt.Sprintf("%s|%s|%s", its.Version, its.Type, its.Agent)
 }

@@ -12,7 +12,7 @@ func (its *IntegrationTestSuite) TestList() {
 	key := GetFunctionName()
 
 	its.Run("Can update snapshot for list", func() {
-		config := NewTestOrtooClientConfig(its.collectionName)
+		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
 		client1 := ortoo.NewClient(config, "listClient")
 
 		err := client1.Connect()

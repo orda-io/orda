@@ -37,7 +37,7 @@ func NewBaseDatatype(key string, t model.TypeOfDatatype, clientCtx *context.Clie
 	return base
 }
 
-// GetCUID returns CUID of the client which this datatype subecribes to.
+// GetCUID returns CUID of the client which this datatype subscribes to.
 func (its *BaseDatatype) GetCUID() string {
 	return its.opID.CUID
 }
@@ -57,11 +57,19 @@ func (its *BaseDatatype) String() string {
 
 func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, errors.OrtooError) {
 	its.SetNextOpID(op)
-	ret, err := op.ExecuteLocal(its.datatype)
+	ret, err := its.executeLocal(op)
 	if err != nil {
 		its.opID.RollBack()
 	}
 	return ret, err // should deliver err
+}
+
+func (its *BaseDatatype) executeLocal(op iface.Operation) (interface{}, errors.OrtooError) {
+	switch op.GetType() {
+	case model.TypeOfOperation_TRANSACTION, model.TypeOfOperation_ERROR, model.TypeOfOperation_SNAPSHOT:
+		return nil, nil
+	}
+	return its.datatype.ExecuteLocal(op)
 }
 
 // Replay replays an already executed operation.
@@ -83,7 +91,8 @@ func (its *BaseDatatype) SetNextOpID(op iface.Operation) {
 }
 
 func (its *BaseDatatype) executeRemoteBase(op iface.Operation) {
-	op.ExecuteRemote(its.datatype)
+	_, _ = its.datatype.ExecuteRemote(op)
+	// op.ExecuteRemote(its.datatype)
 }
 
 // GetType returns the type of this datatype.

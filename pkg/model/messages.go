@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	pushPullHeadFormat = "|[%s|%s|%s][%d]|"
-	clientHeadFormat   = "|[%s|%s|%s]|"
+	clientHeadFormat = "[%s|%s|%s]"
 )
 
 // NewPushPullMessage creates a new PushPullRequest
@@ -23,18 +22,12 @@ func NewPushPullMessage(seq uint32, client *Client, pushPullPackList ...*PushPul
 // ToString returns customized string
 func (its *PushPullMessage) ToString() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(
-		&b,
-		pushPullHeadFormat,
-		its.Header.ToString(),
-		its.Collection,
-		its.Cuid,
-		len(its.PushPullPacks),
-	)
+	_, _ = fmt.Fprintf(&b, "Head[%s] PushPullPack[%d]{", its.Header.ToString(), len(its.PushPullPacks))
 	for _, ppp := range its.PushPullPacks {
 		b.WriteString(" ")
 		b.WriteString(ppp.ToString())
 	}
+	b.WriteString("}")
 	return b.String()
 }
 

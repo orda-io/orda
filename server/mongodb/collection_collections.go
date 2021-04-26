@@ -87,7 +87,7 @@ func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrtooCont
 			return errors.ServerDBQuery.New(ctx.L(), err2.Error())
 		}
 		if result.DeletedCount > 0 {
-			ctx.L().Infof("delete collection `%s`", name)
+			ctx.L().Infof("delete collection '%s'", name)
 			return nil
 		}
 		ctx.L().Warnf("delete no collection")

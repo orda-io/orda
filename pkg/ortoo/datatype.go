@@ -32,18 +32,18 @@ func (its *datatype) newDatatype(txCtx *datatypes.TransactionContext) *datatype 
 
 func (its *datatype) HandleStateChange(old, new model.StateOfDatatype) {
 	if its.handlers != nil && its.handlers.stateChangeHandler != nil {
-		go its.handlers.stateChangeHandler(its.GetDatatype().(Datatype), old, new)
+		its.handlers.stateChangeHandler(its.GetDatatype().(Datatype), old, new)
 	}
 }
 
 func (its *datatype) HandleErrors(errs ...errors.OrtooError) {
 	if its.handlers != nil && its.handlers.errorHandler != nil {
-		go its.handlers.errorHandler(its.ManageableDatatype.GetDatatype().(Datatype), errs...)
+		its.handlers.errorHandler(its.ManageableDatatype.GetDatatype().(Datatype), errs...)
 	}
 }
 
 func (its *datatype) HandleRemoteOperations(operations []interface{}) {
 	if its.handlers != nil && its.handlers.remoteOperationHandler != nil {
-		go its.handlers.remoteOperationHandler(its.ManageableDatatype.GetDatatype().(Datatype), operations)
+		its.handlers.remoteOperationHandler(its.ManageableDatatype.GetDatatype().(Datatype), operations)
 	}
 }

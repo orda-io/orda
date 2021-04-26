@@ -15,7 +15,7 @@ type OrtooLog struct {
 }
 
 // Logger is a global instance of OrtooLog
-var Logger = New()
+var Logger = NewWithTags("ORTOO", "DEFAULT")
 
 const (
 	colorRed    = 31

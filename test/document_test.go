@@ -52,7 +52,7 @@ var (
 func (its *IntegrationTestSuite) TestDocument() {
 
 	its.Run("Can exploit OPX", func() {
-		config := NewTestOrtooClientConfig(its.collectionName)
+		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
 		client1 := ortoo.NewClient(config, "docClient1")
 		client2 := ortoo.NewClient(config, "docClient2")
 
@@ -90,7 +90,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 	})
 
 	its.Run("Can store real snapshot for Document", func() {
-		config := NewTestOrtooClientConfig(its.collectionName)
+		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
 		client1 := ortoo.NewClient(config, its.getTestName())
 
 		err := client1.Connect()
@@ -153,7 +153,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 	})
 
 	its.Run("Can test a transaction for Document", func() {
-		config := NewTestOrtooClientConfig(its.collectionName)
+		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
 		client1 := ortoo.NewClient(config, "docClient1")
 		client2 := ortoo.NewClient(config, "docClient2")
 

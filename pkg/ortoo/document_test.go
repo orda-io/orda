@@ -84,13 +84,13 @@ func TestDocument(t *testing.T) {
 		// put on deleted Document
 		oldE4, oErr := oldK3.PutToObject("E4", "V4")
 		require.Error(t, oErr)
-		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), oErr.GetCode())
+		require.Equal(t, errors.DatatypeNoOp, oErr.GetCode())
 		require.Nil(t, oldE4)
 
 		// delete on deleted Document
 		oldE4a, oErr := k2.DeleteInObject("E4")
 		require.Error(t, oErr)
-		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), oErr.GetCode())
+		require.Equal(t, errors.DatatypeNoOp, oErr.GetCode())
 		require.Nil(t, oldE4a)
 
 		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))
@@ -100,7 +100,7 @@ func TestDocument(t *testing.T) {
 		opID1 := root.(*document).GetBase().GetOpID().Clone()
 		not, oErr := root.DeleteInObject("NOT_EXISTING")
 		require.Error(t, oErr)
-		require.Equal(t, errors.DatatypeNoOp.ToErrorCode(), oErr.GetCode())
+		require.Equal(t, errors.DatatypeNoOp, oErr.GetCode())
 		require.Nil(t, not)
 		opID2 := root.(*document).GetBase().GetOpID().Clone()
 		require.Equal(t, 0, opID1.Compare(opID2))
@@ -164,7 +164,7 @@ func TestDocument(t *testing.T) {
 
 		sameArr, oErr := insArr.InsertToArray(0, "X")
 		require.Error(t, oErr)
-		require.Equal(t, oErr.GetCode(), errors.DatatypeNoOp.ToErrorCode())
+		require.Equal(t, oErr.GetCode(), errors.DatatypeNoOp)
 		require.True(t, insArr.Equal(sameArr))
 
 		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))

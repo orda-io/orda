@@ -78,16 +78,6 @@ func (its *TransactionOperation) GetType() model.TypeOfOperation {
 	return model.TypeOfOperation_TRANSACTION
 }
 
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *TransactionOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return nil, nil
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *TransactionOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return nil, nil
-}
-
 // ToModelOperation transforms this operation to the model.Operation.
 func (its *TransactionOperation) String() string {
 	return its.toString(its.GetType(), its.C)
@@ -132,14 +122,14 @@ func NewErrorOperation(err errors.OrtooError) *ErrorOperation {
 	return &ErrorOperation{
 		baseOperation: newBaseOperation(model.NewOperationID()),
 		C: errorContent{
-			Code: int32(err.GetCode()),
+			Code: err.GetCode(),
 			Msg:  err.Error(),
 		},
 	}
 }
 
 type errorContent struct {
-	Code int32
+	Code errors.ErrorCode
 	Msg  string
 }
 
@@ -147,16 +137,6 @@ type errorContent struct {
 type ErrorOperation struct {
 	*baseOperation
 	C errorContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *ErrorOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	panic("should not be called")
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *ErrorOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	panic("should not be called")
 }
 
 // ToModelOperation transforms this operation to the model.Operation.
@@ -193,7 +173,7 @@ func (its *ErrorOperation) GetAsJSON() interface{} {
 // GetPushPullError returns PushPullError from ErrorOperation
 func (its *ErrorOperation) GetPushPullError() *errors.PushPullError {
 	return &errors.PushPullError{
-		Code: errors.PushPullErrorCode(its.C.Code),
+		Code: its.C.Code,
 		Msg:  its.C.Msg,
 	}
 }
@@ -218,7 +198,11 @@ type snapshotContent struct {
 	Snapshot string
 }
 
-func (its *snapshotContent) GetS() string {
+func (its *snapshotContent) GetState() model.StateOfDatatype {
+	return its.State
+}
+
+func (its *snapshotContent) GetSnapshot() string {
 	return its.Snapshot
 }
 
@@ -226,17 +210,6 @@ func (its *snapshotContent) GetS() string {
 type SnapshotOperation struct {
 	*baseOperation
 	C *snapshotContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *SnapshotOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	datatype.SetState(its.C.State)
-	return nil, nil
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *SnapshotOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.

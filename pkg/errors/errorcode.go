@@ -1,26 +1,32 @@
 package errors
 
+import "github.com/knowhunger/ortoo/pkg/log"
+
 // ErrorCode is a type for error code of OrtooError
 type ErrorCode uint32
 
-// ClientErrorCode is a type for client errors
-type ClientErrorCode ErrorCode
-
-// DatatypeErrorCode is a type for datatype errors
-type DatatypeErrorCode ErrorCode
-
-// ServerErrorCode defines error codes for Server
-type ServerErrorCode ErrorCode
-
-// PushPullErrorCode defines error codes for Protocol
-type PushPullErrorCode ErrorCode
+// New creates an error related to the datatype
+func (its ErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooError {
+	code := uint32(its) / 100
+	switch code {
+	case 1:
+		return newSingleOrtooError(l, its, "ClientError", clientErrFormats[its], args...)
+	case 2:
+		return newSingleOrtooError(l, its, "DatatypeError", datatypeErrFormats[its], args...)
+	case 3:
+		return newSingleOrtooError(l, its, "ServerError", serverErrFormats[its], args)
+	case 4:
+		return newSingleOrtooError(l, its, "PushPullError", pushPullErrFormats[its], args)
+	}
+	panic("Unsupported error")
+}
 
 const (
-	baseBasicCode    ErrorCode         = 0
-	baseClientCode   ClientErrorCode   = 100
-	baseDatatypeCode DatatypeErrorCode = 200
-	baseServerCode   ServerErrorCode   = 300
-	basePushPullCode PushPullErrorCode = 990
+	baseBasicCode    ErrorCode = 0
+	baseClientCode   ErrorCode = 100
+	baseDatatypeCode ErrorCode = 200
+	baseServerCode   ErrorCode = 300
+	basePushPullCode ErrorCode = 400
 )
 
 const (
@@ -35,7 +41,7 @@ const (
 	ClientSync
 )
 
-var clientErrFormats = map[ClientErrorCode]string{
+var clientErrFormats = map[ErrorCode]string{
 	ClientConnect: "fail to connect: %v",
 	ClientClose:   "fail to close: %v",
 	ClientSync:    "fail to sync: %v",
@@ -54,7 +60,7 @@ const (
 	DatatypeNoTarget
 )
 
-var datatypeErrFormats = map[DatatypeErrorCode]string{
+var datatypeErrFormats = map[ErrorCode]string{
 	DatatypeCreate:            "fail to create datatype: %s",
 	DatatypeSubscribe:         "fail to subscribe datatype: %s",
 	DatatypeTransaction:       "fail to proceed transaction: %v",
@@ -76,7 +82,7 @@ const (
 	ServerNotify
 )
 
-var serverErrFormats = map[ServerErrorCode]string{
+var serverErrFormats = map[ErrorCode]string{
 	ServerDBQuery:      "fail to succeed DB query: %v",
 	ServerDBDecode:     "fail to decode in DB: %v",
 	ServerNoResource:   "find no resource: %v",
@@ -90,11 +96,13 @@ const (
 	PushPullAbortedForClient
 	PushPullDuplicateKey
 	PushPullMissingOps
+	PushPullNoDatatypeToSubscribe
 )
 
-var pushPullErrFormats = map[PushPullErrorCode]string{
-	PushPullAbortedForServer: "aborted push-pull due to server: %v",
-	PushPullAbortedForClient: "aborted push-pull due to client: %v",
-	PushPullDuplicateKey:     "duplicate datatype key: %v",
-	PushPullMissingOps:       "aborted push due to missing operations: %v",
+var pushPullErrFormats = map[ErrorCode]string{
+	PushPullAbortedForServer:      "aborted push-pull due to server: %v",
+	PushPullAbortedForClient:      "aborted push-pull due to client: %v",
+	PushPullDuplicateKey:          "duplicate datatype key: %v",
+	PushPullMissingOps:            "aborted push due to missing operations: %v",
+	PushPullNoDatatypeToSubscribe: "no datatype to subscribe: %v",
 }

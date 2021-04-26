@@ -29,6 +29,7 @@ func (its *ManageableDatatype) Initialize(
 	if err := its.ResetRollBackContext(); err != nil {
 		return err
 	}
+	its.L().Infof("creates %s %s(%s)", its.TypeOf.String(), its.Key, its.id)
 	return nil
 }
 
@@ -52,8 +53,9 @@ func (its *ManageableDatatype) DoTransaction(
 
 // SubscribeOrCreate enables a datatype to subscribe and create itself.
 func (its *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) errors.OrtooError {
+	its.state = state
 	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
-		its.state = state
+		its.deliverTransaction(nil)
 		return nil
 	}
 	snap, err := json.Marshal(its.datatype.GetSnapshot())

@@ -12,7 +12,7 @@ func (its *IntegrationTestSuite) TestProtocol() {
 	its.Run("Can produce an error when key is duplicated", func() {
 		key := GetFunctionName()
 
-		config := NewTestOrtooClientConfig(its.collectionName)
+		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
 
 		client1 := ortoo.NewClient(config, "client1")
 
@@ -52,7 +52,7 @@ func (its *IntegrationTestSuite) TestProtocol() {
 	})
 
 	its.Run("Can produce RPC error when connect", func() {
-		config := NewTestOrtooClientConfig("NOT_EXISTING")
+		config := NewTestOrtooClientConfig("NOT_EXISTING", model.SyncType_MANUALLY)
 		client1 := ortoo.NewClient(config, its.getTestName())
 		err := client1.Connect()
 		require.Error(its.T(), err)

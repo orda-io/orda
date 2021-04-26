@@ -11,7 +11,7 @@ func (its *IntegrationTestSuite) TestMap() {
 	key := GetFunctionName()
 
 	its.Run("Can update snapshot for hash map", func() {
-		config := NewTestOrtooClientConfig(its.collectionName)
+		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
 		client1 := ortoo.NewClient(config, "client1")
 
 		err := client1.Connect()

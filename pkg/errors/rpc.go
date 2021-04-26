@@ -27,13 +27,13 @@ func NewRPCError(oErr OrtooError) error {
 	var c codes.Code
 	code := oErr.GetCode()
 	switch code {
-	case ServerDBQuery.ec():
+	case ServerDBQuery:
 		c = codes.Unavailable // temporally unavailable
-	case ServerDBDecode.ec():
+	case ServerDBDecode:
 		c = codes.Internal // something is broken
-	case ServerNoResource.ec():
+	case ServerNoResource:
 		c = codes.NotFound
-	case ServerNoPermission.ec():
+	case ServerNoPermission:
 		c = codes.Unauthenticated
 	}
 	return status.Error(c, oErr.Error())

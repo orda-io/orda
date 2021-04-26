@@ -26,7 +26,7 @@ func (its *OrtooService) ProcessClient(
 	ctx.UpdateCollection(collectionDoc.GetSummary())
 	clientDocFromReq := schema.ClientModelToBson(req.GetClient(), collectionDoc.Num)
 
-	ctx.L().Infof("RECV %s %v %v", req.ToString(), len(req.Cuid), req.Cuid)
+	ctx.L().Infof("REQ[CLIE] %s %v %v", req.ToString(), len(req.Cuid), req.Cuid)
 
 	clientDocFromDB, err := its.mongo.GetClient(ctx, clientDocFromReq.CUID)
 	if err != nil {
@@ -51,6 +51,6 @@ func (its *OrtooService) ProcessClient(
 	if err = its.mongo.UpdateClient(ctx, clientDocFromReq); err != nil {
 		return nil, errors.NewRPCError(err)
 	}
-	ctx.L().Infof("SENDBACK %s", req.ToString())
+	ctx.L().Infof("RES[CLIE] %s", req.ToString())
 	return req, nil
 }

@@ -1,8 +1,6 @@
 package operations
 
 import (
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"strings"
 )
@@ -31,16 +29,6 @@ type docPutInObjectContent struct {
 type DocPutInObjectOperation struct {
 	*baseOperation
 	C docPutInObjectContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *DocPutInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *DocPutInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.
@@ -94,16 +82,6 @@ type DocInsertToArrayOperation struct {
 	C   docInsertToArrayContent
 }
 
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *DocInsertToArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *DocInsertToArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
-}
-
 // ToModelOperation transforms this operation to the model.Operation.
 func (its *DocInsertToArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
@@ -152,16 +130,6 @@ type docDeleteInObjectContent struct {
 type DocDeleteInObjectOperation struct {
 	*baseOperation
 	C docDeleteInObjectContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *DocDeleteInObjectOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *DocDeleteInObjectOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.
@@ -213,16 +181,6 @@ type DocUpdateInArrayOperation struct {
 	C   docUpdateInArrayContent
 }
 
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *DocUpdateInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *DocUpdateInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
-}
-
 // ToModelOperation transforms this operation to the model.Operation.
 func (its *DocUpdateInArrayOperation) ToModelOperation() *model.Operation {
 	return &model.Operation{
@@ -271,16 +229,6 @@ type DocDeleteInArrayOperation struct {
 	Pos        int // for local
 	NumOfNodes int // for local
 	C          docDeleteInArrayContent
-}
-
-// ExecuteLocal enables the operation to perform something at the local client.
-func (its *DocDeleteInArrayOperation) ExecuteLocal(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteLocal(its)
-}
-
-// ExecuteRemote enables the operation to perform something at the remote clients.
-func (its *DocDeleteInArrayOperation) ExecuteRemote(datatype iface.Datatype) (interface{}, errors.OrtooError) {
-	return datatype.ExecuteRemote(its)
 }
 
 // ToModelOperation transforms this operation to the model.Operation.
