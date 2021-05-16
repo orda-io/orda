@@ -14,9 +14,10 @@ func (its ErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooError {
 	case 2:
 		return newSingleOrtooError(l, its, "DatatypeError", datatypeErrFormats[its], args...)
 	case 3:
-		return newSingleOrtooError(l, its, "ServerError", serverErrFormats[its], args)
+		return newSingleOrtooError(l, its, "PushPullError", pushPullErrFormats[its], args...)
 	case 4:
-		return newSingleOrtooError(l, its, "PushPullError", pushPullErrFormats[its], args)
+		return newSingleOrtooError(l, its, "ServerError", serverErrFormats[its], args...)
+
 	}
 	panic("Unsupported error")
 }
@@ -25,8 +26,8 @@ const (
 	baseBasicCode    ErrorCode = 0
 	baseClientCode   ErrorCode = 100
 	baseDatatypeCode ErrorCode = 200
-	baseServerCode   ErrorCode = 300
-	basePushPullCode ErrorCode = 400
+	basePushPullCode ErrorCode = 300
+	baseServerCode   ErrorCode = 400
 )
 
 const (
@@ -54,6 +55,7 @@ const (
 	DatatypeTransaction
 	DatatypeSnapshot
 	DatatypeIllegalParameters
+	DatatypeIllegalOperation
 	DatatypeInvalidParent
 	DatatypeNoOp
 	DatatypeMarshal
@@ -65,7 +67,8 @@ var datatypeErrFormats = map[ErrorCode]string{
 	DatatypeSubscribe:         "fail to subscribe datatype: %s",
 	DatatypeTransaction:       "fail to proceed transaction: %v",
 	DatatypeSnapshot:          "fail to make a snapshot: %s",
-	DatatypeIllegalParameters: "fail to execute the operation due to illegal operation: %v",
+	DatatypeIllegalParameters: "fail to execute the operations due to illegal parameters: %v",
+	DatatypeIllegalOperation:  "fail to execute the illegal operation for %v: %v",
 	DatatypeInvalidParent:     "fail to modify due to the invalid parent: %v",
 	DatatypeNoOp:              "fail to issue operation: %v",
 	DatatypeMarshal:           "fail to (un)marshal: %v",
@@ -92,16 +95,16 @@ var serverErrFormats = map[ErrorCode]string{
 }
 
 const (
-	PushPullAbortedForServer = basePushPullCode + iota
-	PushPullAbortedForClient
+	PushPullAbortionOfServer = basePushPullCode + iota
+	PushPullAbortionOfClient
 	PushPullDuplicateKey
 	PushPullMissingOps
 	PushPullNoDatatypeToSubscribe
 )
 
 var pushPullErrFormats = map[ErrorCode]string{
-	PushPullAbortedForServer:      "aborted push-pull due to server: %v",
-	PushPullAbortedForClient:      "aborted push-pull due to client: %v",
+	PushPullAbortionOfServer:      "aborted push-pull due to server: %v",
+	PushPullAbortionOfClient:      "aborted push-pull due to client: %v",
 	PushPullDuplicateKey:          "duplicate datatype key: %v",
 	PushPullMissingOps:            "aborted push due to missing operations: %v",
 	PushPullNoDatatypeToSubscribe: "no datatype to subscribe: %v",

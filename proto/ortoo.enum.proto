@@ -17,9 +17,8 @@ enum ClientType {
 enum TypeOfOperation {
   NO_OP = 0;
   SNAPSHOT = 1;
-  DELETE = 2;
-  ERROR = 3;
-  TRANSACTION = 5;
+  ERROR = 2;
+  TRANSACTION = 3;
   COUNTER_INCREASE = 11;
   MAP_PUT = 21;
   MAP_REMOVE = 22;
@@ -40,7 +39,7 @@ enum StateOfDatatype {
   DUE_TO_SUBSCRIBE_CREATE = 2;
   SUBSCRIBED = 3;
   DUE_TO_UNSUBSCRIBE = 4;
-  UNSUBSCRIBED = 5;
+  CLOSED = 5;
   DELETED = 6;
 }
 

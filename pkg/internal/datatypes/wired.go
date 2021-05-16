@@ -121,15 +121,15 @@ func (its *WiredDatatype) calculatePullingOperations(newCheckPoint *model.CheckP
 	return int((newCheckPoint.Sseq - its.checkPoint.Sseq) - (newCheckPoint.Cseq - its.checkPoint.Cseq))
 }
 
-func (its *WiredDatatype) checkPushPullPackOptionAndError(ppp *model.PushPullPack) errors.OrtooError {
+func (its *WiredDatatype) checkOptionAndError(ppp *model.PushPullPack) errors.OrtooError {
 	if ppp.GetPushPullPackOption().HasErrorBit() {
 		modelOp := ppp.GetOperations()[0]
 		errOp, ok := operations.ModelToOperation(modelOp).(*operations.ErrorOperation)
 		if ok {
 			switch errOp.GetPushPullError().Code {
-			case errors.PushPullAbortedForServer:
+			case errors.PushPullAbortionOfServer:
 				// TODO: implement me.
-			case errors.PushPullAbortedForClient:
+			case errors.PushPullAbortionOfClient:
 				// TODO: implement me.
 			case errors.PushPullDuplicateKey:
 				return errors.DatatypeCreate.New(its.L(), fmt.Sprintf("duplicated key:'%s'", its.Key))
@@ -143,7 +143,6 @@ func (its *WiredDatatype) checkPushPullPackOptionAndError(ppp *model.PushPullPac
 			panic("Not implemented yet")
 		}
 	} else if ppp.GetPushPullPackOption().HasSubscribeBit() {
-
 		modelOp := ppp.GetOperations()[0]
 		_, ok := operations.ModelToOperation(modelOp).(*operations.SnapshotOperation)
 		if !ok {
@@ -157,7 +156,7 @@ func (its *WiredDatatype) checkPushPullPackOptionAndError(ppp *model.PushPullPac
 	return nil
 }
 
-func (its *WiredDatatype) applyPushPullPackExcludeDuplicatedOperations(ppp *model.PushPullPack) {
+func (its *WiredDatatype) excludeDuplicatedOperations(ppp *model.PushPullPack) {
 	pulled := its.calculatePullingOperations(ppp.CheckPoint)
 	if len(ppp.Operations) > pulled {
 		// for example, if len(ppp.Operations) == 5: o_1 o_2 o_3 o_4 o_5 are received, and
@@ -169,7 +168,7 @@ func (its *WiredDatatype) applyPushPullPackExcludeDuplicatedOperations(ppp *mode
 	}
 }
 
-func (its *WiredDatatype) applyPushPullPackSyncCheckPoint(newCheckPoint *model.CheckPoint) {
+func (its *WiredDatatype) syncCheckPoint(newCheckPoint *model.CheckPoint) {
 	oldCheckPoint := its.checkPoint.Clone()
 	if its.checkPoint.Cseq < newCheckPoint.Cseq {
 		its.checkPoint.Cseq = newCheckPoint.Cseq
@@ -180,7 +179,7 @@ func (its *WiredDatatype) applyPushPullPackSyncCheckPoint(newCheckPoint *model.C
 	its.L().Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, its.checkPoint)
 }
 
-func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
+func (its *WiredDatatype) updateStateOfDatatype(
 	ppp *model.PushPullPack,
 ) (model.StateOfDatatype, model.StateOfDatatype, errors.OrtooError) {
 	var err errors.OrtooError = nil
@@ -203,7 +202,7 @@ func (its *WiredDatatype) applyPushPullPackUpdateStateOfDatatype(
 		err = its.wire.OnChangeDatatypeState(its.datatype, its.state)
 	case model.StateOfDatatype_SUBSCRIBED:
 	case model.StateOfDatatype_DUE_TO_UNSUBSCRIBE:
-	case model.StateOfDatatype_UNSUBSCRIBED:
+	case model.StateOfDatatype_CLOSED:
 	case model.StateOfDatatype_DELETED:
 	}
 	if oldState != its.state {
@@ -219,11 +218,11 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	var oldState, newState model.StateOfDatatype
 	var errs errors.OrtooError = &errors.MultipleOrtooErrors{}
 	var opList []interface{}
-	err := its.checkPushPullPackOptionAndError(ppp)
+	err := its.checkOptionAndError(ppp)
 	if err == nil {
-		its.applyPushPullPackExcludeDuplicatedOperations(ppp)
-		its.applyPushPullPackSyncCheckPoint(ppp.CheckPoint)
-		oldState, newState, err = its.applyPushPullPackUpdateStateOfDatatype(ppp)
+		its.excludeDuplicatedOperations(ppp)
+		its.syncCheckPoint(ppp.CheckPoint)
+		oldState, newState, err = its.updateStateOfDatatype(ppp)
 		if err != nil {
 			errs = errs.Append(err)
 		}
@@ -234,10 +233,10 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	} else {
 		errs = errs.Append(err)
 	}
-	go its.applyPushPullPackCallHandler(errs, oldState, newState, opList)
+	go its.callHandlers(errs, oldState, newState, opList)
 }
 
-func (its *WiredDatatype) applyPushPullPackCallHandler(
+func (its *WiredDatatype) callHandlers(
 	errs errors.OrtooError,
 	oldState,
 	newState model.StateOfDatatype,

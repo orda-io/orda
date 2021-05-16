@@ -54,7 +54,7 @@ func (its *Timestamp) ToString() string {
 // DON'T change this because protocol can be broken : TODO: this can be improved.
 func (its *Timestamp) Hash() string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, "%d%d%s%d", its.Era, its.Lamport, its.CUID, its.Delimiter)
+	_, _ = fmt.Fprintf(&b, "%d%d%d%s", its.Era, its.Lamport, its.Delimiter, its.CUID)
 	return b.String()
 }
 

@@ -17,7 +17,6 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 			baseOperation: &baseOperation{ID: op.ID},
 			C:             &c,
 		}
-	case model.TypeOfOperation_DELETE:
 	case model.TypeOfOperation_ERROR:
 		var c errorContent
 		unmarshalContent(op.Body, &c)

@@ -53,8 +53,11 @@ func (its *counter) DoTransaction(tag string, txFunc func(counter CounterInTxn) 
 
 // ExecuteLocal enables the operation to perform something at the local client.
 func (its *counter) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
-	iop := op.(*operations.IncreaseOperation)
-	return its.snapshot().increaseCommon(iop.C.Delta), nil
+	switch cast := op.(type) {
+	case *operations.IncreaseOperation:
+		return its.snapshot().increaseCommon(cast.C.Delta), nil
+	}
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 // ExecuteRemote is called by operation.ExecuteRemote()
@@ -67,7 +70,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErro
 		return its.snapshot().increaseCommon(cast.C.Delta), nil
 	}
 
-	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *counter) ResetSnapshot() {

@@ -53,7 +53,6 @@ func (its *ManageableDatatype) DoTransaction(
 
 // SubscribeOrCreate enables a datatype to subscribe and create itself.
 func (its *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) errors.OrtooError {
-	its.state = state
 	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
 		its.deliverTransaction(nil)
 		return nil

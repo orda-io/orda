@@ -225,7 +225,7 @@ func (its *clientImpl) subscribeOrCreateDatatype(
 	var impl Datatype
 	var errs errors.OrtooError = &errors.MultipleOrtooErrors{}
 	var err errors.OrtooError
-	base := datatypes.NewBaseDatatype(key, typeOf, its.ctx)
+	base := datatypes.NewBaseDatatype(key, typeOf, its.ctx, state)
 	switch typeOf {
 	case model.TypeOfDatatype_COUNTER:
 		impl, err = newCounter(base, its.datatypeManager, handler)

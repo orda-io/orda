@@ -19,20 +19,6 @@ type timedType interface {
 	String() string
 }
 
-func getTimesFromTimedTypeSlice(s []timedType) (times []*model.Timestamp) {
-	for _, t := range s {
-		times = append(times, t.getTime())
-	}
-	return times
-}
-
-func getValuesFromTimedTypeSlice(s []timedType) (values []types.JSONValue) {
-	for _, t := range s {
-		values = append(values, t.getValue())
-	}
-	return values
-}
-
 type timedNode struct {
 	V types.JSONValue  `json:"v"`
 	T *model.Timestamp `json:"t"`
@@ -68,10 +54,7 @@ func (its *timedNode) makeTomb(ts *model.Timestamp) {
 }
 
 func (its *timedNode) isTomb() bool {
-	if its.V == nil {
-		return true
-	}
-	return false
+	return its.V == nil
 }
 
 func (its *timedNode) String() string {

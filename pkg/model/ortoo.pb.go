@@ -2133,7 +2133,10 @@ func (m *Client) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -2273,7 +2276,10 @@ func (m *Timestamp) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -2413,7 +2419,10 @@ func (m *OperationID) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -2553,7 +2562,10 @@ func (m *Operation) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -2786,7 +2798,10 @@ func (m *PushPullPack) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -2875,7 +2890,10 @@ func (m *CheckPoint) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -3009,7 +3027,10 @@ func (m *Notification) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -3198,7 +3219,10 @@ func (m *DatatypeMeta) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -3332,7 +3356,10 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -3553,7 +3580,10 @@ func (m *ClientMessage) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -3738,7 +3768,10 @@ func (m *PushPullMessage) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {
@@ -3821,7 +3854,10 @@ func (m *CollectionMessage) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthOrtoo
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthOrtoo
 			}
 			if (iNdEx + skippy) > l {

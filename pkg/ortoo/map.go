@@ -69,7 +69,7 @@ func (its *ortooMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 	case *operations.RemoveOperation:
 		return its.snapshot().removeLocal(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *ortooMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -82,12 +82,12 @@ func (its *ortooMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 	case *operations.RemoveOperation:
 		return its.snapshot().removeRemote(cast.C.Key, cast.GetTimestamp())
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *ortooMap) Put(key string, value interface{}) (interface{}, errors.OrtooError) {
 	if key == "" || value == nil {
-		return nil, errors.DatatypeIllegalParameters.New(its.L(), "empty key or nil value is not allowed")
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), "neither empty key nor null value is not allowed")
 	}
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
@@ -171,7 +171,11 @@ func (its *mapSnapshot) getFromMap(key string) timedType {
 	return its.Map[key]
 }
 
-func (its *mapSnapshot) putCommon(key string, value interface{}, ts *model.Timestamp) (interface{}, errors.OrtooError) {
+func (its *mapSnapshot) putCommon(
+	key string,
+	value interface{},
+	ts *model.Timestamp,
+) (interface{}, errors.OrtooError) {
 	removed, _ := its.putCommonWithTimedType(key, newTimedNode(value, ts))
 	if removed != nil {
 		return removed.getValue(), nil
@@ -218,15 +222,14 @@ func (its *mapSnapshot) removeLocalWithTimedType(
 	key string,
 	ts *model.Timestamp,
 ) (timedType, types.JSONValue, errors.OrtooError) {
-	if tt, ok := its.Map[key]; ok {
-		if !tt.isTomb() {
-			oldV := tt.getValue()
-			if tt.getTime().Compare(ts) < 0 {
-				tt.makeTomb(ts) // makeTomb works differently
-				its.Size--
-				return tt, oldV, nil
-			}
+	if tt, ok := its.Map[key]; ok && !tt.isTomb() {
+		oldV := tt.getValue()
+		if tt.getTime().Compare(ts) < 0 {
+			tt.makeTomb(ts) // makeTomb works differently
+			its.Size--
+			return tt, oldV, nil
 		}
+		// local remove cannot reach here; ts is always the newest;
 	}
 	return nil, nil, errors.DatatypeNoOp.New(its.L(), "remove the value for not existing key")
 }
@@ -236,11 +239,11 @@ func (its *mapSnapshot) removeRemoteWithTimedType(
 	ts *model.Timestamp,
 ) (timedType, types.JSONValue, errors.OrtooError) {
 	if tt, ok := its.Map[key]; ok {
-		oldV := tt.getValue()
 		if tt.getTime().Compare(ts) < 0 {
 			if !tt.isTomb() {
 				its.Size--
 			}
+			oldV := tt.getValue()
 			tt.makeTomb(ts)
 			return tt, oldV, nil
 		}

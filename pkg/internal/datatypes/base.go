@@ -24,14 +24,19 @@ type BaseDatatype struct {
 }
 
 // NewBaseDatatype creates a new base datatype
-func NewBaseDatatype(key string, t model.TypeOfDatatype, clientCtx *context.ClientContext) *BaseDatatype {
+func NewBaseDatatype(
+	key string,
+	t model.TypeOfDatatype,
+	clientCtx *context.ClientContext,
+	state model.StateOfDatatype,
+) *BaseDatatype {
 	duid := types.NewUID()
 	base := &BaseDatatype{
 		Key:    key,
 		id:     duid,
 		TypeOf: t,
 		opID:   model.NewOperationIDWithCUID(clientCtx.Client.CUID),
-		state:  model.StateOfDatatype_DUE_TO_CREATE,
+		state:  state,
 	}
 	base.ctx = context.NewDatatypeContext(clientCtx, base)
 	return base

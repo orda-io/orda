@@ -420,7 +420,7 @@
         "DUE_TO_SUBSCRIBE_CREATE",
         "SUBSCRIBED",
         "DUE_TO_UNSUBSCRIBE",
-        "UNSUBSCRIBED",
+        "CLOSED",
         "DELETED"
       ],
       "default": "DUE_TO_CREATE"
@@ -449,7 +449,6 @@
       "enum": [
         "NO_OP",
         "SNAPSHOT",
-        "DELETE",
         "ERROR",
         "TRANSACTION",
         "COUNTER_INCREASE",

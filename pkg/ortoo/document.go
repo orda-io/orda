@@ -110,7 +110,7 @@ func (its *document) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 		cast.C.T = uptTargets
 		return oldOnes, nil
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.L(), op.(iface.Operation).GetType())
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -131,7 +131,7 @@ func (its *document) ExecuteRemote(op interface{}) (interface{}, errors.OrtooErr
 	case *operations.DocUpdateInArrayOperation:
 		return its.snapshot().UpdateRemoteInArray(cast.C.P, cast.GetTimestamp(), cast.C.T, cast.C.V)
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 // GetFromObject returns the child associated with the given key as a Document.

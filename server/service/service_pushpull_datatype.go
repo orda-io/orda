@@ -110,7 +110,7 @@ func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.Or
 
 	checkPoint, err := its.mongo.GetCheckPointFromClient(its.ctx, its.CUID, its.DUID)
 	if err != nil {
-		return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
+		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 	}
 	if checkPoint == nil {
 		checkPoint = model.NewCheckPoint()
@@ -220,18 +220,18 @@ func (its *PushPullHandler) commitToMongoDB() errors.OrtooError {
 
 	if len(its.pushingOperations) > 0 {
 		if err := its.mongo.InsertOperations(its.ctx, its.pushingOperations); err != nil {
-			return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
+			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}
 		its.ctx.L().Infof("commit %d Operations finally", len(its.pushingOperations))
 	}
 
 	if err := its.mongo.UpdateDatatype(its.ctx, its.datatypeDoc); err != nil {
-		return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
+		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 	}
 	its.ctx.L().Infof("commit Datatype %s", its.datatypeDoc)
 
 	if err := its.mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCheckPoint); err != nil {
-		return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
+		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 	}
 	its.ctx.L().Infof("commit CheckPoint with %s", its.currentCheckPoint.String())
 	return nil
@@ -242,7 +242,7 @@ func (its *PushPullHandler) pullOperations() errors.OrtooError {
 	if its.datatypeDoc.SseqBegin <= sseqBegin && !its.gotOption.HasSnapshotBit() {
 		opList, sseqList, err := its.mongo.GetOperations(its.ctx, its.DUID, sseqBegin, constants.InfinitySseq)
 		if err != nil {
-			return errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
+			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}
 		if len(opList) > 0 {
 			its.currentCheckPoint.Sseq = sseqList[len(sseqList)-1]
@@ -348,7 +348,7 @@ func (its *PushPullHandler) evaluatePushPullCase() (pushPullCase, errors.OrtooEr
 	if its.datatypeDoc == nil {
 		its.datatypeDoc, err = its.mongo.GetDatatype(its.ctx, its.DUID)
 		if err != nil {
-			return caseError, errors.PushPullAbortedForServer.New(its.ctx.L(), err.Error())
+			return caseError, errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}
 		if its.datatypeDoc == nil {
 			return caseMatchNothing, nil

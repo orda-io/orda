@@ -88,7 +88,7 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 		cast.C.T = uptTargets
 		return uptValues, nil
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
@@ -104,7 +104,7 @@ func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) 
 		ret, _ := its.snapshot().updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
 		return ret, nil
 	}
-	return nil, errors.DatatypeIllegalParameters.New(its.L(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *list) Size() int {
