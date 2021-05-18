@@ -96,10 +96,7 @@ func (its *ortooMap) Put(key string, value interface{}) (interface{}, errors.Ort
 }
 
 func (its *ortooMap) Get(key string) interface{} {
-	if obj, ok := its.snapshot().Map[key]; ok {
-		return obj.getValue()
-	}
-	return nil
+	return its.snapshot().get(key)
 }
 
 func (its *ortooMap) Remove(key string) (interface{}, errors.OrtooError) {
@@ -254,6 +251,13 @@ func (its *mapSnapshot) removeRemoteWithTimedType(
 
 func (its *mapSnapshot) size() int {
 	return its.Size
+}
+
+func (its *mapSnapshot) get(key string) interface{} {
+	if tt, ok := its.Map[key]; ok && !tt.isTomb() {
+		return tt.getValue()
+	}
+	return nil
 }
 
 func (its *mapSnapshot) String() string {

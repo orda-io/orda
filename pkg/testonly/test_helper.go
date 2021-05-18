@@ -40,5 +40,5 @@ func NewBase(key string, t model.TypeOfDatatype) *datatypes.BaseDatatype {
 		SyncType:   0,
 	}
 	ctx := context.NewClientContext(gocontext.TODO(), cm)
-	return datatypes.NewBaseDatatype(key, t, ctx)
+	return datatypes.NewBaseDatatype(key, t, ctx, model.StateOfDatatype_DUE_TO_CREATE)
 }

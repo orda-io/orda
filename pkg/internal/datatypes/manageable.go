@@ -61,8 +61,8 @@ func (its *ManageableDatatype) SubscribeOrCreate(state model.StateOfDatatype) er
 	if err != nil {
 		return errors.DatatypeSubscribe.New(its.L(), err.Error())
 	}
-	subscribeOp := operations.NewSnapshotOperation(its.TypeOf, state, string(snap))
-	_, err = its.SentenceInTransaction(its.TransactionCtx, subscribeOp, true)
+	snapOp := operations.NewSnapshotOperation(state, string(snap))
+	_, err = its.SentenceInTransaction(its.TransactionCtx, snapOp, true)
 	if err != nil {
 		return errors.DatatypeSubscribe.New(its.L(), err.Error())
 	}

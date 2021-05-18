@@ -154,7 +154,6 @@ func TestMongo(t *testing.T) {
 		snap, err := json.Marshal(&testSnapshot{Value: 1})
 		require.NoError(t, err)
 		op := operations.NewSnapshotOperation(
-			model.TypeOfDatatype_COUNTER,
 			model.StateOfDatatype_DUE_TO_CREATE,
 			string(snap))
 

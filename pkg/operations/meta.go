@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
@@ -181,25 +182,27 @@ func (its *ErrorOperation) GetPushPullError() *errors.PushPullError {
 // ////////////////// SnapshotOperation ////////////////////
 
 // NewSnapshotOperation creates a SnapshotOperation
-func NewSnapshotOperation(typeOf model.TypeOfDatatype, state model.StateOfDatatype, snapshot string) *SnapshotOperation {
+func NewSnapshotOperation(state model.StateOfDatatype, snapshot string) *SnapshotOperation {
 
 	return &SnapshotOperation{
-		baseOperation: newBaseOperation(nil),
+		baseOperation: newBaseOperation(model.NewOperationID()),
 		C: &snapshotContent{
-			// Type:     typeOf,
-			State:    state,
 			Snapshot: snapshot,
 		},
 	}
 }
 
-type snapshotContent struct {
-	State    model.StateOfDatatype
-	Snapshot string
+func NewSnapshotOperationFromDatatype(datatype iface.Datatype) (*SnapshotOperation, errors.OrtooError) {
+	snap, err := json.Marshal(datatype.GetSnapshot())
+	if err != nil {
+		return nil, errors.DatatypeMarshal.New(datatype.L(), err.Error())
+	}
+	snapOp := NewSnapshotOperation(datatype.GetState(), string(snap))
+	return snapOp, nil
 }
 
-func (its *snapshotContent) GetState() model.StateOfDatatype {
-	return its.State
+type snapshotContent struct {
+	Snapshot string
 }
 
 func (its *snapshotContent) GetSnapshot() string {
