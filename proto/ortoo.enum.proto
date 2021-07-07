@@ -25,11 +25,11 @@ enum TypeOfOperation {
   LIST_INSERT = 31;
   LIST_DELETE = 32;
   LIST_UPDATE = 33;
-  DOC_PUT_OBJ = 41;
-  DOC_DEL_OBJ = 42;
-  DOC_INS_ARR = 43;
-  DOC_DEL_ARR = 44;
-  DOC_UPD_ARR = 45;
+  DOC_OBJ_PUT = 41;
+  DOC_OBJ_RMV = 42;
+  DOC_ARR_INS = 43;
+  DOC_ARR_DEL = 44;
+  DOC_ARR_UPD = 45;
 }
 
 
@@ -54,3 +54,9 @@ enum RequestType {
   PUSHPULLS = 1;
 }
 
+enum TypeOfDatatype {
+  COUNTER = 0;
+  MAP = 1;
+  LIST = 2;
+  DOCUMENT = 3;
+}

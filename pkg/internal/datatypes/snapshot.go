@@ -4,30 +4,31 @@ import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
+	"github.com/knowhunger/ortoo/pkg/operations"
 )
 
 type SnapshotDatatype struct {
-	iface.Snapshot
+	*BaseDatatype
+	Snapshot iface.Snapshot
 }
 
-func (its *SnapshotDatatype) GetAsJSON() interface{} {
-	return its.Snapshot.GetAsJSONCompatible()
+func (its *SnapshotDatatype) ToJSON() interface{} {
+	return its.Snapshot.ToJSON()
 }
 
-func (its *SnapshotDatatype) ApplySnapshotOperation(
-	sc iface.SnapshotContent,
-	newSnap iface.Snapshot,
-) errors.OrtooError {
-	its.GetBase().L().Infof("apply SnapshotOperation")
-	if err := json.Unmarshal([]byte(sc.GetSnapshot()), newSnap); err != nil {
-		return errors.DatatypeSnapshot.New(its.GetBase().L(), err.Error())
+func NewSnapshotDatatype(b *BaseDatatype, snap iface.Snapshot) *SnapshotDatatype {
+	return &SnapshotDatatype{
+		BaseDatatype: b,
+		Snapshot:     snap,
 	}
-	its.Snapshot = newSnap
-	return nil
 }
 
-func (its *SnapshotDatatype) SetSnapshot(snapshot iface.Snapshot) {
-	its.Snapshot = snapshot
+func (its *SnapshotDatatype) ApplySnapshot(snapBody []byte) errors.OrtooError {
+	its.L().Infof("apply SnapshotOperation: %v", string(snapBody))
+	if err := json.Unmarshal(snapBody, its.Snapshot); err != nil {
+		return errors.DatatypeSnapshot.New(its.L(), err.Error())
+	}
+	return nil
 }
 
 func (its *SnapshotDatatype) GetSnapshot() iface.Snapshot {
@@ -35,23 +36,32 @@ func (its *SnapshotDatatype) GetSnapshot() iface.Snapshot {
 }
 
 func (its *SnapshotDatatype) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
-	meta, oErr := its.GetBase().GetMeta()
+	meta, oErr := its.GetMeta()
 	if oErr != nil {
 		return nil, nil, oErr
 	}
 	snap, err := json.Marshal(its.GetSnapshot())
 	if err != nil {
-		return nil, nil, errors.DatatypeMarshal.New(its.GetBase().L(), err.Error())
+		return nil, nil, errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
 	return meta, snap, nil
 }
 
 func (its *SnapshotDatatype) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
-	if err := its.GetBase().SetMeta(meta); err != nil {
+	if err := its.SetMeta(meta); err != nil {
 		return err
 	}
 	if err := json.Unmarshal(snap, its.GetSnapshot()); err != nil {
-		return errors.DatatypeMarshal.New(its.GetBase().L(), err.Error())
+		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
 	return nil
+}
+
+func (its *SnapshotDatatype) CreateSnapshotOperation() (iface.Operation, errors.OrtooError) {
+	snap, err := json.Marshal(its.Snapshot)
+	if err != nil {
+		return nil, errors.DatatypeMarshal.New(its.L(), err.Error())
+	}
+	snapOp := operations.NewSnapshotOperation(snap)
+	return snapOp, nil
 }

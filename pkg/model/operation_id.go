@@ -90,6 +90,20 @@ func (its *OperationID) ToString() string {
 	return b.String()
 }
 
+func (its *OperationID) ToJSON() interface{} {
+	return struct {
+		Era     uint32
+		Lamport uint64
+		CUID    string
+		Seq     uint64
+	}{
+		Era:     its.Era,
+		Lamport: its.Lamport,
+		CUID:    its.CUID,
+		Seq:     its.Seq,
+	}
+}
+
 // Compare compares two operationIDs.
 func (its *OperationID) Compare(other *OperationID) int {
 	retEra := int32(its.Era - other.Era)

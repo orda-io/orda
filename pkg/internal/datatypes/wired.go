@@ -11,19 +11,19 @@ import (
 
 // WiredDatatype implements the datatype features related to the synchronization with Ortoo server
 type WiredDatatype struct {
-	*BaseDatatype
+	*TransactionDatatype
 	wire        iface.Wire
 	checkPoint  *model.CheckPoint
 	localBuffer []*model.Operation
 }
 
-// newWiredDatatype creates a new wiredDatatype
-func newWiredDatatype(b *BaseDatatype, w iface.Wire) *WiredDatatype {
+// NewWiredDatatype creates a new wiredDatatype
+func NewWiredDatatype(w iface.Wire, t *TransactionDatatype) *WiredDatatype {
 	return &WiredDatatype{
-		BaseDatatype: b,
-		checkPoint:   model.NewCheckPoint(),
-		localBuffer:  make([]*model.Operation, 0, constants.OperationBufferSize),
-		wire:         w,
+		TransactionDatatype: t,
+		checkPoint:          model.NewCheckPoint(),
+		localBuffer:         make([]*model.Operation, 0, constants.OperationBufferSize),
+		wire:                w,
 	}
 }
 
@@ -31,24 +31,13 @@ func (its *WiredDatatype) ResetWired() {
 	its.localBuffer = make([]*model.Operation, 0, constants.OperationBufferSize)
 }
 
-// GetBase returns BaseDatatype
-func (its *WiredDatatype) GetBase() *BaseDatatype {
-	return its.BaseDatatype
-}
-
 func (its *WiredDatatype) String() string {
 	return its.BaseDatatype.String()
 }
 
-// ExecuteRemote ...
-func (its *WiredDatatype) ExecuteRemote(op iface.Operation) {
-	its.opID.SyncLamport(op.GetID().Lamport) // TODO: this should move to baseDatatype
-	its.executeRemoteBase(op)
-}
-
 // ReceiveRemoteModelOperations ...
 func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrtooError) {
-	datatype := its.datatype
+	// datatype := its.datatype
 	var opList []interface{}
 	for i := 0; i < len(ops); {
 		modelOp := ops[i]
@@ -63,7 +52,7 @@ func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation, o
 			transaction = []*model.Operation{modelOp}
 			i++
 		}
-		txList, err := datatype.ExecuteRemoteTransaction(transaction, obtainList)
+		txList, err := its.ExecuteRemoteTransaction(transaction, obtainList)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +137,9 @@ func (its *WiredDatatype) checkOptionAndError(ppp *model.PushPullPack) errors.Or
 		if !ok {
 			return errors.DatatypeSubscribe.New(its.L(), "subscribe without SnapshotOp")
 		}
-		its.datatype.ResetRollBackContext()
+		its.ResetWired()
+		its.ResetSnapshot()
+		its.ResetTransaction()
 		its.checkPoint.Cseq = ppp.CheckPoint.Cseq
 		its.checkPoint.Sseq = ppp.CheckPoint.Sseq - uint64(len(ppp.Operations))
 		its.L().Infof("ready to subscribe: (%v)", its.checkPoint)
@@ -199,7 +190,7 @@ func (its *WiredDatatype) updateStateOfDatatype(
 		its.state = model.StateOfDatatype_SUBSCRIBED
 		its.id = ppp.DUID
 
-		err = its.wire.OnChangeDatatypeState(its.datatype, its.state)
+		err = its.wire.OnChangeDatatypeState(its.Datatype, its.state)
 	case model.StateOfDatatype_SUBSCRIBED:
 	case model.StateOfDatatype_DUE_TO_UNSUBSCRIBE:
 	case model.StateOfDatatype_CLOSED:
@@ -243,17 +234,17 @@ func (its *WiredDatatype) callHandlers(
 	opList []interface{},
 ) {
 	if oldState != newState {
-		its.datatype.HandleStateChange(oldState, newState)
+		its.HandleStateChange(oldState, newState)
 	}
 	if errs.Size() > 0 {
-		its.datatype.HandleErrors(errs.ToArray()...)
+		its.HandleErrors(errs.ToArray()...)
 	}
 	if len(opList) > 0 {
-		its.datatype.HandleRemoteOperations(opList)
+		its.HandleRemoteOperations(opList)
 	}
 }
 
-func (its *WiredDatatype) deliverTransaction(transaction []iface.Operation) {
+func (its *WiredDatatype) DeliverTransaction(transaction []iface.Operation) {
 
 	for _, op := range transaction {
 		its.localBuffer = append(its.localBuffer, op.ToModelOperation())

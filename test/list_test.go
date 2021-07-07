@@ -33,5 +33,6 @@ func (its *IntegrationTestSuite) TestList() {
 			}))
 		_, _ = list1.InsertMany(0, "a", 2, 3.141592, time.Now())
 		require.NoError(its.T(), client1.Sync())
+		time.Sleep(2 * time.Second)
 	})
 }

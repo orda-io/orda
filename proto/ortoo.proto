@@ -13,14 +13,6 @@ message Client {
   SyncType syncType = 5;
 }
 
-enum TypeOfDatatype {
-  COUNTER = 0;
-  MAP = 1;
-  LIST = 2;
-  DOCUMENT = 3;
-}
-
-
 message Timestamp {
   // @inject_tag: json:"e,omitempty"
   uint32 era = 1;
@@ -78,7 +70,6 @@ message DatatypeMeta {
   string DUID = 2;
   OperationID opID = 3;
   TypeOfDatatype typeOf = 4;
-  StateOfDatatype state = 5;
 }
 
 message Header {

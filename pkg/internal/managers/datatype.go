@@ -134,7 +134,7 @@ func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model
 func (its *DatatypeManager) Get(key string) iface.Datatype {
 	dt, ok := its.dataMap[key]
 	if ok {
-		return dt.GetDatatype()
+		return dt
 	}
 	return nil
 }

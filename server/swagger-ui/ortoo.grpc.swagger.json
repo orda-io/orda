@@ -212,6 +212,38 @@
           "OrtooService"
         ]
       }
+    },
+    "/api/v1/samples/operation": {
+      "post": {
+        "operationId": "OrtooService_TestEncodingOperation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ortooEncodingMessage"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ortooEncodingMessage"
+            }
+          }
+        ],
+        "tags": [
+          "OrtooService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -283,9 +315,17 @@
         },
         "typeOf": {
           "$ref": "#/definitions/ortooTypeOfDatatype"
+        }
+      }
+    },
+    "ortooEncodingMessage": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/ortooTypeOfDatatype"
         },
-        "state": {
-          "$ref": "#/definitions/ortooStateOfDatatype"
+        "op": {
+          "$ref": "#/definitions/ortooOperation"
         }
       }
     },
@@ -412,19 +452,6 @@
         }
       }
     },
-    "ortooStateOfDatatype": {
-      "type": "string",
-      "enum": [
-        "DUE_TO_CREATE",
-        "DUE_TO_SUBSCRIBE",
-        "DUE_TO_SUBSCRIBE_CREATE",
-        "SUBSCRIBED",
-        "DUE_TO_UNSUBSCRIBE",
-        "CLOSED",
-        "DELETED"
-      ],
-      "default": "DUE_TO_CREATE"
-    },
     "ortooSyncType": {
       "type": "string",
       "enum": [
@@ -457,11 +484,11 @@
         "LIST_INSERT",
         "LIST_DELETE",
         "LIST_UPDATE",
-        "DOC_PUT_OBJ",
-        "DOC_DEL_OBJ",
-        "DOC_INS_ARR",
-        "DOC_DEL_ARR",
-        "DOC_UPD_ARR"
+        "DOC_OBJ_PUT",
+        "DOC_OBJ_RMV",
+        "DOC_ARR_INS",
+        "DOC_ARR_DEL",
+        "DOC_ARR_UPD"
       ],
       "default": "NO_OP"
     },

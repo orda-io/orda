@@ -4,6 +4,7 @@ option go_package = ".;model";
 package ortoo;
 
 import "ortoo.proto";
+import "ortoo.enum.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -56,4 +57,16 @@ service OrtooService {
       put: "/api/v1/collections/{collection}/reset"
     };
   }
+
+  rpc TestEncodingOperation (EncodingMessage) returns (EncodingMessage) {
+    option (google.api.http) = {
+      post: "/api/v1/samples/operation"
+      body: "*"
+    };
+  }
+}
+
+message EncodingMessage {
+  TypeOfDatatype type = 1;
+  Operation op = 2;
 }

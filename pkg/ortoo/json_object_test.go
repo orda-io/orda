@@ -6,6 +6,7 @@ import (
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/testonly"
+	"github.com/knowhunger/ortoo/pkg/utils"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -39,18 +40,23 @@ func initJSONObjectAndTestPut(
 	require.Equal(t, root, put3.getParent())
 	require.Equal(t, TS3, put3.getCreateTime())
 
-	log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+	log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 	return []*model.Timestamp{TS1, TS2, TS3}
 }
 
 func jsonObjectMarshalTest(t *testing.T, original *jsonObject) {
-	clone := newJSONObject(original.GetBase(), nil, model.OldestTimestamp())
+	clone := newJSONObject(original.BaseDatatype, nil, model.OldestTimestamp())
 	m, err := json.Marshal(original) // ==> jsonObject.MarshalJSON
 	require.NoError(t, err)
-
+	utils.PrintMarshalDoc(log.Logger, original)
+	log.Logger.Infof("original:%s", string(m))
 	err = json.Unmarshal(m, clone)
 	require.NoError(t, err)
 	require.True(t, original.Equal(clone))
+	m1, err1 := json.Marshal(original.ToJSON())
+	m2, err2 := json.Marshal(clone.ToJSON())
+	require.Equal(t, m1, m2)
+	require.Equal(t, err1, err2)
 }
 
 func TestJSONObject(t *testing.T) {
@@ -63,7 +69,7 @@ func TestJSONObject(t *testing.T) {
 		root.putCommon("K1", 1234, opID.Next().GetTimestamp())
 		root.putCommon("K2", strt1, opID.Next().GetTimestamp())
 		root.putCommon("K3", arr1, opID.Next().GetTimestamp())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// get the child K1
 		child1 := root.getAsJSONType("K1")
@@ -98,7 +104,7 @@ func TestJSONObject(t *testing.T) {
 		old, oErr := root.PutCommonInObject(root.getCreateTime(), "K1", array, opID.Next().GetTimestamp())
 		require.NoError(t, oErr)
 		require.Nil(t, old)
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// get jsonArray from jsonObject
 		arr := root.getChildAsJSONArray("K1")
@@ -127,14 +133,14 @@ func TestJSONObject(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, old1.isTomb())
 		require.Equal(t, "hello", old1.getValue())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// Replace an existing JSONObject with a new JSONElement
 		old2, err := root.PutCommonInObject(root.getCreateTime(), "K2", "update2", opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Equal(t, TypeJSONObject, old2.getType())
 		require.True(t, old2.isTomb())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// Update an already deleted JSONObject
 		// In this case, the operation is applied effectively, but it is not shown in the root document.
@@ -143,14 +149,14 @@ func TestJSONObject(t *testing.T) {
 		require.Equal(t, "hello", old3.getValue())
 		require.True(t, old3.isTomb())
 		require.Equal(t, "update3", old2.(*jsonObject).getAsJSONType("K1").getValue())
-		log.Logger.Infof("%v", testonly.Marshal(t, old2.(*jsonObject).GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, old2.(*jsonObject).ToJSON()))
 
 		// Replace an existing JSONArray with a new JSONObject
 		old4, err := root.PutCommonInObject(root.getCreateTime(), "K3", strt1, opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Equal(t, TypeJSONArray, old4.getType())
 		require.True(t, old4.isTomb())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// marshal and unmarshal snapshot
 		jsonObjectMarshalTest(t, root)
@@ -174,28 +180,28 @@ func TestJSONObject(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "hello", old1.getValue())
 		require.True(t, old1.isTomb()) // should be tombstone.
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete again: it should be ignored.
 		old2, err := root.DeleteCommonInObject(root.getCreateTime(), "K1", opID.Next().GetTimestamp(), true)
 		require.Error(t, err)
 		require.Equal(t, errors.DatatypeNoOp, err.GetCode())
 		require.Nil(t, old2)
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete a JSONObject
 		old3, err := root.DeleteCommonInObject(root.getCreateTime(), "K2", opID.Next().GetTimestamp(), true)
 		require.NoError(t, err)
 		require.True(t, old3.isTomb())
-		log.Logger.Infof("%v", testonly.Marshal(t, old3.(*jsonObject).GetAsJSONCompatible()))
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, old3.(*jsonObject).ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete a JSONArray
 		old4, err := root.DeleteCommonInObject(root.getCreateTime(), "K3", opID.Next().GetTimestamp(), true)
 		require.NoError(t, err)
 		require.True(t, old4.isTomb())
-		log.Logger.Infof("%v", testonly.Marshal(t, old4.(*jsonArray).GetAsJSONCompatible()))
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, old4.(*jsonArray).ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// marshal and unmarshal snapshot
 		jsonObjectMarshalTest(t, root)
@@ -220,7 +226,7 @@ func TestJSONObject(t *testing.T) {
 		require.True(t, old1.isTomb())
 		require.Equal(t, opID.GetTimestamp(), old1.getDeleteTime())
 		require.Equal(t, ts[0], old1.getCreateTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// if deleting again, newer timestamp is replaced with the previous one.
 		old2, err := root.DeleteCommonInObject(root.getCreateTime(), "K1", opID.Next().GetTimestamp(), false)
@@ -229,7 +235,7 @@ func TestJSONObject(t *testing.T) {
 		require.Equal(t, ts[0], old2.getCreateTime())
 		require.Equal(t, opID.GetTimestamp(), old2.getDeleteTime())
 		require.Equal(t, opID.GetTimestamp(), root.getChildAsJSONElement("K1").getDeleteTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete an JSONObject
 		old3, err := root.DeleteCommonInObject(root.getCreateTime(), "K2", opID.Next().GetTimestamp(), false)
@@ -237,8 +243,8 @@ func TestJSONObject(t *testing.T) {
 		require.True(t, old3.isTomb())
 		child3 := old3.(*jsonObject).getAsJSONType("K1")
 		require.False(t, child3.isTomb())
-		log.Logger.Infof("%v", testonly.Marshal(t, old3.(*jsonObject).GetAsJSONCompatible()))
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, old3.(*jsonObject).ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete an JSONArray
 		old4, err := root.DeleteCommonInObject(root.getCreateTime(), "K3", opID.Next().GetTimestamp(), false)
@@ -247,7 +253,7 @@ func TestJSONObject(t *testing.T) {
 		child4 := old4.(*jsonArray).getJSONType(0)
 		require.False(t, child4.isTomb())
 		require.Equal(t, opID.GetTimestamp(), old4.getDeleteTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete the deleted JSONArray with older timestamp
 		// It is ignored.

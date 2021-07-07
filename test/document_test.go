@@ -71,9 +71,9 @@ func (its *IntegrationTestSuite) TestDocument() {
 		doc2 := client2.SubscribeOrCreateDocument(its.getTestName(), handler)
 		require.NoError(its.T(), client2.Sync())
 
-		log.Logger.Infof("DOC1:%v", doc1.GetAsJSON())
-		log.Logger.Infof("DOC2:%v", doc2.GetAsJSON())
-		require.Equal(its.T(), doc1.GetAsJSON(), doc2.GetAsJSON())
+		log.Logger.Infof("DOC1:%v", doc1.ToJSON())
+		log.Logger.Infof("DOC2:%v", doc2.ToJSON())
+		require.Equal(its.T(), doc1.ToJSON(), doc2.ToJSON())
 
 		_, _ = doc1.PutToObject("K1", "hello")
 		_, _ = doc2.PutToObject("K1", "world")
@@ -117,10 +117,10 @@ func (its *IntegrationTestSuite) TestDocument() {
 		// Can obtain JSONObject: doc2 = {"A3":["a",2],"E1":"hello","E2":1234}
 		doc2, err := doc1.GetFromObject("O2")
 		require.NoError(its.T(), err)
-		log.Logger.Infof("%v", testonly.Marshal(its.T(), doc1.GetAsJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(its.T(), doc1.ToJSON()))
 
 		// Check the child Document
-		require.Equal(its.T(), doc2.GetJSONType(), ortoo.TypeJSONObject)
+		require.Equal(its.T(), doc2.GetTypeOfJSON(), ortoo.TypeJSONObject)
 
 		// Can put a new value to the child Document
 		old4, err := doc2.PutToObject("E3", "world")
@@ -130,7 +130,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 		// Can obtain JSONArray: doc3 = ["world",1234,3.14]
 		doc3, err := doc1.GetFromObject("A3")
 		require.NoError(its.T(), err)
-		require.Equal(its.T(), doc3.GetJSONType(), ortoo.TypeJSONArray)
+		require.Equal(its.T(), doc3.GetTypeOfJSON(), ortoo.TypeJSONArray)
 
 		// Can insert a new JSONObject to the child JSONArray Document
 		doc3a, err := doc3.InsertToArray(1, str1)
@@ -172,7 +172,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 		doc2 := client2.SubscribeDocument(its.getTestName(), handler)
 		require.NoError(its.T(), client2.Sync())
 
-		err := doc1.DoTransaction("T1", func(document ortoo.DocumentInTxn) error {
+		err := doc1.Transaction("T1", func(document ortoo.DocumentInTx) error {
 			_, _ = document.PutToObject("K1", "V1")
 			_, _ = document.PutToObject("K2", str1)
 			_, _ = document.PutToObject("K3", arr1)
@@ -181,17 +181,17 @@ func (its *IntegrationTestSuite) TestDocument() {
 		require.NoError(its.T(), err)
 		require.NoError(its.T(), client1.Sync())
 		require.NoError(its.T(), client2.Sync())
-		its.ctx.L().Infof("doc1:%v", testonly.Marshal(its.T(), doc1.GetAsJSON()))
-		its.ctx.L().Infof("doc2:%v", testonly.Marshal(its.T(), doc2.GetAsJSON()))
+		its.ctx.L().Infof("doc1:%v", testonly.Marshal(its.T(), doc1.ToJSON()))
+		its.ctx.L().Infof("doc2:%v", testonly.Marshal(its.T(), doc2.ToJSON()))
 
-		err = doc2.DoTransaction("T2", func(document ortoo.DocumentInTxn) error {
+		err = doc2.Transaction("T2", func(document ortoo.DocumentInTx) error {
 			_, _ = document.PutToObject("K1", "V2")
 			k3, _ := document.GetFromObject("K3")
 			_, _ = k3.InsertToArray(0, "V3")
 			return fmt.Errorf("error")
 		})
 
-		its.ctx.L().Infof("doc1:%v", testonly.Marshal(its.T(), doc1.GetAsJSON()))
-		its.ctx.L().Infof("doc2:%v", testonly.Marshal(its.T(), doc2.GetAsJSON()))
+		its.ctx.L().Infof("doc1:%v", testonly.Marshal(its.T(), doc1.ToJSON()))
+		its.ctx.L().Infof("doc2:%v", testonly.Marshal(its.T(), doc2.ToJSON()))
 	})
 }

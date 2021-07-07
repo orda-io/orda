@@ -14,29 +14,16 @@ import (
 // Map is an Ortoo datatype which provides the hash map interfaces.
 type Map interface {
 	Datatype
-	MapInTxn
-	DoTransaction(tag string, txFunc func(hashMap MapInTxn) error) error
+	MapInTx
+	Transaction(tag string, txFunc func(hashMap MapInTx) error) error
 }
 
-// MapInTxn is an Ortoo datatype which provides hash map interface in a transaction.
-type MapInTxn interface {
+// MapInTx is an Ortoo datatype which provides hash map interface in a transaction.
+type MapInTx interface {
 	Get(key string) interface{}
 	Put(key string, value interface{}) (interface{}, errors.OrtooError)
 	Remove(key string) (interface{}, errors.OrtooError)
 	Size() int
-}
-
-func newMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Map, errors.OrtooError) {
-	oMap := &ortooMap{
-		datatype: &datatype{
-			ManageableDatatype: &datatypes.ManageableDatatype{},
-			handlers:           handlers,
-		},
-		SnapshotDatatype: &datatypes.SnapshotDatatype{
-			Snapshot: newMapSnapshot(base),
-		},
-	}
-	return oMap, oMap.Initialize(base, wire, oMap.GetSnapshot(), oMap)
 }
 
 type ortooMap struct {
@@ -44,10 +31,18 @@ type ortooMap struct {
 	*datatypes.SnapshotDatatype
 }
 
-func (its *ortooMap) DoTransaction(tag string, txFunc func(hm MapInTxn) error) error {
-	return its.ManageableDatatype.DoTransaction(tag, func(txCtx *datatypes.TransactionContext) error {
+func newMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Map, errors.OrtooError) {
+	oMap := &ortooMap{
+		datatype:         newDatatype(base, wire, handlers),
+		SnapshotDatatype: datatypes.NewSnapshotDatatype(base, nil),
+	}
+	return oMap, oMap.init(oMap)
+}
+
+func (its *ortooMap) Transaction(tag string, txFunc func(hm MapInTx) error) error {
+	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes.TransactionContext) error {
 		clone := &ortooMap{
-			datatype:         its.newDatatype(txCtx),
+			datatype:         its.cloneDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
 		return txFunc(clone)
@@ -55,7 +50,7 @@ func (its *ortooMap) DoTransaction(tag string, txFunc func(hm MapInTxn) error) e
 }
 
 func (its *ortooMap) ResetSnapshot() {
-	its.SnapshotDatatype.SetSnapshot(newMapSnapshot(its.BaseDatatype))
+	its.Snapshot = newMapSnapshot(its.BaseDatatype)
 }
 
 func (its *ortooMap) snapshot() *mapSnapshot {
@@ -65,9 +60,9 @@ func (its *ortooMap) snapshot() *mapSnapshot {
 func (its *ortooMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.PutOperation:
-		return its.snapshot().putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
+		return its.snapshot().putCommon(cast.GetBody().Key, cast.GetBody().Value, cast.GetTimestamp())
 	case *operations.RemoveOperation:
-		return its.snapshot().removeLocal(cast.C.Key, cast.GetTimestamp())
+		return its.snapshot().removeLocal(cast.GetBody().Key, cast.GetTimestamp())
 	}
 	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
@@ -75,12 +70,11 @@ func (its *ortooMap) ExecuteLocal(op interface{}) (interface{}, errors.OrtooErro
 func (its *ortooMap) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		err := its.ApplySnapshotOperation(cast.GetContent(), newMapSnapshot(its.BaseDatatype))
-		return nil, err
+		return nil, its.ApplySnapshot(cast.GetBody())
 	case *operations.PutOperation:
-		return its.snapshot().putCommon(cast.C.Key, cast.C.Value, cast.GetTimestamp())
+		return its.snapshot().putCommon(cast.GetBody().Key, cast.GetBody().Value, cast.GetTimestamp())
 	case *operations.RemoveOperation:
-		return its.snapshot().removeRemote(cast.C.Key, cast.GetTimestamp())
+		return its.snapshot().removeRemote(cast.GetBody().Key, cast.GetTimestamp())
 	}
 	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
@@ -92,7 +86,7 @@ func (its *ortooMap) Put(key string, value interface{}) (interface{}, errors.Ort
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
 	op := operations.NewPutOperation(key, jsonSupportedType)
-	return its.SentenceInTransaction(its.TransactionCtx, op, true)
+	return its.SentenceInTx(its.TxCtx, op, true)
 }
 
 func (its *ortooMap) Get(key string) interface{} {
@@ -104,7 +98,7 @@ func (its *ortooMap) Remove(key string) (interface{}, errors.OrtooError) {
 		return nil, errors.DatatypeIllegalParameters.New(its.L(), "empty key is not allowed")
 	}
 	op := operations.NewRemoveOperation(key)
-	return its.SentenceInTransaction(its.TransactionCtx, op, true)
+	return its.SentenceInTx(its.TxCtx, op, true)
 }
 
 func (its *ortooMap) Size() int {
@@ -116,25 +110,35 @@ func (its *ortooMap) Size() int {
 // ////////////////////////////////////////////////////////////////
 
 type mapSnapshot struct {
-	base
-	Map  map[string]timedType `json:"map"`
-	Size int                  `json:"size"`
+	iface.BaseDatatype
+	Map  map[string]timedType
+	Size int
 }
 
 func newMapSnapshot(base iface.BaseDatatype) *mapSnapshot {
 	return &mapSnapshot{
-		base: base,
-		Map:  make(map[string]timedType),
-		Size: 0,
+		BaseDatatype: base,
+		Map:          make(map[string]timedType),
+		Size:         0,
 	}
 }
 
+func (its *mapSnapshot) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Map  map[string]timedType
+		Size int
+	}{
+		Map:  its.Map,
+		Size: its.Size,
+	})
+}
+
 func (its *mapSnapshot) UnmarshalJSON(bytes []byte) error {
-	var temp = struct {
-		Map  map[string]*timedNode `json:"map"`
-		Size int                   `json:"size"`
+	temp := &struct {
+		Map  map[string]*timedNode
+		Size int
 	}{}
-	err := json.Unmarshal(bytes, &temp)
+	err := json.Unmarshal(bytes, temp)
 	if err != nil {
 		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
@@ -144,24 +148,6 @@ func (its *mapSnapshot) UnmarshalJSON(bytes []byte) error {
 	}
 	its.Size = temp.Size
 	return nil
-}
-
-func (its *mapSnapshot) CloneSnapshot() iface.Snapshot {
-	var cloneMap = make(map[string]timedType)
-	for k, v := range its.Map {
-		cloneMap[k] = v
-	}
-	return &mapSnapshot{
-		Map: cloneMap,
-	}
-}
-
-func (its *mapSnapshot) GetBase() iface.BaseDatatype {
-	return its.base
-}
-
-func (its *mapSnapshot) SetBase(base iface.BaseDatatype) {
-	its.base = base
 }
 
 func (its *mapSnapshot) getFromMap(key string) timedType {
@@ -195,7 +181,7 @@ func (its *mapSnapshot) putCommonWithTimedType(key string, newOne timedType) (o 
 	return newOne, oldOne
 }
 
-func (its *mapSnapshot) GetAsJSONCompatible() interface{} {
+func (its *mapSnapshot) ToJSON() interface{} {
 	m := make(map[string]interface{})
 	for k, v := range its.Map {
 		if v.getValue() != nil {

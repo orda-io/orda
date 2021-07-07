@@ -72,10 +72,10 @@ func (its *Manager) UpdateSnapshot() errors.OrtooError {
 		return err
 	}
 
-	data := datatype.GetSnapshot().GetAsJSONCompatible()
+	data := datatype.ToJSON()
 	if err := its.mongo.InsertRealSnapshot(its.ctx, its.collectionDoc.Name, its.datatypeDoc.Key, data, lastSseq); err != nil {
 		return err
 	}
-	its.ctx.L().Infof("update snapshot and real snapshot")
+	its.ctx.L().Infof("update snapshot and real snapshot %+v", data)
 	return nil
 }

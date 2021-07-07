@@ -2,57 +2,64 @@ package operations
 
 import (
 	"github.com/knowhunger/ortoo/pkg/model"
-	"strings"
 )
 
-// ////////////////// DocPutInObjectOperation ////////////////////
+// ////////////////// DocPutInObjOperation ////////////////////
 
-// NewDocPutInObjectOperation creates a new DocPutInObjectOperation.
-func NewDocPutInObjectOperation(parent *model.Timestamp, key string, value interface{}) *DocPutInObjectOperation {
-	return &DocPutInObjectOperation{
-		baseOperation: newBaseOperation(nil),
-		C: docPutInObjectContent{
-			P: parent,
-			K: key,
-			V: value,
-		},
+// NewDocPutInObjOperation creates a new DocPutInObjOperation.
+func NewDocPutInObjOperation(parent *model.Timestamp, key string, value interface{}) *DocPutInObjOperation {
+	return &DocPutInObjOperation{
+		baseOperation: newBaseOperation(
+			model.TypeOfOperation_DOC_OBJ_PUT,
+			nil,
+			&docPutInObjBody{
+				P: parent,
+				K: key,
+				V: value,
+			},
+		),
 	}
 }
 
-type docPutInObjectContent struct {
+type docPutInObjBody struct {
 	P *model.Timestamp
 	K string
 	V interface{}
 }
 
-// DocPutInObjectOperation is used to put a value into JSONObject.
-type DocPutInObjectOperation struct {
-	*baseOperation
-	C docPutInObjectContent
+// DocPutInObjOperation is used to put a value into JSONObject.
+type DocPutInObjOperation struct {
+	baseOperation
 }
 
-// ToModelOperation transforms this operation to the model.Operation.
-func (its *DocPutInObjectOperation) ToModelOperation() *model.Operation {
-	return &model.Operation{
-		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOC_PUT_OBJ,
-		Body:   marshalContent(its.C),
+func (its *DocPutInObjOperation) GetBody() *docPutInObjBody {
+	return its.Body.(*docPutInObjBody)
+}
+
+// ////////////////// DocRemoveInObjOperation ////////////////////
+
+// NewDocRemoveInObjOperation creates a new DocRemoveInObjOperation.
+func NewDocRemoveInObjOperation(parent *model.Timestamp, key string) *DocRemoveInObjOperation {
+	return &DocRemoveInObjOperation{
+		baseOperation: newBaseOperation(model.TypeOfOperation_DOC_OBJ_RMV, nil, &DocRemoveInObjectBody{
+			P: parent,
+			K: key,
+		}),
 	}
 }
 
-// GetType returns the type of operation.
-func (its *DocPutInObjectOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOC_PUT_OBJ
+type DocRemoveInObjectBody struct {
+	P *model.Timestamp
+	K string
 }
 
-func (its *DocPutInObjectOperation) String() string {
-	var sb strings.Builder
-	sb.WriteString(its.GetType().String())
-	sb.WriteString("[ID")
-	sb.WriteString(its.ID.ToString())
-	sb.WriteString(":")
-	sb.WriteString("]")
-	return sb.String()
+// DocRemoveInObjOperation is used to delete a value from JSONObject.
+type DocRemoveInObjOperation struct {
+	baseOperation
+}
+
+func (its *DocRemoveInObjOperation) GetBody() *DocRemoveInObjectBody {
+	return its.Body.(*DocRemoveInObjectBody)
 }
 
 // ////////////////// DocInsertToArrayOperation ////////////////////
@@ -60,16 +67,19 @@ func (its *DocPutInObjectOperation) String() string {
 // NewDocInsertToArrayOperation creates a new DocInsertToArrayOperation.
 func NewDocInsertToArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocInsertToArrayOperation {
 	return &DocInsertToArrayOperation{
-		baseOperation: newBaseOperation(nil),
-		Pos:           pos,
-		C: docInsertToArrayContent{
-			P: parent,
-			V: values,
-		},
+		baseOperation: newBaseOperation(
+			model.TypeOfOperation_DOC_ARR_INS,
+			nil,
+			&DocInsertToArrayBody{
+				P: parent,
+				V: values,
+			},
+		),
+		Pos: pos,
 	}
 }
 
-type docInsertToArrayContent struct {
+type DocInsertToArrayBody struct {
 	P *model.Timestamp
 	T *model.Timestamp
 	V []interface{}
@@ -77,81 +87,12 @@ type docInsertToArrayContent struct {
 
 // DocInsertToArrayOperation is used to put a value into JSONArray.
 type DocInsertToArrayOperation struct {
-	*baseOperation
+	baseOperation
 	Pos int
-	C   docInsertToArrayContent
 }
 
-// ToModelOperation transforms this operation to the model.Operation.
-func (its *DocInsertToArrayOperation) ToModelOperation() *model.Operation {
-	return &model.Operation{
-		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOC_INS_ARR,
-		Body:   marshalContent(its.C),
-	}
-}
-
-// GetType returns the type of operation.
-func (its *DocInsertToArrayOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOC_INS_ARR
-}
-
-// GetType returns the type of operation.
-func (its *DocInsertToArrayOperation) String() string {
-	var sb strings.Builder
-	sb.WriteString(its.GetType().String())
-	sb.WriteString("[")
-	sb.WriteString(its.C.T.ToString())
-	sb.WriteString(":")
-
-	sb.WriteString("]")
-	return sb.String()
-}
-
-// ////////////////// DocDeleteInObjectOperation ////////////////////
-
-// NewDocDeleteInObjectOperation creates a new DocDeleteInObjectOperation.
-func NewDocDeleteInObjectOperation(parent *model.Timestamp, key string) *DocDeleteInObjectOperation {
-	return &DocDeleteInObjectOperation{
-		baseOperation: newBaseOperation(nil),
-		C: docDeleteInObjectContent{
-			P:   parent,
-			Key: key,
-		},
-	}
-}
-
-type docDeleteInObjectContent struct {
-	P   *model.Timestamp
-	Key string
-}
-
-// DocDeleteInObjectOperation is used to delete a value from JSONObject.
-type DocDeleteInObjectOperation struct {
-	*baseOperation
-	C docDeleteInObjectContent
-}
-
-// ToModelOperation transforms this operation to the model.Operation.
-func (its *DocDeleteInObjectOperation) ToModelOperation() *model.Operation {
-	return &model.Operation{
-		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOC_DEL_OBJ,
-		Body:   marshalContent(its.C),
-	}
-}
-
-// GetType returns the type of operation.
-func (its *DocDeleteInObjectOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOC_DEL_OBJ
-}
-
-func (its *DocDeleteInObjectOperation) String() string {
-	var sb strings.Builder
-	sb.WriteString(its.GetType().String())
-	sb.WriteString("[")
-	sb.WriteString("]")
-	return sb.String()
+func (its *DocInsertToArrayOperation) GetBody() *DocInsertToArrayBody {
+	return its.Body.(*DocInsertToArrayBody)
 }
 
 // ////////////////// UpdInObjectOperation ////////////////////
@@ -159,16 +100,19 @@ func (its *DocDeleteInObjectOperation) String() string {
 // NewDocUpdateInArrayOperation creates a new DocUpdateInArrayOperation.
 func NewDocUpdateInArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocUpdateInArrayOperation {
 	return &DocUpdateInArrayOperation{
-		baseOperation: newBaseOperation(nil),
-		Pos:           pos,
-		C: docUpdateInArrayContent{
-			P: parent,
-			V: values,
-		},
+		baseOperation: newBaseOperation(
+			model.TypeOfOperation_DOC_ARR_UPD,
+			nil,
+			&DocUpdateInArrayBody{
+				P: parent,
+				V: values,
+			},
+		),
+		Pos: pos,
 	}
 }
 
-type docUpdateInArrayContent struct {
+type DocUpdateInArrayBody struct {
 	P *model.Timestamp
 	T []*model.Timestamp
 	V []interface{}
@@ -176,32 +120,12 @@ type docUpdateInArrayContent struct {
 
 // DocUpdateInArrayOperation is used to update a value into JSONArray.
 type DocUpdateInArrayOperation struct {
-	*baseOperation
+	baseOperation
 	Pos int // for local
-	C   docUpdateInArrayContent
 }
 
-// ToModelOperation transforms this operation to the model.Operation.
-func (its *DocUpdateInArrayOperation) ToModelOperation() *model.Operation {
-	return &model.Operation{
-		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOC_UPD_ARR,
-		Body:   marshalContent(its.C),
-	}
-}
-
-// GetType returns the type of operation.
-func (its *DocUpdateInArrayOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOC_UPD_ARR
-}
-
-func (its *DocUpdateInArrayOperation) String() string {
-	var sb strings.Builder
-	sb.WriteString(its.GetType().String())
-	sb.WriteString("[")
-
-	sb.WriteString("]")
-	return sb.String()
+func (its *DocUpdateInArrayOperation) GetBody() *DocUpdateInArrayBody {
+	return its.Body.(*DocUpdateInArrayBody)
 }
 
 // ////////////////// DocDeleteInArrayOperation ////////////////////
@@ -209,47 +133,30 @@ func (its *DocUpdateInArrayOperation) String() string {
 // NewDocDeleteInArrayOperation creates a new DocDeleteInArrayOperation.
 func NewDocDeleteInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) *DocDeleteInArrayOperation {
 	return &DocDeleteInArrayOperation{
-		baseOperation: newBaseOperation(nil),
-		Pos:           pos,
-		NumOfNodes:    numOfNodes,
-		C: docDeleteInArrayContent{
-			P: parent,
-		},
+		baseOperation: newBaseOperation(
+			model.TypeOfOperation_DOC_ARR_DEL,
+			nil,
+			&DocDeleteInArrayBody{
+				P: parent,
+			},
+		),
+		Pos:        pos,
+		NumOfNodes: numOfNodes,
 	}
 }
 
-type docDeleteInArrayContent struct {
+type DocDeleteInArrayBody struct {
 	P *model.Timestamp
 	T []*model.Timestamp
 }
 
 // DocDeleteInArrayOperation is used to delete a value into JSONArray.
 type DocDeleteInArrayOperation struct {
-	*baseOperation
+	baseOperation
 	Pos        int // for local
 	NumOfNodes int // for local
-	C          docDeleteInArrayContent
 }
 
-// ToModelOperation transforms this operation to the model.Operation.
-func (its *DocDeleteInArrayOperation) ToModelOperation() *model.Operation {
-	return &model.Operation{
-		ID:     its.ID,
-		OpType: model.TypeOfOperation_DOC_DEL_ARR,
-		Body:   marshalContent(its.C),
-	}
-}
-
-// GetType returns the type of operation.
-func (its *DocDeleteInArrayOperation) GetType() model.TypeOfOperation {
-	return model.TypeOfOperation_DOC_DEL_ARR
-}
-
-func (its *DocDeleteInArrayOperation) String() string {
-	var sb strings.Builder
-	sb.WriteString(its.GetType().String())
-	sb.WriteString("[")
-
-	sb.WriteString("]")
-	return sb.String()
+func (its *DocDeleteInArrayOperation) GetBody() *DocDeleteInArrayBody {
+	return its.Body.(*DocDeleteInArrayBody)
 }

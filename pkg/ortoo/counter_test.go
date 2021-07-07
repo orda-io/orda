@@ -5,18 +5,19 @@ import (
 	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/knowhunger/ortoo/pkg/operations"
 	"github.com/knowhunger/ortoo/pkg/testonly"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TestIntCounterTransactions(t *testing.T) {
+func TestCounterTransactions(t *testing.T) {
 	t.Run("Can transaction for Counter", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
 
 		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
 
-		require.NoError(t, counter1.DoTransaction("transaction1", func(counter CounterInTxn) error {
+		require.NoError(t, counter1.Transaction("transaction1", func(counter CounterInTx) error {
 			_, _ = counter.IncreaseBy(2)
 			require.Equal(t, int32(2), counter.Get())
 			_, _ = counter.IncreaseBy(4)
@@ -26,7 +27,7 @@ func TestIntCounterTransactions(t *testing.T) {
 
 		require.Equal(t, int32(6), counter1.Get())
 
-		require.Error(t, counter1.DoTransaction("transaction2", func(intCounter CounterInTxn) error {
+		require.Error(t, counter1.Transaction("transaction2", func(intCounter CounterInTx) error {
 			_, _ = intCounter.IncreaseBy(3)
 			require.Equal(t, int32(9), intCounter.Get())
 			_, _ = intCounter.IncreaseBy(5)
@@ -34,6 +35,15 @@ func TestIntCounterTransactions(t *testing.T) {
 			return fmt.Errorf("err")
 		}))
 		require.Equal(t, int32(6), counter1.Get())
+
+		sOp, err := operations.NewSnapshotOperationFromDatatype(counter1.(iface.Datatype))
+		require.NoError(t, err)
+		log.Logger.Infof("%v", sOp)
+		log.Logger.Infof("%v", sOp.ToModelOperation())
+
+		counter2, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
+		counter2.(iface.Datatype).ExecuteRemote(sOp)
+		log.Logger.Infof("%v", counter1.ToJSON())
 	})
 
 	t.Run("Can sync Counter operations with Test wire", func(t *testing.T) {
@@ -41,7 +51,7 @@ func TestIntCounterTransactions(t *testing.T) {
 		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
 		counter2, _ := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), tw, nil)
 
-		tw.SetDatatypes(counter1.(*counter).ManageableDatatype, counter2.(*counter).ManageableDatatype)
+		tw.SetDatatypes(counter1.(*counter).WiredDatatype, counter2.(*counter).WiredDatatype)
 
 		i, oErr := counter1.Increase()
 		require.NoError(t, oErr)
@@ -49,7 +59,7 @@ func TestIntCounterTransactions(t *testing.T) {
 		require.Equal(t, i, int32(1))
 		require.Equal(t, counter1.Get(), counter2.Get())
 
-		err := counter1.DoTransaction("transaction1", func(intCounter CounterInTxn) error {
+		err := counter1.Transaction("transaction1", func(intCounter CounterInTx) error {
 			_, _ = intCounter.IncreaseBy(-1)
 			require.Equal(t, int32(0), intCounter.Get())
 			_, _ = intCounter.IncreaseBy(-2)
@@ -62,7 +72,7 @@ func TestIntCounterTransactions(t *testing.T) {
 		log.Logger.Infof("%#v vs. %#v", counter1.Get(), counter2.Get())
 		require.Equal(t, counter1.Get(), counter2.Get())
 
-		err = counter1.DoTransaction("transaction2", func(intCounter CounterInTxn) error {
+		err = counter1.Transaction("transaction2", func(intCounter CounterInTx) error {
 			_, _ = intCounter.IncreaseBy(1)
 			_, _ = intCounter.IncreaseBy(2)
 			require.Equal(t, int32(-2), intCounter.Get())

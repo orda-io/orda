@@ -2,7 +2,6 @@ package ortoo
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/types"
 )
@@ -69,10 +68,17 @@ func (its *jsonElement) equal(o jsonType) bool {
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
 
-func (its *jsonElement) CloneSnapshot() iface.Snapshot {
-	panic("Implement me")
+func (its *jsonElement) marshal() *marshaledJSONType {
+	forMarshal := its.jsonType.marshal()
+	forMarshal.T = marshalKeyJSONElement
+	forMarshal.E = its.getValue()
+	return forMarshal
 }
 
-func (its *jsonElement) GetAsJSONCompatible() interface{} {
+func (its *jsonElement) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
+	its.V = marshaled.E
+}
+
+func (its *jsonElement) ToJSON() interface{} {
 	return its.getValue()
 }

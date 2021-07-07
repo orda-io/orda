@@ -15,12 +15,13 @@ import (
 // List is an Ortoo datatype which provides the list interfaces.
 type List interface {
 	Datatype
-	ListInTxn
-	DoTransaction(tag string, txFunc func(listTxn ListInTxn) error) error
+	ListInTx
+	Transaction(tag string, txFunc func(listTxn ListInTx) error) error
 }
 
-// ListInTxn is an Ortoo datatype which provides the list interfaces in a transaction.
-type ListInTxn interface {
+// ListInTx is an Ortoo datatype which provides the list interfaces in a transaction.
+type ListInTx interface {
+	Insert(pos int, value interface{}) (interface{}, errors.OrtooError)
 	InsertMany(pos int, value ...interface{}) (interface{}, errors.OrtooError)
 	Get(pos int) (interface{}, errors.OrtooError)
 	GetMany(pos int, numOfNodes int) ([]interface{}, errors.OrtooError)
@@ -30,62 +31,61 @@ type ListInTxn interface {
 	Size() int
 }
 
-func newList(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (List, errors.OrtooError) {
-	list := &list{
-		datatype: &datatype{
-			ManageableDatatype: &datatypes.ManageableDatatype{},
-			handlers:           handlers,
-		},
-		SnapshotDatatype: &datatypes.SnapshotDatatype{
-			Snapshot: newListSnapshot(base),
-		},
-	}
-	return list, list.Initialize(base, wire, list.GetSnapshot(), list)
-}
-
 type list struct {
 	*datatype
 	*datatypes.SnapshotDatatype
 }
 
-func (its *list) DoTransaction(tag string, txFunc func(list ListInTxn) error) error {
-	return its.ManageableDatatype.DoTransaction(tag, func(txCtx *datatypes.TransactionContext) error {
+func newList(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (List, errors.OrtooError) {
+	li := &list{
+		datatype:         newDatatype(base, wire, handlers),
+		SnapshotDatatype: datatypes.NewSnapshotDatatype(base, nil),
+	}
+	return li, li.init(li)
+}
+
+func (its *list) Transaction(tag string, userFunc func(list ListInTx) error) error {
+	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes.TransactionContext) error {
 		clone := &list{
-			datatype:         its.newDatatype(txCtx),
+			datatype:         its.cloneDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
-		return txFunc(clone)
+		return userFunc(clone)
 	})
 }
 
-func (its *list) ResetSnapshot() {
-	its.SnapshotDatatype.SetSnapshot(newListSnapshot(its.BaseDatatype))
+func (its *list) snapshot() *listSnapshot {
+	return its.GetSnapshot().(*listSnapshot)
 }
 
-func (its *list) GetAsJSON() interface{} {
+func (its *list) ResetSnapshot() {
+	its.Snapshot = newListSnapshot(its.BaseDatatype)
+}
+
+func (its *list) ToJSON() interface{} {
 	return struct {
 		List []interface{}
 	}{
-		List: its.snapshot().GetAsJSONCompatible().([]interface{}),
+		List: its.snapshot().ToJSON().([]interface{}),
 	}
 }
 
 func (its *list) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.InsertOperation:
-		target, ret := its.snapshot().insertLocal(cast.Pos, cast.GetTimestamp(), cast.C.V...)
-		cast.C.T = target
+		target, ret := its.snapshot().insertLocal(cast.Pos, cast.GetTimestamp(), cast.GetBody().V...)
+		cast.GetBody().T = target
 		return ret, nil
 	case *operations.DeleteOperation:
 		delTargets, _, delValues := its.snapshot().deleteLocal(cast.Pos, cast.NumOfNodes, cast.GetTimestamp())
-		cast.C.T = delTargets
+		cast.GetBody().T = delTargets
 		return delValues, nil
 	case *operations.UpdateOperation:
-		uptTargets, uptValues, err := its.snapshot().updateLocal(cast.Pos, cast.GetTimestamp(), cast.C.V)
+		uptTargets, uptValues, err := its.snapshot().updateLocal(cast.Pos, cast.GetTimestamp(), cast.GetBody().V)
 		if err != nil {
 			return nil, err
 		}
-		cast.C.T = uptTargets
+		cast.GetBody().T = uptTargets
 		return uptValues, nil
 	}
 	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
@@ -94,14 +94,13 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		err := its.ApplySnapshotOperation(cast.GetContent(), newListSnapshot(its.BaseDatatype))
-		return nil, err
+		return nil, its.ApplySnapshot(cast.GetBody())
 	case *operations.InsertOperation:
-		return nil, its.snapshot().insertRemote(cast.C.T, cast.ID.GetTimestamp(), cast.C.V...)
+		return nil, its.snapshot().insertRemote(cast.GetBody().T, cast.ID.GetTimestamp(), cast.GetBody().V...)
 	case *operations.DeleteOperation:
-		return its.snapshot().deleteRemote(cast.C.T, cast.ID.GetTimestamp())
+		return its.snapshot().deleteRemote(cast.GetBody().T, cast.ID.GetTimestamp())
 	case *operations.UpdateOperation:
-		ret, _ := its.snapshot().updateRemote(cast.C.T, cast.C.V, cast.ID.GetTimestamp())
+		ret, _ := its.snapshot().updateRemote(cast.GetBody().T, cast.GetBody().V, cast.ID.GetTimestamp())
 		return ret, nil
 	}
 	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
@@ -111,8 +110,8 @@ func (its *list) Size() int {
 	return its.snapshot().Size()
 }
 
-func (its *list) snapshot() *listSnapshot {
-	return its.GetSnapshot().(*listSnapshot)
+func (its *list) Insert(pos int, value interface{}) (interface{}, errors.OrtooError) {
+	return its.InsertMany(pos, value)
 }
 
 func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, errors.OrtooError) {
@@ -124,7 +123,7 @@ func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, errors
 		return nil, errors.DatatypeIllegalParameters.New(its.L(), err2.Error())
 	}
 	op := operations.NewInsertOperation(pos, jsonValues)
-	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
+	ret, err := its.SentenceInTx(its.TxCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +139,7 @@ func (its *list) Update(pos int, values ...interface{}) ([]interface{}, errors.O
 		return nil, errors.DatatypeIllegalParameters.New(its.L(), err2.Error())
 	}
 	op := operations.NewUpdateOperation(pos, jsonValues)
-	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
+	ret, err := its.SentenceInTx(its.TxCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +158,7 @@ func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, errors.Ortoo
 		return nil, err
 	}
 	op := operations.NewDeleteOperation(pos, numOfNode)
-	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
+	ret, err := its.SentenceInTx(its.TxCtx, op, true)
 	if err != nil {
 		return nil, err
 	}
@@ -189,23 +188,10 @@ func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, errors.OrtooEr
 // ////////////////////////////////////////////////////////////////
 
 type listSnapshot struct {
-	base
+	iface.BaseDatatype
 	head orderedType
 	size int
 	Map  map[string]orderedType
-}
-
-func (its *listSnapshot) CloneSnapshot() iface.Snapshot {
-	var cloneMap = make(map[string]orderedType)
-	for k, v := range its.Map {
-		cloneMap[k] = v
-	}
-	return &listSnapshot{
-		base: its.base,
-		head: its.head,
-		size: its.size,
-		Map:  cloneMap,
-	}
 }
 
 func newListSnapshot(base iface.BaseDatatype) *listSnapshot {
@@ -213,10 +199,10 @@ func newListSnapshot(base iface.BaseDatatype) *listSnapshot {
 	m := make(map[string]orderedType)
 	m[head.hash()] = head
 	return &listSnapshot{
-		base: base,
-		head: head,
-		Map:  m,
-		size: 0,
+		BaseDatatype: base,
+		head:         head,
+		Map:          m,
+		size:         0,
 	}
 }
 
@@ -229,19 +215,18 @@ func (its *listSnapshot) insertRemote(
 	for _, v := range values {
 		tts = append(tts, newTimedNode(v, ts.GetAndNextDelimiter()))
 	}
-	return its.insertRemoteWithTimedTypes(pos, ts, tts...)
+	return its.insertRemoteWithTimedTypes(pos, tts...)
 }
 
 func (its *listSnapshot) insertRemoteWithTimedTypes(
 	pos *model.Timestamp,
-	ts *model.Timestamp,
 	tts ...timedType,
 ) errors.OrtooError {
 	if target, ok := its.Map[pos.Hash()]; ok {
 		// A -> T -> B, target: T, N: new one
 		for _, tt := range tts {
-			nextTarget := target.getNext()                                       // nextTarget: B
-			for nextTarget != nil && nextTarget.getOrderTime().Compare(ts) > 0 { // B is newer, go to next.
+			nextTarget := target.getNext()                                                 // nextTarget: B
+			for nextTarget != nil && nextTarget.getOrderTime().Compare(tt.getTime()) > 0 { // B is newer, go to next.
 				target = target.getNext()
 				nextTarget = nextTarget.getNext()
 			}
@@ -396,17 +381,10 @@ func (its *listSnapshot) deleteRemote(
 // pos : 3 => n3
 func (its *listSnapshot) retrieve(pos int) orderedType {
 	ret := its.head
-	for i := 1; i <= pos; {
-		ret = ret.getNext()
+	for i := 1; i <= pos; i++ {
+		ret = ret.getNextLive()
 		if ret == nil {
 			return nil
-		}
-		if !ret.isTomb() { // not tombstone
-			i++
-		} else { // if tombstone
-			for ret.getNext() != nil && ret.getNext().isTomb() { // while next is tombstone
-				ret = ret.getNext()
-			}
 		}
 	}
 	return ret
@@ -500,16 +478,8 @@ func (its *listSnapshot) String() string {
 	return sb.String()
 }
 
-func (its *listSnapshot) GetBase() iface.BaseDatatype {
-	return its.base
-}
-
-func (its *listSnapshot) SetBase(base iface.BaseDatatype) {
-	its.base = base
-}
-
-func (its *listSnapshot) GetAsJSONCompatible() interface{} {
-	var l []interface{}
+func (its *listSnapshot) ToJSON() interface{} {
+	var l = make([]interface{}, 0)
 	n := its.head.getNextLive()
 	for n != nil {
 		l = append(l, n.getValue())
@@ -561,11 +531,13 @@ func (its *listSnapshot) UnmarshalJSON(bytes []byte) error {
 	its.Map[its.head.hash()] = its.head
 
 	prev := its.head
-	for _, n := range forUnmarshal.Nodes {
-		node := n.unmarshalAsNode()
-		prev.insertNext(node)
-		prev = node
-		its.Map[node.getOrderTime().Hash()] = node
+	if forUnmarshal.Nodes != nil {
+		for _, n := range forUnmarshal.Nodes {
+			node := n.unmarshalAsNode()
+			prev.insertNext(node)
+			prev = node
+			its.Map[node.getOrderTime().Hash()] = node
+		}
 	}
 	return nil
 }

@@ -58,7 +58,7 @@ func (its *jsonArray) insertCommon(
 		t, ins := its.listSnapshot.insertLocalWithTimedTypes(pos, inserted...)
 		return t, ins, nil
 	}
-	return nil, nil, its.listSnapshot.insertRemoteWithTimedTypes(target, ts, inserted...)
+	return nil, nil, its.listSnapshot.insertRemoteWithTimedTypes(target, inserted...)
 }
 
 func (its *jsonArray) deleteLocal(
@@ -84,9 +84,6 @@ func (its *jsonArray) deleteRemote(
 	ts *model.Timestamp,
 ) (deleted []jsonType, err errors.OrtooError) {
 	deletedTimedTypes, err := its.listSnapshot.deleteRemote(targets, ts)
-	if err != nil {
-		return nil, err
-	}
 	for _, t := range deletedTimedTypes {
 		jt := t.(jsonType)
 		deleted = append(deleted, jt)
@@ -159,7 +156,7 @@ func (its *jsonArray) updateRemote(
 }
 
 func (its *jsonArray) getValue() types.JSONValue {
-	return its.GetAsJSONCompatible()
+	return its.ToJSON()
 }
 
 func (its *jsonArray) getType() TypeOfJSON {
@@ -232,35 +229,86 @@ func (its *jsonArray) equal(o jsonType) bool {
 }
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
+//
+// func (its *jsonArray) GetBase() iface.BaseDatatype {
+// 	return its.getCommon().base
+// }
+//
+// func (its *jsonArray) SetBase(base iface.BaseDatatype) {
+// 	its.getCommon().SetBase(base)
+// }
+//
+// func (its *jsonArray) CloneSnapshot() iface.Snapshot {
+// 	panic("Implement me")
+// }
 
-func (its *jsonArray) GetBase() iface.BaseDatatype {
-	return its.getCommon().base
-}
-
-func (its *jsonArray) SetBase(base iface.BaseDatatype) {
-	its.getCommon().SetBase(base)
-}
-
-func (its *jsonArray) CloneSnapshot() iface.Snapshot {
-	panic("Implement me")
-}
-
-// GetAsJSONCompatible returns an interface type that contains all live objects.
-func (its *jsonArray) GetAsJSONCompatible() interface{} {
+// ToJSON returns an interface type that contains all live objects.
+func (its *jsonArray) ToJSON() interface{} {
 	var list = make([]interface{}, 0)
 	n := its.listSnapshot.head.getNextLive()
 	for n != nil {
 		if !n.isTomb() {
 			switch cast := n.getTimedType().(type) {
 			case *jsonObject:
-				list = append(list, cast.GetAsJSONCompatible())
+				list = append(list, cast.ToJSON())
 			case *jsonElement:
 				list = append(list, cast.getValue())
 			case *jsonArray:
-				list = append(list, cast.GetAsJSONCompatible())
+				list = append(list, cast.ToJSON())
 			}
 		}
 		n = n.getNextLive()
 	}
 	return list
 }
+
+func (its *jsonArray) marshal() *marshaledJSONType {
+	marshal := its.jsonType.marshal()
+	marshal.T = marshalKeyJSONArray
+	marshaledJA := &marshaledJSONArray{
+		S: its.listSnapshot.size,
+	}
+	n := its.listSnapshot.head.getNext() // NOT store head
+	for n != nil {
+		jt := n.getTimedType().(jsonType)
+		var mot marshaledOrderedType
+		if n.getOrderTime() == jt.getCreateTime() {
+			mot = [2]*model.Timestamp{n.getOrderTime()}
+		} else {
+			mot = [2]*model.Timestamp{n.getOrderTime(), jt.getCreateTime()}
+		}
+
+		marshaledJA.N = append(marshaledJA.N, mot)
+		n = n.getNext()
+	}
+	marshal.A = marshaledJA
+	return marshal
+}
+
+func (its *jsonArray) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
+	marshaledJA := marshaled.A
+	its.listSnapshot = newListSnapshot(assistant.common.BaseDatatype)
+	prev := its.listSnapshot.head
+	for _, mot := range marshaledJA.N {
+		o := mot[0]
+		c := mot[1]
+		if c == nil {
+			c = o
+		}
+		timedType, _ := its.findJSONType(c)
+		node := &orderedNode{
+			timedType: timedType,
+			O:         assistant.unifyTimestamp(o),
+		}
+		its.Map[node.getOrderTime().Hash()] = node
+		prev.insertNext(node)
+		prev = node
+
+	}
+	its.size = marshaled.A.S
+}
+
+// func (its *jsonArray) SetSnapshot(snap interface{}) errors.OrtooError {
+//
+// 	return nil
+// }

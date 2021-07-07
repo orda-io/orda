@@ -4,7 +4,6 @@ import (
 	gocontext "context"
 	"encoding/json"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/iface"
 	"github.com/knowhunger/ortoo/pkg/log"
 	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
@@ -153,9 +152,7 @@ func TestMongo(t *testing.T) {
 	t.Run("Can manipulate operationDoc", func(t *testing.T) {
 		snap, err := json.Marshal(&testSnapshot{Value: 1})
 		require.NoError(t, err)
-		op := operations.NewSnapshotOperation(
-			model.StateOfDatatype_DUE_TO_CREATE,
-			string(snap))
+		op := operations.NewSnapshotOperation(snap)
 
 		op.ID = model.NewOperationIDWithCUID(types.NewUID())
 		modelOp := op.ToModelOperation()
@@ -202,28 +199,11 @@ type testSnapshot struct {
 	Value int32 `json:"value"`
 }
 
-func (its *testSnapshot) SetBase(base iface.BaseDatatype) {
-	panic("implement me")
-}
-
-func (its *testSnapshot) GetBase() iface.BaseDatatype {
-	panic("implement me")
-}
-
-func (its *testSnapshot) GetAsJSONCompatible() interface{} {
-	panic("implement me")
-}
-
-func (its *testSnapshot) GetAsJSON() interface{} {
+func (its *testSnapshot) ToJSON() interface{} {
 	// j, err := json.Marshal(its)
 	// if err != nil {
 	// 	return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
+
 	// }
 	return its
-}
-
-func (its *testSnapshot) CloneSnapshot() iface.Snapshot {
-	return &testSnapshot{
-		Value: its.Value,
-	}
 }

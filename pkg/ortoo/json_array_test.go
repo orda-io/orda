@@ -19,7 +19,7 @@ var arr1 = []interface{}{"world", float64(1234), 3.14}
 func initJSONArrayAndInsertTest(t *testing.T, root *jsonObject, opID *model.OperationID) *jsonArray {
 	// {"K1":["world",1234,3.14]}
 	root.putCommon("K1", arr1, opID.Next().GetTimestamp())
-	log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+	log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 	array := root.getChildAsJSONArray("K1")
 	require.Equal(t, root, array.getParent())
@@ -29,7 +29,7 @@ func initJSONArrayAndInsertTest(t *testing.T, root *jsonObject, opID *model.Oper
 	// {"K1":["world",{ "K1": "hello", "K2": 1234 }, 1234,3.14]}
 	_, _, err = root.InsertLocalInArray(array.getCreateTime(), 1, opID.Next().GetTimestamp(), strt1)
 	require.NoError(t, err)
-	log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+	log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 	objChild := array.getJSONType(1)
 	require.Equal(t, array, objChild.getParent())
@@ -38,7 +38,7 @@ func initJSONArrayAndInsertTest(t *testing.T, root *jsonObject, opID *model.Oper
 	// {"K1":["world",{ "K1": "hello", "K2": 1234 }, ["world", 1234, 3.14], 1234,3.14]}
 	_, _, err = root.InsertLocalInArray(array.getCreateTime(), 2, opID.Next().GetTimestamp(), arr1)
 	require.NoError(t, err)
-	log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+	log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 	arrChild := array.getJSONType(2)
 	require.Equal(t, array, arrChild.getParent())
@@ -59,10 +59,10 @@ func TestJSONArray(t *testing.T) {
 		require.NoError(t, err)
 		_, err = root.PutCommonInObject(root.getCreateTime(), "K2", arr, opID.Next().GetTimestamp())
 		require.NoError(t, err)
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
-		k1 := root.getAsJSONType("K1").(*jsonArray)
-		k2 := root.getAsJSONType("K2").(*jsonArray)
+		k1 := root.getChildAsJSONArray("K1")
+		k2 := root.getChildAsJSONArray("K2")
 
 		ts1 := opID.Next().GetTimestamp()  // older
 		ts2 := opID.Next().GetTimestamp()  // newer
@@ -92,8 +92,8 @@ func TestJSONArray(t *testing.T) {
 		require.Equal(t, k2, x.getParent(), y.getParent())
 		require.NotEqual(t, x.getCreateTime(), y.getCreateTime())
 
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
-		require.Equal(t, k1.GetAsJSONCompatible(), k2.GetAsJSONCompatible())
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
+		require.Equal(t, k1.ToJSON(), k2.ToJSON())
 
 		// marshal and unmarshal snapshot
 		jsonObjectMarshalTest(t, root)
@@ -113,7 +113,7 @@ func TestJSONArray(t *testing.T) {
 		_, _, err = root.DeleteLocalInArray(array.getCreateTime(), 0, 1, opID.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.True(t, element1.isTomb())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete a JSONObject
 		// {"K1":[["world", 1234, 3.14], 1234,3.14]}
@@ -123,7 +123,7 @@ func TestJSONArray(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, element2.isTomb())
 		require.Equal(t, opID.GetTimestamp(), element2.getDeleteTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete a JSONArray
 		// {"K1":[1234,3.14]}
@@ -133,7 +133,7 @@ func TestJSONArray(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, element3.isTomb())
 		require.Equal(t, opID.GetTimestamp(), element3.getDeleteTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete two values
 		del1 := array.getJSONType(0)
@@ -146,7 +146,7 @@ func TestJSONArray(t *testing.T) {
 		ts := opID.GetTimestamp()
 		require.Equal(t, ts.GetAndNextDelimiter(), del1.getDeleteTime())
 		require.Equal(t, ts.GetAndNextDelimiter(), del2.getDeleteTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// marshal and unmarshal snapshot
 		jsonObjectMarshalTest(t, root)
@@ -166,7 +166,7 @@ func TestJSONArray(t *testing.T) {
 		del1, errs := root.DeleteRemoteInArray(array.getCreateTime(), opID.Next().GetTimestamp(), []*model.Timestamp{tsNotExisting})
 		require.Error(t, errs)
 		require.Nil(t, del1)
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete JSONElement, JSONObject, JSONArray
 		je := array.getJSONType(0)
@@ -185,7 +185,7 @@ func TestJSONArray(t *testing.T) {
 		require.Equal(t, ts1.GetAndNextDelimiter(), je.getDeleteTime())
 		require.Equal(t, ts1.GetAndNextDelimiter(), jo.getDeleteTime())
 		require.Equal(t, ts1.GetAndNextDelimiter(), ja.getDeleteTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// if delete again with newer timestamp, then they should be deleted with newer timestamp.
 		ts2 := opID.Next().GetTimestamp()
@@ -199,7 +199,7 @@ func TestJSONArray(t *testing.T) {
 		require.Equal(t, ts2.GetAndNextDelimiter(), je.getDeleteTime())
 		require.Equal(t, ts2.GetAndNextDelimiter(), jo.getDeleteTime())
 		require.Equal(t, ts2.GetAndNextDelimiter(), ja.getDeleteTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// if delete again with older timestamp, then they should be deleted with newer timestamp.
 		del4, errs := root.DeleteRemoteInArray(array.getCreateTime(), ts1.Clone(), []*model.Timestamp{je.getCreateTime(), jo.getCreateTime(), ja.getCreateTime()})
@@ -211,13 +211,13 @@ func TestJSONArray(t *testing.T) {
 		require.Equal(t, ts2_2.GetAndNextDelimiter(), je.getDeleteTime())
 		require.Equal(t, ts2_2.GetAndNextDelimiter(), jo.getDeleteTime())
 		require.Equal(t, ts2_2.GetAndNextDelimiter(), ja.getDeleteTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// insert next to deleted one.
 		arr5, err := root.InsertRemoteInArray(array.getCreateTime(), jo.getCreateTime(), opID.Next().GetTimestamp(), "E1")
 		require.NoError(t, err)
 		require.Equal(t, arr5, array)
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// TODO: should test for updating a deleted one.
 		// marshal and unmarshal snapshot
@@ -245,7 +245,7 @@ func TestJSONArray(t *testing.T) {
 		require.Equal(t, targets[0], oldOne1.getCreateTime())
 		require.Equal(t, targets[1], oldOne2.getCreateTime())
 		require.Equal(t, targets[2], oldOne3.getCreateTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 		newOne1 := array.getJSONType(0)
 		newOne2 := array.getJSONType(1)
 		newOne3 := array.getJSONType(2)
@@ -254,8 +254,8 @@ func TestJSONArray(t *testing.T) {
 		require.True(t, oldOne1.isTomb())
 		require.True(t, oldOne2.isTomb())
 		require.True(t, oldOne3.isTomb())
-		// Except jsonElement(oldOne1), they should be in cemetery.
-		require.Equal(t, 2, len(array.getCommon().cemetery))
+		// Except jsonElement(oldOne1), they should be in Cemetery.
+		require.Equal(t, 2, len(array.getCommon().Cemetery))
 
 		require.Equal(t, newOne1.getCreateTime(), oldOne1.getDeleteTime())
 		require.Equal(t, newOne2.getCreateTime(), oldOne2.getDeleteTime())
@@ -286,9 +286,9 @@ func TestJSONArray(t *testing.T) {
 		require.NotEqual(t, upd1[0], oldOne1)
 		require.False(t, oldOne1.isTomb())
 		require.True(t, upd1[0].isTomb())
-		require.Equal(t, 1, len(root.getCommon().cemetery))
+		require.Equal(t, 1, len(root.getCommon().Cemetery))
 
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// updates with newer timestamp
 		ts2 := opID2.Next().GetTimestamp()
@@ -298,7 +298,7 @@ func TestJSONArray(t *testing.T) {
 		require.True(t, oldOne1.isTomb())
 		n0 := array.getJSONType(0)
 		require.Equal(t, ts2, n0.getCreateTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// should find the first one with oldOne1.getCreateTime()
 		ts3 := opID2.Next().GetTimestamp()
@@ -308,7 +308,7 @@ func TestJSONArray(t *testing.T) {
 		require.True(t, n0.isTomb())
 		n1 := array.getJSONType(0)
 		require.Equal(t, ts3, n1.getCreateTime())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// delete the first
 		ts4 := opID2.Next().GetTimestamp()
@@ -316,14 +316,14 @@ func TestJSONArray(t *testing.T) {
 		require.NoError(t, errs)
 		require.Equal(t, upd4[0], n1)
 		require.True(t, n1.isTomb())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// update the deleted one.
 		ts5 := opID2.Next().GetTimestamp()
-		_, errs = root.UpdateRemoteInArray(array.getCreateTime(), ts5.Clone(), []*model.Timestamp{oldOne1.getCreateTime()}, []interface{}{"updated3"})
+		upd5, errs := root.UpdateRemoteInArray(array.getCreateTime(), ts5.Clone(), []*model.Timestamp{oldOne1.getCreateTime()}, []interface{}{"updated3"})
 		require.NoError(t, errs)
-		// require.Equal(t, upd5, )
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		require.Equal(t, upd5[0].getValue(), "updated3")
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// update jsonObject and jsonArray at once.
 		ts6 := opID2.Next().GetTimestamp()
@@ -339,7 +339,7 @@ func TestJSONArray(t *testing.T) {
 		require.Equal(t, ts6.GetAndNextDelimiter(), oldOne2.getDeleteTime())
 		require.Equal(t, ts6.GetAndNextDelimiter(), oldOne3.getDeleteTime())
 
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSONCompatible()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 		// marshal and unmarshal snapshot
 		jsonObjectMarshalTest(t, root)
 	})

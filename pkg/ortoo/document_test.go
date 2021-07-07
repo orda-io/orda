@@ -36,22 +36,22 @@ func TestDocument(t *testing.T) {
 		require.NoError(t, oErr)
 		require.NotNil(t, old2)
 		require.True(t, old2.IsGarbage())
-		require.Equal(t, TypeJSONElement, old2.GetJSONType())
-		require.Equal(t, "V1", old2.GetAsJSON())
+		require.Equal(t, TypeJSONElement, old2.GetTypeOfJSON())
+		require.Equal(t, "V1", old2.ToJSON())
 
 		// obtain updated key
 		k1, oErr := root.GetFromObject("K1")
 		require.NoError(t, oErr)
 		require.False(t, k1.IsGarbage())
-		require.Equal(t, "V2", k1.GetAsJSON())
+		require.Equal(t, "V2", k1.ToJSON())
 
 		// delete updated key
 		old3, oErr := root.DeleteInObject("K1")
 		require.NoError(t, oErr)
 		require.NotNil(t, old3)
 		require.True(t, old3.IsGarbage())
-		require.Equal(t, TypeJSONElement, old3.GetJSONType())
-		require.Equal(t, "V2", old3.GetAsJSON())
+		require.Equal(t, TypeJSONElement, old3.GetTypeOfJSON())
+		require.Equal(t, "V2", old3.ToJSON())
 
 		// obtain deleted key
 		k1, oErr = root.GetFromObject("K1")
@@ -65,16 +65,16 @@ func TestDocument(t *testing.T) {
 
 		k2, oErr := root.GetFromObject("K2")
 		require.NoError(t, oErr)
-		require.Equal(t, TypeJSONObject, k2.GetJSONType())
+		require.Equal(t, TypeJSONObject, k2.GetTypeOfJSON())
 
 		oldK2, oErr := k2.PutToObject("E1", "V3")
 		require.NoError(t, oErr)
 		require.True(t, oldK2.IsGarbage())
 		e1, oErr := k2.GetFromObject("E1")
 		require.NoError(t, oErr)
-		require.Equal(t, "V3", e1.GetAsJSON())
+		require.Equal(t, "V3", e1.ToJSON())
 
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		oldK3, oErr := root.PutToObject("K2", "V4")
 		require.NoError(t, oErr)
@@ -93,16 +93,16 @@ func TestDocument(t *testing.T) {
 		require.Equal(t, errors.DatatypeNoOp, oErr.GetCode())
 		require.Nil(t, oldE4a)
 
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		require.True(t, root.GetRootDocument().Equal(k2.GetRootDocument()))
 
-		opID1 := root.(*document).GetBase().GetOpID().Clone()
+		opID1 := root.(*document).GetOpID().Clone()
 		not, oErr := root.DeleteInObject("NOT_EXISTING")
 		require.Error(t, oErr)
 		require.Equal(t, errors.DatatypeNoOp, oErr.GetCode())
 		require.Nil(t, not)
-		opID2 := root.(*document).GetBase().GetOpID().Clone()
+		opID2 := root.(*document).GetOpID().Clone()
 		require.Equal(t, 0, opID1.Compare(opID2))
 	})
 
@@ -123,11 +123,11 @@ func TestDocument(t *testing.T) {
 		require.NoError(t, oErr)
 		require.True(t, array.Equal(arr1))
 
-		opID1 := root.(*document).GetBase().GetOpID().Clone()
+		opID1 := root.(*document).GetOpID().Clone()
 		arr2, oErr := array.InsertToArray(100, "x", "y")
 		require.Error(t, oErr)
 		require.True(t, array.Equal(arr2))
-		opID2 := root.(*document).GetBase().GetOpID().Clone()
+		opID2 := root.(*document).GetOpID().Clone()
 		require.Equal(t, 0, opID1.Compare(opID2))
 
 		// test UpdateManyInArray
@@ -135,16 +135,16 @@ func TestDocument(t *testing.T) {
 		require.NoError(t, oErr)
 		require.True(t, existing[0].IsGarbage())
 		require.True(t, existing[1].IsGarbage())
-		require.Equal(t, "y", existing[0].GetAsJSON())
-		require.Equal(t, "a", existing[1].GetAsJSON())
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))
+		require.Equal(t, "y", existing[0].ToJSON())
+		require.Equal(t, "a", existing[1].ToJSON())
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// test DeleteInArray
 		deleted, oErr := array.DeleteManyInArray(0, 2)
 		require.NoError(t, oErr)
 		require.Equal(t, 2, len(deleted))
-		require.Equal(t, "x", deleted[0].GetAsJSON())
-		require.Equal(t, "Y", deleted[1].GetAsJSON())
+		require.Equal(t, "x", deleted[0].ToJSON())
+		require.Equal(t, "Y", deleted[1].ToJSON())
 		require.True(t, deleted[0].IsGarbage())
 		require.True(t, deleted[1].IsGarbage())
 
@@ -167,7 +167,7 @@ func TestDocument(t *testing.T) {
 		require.Equal(t, oErr.GetCode(), errors.DatatypeNoOp)
 		require.True(t, insArr.Equal(sameArr))
 
-		log.Logger.Infof("%v", testonly.Marshal(t, root.GetAsJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 	})
 
 	t.Run("Can transaction for Document", func(t *testing.T) {
@@ -175,7 +175,7 @@ func TestDocument(t *testing.T) {
 
 		outDoc, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
-		err := outDoc.DoTransaction("transaction1", func(doc DocumentInTxn) error {
+		err := outDoc.Transaction("transaction1", func(doc DocumentInTx) error {
 			_, err := doc.PutToObject("K1", "V1")
 			require.NoError(t, err)
 			_, err = doc.PutToObject("K2", str1)
@@ -193,7 +193,7 @@ func TestDocument(t *testing.T) {
 
 		// require.Equal(t, int32(6), outDoc.Get())
 		//
-		// require.Error(t, outDoc.DoTransaction("transaction2", func(intCounter CounterInTxn) error {
+		// require.Error(t, outDoc.DoTransaction("transaction2", func(intCounter CounterInTx) error {
 		// 	_, _ = intCounter.IncreaseBy(3)
 		// 	require.Equal(t, int32(9), intCounter.Get())
 		// 	_, _ = intCounter.IncreaseBy(5)

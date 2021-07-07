@@ -9,7 +9,7 @@ import (
 
 // TestWire ...
 type TestWire struct {
-	datatypeList  []*datatypes.ManageableDatatype
+	datatypeList  []*datatypes.WiredDatatype
 	sseqMap       map[string]int
 	deliveredList []iface.WiredDatatype
 	notifiable    bool
@@ -18,7 +18,7 @@ type TestWire struct {
 // NewTestWire ...
 func NewTestWire(notifiable bool) *TestWire {
 	return &TestWire{
-		datatypeList: make([]*datatypes.ManageableDatatype, 0),
+		datatypeList: make([]*datatypes.WiredDatatype, 0),
 		sseqMap:      make(map[string]int),
 		notifiable:   notifiable,
 	}
@@ -38,7 +38,7 @@ func (its *TestWire) OnChangeDatatypeState(dt iface.Datatype, state model.StateO
 }
 
 // SetDatatypes ...
-func (its *TestWire) SetDatatypes(datatypeList ...*datatypes.ManageableDatatype) {
+func (its *TestWire) SetDatatypes(datatypeList ...*datatypes.WiredDatatype) {
 	for _, v := range datatypeList {
 		its.datatypeList = append(its.datatypeList, v)
 		its.sseqMap[v.GetCUID()] = 0
@@ -58,7 +58,7 @@ func (its *TestWire) Sync() {
 		// log.Logger.Infof("deliver transaction:%v", OperationsToString(operations))
 		its.sseqMap[wired.GetCUID()] = len(pushPullPack.Operations)
 		for _, w := range its.datatypeList {
-			if wired != w.GetWired() {
+			if wired != w {
 				// log.Logger.Info(wired.GetCUID(), " => ", w.GetCUID())
 				w.ReceiveRemoteModelOperations(operations, false)
 			}

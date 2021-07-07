@@ -27,7 +27,7 @@ func (r *RepositoryMongo) InsertRealSnapshot(
 	// TODO: need to develop a direct transformation method.
 	marshaled, err := bson.Marshal(data)
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors.ServerDBQuery.New(ctx.L(), err.Error(), data)
 	}
 	var bsonM = bson.M{}
 	if err := bson.Unmarshal(marshaled, &bsonM); err != nil {

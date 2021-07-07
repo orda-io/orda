@@ -33,7 +33,7 @@ func ValidateUID(uidStr string) bool {
 	return true
 }
 
-// NewNilCUID creates an instance of Nil CUID.
+// NewNilUID creates an instance of Nil UID.
 func NewNilUID() string {
 	var b bytes.Buffer
 	for i := 0; i < DefaultUIDLength; i++ {

@@ -14,13 +14,13 @@ import (
 
 // BaseDatatype is the base datatype which contains
 type BaseDatatype struct {
-	Key      string
-	id       string
-	opID     *model.OperationID
-	TypeOf   model.TypeOfDatatype
-	state    model.StateOfDatatype
-	ctx      *context.DatatypeContext
-	datatype iface.Datatype
+	Key    string
+	id     string
+	opID   *model.OperationID
+	TypeOf model.TypeOfDatatype
+	state  model.StateOfDatatype
+	ctx    *context.DatatypeContext
+	iface.Datatype
 }
 
 // NewBaseDatatype creates a new base datatype
@@ -62,19 +62,20 @@ func (its *BaseDatatype) String() string {
 
 func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, errors.OrtooError) {
 	its.SetNextOpID(op)
-	ret, err := its.executeLocal(op)
+	switch op.GetType() {
+	case model.TypeOfOperation_TRANSACTION, model.TypeOfOperation_ERROR, model.TypeOfOperation_SNAPSHOT:
+		return nil, nil
+	}
+	ret, err := its.ExecuteLocal(op)
 	if err != nil {
 		its.opID.RollBack()
 	}
 	return ret, err // should deliver err
 }
 
-func (its *BaseDatatype) executeLocal(op iface.Operation) (interface{}, errors.OrtooError) {
-	switch op.GetType() {
-	case model.TypeOfOperation_TRANSACTION, model.TypeOfOperation_ERROR, model.TypeOfOperation_SNAPSHOT:
-		return nil, nil
-	}
-	return its.datatype.ExecuteLocal(op)
+func (its *BaseDatatype) executeRemoteBase(op iface.Operation) {
+	its.opID.SyncLamport(op.GetID().Lamport)
+	_, _ = its.ExecuteRemote(op)
 }
 
 // Replay replays an already executed operation.
@@ -95,11 +96,6 @@ func (its *BaseDatatype) SetNextOpID(op iface.Operation) {
 	op.SetID(its.opID.Next())
 }
 
-func (its *BaseDatatype) executeRemoteBase(op iface.Operation) {
-	_, _ = its.datatype.ExecuteRemote(op)
-	// op.ExecuteRemote(its.datatype)
-}
-
 // GetType returns the type of this datatype.
 func (its *BaseDatatype) GetType() model.TypeOfDatatype {
 	return its.TypeOf
@@ -108,16 +104,6 @@ func (its *BaseDatatype) GetType() model.TypeOfDatatype {
 // GetState returns the state of this datatype.
 func (its *BaseDatatype) GetState() model.StateOfDatatype {
 	return its.state
-}
-
-// SetDatatype sets the Datatype which implements this BaseDatatype.
-func (its *BaseDatatype) SetDatatype(datatype iface.Datatype) {
-	its.datatype = datatype
-}
-
-// GetDatatype returns the Datatype which implements this BaseDatatype.
-func (its *BaseDatatype) GetDatatype() iface.Datatype {
-	return its.datatype
 }
 
 // SetOpID sets the operation ID.
@@ -156,7 +142,6 @@ func (its *BaseDatatype) GetMeta() ([]byte, errors.OrtooError) {
 		DUID:   its.id,
 		OpID:   its.opID,
 		TypeOf: its.TypeOf,
-		State:  its.state,
 	}
 	metab, err := json.Marshal(&meta)
 	if err != nil {
@@ -175,7 +160,6 @@ func (its *BaseDatatype) SetMeta(meta []byte) errors.OrtooError {
 	its.id = m.DUID
 	its.opID = m.OpID
 	its.TypeOf = m.TypeOf
-	its.state = m.State
 	return nil
 }
 

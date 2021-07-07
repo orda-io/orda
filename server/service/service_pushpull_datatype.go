@@ -53,7 +53,7 @@ type PushPullHandler struct {
 
 	casePushPull      pushPullCase
 	initialCheckPoint *model.CheckPoint
-	currentCheckPoint *model.CheckPoint
+	currentCP         *model.CheckPoint
 
 	clientDoc     *schema.ClientDoc
 	datatypeDoc   *schema.DatatypeDoc
@@ -117,15 +117,19 @@ func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.Or
 	}
 
 	its.initialCheckPoint = checkPoint.Clone()
-	its.currentCheckPoint = checkPoint.Clone()
+	its.currentCP = checkPoint.Clone()
 	its.ctx.L().Infof("REQ[PUPU] %v", its.gotPushPullPack.ToString())
 	return nil
 }
 
 func (its *PushPullHandler) finalize() {
+	if r := recover(); r != nil {
+		its.ctx.L().Errorf("panic")
+		return
+	}
 	if its.err == nil {
 		its.ctx.L().Infof("finish with CP (%v) -> (%v) and pulled ops: %d",
-			its.initialCheckPoint, its.currentCheckPoint, len(its.resPushPullPack.Operations))
+			its.initialCheckPoint, its.currentCP, len(its.resPushPullPack.Operations))
 		if len(its.pushingOperations) > 0 {
 
 			newCtx := its.ctx.CloneWithNewContext(constants.TagPostPushPull)
@@ -203,7 +207,7 @@ func (its *PushPullHandler) sendNotification(ctx context.OrtooContext) errors.Or
 		its.collectionDoc.Name,
 		its.clientDoc,
 		its.datatypeDoc,
-		its.currentCheckPoint.Sseq)
+		its.currentCP.Sseq)
 }
 
 func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrtooContext) error {
@@ -215,8 +219,8 @@ func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrtooContext) erro
 }
 
 func (its *PushPullHandler) commitToMongoDB() errors.OrtooError {
-	its.datatypeDoc.SseqEnd = its.currentCheckPoint.Sseq
-	its.resPushPullPack.CheckPoint = its.currentCheckPoint
+	its.datatypeDoc.SseqEnd = its.currentCP.Sseq
+	its.resPushPullPack.CheckPoint = its.currentCP
 
 	if len(its.pushingOperations) > 0 {
 		if err := its.mongo.InsertOperations(its.ctx, its.pushingOperations); err != nil {
@@ -230,10 +234,10 @@ func (its *PushPullHandler) commitToMongoDB() errors.OrtooError {
 	}
 	its.ctx.L().Infof("commit Datatype %s", its.datatypeDoc)
 
-	if err := its.mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCheckPoint); err != nil {
+	if err := its.mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCP); err != nil {
 		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 	}
-	its.ctx.L().Infof("commit CheckPoint with %s", its.currentCheckPoint.String())
+	its.ctx.L().Infof("commit CheckPoint with %s", its.currentCP.String())
 	return nil
 }
 
@@ -245,7 +249,7 @@ func (its *PushPullHandler) pullOperations() errors.OrtooError {
 			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}
 		if len(opList) > 0 {
-			its.currentCheckPoint.Sseq = sseqList[len(sseqList)-1]
+			its.currentCP.Sseq = sseqList[len(sseqList)-1] + (uint64)(len(its.pushingOperations))
 		}
 		its.resPushPullPack.Operations = opList
 	}
@@ -254,18 +258,16 @@ func (its *PushPullHandler) pullOperations() errors.OrtooError {
 
 func (its *PushPullHandler) pushOperations() errors.OrtooError {
 
-	sseq := its.datatypeDoc.SseqEnd
+	its.currentCP.Sseq = its.datatypeDoc.SseqEnd
 	for _, op := range its.gotPushPullPack.Operations {
-
 		switch {
-		case its.currentCheckPoint.Cseq+1 == op.ID.GetSeq():
-			sseq++
-			opDoc := schema.NewOperationDoc(op, its.DUID, sseq, its.collectionDoc.Num)
+		case its.currentCP.Cseq+1 == op.ID.GetSeq():
+			its.currentCP.Sseq++
+			opDoc := schema.NewOperationDoc(op, its.DUID, its.currentCP.Sseq, its.collectionDoc.Num)
 			its.pushingOperations = append(its.pushingOperations, opDoc)
-			its.ctx.L().Infof("push %v", operations.ModelToOperation(op).String())
-			its.currentCheckPoint.SyncCseq(op.ID.GetSeq())
-			its.currentCheckPoint.Sseq = sseq
-		case its.currentCheckPoint.Cseq >= op.ID.GetSeq():
+			its.ctx.L().Infof("%v) push %v", its.currentCP.Sseq, op)
+			its.currentCP.SyncCseq(op.ID.GetSeq())
+		case its.currentCP.Cseq >= op.ID.GetSeq():
 			its.ctx.L().Warnf("reject operation due to duplicate: %v", op.String())
 		default:
 			msg := fmt.Sprintf("cp.Cseq=%d < op.Seq=%d", its.initialCheckPoint.Cseq, op.ID.GetSeq())
@@ -314,7 +316,7 @@ func (its *PushPullHandler) processSubscribeOrCreate(code pushPullCase) errors.O
 
 func (its *PushPullHandler) subscribeDatatype() errors.OrtooError {
 	its.DUID = its.datatypeDoc.DUID
-	its.clientDoc.CheckPoints[its.CUID] = its.currentCheckPoint
+	its.clientDoc.CheckPoints[its.CUID] = its.currentCP
 	its.gotPushPullPack.Operations = nil
 	its.resPushPullPack.DUID = its.datatypeDoc.DUID
 	option := model.PushPullBitNormal
@@ -360,7 +362,7 @@ func (its *PushPullHandler) evaluatePushPullCase() (pushPullCase, errors.OrtooEr
 			checkPoint := its.clientDoc.GetCheckPoint(its.DUID)
 			if checkPoint != nil {
 				its.initialCheckPoint = checkPoint
-				its.currentCheckPoint = checkPoint.Clone()
+				its.currentCP = checkPoint.Clone()
 				return caseAllMatchedSubscribed, nil
 			}
 			return caseAllMatchedNotSubscribed, nil

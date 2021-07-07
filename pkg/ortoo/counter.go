@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
@@ -11,12 +12,12 @@ import (
 // Counter is an Ortoo datatype which provides int counter interfaces.
 type Counter interface {
 	Datatype
-	CounterInTxn
-	DoTransaction(tag string, txFunc func(counter CounterInTxn) error) error
+	CounterInTx
+	Transaction(tag string, txFunc func(counter CounterInTx) error) error
 }
 
-// CounterInTxn is an Ortoo datatype which provides int counter interfaces in a transaction.
-type CounterInTxn interface {
+// CounterInTx is an Ortoo datatype which provides int counter interfaces in a transaction.
+type CounterInTx interface {
 	Get() int32
 	Increase() (int32, errors.OrtooError)
 	IncreaseBy(delta int32) (int32, errors.OrtooError)
@@ -27,24 +28,19 @@ type counter struct {
 	*datatypes.SnapshotDatatype
 }
 
-// newCounter creates a new int counter
-func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handler *Handlers) (Counter, errors.OrtooError) {
+// newCounter creates a new counter
+func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Counter, errors.OrtooError) {
 	counter := &counter{
-		datatype: &datatype{
-			ManageableDatatype: &datatypes.ManageableDatatype{},
-			handlers:           handler,
-		},
-		SnapshotDatatype: &datatypes.SnapshotDatatype{
-			Snapshot: newCounterSnapshot(base),
-		},
+		datatype:         newDatatype(base, wire, handlers),
+		SnapshotDatatype: datatypes.NewSnapshotDatatype(base, nil),
 	}
-	return counter, counter.Initialize(base, wire, counter.GetSnapshot(), counter)
+	return counter, counter.init(counter)
 }
 
-func (its *counter) DoTransaction(tag string, txFunc func(counter CounterInTxn) error) error {
-	return its.ManageableDatatype.DoTransaction(tag, func(txCtx *datatypes.TransactionContext) error {
+func (its *counter) Transaction(tag string, txFunc func(counter CounterInTx) error) error {
+	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes.TransactionContext) error {
 		clone := &counter{
-			datatype:         its.newDatatype(txCtx),
+			datatype:         its.cloneDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
 		}
 		return txFunc(clone)
@@ -55,7 +51,7 @@ func (its *counter) DoTransaction(tag string, txFunc func(counter CounterInTxn) 
 func (its *counter) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.IncreaseOperation:
-		return its.snapshot().increaseCommon(cast.C.Delta), nil
+		return its.snapshot().increaseCommon(cast.GetBody().Delta), nil
 	}
 	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
@@ -64,17 +60,16 @@ func (its *counter) ExecuteLocal(op interface{}) (interface{}, errors.OrtooError
 func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) {
 	switch cast := op.(type) {
 	case *operations.SnapshotOperation:
-		err := its.ApplySnapshotOperation(cast.GetContent(), newCounterSnapshot(its.BaseDatatype))
-		return nil, err
+		return nil, its.ApplySnapshot(cast.GetBody())
 	case *operations.IncreaseOperation:
-		return its.snapshot().increaseCommon(cast.C.Delta), nil
+		return its.snapshot().increaseCommon(cast.GetBody().Delta), nil
 	}
 
 	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *counter) ResetSnapshot() {
-	its.SnapshotDatatype.SetSnapshot(newCounterSnapshot(its.BaseDatatype))
+	its.Snapshot = newCounterSnapshot(its.BaseDatatype)
 }
 
 func (its *counter) Get() int32 {
@@ -91,11 +86,19 @@ func (its *counter) snapshot() *counterSnapshot {
 
 func (its *counter) IncreaseBy(delta int32) (int32, errors.OrtooError) {
 	op := operations.NewIncreaseOperation(delta)
-	ret, err := its.SentenceInTransaction(its.TransactionCtx, op, true)
+	ret, err := its.SentenceInTx(its.TxCtx, op, true)
 	if err != nil {
 		return its.snapshot().Value, err
 	}
 	return ret.(int32), nil
+}
+
+func (its *counter) ToJSON() interface{} {
+	return struct {
+		Counter interface{}
+	}{
+		Counter: its.snapshot().ToJSON(),
+	}
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -103,19 +106,28 @@ func (its *counter) IncreaseBy(delta int32) (int32, errors.OrtooError) {
 // ////////////////////////////////////////////////////////////////
 
 type counterSnapshot struct {
-	base
-	Value int32 `json:"value"`
+	iface.BaseDatatype
+	Value int32
 }
 
 func newCounterSnapshot(base iface.BaseDatatype) *counterSnapshot {
 	return &counterSnapshot{
-		base:  base,
-		Value: 0,
+		BaseDatatype: base,
+		Value:        0,
 	}
 }
 
-func (its *counterSnapshot) GetAsJSONCompatible() interface{} {
-	return its
+func (its *counterSnapshot) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct{ Counter int32 }{Counter: its.Value})
+}
+
+func (its *counterSnapshot) UnmarshalJSON(bytes []byte) error {
+	var unmarshal struct{ Counter int32 }
+	if err := json.Unmarshal(bytes, &unmarshal); err != nil {
+		return err
+	}
+	its.Value = unmarshal.Counter
+	return nil
 }
 
 func (its *counterSnapshot) increaseCommon(delta int32) int32 {
@@ -124,13 +136,9 @@ func (its *counterSnapshot) increaseCommon(delta int32) int32 {
 }
 
 func (its *counterSnapshot) String() string {
-	return fmt.Sprintf("Map: %d", its.Value)
+	return fmt.Sprintf("Counter: %d", its.Value)
 }
 
-func (its *counterSnapshot) GetBase() iface.BaseDatatype {
-	return its.base
-}
-
-func (its *counterSnapshot) SetBase(base iface.BaseDatatype) {
-	its.base = base
+func (its *counterSnapshot) ToJSON() interface{} {
+	return its.Value
 }

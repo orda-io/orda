@@ -4,24 +4,13 @@ import (
 	"encoding/json"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
+	"github.com/knowhunger/ortoo/pkg/model"
 	"github.com/knowhunger/ortoo/pkg/operations"
 	"sync"
 )
 
 // NotUserTransactionTag ...
 const NotUserTransactionTag = "NotUserTransactionTag!@#$%ORTOO"
-
-// TransactionDatatype is the datatype responsible for the transaction.
-type TransactionDatatype struct {
-	*WiredDatatype
-	mutex            *sync.RWMutex
-	isLocked         bool
-	success          bool
-	rollbackSnapshot []byte
-	rollbackMeta     []byte
-	rollbackOps      []iface.Operation
-	txCtx            *TransactionContext
-}
 
 // TransactionContext is a context used for transactions
 type TransactionContext struct {
@@ -33,23 +22,33 @@ func (its *TransactionContext) appendOperation(op iface.Operation) {
 	its.opBuffer = append(its.opBuffer, op)
 }
 
-// newTransactionDatatype creates a new TransactionDatatype
-func newTransactionDatatype(w *WiredDatatype, snapshot iface.Snapshot) *TransactionDatatype {
+// TransactionDatatype is the datatype responsible for the transaction.
+type TransactionDatatype struct {
+	*BaseDatatype
+	mutex            *sync.RWMutex
+	isLocked         bool
+	success          bool
+	rollbackSnapshot []byte
+	rollbackMeta     []byte
+	rollbackOps      []iface.Operation
+	txCtx            *TransactionContext
+}
+
+// NewTransactionDatatype creates a new TransactionDatatype
+func NewTransactionDatatype(b *BaseDatatype) *TransactionDatatype {
 
 	return &TransactionDatatype{
-		WiredDatatype: w,
-		mutex:         new(sync.RWMutex),
-		isLocked:      false,
-		success:       true,
-		txCtx:         nil,
-		rollbackOps:   nil,
+		BaseDatatype: b,
+		mutex:        new(sync.RWMutex),
+		isLocked:     false,
+		success:      true,
+		txCtx:        nil,
+		rollbackOps:  nil,
 	}
 }
 
-func (its *TransactionDatatype) ResetRollBackContext() errors.OrtooError {
-	its.datatype.ResetWired()
-	its.datatype.ResetSnapshot()
-	snap, err := json.Marshal(its.datatype.GetSnapshot())
+func (its *TransactionDatatype) ResetTransaction() errors.OrtooError {
+	snap, err := json.Marshal(its.GetSnapshot())
 	if err != nil {
 		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
@@ -63,14 +62,9 @@ func (its *TransactionDatatype) ResetRollBackContext() errors.OrtooError {
 	return nil
 }
 
-// GetWired returns WiredDatatype
-func (its *TransactionDatatype) GetWired() *WiredDatatype {
-	return its.WiredDatatype
-}
-
-// SentenceInTransaction is a method to execute an operation with a transaction.
+// SentenceInTx is a method to execute an operation with a transaction.
 // an operation can be either local or remote
-func (its *TransactionDatatype) SentenceInTransaction(
+func (its *TransactionDatatype) SentenceInTx(
 	ctx *TransactionContext,
 	op iface.Operation,
 	isLocal bool,
@@ -110,7 +104,7 @@ func (its *TransactionDatatype) setTransactionContextAndLock(tag string) *Transa
 
 // BeginTransaction is called before a transaction is executed.
 // This sets TransactionDatatype.txCtx, lock, and generates a transaction operation
-// This is called in either DoTransaction() or SentenceInTransaction().
+// This is called in either DoTransaction() or SentenceInTx().
 // Note that TransactionDatatype.txCtx is currently working transaction context.
 func (its *TransactionDatatype) BeginTransaction(
 	tag string,
@@ -132,19 +126,16 @@ func (its *TransactionDatatype) BeginTransaction(
 // Rollback is called to rollback a transaction
 func (its *TransactionDatatype) Rollback() errors.OrtooError {
 	its.L().Infof("Begin the rollback: '%s'", its.txCtx.tag)
-	snapshotDatatype, _ := its.datatype.(iface.SnapshotDatatype)
-	err := snapshotDatatype.SetMetaAndSnapshot(its.rollbackMeta, its.rollbackSnapshot)
-	if err != nil {
+	if err := its.SetMetaAndSnapshot(its.rollbackMeta, its.rollbackSnapshot); err != nil {
 		return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 	}
 	for _, op := range its.rollbackOps {
-		err := its.Replay(op)
-		if err != nil {
+		if err := its.Replay(op); err != nil {
 			return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 		}
 	}
-	its.rollbackMeta, its.rollbackSnapshot, err = snapshotDatatype.GetMetaAndSnapshot()
-	if err != nil {
+	var err errors.OrtooError
+	if its.rollbackMeta, its.rollbackSnapshot, err = its.GetMetaAndSnapshot(); err != nil {
 		return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 	}
 	its.rollbackOps = nil
@@ -171,7 +162,7 @@ func (its *TransactionDatatype) EndTransaction(txCtx *TransactionContext, withOp
 			}
 			its.rollbackOps = append(its.rollbackOps, its.txCtx.opBuffer...)
 			if isLocal {
-				its.deliverTransaction(its.txCtx.opBuffer)
+				its.DeliverTransaction(its.txCtx.opBuffer)
 			}
 			if its.txCtx.tag != NotUserTransactionTag {
 				its.L().Infof("End the transaction: `%s`", its.txCtx.tag)
@@ -190,4 +181,59 @@ func (its *TransactionDatatype) unlock() {
 		its.mutex.Unlock()
 		its.isLocked = false
 	}
+}
+
+// DoTransaction enables datatypes to perform a transaction.
+func (its *TransactionDatatype) DoTransaction(
+	tag string,
+	currentTxCtx *TransactionContext,
+	funcWithCloneDatatype func(txCtx *TransactionContext) error,
+) errors.OrtooError {
+	txCtx := its.BeginTransaction(tag, currentTxCtx, true)
+	defer func() {
+		if err := its.EndTransaction(txCtx, true, true); err != nil {
+			// do nothing
+		}
+	}()
+	if err := funcWithCloneDatatype(txCtx); err != nil {
+		its.SetTransactionFail()
+		return errors.DatatypeTransaction.New(its.L(), err.Error())
+	}
+	return nil
+}
+
+// ExecuteRemoteTransactionWithCtx is a method to execute a transaction of remote operations
+func (its *TransactionDatatype) ExecuteRemoteTransactionWithCtx(
+	transaction []*model.Operation,
+	currentTxCtx *TransactionContext,
+	obtainList bool,
+) ([]interface{}, errors.OrtooError) {
+	var txCtx *TransactionContext
+	if len(transaction) > 1 {
+		txOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
+		if !ok {
+			return nil, errors.DatatypeTransaction.New(its.L(), "no transaction operation")
+		}
+		if int(txOp.GetNumOfOps()) != len(transaction) {
+			return nil, errors.DatatypeTransaction.New(its.L(), "not matched number of operations")
+		}
+		txCtx = its.BeginTransaction(txOp.GetBody().Tag, currentTxCtx, false)
+		defer func() {
+			if err := its.EndTransaction(txCtx, false, false); err != nil {
+				// _ = log.OrtooError(err)
+			}
+		}()
+		transaction = transaction[1:]
+	}
+	var opList []interface{}
+	for _, modelOp := range transaction {
+		op := operations.ModelToOperation(modelOp)
+		if obtainList {
+			opList = append(opList, op.ToJSON())
+		}
+		if _, err := its.SentenceInTx(txCtx, op, false); err != nil {
+			return nil, errors.DatatypeTransaction.New(its.L(), err.Error())
+		}
+	}
+	return opList, nil
 }

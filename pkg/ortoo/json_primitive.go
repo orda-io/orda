@@ -79,7 +79,6 @@ type jsonTypeSnapshot interface {
 		pos, numOfNodes int,
 		ts *model.Timestamp,
 	) ([]*model.Timestamp, []jsonType, errors.OrtooError)
-
 	DeleteRemoteInArray(
 		parent *model.Timestamp,
 		ts *model.Timestamp,
@@ -120,28 +119,28 @@ type jsonType interface {
 }
 
 type jsonCommon struct {
+	iface.BaseDatatype
 	root     *jsonObject
-	base     base
-	nodeMap  map[string]jsonType // store all jsonPrimitive.K.hash => jsonType
-	cemetery map[string]jsonType // store all deleted jsonType
+	NodeMap  map[string]jsonType // store all jsonPrimitive.K.hash => jsonType
+	Cemetery map[string]jsonType // store all deleted jsonType
 }
 
 func (its *jsonCommon) equal(o *jsonCommon) bool {
-	if its.base != o.base {
+	if its.BaseDatatype != o.BaseDatatype {
 		return false
 	}
-	for k, v1 := range its.nodeMap {
-		v2 := o.nodeMap[k]
+	for k, v1 := range its.NodeMap {
+		v2 := o.NodeMap[k]
 		if !v1.equal(v2) {
-			its.base.L().Errorf("\n%v\n%v", v1, v2)
+			its.L().Errorf("\n%v\n%v", v1, v2)
 			return false
 		}
 	}
-	if len(its.cemetery) != len(o.cemetery) {
+	if len(its.Cemetery) != len(o.Cemetery) {
 		return false
 	}
-	for k, v1 := range its.cemetery {
-		v2 := o.cemetery[k]
+	for k, v1 := range its.Cemetery {
+		v2 := o.Cemetery[k]
 		if v2 == nil {
 			return false
 		}
@@ -156,13 +155,13 @@ func (its *jsonCommon) equal(o *jsonCommon) bool {
 }
 
 func (its *jsonCommon) SetBase(base iface.BaseDatatype) {
-	its.base = base
-	for _, node := range its.nodeMap {
+	its.BaseDatatype = base
+	for _, node := range its.NodeMap {
 		switch cast := node.(type) {
 		case *jsonObject:
-			cast.base = base
+			cast.BaseDatatype = base
 		case *jsonArray:
-			cast.base = base
+			cast.BaseDatatype = base
 		}
 	}
 }
@@ -215,10 +214,10 @@ func (its *jsonPrimitive) funeral(j jsonType, ts *model.Timestamp) {
 
 func (its *jsonPrimitive) makeTomb(ts *model.Timestamp) {
 	if its.D != nil { // Only when already tombstone.
-		// Since a tombstone is placed in the cemetery based on its.D, it should be adjusted.
-		if tomb, ok := its.common.cemetery[its.D.Hash()]; ok {
-			delete(its.common.cemetery, its.D.Hash())
-			its.common.cemetery[ts.Hash()] = tomb
+		// Since a tombstone is placed in the Cemetery based on its.D, it should be adjusted.
+		if tomb, ok := its.common.Cemetery[its.D.Hash()]; ok {
+			delete(its.common.Cemetery, its.D.Hash())
+			its.common.Cemetery[ts.Hash()] = tomb
 		}
 	}
 	its.D = ts
@@ -243,16 +242,16 @@ func (its *jsonPrimitive) getType() TypeOfJSON {
 }
 
 func (its *jsonPrimitive) getLogger() *log.OrtooLog {
-	return its.common.base.L()
+	return its.common.L()
 }
 
 func (its *jsonPrimitive) findJSONType(ts *model.Timestamp) (j jsonType, ok bool) {
-	node, ok := its.getCommon().nodeMap[ts.Hash()]
+	node, ok := its.common.NodeMap[ts.Hash()]
 	return node, ok
 }
 
 func (its *jsonPrimitive) findJSONElement(ts *model.Timestamp) (j *jsonElement, ok bool) {
-	if node, ok := its.getCommon().nodeMap[ts.Hash()]; ok {
+	if node, ok := its.common.NodeMap[ts.Hash()]; ok {
 		if j, ok2 := node.(*jsonElement); ok2 {
 			return j, ok2
 		}
@@ -261,7 +260,7 @@ func (its *jsonPrimitive) findJSONElement(ts *model.Timestamp) (j *jsonElement, 
 }
 
 func (its *jsonPrimitive) findJSONObject(ts *model.Timestamp) (json *jsonObject, ok bool) {
-	if node, ok := its.getCommon().nodeMap[ts.Hash()]; ok {
+	if node, ok := its.common.NodeMap[ts.Hash()]; ok {
 		if j, ok2 := node.(*jsonObject); ok2 {
 			return j, ok2
 		}
@@ -270,7 +269,7 @@ func (its *jsonPrimitive) findJSONObject(ts *model.Timestamp) (json *jsonObject,
 }
 
 func (its *jsonPrimitive) findJSONArray(ts *model.Timestamp) (json *jsonArray, ok bool) {
-	if node, ok := its.getCommon().nodeMap[ts.Hash()]; ok {
+	if node, ok := its.common.NodeMap[ts.Hash()]; ok {
 		if j, ok2 := node.(*jsonArray); ok2 {
 			return j, ok2
 		}
@@ -279,11 +278,11 @@ func (its *jsonPrimitive) findJSONArray(ts *model.Timestamp) (json *jsonArray, o
 }
 
 func (its *jsonPrimitive) addToNodeMap(primitive jsonType) {
-	its.getCommon().nodeMap[primitive.getCreateTime().Hash()] = primitive
+	its.common.NodeMap[primitive.getCreateTime().Hash()] = primitive
 }
 
 func (its *jsonPrimitive) removeFromNodeMap(primitive jsonType) {
-	delete(its.getCommon().nodeMap, primitive.getCreateTime().Hash())
+	delete(its.common.NodeMap, primitive.getCreateTime().Hash())
 }
 
 func (its *jsonPrimitive) getDeleteTime() *model.Timestamp {
@@ -291,7 +290,7 @@ func (its *jsonPrimitive) getDeleteTime() *model.Timestamp {
 }
 
 func (its *jsonPrimitive) addToCemetery(primitive jsonType) {
-	its.common.cemetery[primitive.getDeleteTime().Hash()] = primitive
+	its.common.Cemetery[primitive.getDeleteTime().Hash()] = primitive
 }
 
 func (its *jsonPrimitive) getCommon() *jsonCommon {
@@ -304,7 +303,7 @@ func (its *jsonPrimitive) getRoot() *jsonObject {
 
 func (its *jsonPrimitive) setRoot(r *jsonObject) {
 	its.common.root = r
-	its.common.nodeMap[r.getCreateTime().Hash()] = r
+	its.common.NodeMap[r.getCreateTime().Hash()] = r
 }
 
 func (its *jsonPrimitive) getParent() jsonType {
@@ -339,7 +338,7 @@ func (its *jsonPrimitive) createJSONType(parent jsonType, v interface{}, ts *mod
 }
 
 func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts *model.Timestamp) *jsonArray {
-	ja := newJSONArray(its.GetBase(), parent, ts.GetAndNextDelimiter())
+	ja := newJSONArray(its.common.BaseDatatype, parent, ts.GetAndNextDelimiter())
 	var appendValues []timedType
 	elements := reflect.ValueOf(value)
 	for i := 0; i < elements.Len(); i++ {
@@ -357,7 +356,8 @@ func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts
 }
 
 func (its *jsonPrimitive) createJSONObject(parent jsonType, value interface{}, ts *model.Timestamp) *jsonObject {
-	jo := newJSONObject(its.GetBase(), parent, ts.GetAndNextDelimiter())
+
+	jo := newJSONObject(its.common.BaseDatatype, parent, ts.GetAndNextDelimiter())
 	target := reflect.ValueOf(value)
 	fields := reflect.TypeOf(value)
 
@@ -513,18 +513,22 @@ func (its *jsonPrimitive) DeleteRemoteInArray(
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
 
-func (its *jsonPrimitive) SetBase(base iface.BaseDatatype) {
-	its.common.SetBase(base)
-}
-
-func (its *jsonPrimitive) GetBase() iface.BaseDatatype {
-	return its.common.base
-}
-
-func (its *jsonPrimitive) CloneSnapshot() iface.Snapshot {
-	panic("Implement me")
-}
-
-func (its *jsonPrimitive) GetAsJSONCompatible() interface{} {
+func (its *jsonPrimitive) ToJSON() interface{} {
 	return its.getValue()
+}
+
+func (its *jsonPrimitive) marshal() *marshaledJSONType {
+	var p *model.Timestamp = nil
+	if its.parent != nil {
+		p = its.parent.getCreateTime()
+	}
+	return &marshaledJSONType{
+		P: p,
+		C: its.C,
+		D: its.D,
+	}
+}
+
+func (its *jsonPrimitive) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
+	// do nothing
 }

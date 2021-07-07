@@ -1,6 +1,7 @@
 package ortoo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/knowhunger/ortoo/pkg/errors"
 	"github.com/knowhunger/ortoo/pkg/iface"
@@ -21,10 +22,10 @@ func newJSONObject(base iface.BaseDatatype, parent jsonType, ts *model.Timestamp
 	var root *jsonCommon
 	if parent == nil {
 		root = &jsonCommon{
-			root:     nil,
-			base:     base,
-			nodeMap:  make(map[string]jsonType),
-			cemetery: make(map[string]jsonType),
+			BaseDatatype: base,
+			root:         nil,
+			NodeMap:      make(map[string]jsonType),
+			Cemetery:     make(map[string]jsonType),
 		}
 	} else {
 		root = parent.getCommon()
@@ -101,7 +102,7 @@ func (its *jsonObject) getAsJSONType(key string) jsonType {
 }
 
 func (its *jsonObject) getValue() types.JSONValue {
-	return its.GetAsJSONCompatible()
+	return its.ToJSON()
 }
 
 func (its *jsonObject) getType() TypeOfJSON {
@@ -160,7 +161,7 @@ func (its *jsonObject) equal(o jsonType) bool {
 			continue
 		}
 		jv1, jv2 := v1.(jsonType), v2.(jsonType)
-		if jv1.getCreateTime().Compare(jv2.getCreateTime()) != 0 {
+		if !jv1.equal(jv2) {
 			return false
 		}
 	}
@@ -169,36 +170,104 @@ func (its *jsonObject) equal(o jsonType) bool {
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////
 
-func (its *jsonObject) GetBase() iface.BaseDatatype {
-	return its.getCommon().base
+// MarshalJSON returns marshaledDocument.
+func (its *jsonObject) MarshalJSON() ([]byte, error) {
+	marshalDoc := newMarshaledDocument()
+	for _, v := range its.getCommon().NodeMap {
+		marshaled := v.marshal()
+		marshalDoc.NodeMap = append(marshalDoc.NodeMap, marshaled)
+	}
+	return json.Marshal(marshalDoc)
 }
 
-func (its *jsonObject) SetBase(base iface.BaseDatatype) {
-	its.getCommon().SetBase(base)
+func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
+	var forUnmarshal marshaledDocument
+
+	if err := json.Unmarshal(bytes, &forUnmarshal); err != nil {
+		return errors.DatatypeMarshal.New(its.getLogger(), err.Error())
+	}
+
+	assistant := &unmarshalAssistant{
+		tsMap: make(map[string]*model.Timestamp),
+		common: &jsonCommon{
+			BaseDatatype: its.BaseDatatype,
+			root:         its,
+			NodeMap:      make(map[string]jsonType),
+			Cemetery:     make(map[string]jsonType),
+		},
+	}
+	// make all skeleton jsonTypes "in advance"
+	oldestTs := model.OldestTimestamp()
+	for _, v := range forUnmarshal.NodeMap {
+		jt := v.unmarshalAsJSONType(assistant)
+		if jt.getCreateTime().Compare(oldestTs) == 0 {
+			its.jsonType = &jsonPrimitive{
+				common: assistant.common,
+				parent: nil,
+				C:      jt.getCreateTime(),
+				D:      jt.getDeleteTime(),
+			}
+			its.addToNodeMap(its)
+		} else {
+			jt.addToNodeMap(jt)
+		}
+	}
+
+	// fill up the missing values for each jsonType
+	for _, marshaled := range forUnmarshal.NodeMap {
+		jt, _ := its.findJSONType(marshaled.C) // real jsonType
+		if marshaled.P != nil {
+			parent, _ := its.findJSONType(marshaled.P)
+			jt.setParent(parent)
+		}
+		jt.unmarshal(marshaled, assistant) // unmarshal type-dependently
+		if jt.isTomb() {
+			its.addToCemetery(jt)
+		}
+	}
+	return nil
 }
 
-func (its *jsonObject) CloneSnapshot() iface.Snapshot {
-	// TODO: implement CloneSnapshot()
-	return &jsonObject{}
+func (its *jsonObject) marshal() *marshaledJSONType {
+	marshal := its.jsonType.marshal()
+	marshal.T = marshalKeyJSONObject
+	value := &marshaledJSONObject{
+		S: its.Size,
+		M: make(map[string]*model.Timestamp),
+	}
+	for k, v := range its.mapSnapshot.Map {
+		jt := v.(jsonType)
+		value.M[k] = jt.getCreateTime() // store only create timestamp
+	}
+	marshal.O = value
+	return marshal
 }
 
-func (its *jsonObject) GetAsJSONCompatible() interface{} {
+func (its *jsonObject) unmarshal(marshaled *marshaledJSONType, assistant *unmarshalAssistant) {
+	marshaledJO := marshaled.O
+	its.mapSnapshot = &mapSnapshot{
+		BaseDatatype: assistant.common.BaseDatatype,
+		Map:          make(map[string]timedType),
+		Size:         marshaledJO.S,
+	}
+	for k, ts := range marshaledJO.M {
+		realInstance, _ := its.findJSONType(ts)
+		its.mapSnapshot.Map[k] = realInstance
+	}
+}
+
+func (its *jsonObject) ToJSON() interface{} {
 	m := make(map[string]interface{})
 	for k, v := range its.Map {
 		if v != nil {
-			switch cast := v.(type) {
-			case *jsonObject:
-				if !cast.isTomb() {
-					m[k] = cast.GetAsJSONCompatible()
-				}
-
-			case *jsonElement:
-				if !cast.isTomb() {
+			if !v.isTomb() {
+				switch cast := v.(type) {
+				case *jsonObject:
+					m[k] = cast.ToJSON()
+				case *jsonElement:
 					m[k] = v.getValue()
-				}
-			case *jsonArray:
-				if !cast.isTomb() {
-					m[k] = cast.GetAsJSONCompatible()
+				case *jsonArray:
+					m[k] = cast.ToJSON()
 				}
 			}
 		}
