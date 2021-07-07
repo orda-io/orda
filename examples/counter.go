@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/ortoo"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/orda"
 	"sync"
 )
 
@@ -42,40 +42,40 @@ func main() {
 	subscribeIntCounter(client3)
 }
 
-func createClient(alias string) (ortoo.Client, error) {
-	clientConf := &ortoo.ClientConfig{
-		ServerAddr:       "localhost:29065",       // Ortoo Server address. The port 29065 is the port when it is running on docker
+func createClient(alias string) (orda.Client, error) {
+	clientConf := &orda.ClientConfig{
+		ServerAddr:       "localhost:29065",       // Orda Server address. The port 29065 is the port when it is running on docker
 		NotificationAddr: "localhost:11883",       // notification server address.
 		CollectionName:   "hello_world",           // the collection name of MongoDB which the client participates in.
 		SyncType:         model.SyncType_REALTIME, // syncType that is notified in real-time from notification server.
 	}
 
-	client1 := ortoo.NewClient(clientConf, alias) // create a client with alias "client1".
-	if err := client1.Connect(); err != nil {     // connect to Ortoo server
-		_ = fmt.Errorf("fail client to connect an Ortoo server: %v", err.Error())
+	client1 := orda.NewClient(clientConf, alias) // create a client with alias "client1".
+	if err := client1.Connect(); err != nil {    // connect to Orda server
+		_ = fmt.Errorf("fail client to connect an Orda server: %v", err.Error())
 		return nil, err
 	}
 	return client1, nil
 }
 
-func closeClient(client ortoo.Client) {
+func closeClient(client orda.Client) {
 	if err := client.Close(); err != nil { // close the client
 		_ = fmt.Errorf("fail to close client: %v", err.Error())
 	}
 }
 
-func createIntCounter(client ortoo.Client) {
-	intCounter := client.CreateCounter(intCounterKey, ortoo.NewHandlers(
-		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+func createIntCounter(client orda.Client) {
+	intCounter := client.CreateCounter(intCounterKey, orda.NewHandlers(
+		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
-		func(dt ortoo.Datatype, opList []interface{}) {
+		func(dt orda.Datatype, opList []interface{}) {
 			fmt.Printf("Received remote operations\n")
 			for op := range opList {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
+		func(dt orda.Datatype, errs ...errors.OrdaError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err1 := client.Sync(); err1 != nil {
@@ -92,18 +92,18 @@ func createIntCounter(client ortoo.Client) {
 	}
 }
 
-func createOrSubscribeIntCounter(client ortoo.Client) {
-	intCounter := client.SubscribeOrCreateCounter(intCounterKey, ortoo.NewHandlers(
-		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+func createOrSubscribeIntCounter(client orda.Client) {
+	intCounter := client.SubscribeOrCreateCounter(intCounterKey, orda.NewHandlers(
+		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
-		func(dt ortoo.Datatype, opList []interface{}) {
+		func(dt orda.Datatype, opList []interface{}) {
 			fmt.Printf("Received remote operations\n")
 			for op := range opList {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
+		func(dt orda.Datatype, errs ...errors.OrdaError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err := client.Sync(); err != nil {
@@ -120,18 +120,18 @@ func createOrSubscribeIntCounter(client ortoo.Client) {
 	}
 }
 
-func subscribeIntCounter(client ortoo.Client) {
-	intCounter := client.SubscribeCounter(intCounterKey, ortoo.NewHandlers(
-		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+func subscribeIntCounter(client orda.Client) {
+	intCounter := client.SubscribeCounter(intCounterKey, orda.NewHandlers(
+		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
-		func(dt ortoo.Datatype, opList []interface{}) {
+		func(dt orda.Datatype, opList []interface{}) {
 			fmt.Printf("Received remote operations\n")
 			for op := range opList {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
+		func(dt orda.Datatype, errs ...errors.OrdaError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err1 := client.Sync(); err1 != nil {

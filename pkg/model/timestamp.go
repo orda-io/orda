@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/types"
+	"github.com/orda-io/orda/pkg/types"
 	"strings"
 )
 

@@ -2,9 +2,9 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -13,10 +13,10 @@ import (
 
 // GetLatestSnapshot gets the latest snapshot for the specified datatype.
 func (its *MongoCollections) GetLatestSnapshot(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionNum uint32,
 	duid string,
-) (*schema.SnapshotDoc, errors.OrtooError) {
+) (*schema.SnapshotDoc, errors.OrdaError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.SnapshotDocFields.DUID, duid)
@@ -38,13 +38,13 @@ func (its *MongoCollections) GetLatestSnapshot(
 
 // InsertSnapshot inserts a snapshot for the specified datatype.
 func (its *MongoCollections) InsertSnapshot(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionNum uint32,
 	duid string,
 	sseq uint64,
 	meta []byte,
 	snapshot []byte,
-) errors.OrtooError {
+) errors.OrdaError {
 	snap := schema.SnapshotDoc{
 		ID:            fmt.Sprintf("%s:%d", duid, sseq),
 		CollectionNum: collectionNum,

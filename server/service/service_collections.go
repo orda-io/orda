@@ -3,15 +3,15 @@ package service
 import (
 	goctx "context"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/mongodb"
-	"github.com/knowhunger/ortoo/server/svrcontext"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/server/constants"
+	"github.com/orda-io/orda/server/mongodb"
+	"github.com/orda-io/orda/server/svrcontext"
 )
 
 // CreateCollection creates a collection
-func (its *OrtooService) CreateCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
+func (its *OrdaService) CreateCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagCreate).UpdateCollection(in.Collection)
 	num, err := mongodb.MakeCollection(ctx, its.mongo, in.Collection)
 	var msg string
@@ -25,7 +25,7 @@ func (its *OrtooService) CreateCollection(goCtx goctx.Context, in *model.Collect
 }
 
 // ResetCollection resets a collection
-func (its *OrtooService) ResetCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
+func (its *OrdaService) ResetCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagReset).UpdateCollection(in.Collection)
 	if err := its.mongo.PurgeCollection(ctx, in.Collection); err != nil {
 		return nil, errors.NewRPCError(err)

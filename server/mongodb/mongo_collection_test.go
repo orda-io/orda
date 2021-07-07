@@ -4,14 +4,14 @@ import (
 	gocontext "context"
 	"encoding/json"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/operations"
-	"github.com/knowhunger/ortoo/pkg/types"
-	"github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
-	"github.com/knowhunger/ortoo/server/svrcontext"
-	"github.com/knowhunger/ortoo/test"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/operations"
+	"github.com/orda-io/orda/pkg/types"
+	"github.com/orda-io/orda/server/constants"
+	"github.com/orda-io/orda/server/mongodb/schema"
+	"github.com/orda-io/orda/server/svrcontext"
+	"github.com/orda-io/orda/test"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"gotest.tools/assert"
@@ -23,7 +23,7 @@ import (
 
 func TestMongo(t *testing.T) {
 	ctx := svrcontext.NewServerContext(gocontext.TODO(), constants.TagTest).UpdateCollection(t.Name())
-	mongo, err := integration.GetMongo(ctx, "ortoo_unit_test")
+	mongo, err := integration.GetMongo(ctx, "orda_unit_test")
 	if err != nil {
 		t.Fatal("fail to initialize mongoDB")
 	}

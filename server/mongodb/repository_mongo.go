@@ -1,9 +1,9 @@
 package mongodb
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,16 +18,16 @@ type RepositoryMongo struct {
 }
 
 // New creates a new RepositoryMongo
-func New(ctx context.OrtooContext, conf *Config) (*RepositoryMongo, errors.OrtooError) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.Host)) // "mongodb://root:ortoo-test@localhost:27017"))
+func New(ctx context.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaError) {
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.Host)) // "mongodb://root:orda-test@localhost:27017"))
 	if err != nil {
 		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if err = client.Ping(ctx, nil); err != nil {
 		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-	db := client.Database(conf.OrtooDB)
-	ctx.L().Infof("New MongoDB:%v", conf.OrtooDB)
+	db := client.Database(conf.OrdaDB)
+	ctx.L().Infof("New MongoDB:%v", conf.OrdaDB)
 	repo := &RepositoryMongo{
 		db:     db,
 		client: client,
@@ -43,7 +43,7 @@ func New(ctx context.OrtooContext, conf *Config) (*RepositoryMongo, errors.Ortoo
 }
 
 // InitializeCollections initializes collections
-func (r *RepositoryMongo) InitializeCollections(ctx context.OrtooContext) errors.OrtooError {
+func (r *RepositoryMongo) InitializeCollections(ctx context.OrdaContext) errors.OrdaError {
 	r.clients = r.db.Collection(schema.CollectionNameClients)
 	r.counters = r.db.Collection(schema.CollectionNameColNumGenerator)
 	r.snapshots = r.db.Collection(schema.CollectionNameSnapshot)
@@ -89,7 +89,7 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.OrtooContext) errors
 }
 
 // PurgeCollection purges all collections related to collectionName
-func (r *RepositoryMongo) PurgeCollection(ctx context.OrtooContext, collectionName string) errors.OrtooError {
+func (r *RepositoryMongo) PurgeCollection(ctx context.OrdaContext, collectionName string) errors.OrdaError {
 	if err := r.PurgeAllDocumentsOfCollection(ctx, collectionName); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
@@ -101,7 +101,7 @@ func (r *RepositoryMongo) PurgeCollection(ctx context.OrtooContext, collectionNa
 }
 
 // GetOrCreateRealCollection is a method that gets or creates a collection of snapshot
-func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrtooContext, name string) errors.OrtooError {
+func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrdaContext, name string) errors.OrdaError {
 	names, err := r.db.ListCollectionNames(ctx, schema.FilterByName(name))
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
@@ -114,7 +114,7 @@ func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrtooContext, na
 }
 
 // MakeCollection makes a real collection.
-func MakeCollection(ctx context.OrtooContext, mongo *RepositoryMongo, collectionName string) (uint32, errors.OrtooError) {
+func MakeCollection(ctx context.OrdaContext, mongo *RepositoryMongo, collectionName string) (uint32, errors.OrdaError) {
 	collectionDoc, err := mongo.GetCollection(ctx, collectionName)
 	if err != nil {
 		return 0, err

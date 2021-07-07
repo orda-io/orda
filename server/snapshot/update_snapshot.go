@@ -1,19 +1,19 @@
 package snapshot
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/ortoo"
-	"github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/mongodb"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/orda"
+	"github.com/orda-io/orda/server/constants"
+	"github.com/orda-io/orda/server/mongodb"
+	"github.com/orda-io/orda/server/mongodb/schema"
 )
 
-// Manager is a struct that updates snapshot of a datatype in Ortoo server
+// Manager is a struct that updates snapshot of a datatype in Orda server
 type Manager struct {
-	ctx           context.OrtooContext
+	ctx           context.OrdaContext
 	mongo         *mongodb.RepositoryMongo
 	datatypeDoc   *schema.DatatypeDoc
 	collectionDoc *schema.CollectionDoc
@@ -21,7 +21,7 @@ type Manager struct {
 
 // NewManager returns an instance of Snapshot Manager
 func NewManager(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	mongo *mongodb.RepositoryMongo,
 	datatypeDoc *schema.DatatypeDoc,
 	collectionDoc *schema.CollectionDoc,
@@ -35,9 +35,9 @@ func NewManager(
 }
 
 // UpdateSnapshot updates snapshot for specified datatype
-func (its *Manager) UpdateSnapshot() errors.OrtooError {
+func (its *Manager) UpdateSnapshot() errors.OrdaError {
 	var lastSseq uint64 = 0
-	client := ortoo.NewClient(ortoo.NewLocalClientConfig(its.collectionDoc.Name), "ortoo-server")
+	client := orda.NewClient(orda.NewLocalClientConfig(its.collectionDoc.Name), "orda-server")
 	datatype := client.CreateDatatype(its.datatypeDoc.Key, its.datatypeDoc.GetType(), nil).(iface.Datatype)
 	datatype.SetLogger(its.ctx.L())
 	snapshotDoc, err := its.mongo.GetLatestSnapshot(its.ctx, its.collectionDoc.Num, its.datatypeDoc.DUID)

@@ -1,17 +1,17 @@
 package mongodb
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // GetDatatype retrieves a datatypeDoc from MongoDB
 func (its *MongoCollections) GetDatatype(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	duid string,
-) (*schema.DatatypeDoc, errors.OrtooError) {
+) (*schema.DatatypeDoc, errors.OrdaError) {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, duid)
 	result := its.datatypes.FindOne(ctx, f)
 	if err := result.Err(); err != nil {
@@ -29,10 +29,10 @@ func (its *MongoCollections) GetDatatype(
 
 // GetDatatypeByKey gets a datatype with the specified key.
 func (its *MongoCollections) GetDatatypeByKey(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionNum uint32,
 	key string,
-) (*schema.DatatypeDoc, errors.OrtooError) {
+) (*schema.DatatypeDoc, errors.OrdaError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.DatatypeDocFields.Key, key)
@@ -52,9 +52,9 @@ func (its *MongoCollections) GetDatatypeByKey(
 
 // UpdateDatatype updates the datatypeDoc.
 func (its *MongoCollections) UpdateDatatype(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	datatype *schema.DatatypeDoc,
-) errors.OrtooError {
+) errors.OrdaError {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, datatype.DUID)
 	result, err := its.datatypes.UpdateOne(ctx, f, datatype.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
@@ -68,9 +68,9 @@ func (its *MongoCollections) UpdateDatatype(
 }
 
 func (its *MongoCollections) purgeAllCollectionDatatypes(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionNum uint32,
-) errors.OrtooError {
+) errors.OrdaError {
 	opFilter := schema.GetFilter().AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum)
 	r1, err := its.operations.DeleteMany(ctx, opFilter)
 	if err != nil {
@@ -102,10 +102,10 @@ func (its *MongoCollections) purgeAllCollectionDatatypes(
 
 // PurgeDatatype purges a datatype from MongoDB.
 func (its *MongoCollections) PurgeDatatype(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionNum uint32,
 	key string,
-) errors.OrtooError {
+) errors.OrdaError {
 	doc, err := its.GetDatatypeByKey(ctx, collectionNum, key)
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func (its *MongoCollections) PurgeDatatype(
 		ctx.L().Warnf("find no datatype to purge")
 		return nil
 	}
-	if err := its.doTransaction(ctx, func() errors.OrtooError {
+	if err := its.doTransaction(ctx, func() errors.OrdaError {
 		if err := its.PurgeOperations(ctx, collectionNum, doc.DUID); err != nil {
 			return err
 		}

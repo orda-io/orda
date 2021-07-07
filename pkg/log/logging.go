@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-// OrtooLog defines the log of OrtooLog
-type OrtooLog struct {
+// OrdaLog defines the log of OrdaLog
+type OrdaLog struct {
 	*logrus.Entry
 }
 
-// Logger is a global instance of OrtooLog
-var Logger = NewWithTags("ORTOO", "DEFAULT")
+// Logger is a global instance of OrdaLog
+var Logger = NewWithTags("Orda", "DEFAULT")
 
 const (
 	colorRed    = 31
@@ -34,30 +34,30 @@ const (
 	tag2Field = "2ndTag"
 )
 
-// New creates a new OrtooLog.
-func New() *OrtooLog {
+// New creates a new OrdaLog.
+func New() *OrdaLog {
 	logger := logrus.New()
-	logger.SetFormatter(&ortooFormatter{})
+	logger.SetFormatter(&ordaFormatter{})
 	logger.SetReportCaller(true)
-	return &OrtooLog{logrus.NewEntry(logger)}
+	return &OrdaLog{logrus.NewEntry(logger)}
 }
 
-func (its *OrtooLog) GetTag1() string {
+func (its *OrdaLog) GetTag1() string {
 	return its.Data[tag1Field].(string)
 }
 
-func (its *OrtooLog) GetTag2() string {
+func (its *OrdaLog) GetTag2() string {
 	return its.Data[tag2Field].(string)
 }
 
-func (its *OrtooLog) SetTags(tag1, tag2 string) {
+func (its *OrdaLog) SetTags(tag1, tag2 string) {
 	its.Data[tag1Field] = tag1
 	its.Data[tag2Field] = tag2
 }
 
-// NewWithTags creates a new OrtooLog with a tag.
-func NewWithTags(tag1, tag2 string) *OrtooLog {
-	return &OrtooLog{
+// NewWithTags creates a new OrdaLog with a tag.
+func NewWithTags(tag1, tag2 string) *OrdaLog {
+	return &OrdaLog{
 		New().WithFields(logrus.Fields{
 			tag1Field: tag1,
 			tag2Field: tag2,
@@ -78,10 +78,10 @@ func getColorByLevel(level logrus.Level) int {
 	}
 }
 
-type ortooFormatter struct{}
+type ordaFormatter struct{}
 
-// Format implements format of the OrtooLog.
-func (o *ortooFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+// Format implements format of the OrdaLog.
+func (o *ordaFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	b := &bytes.Buffer{}
 	level := strings.ToUpper(entry.Level.String())

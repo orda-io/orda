@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/server/mongodb/schema"
 )
 
 // Notifier is a struct that takes responsibility for notification
@@ -16,7 +16,7 @@ type Notifier struct {
 }
 
 // NewNotifier creates an instance of Notifier
-func NewNotifier(ctx context.OrtooContext, pubSubAddr string, serverName string) (*Notifier, errors.OrtooError) {
+func NewNotifier(ctx context.OrdaContext, pubSubAddr string, serverName string) (*Notifier, errors.OrdaError) {
 	opts := mqtt.NewClientOptions().AddBroker(pubSubAddr).SetUsername(serverName)
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -27,12 +27,12 @@ func NewNotifier(ctx context.OrtooContext, pubSubAddr string, serverName string)
 
 // NotifyAfterPushPull enables server to send a notification to MQTT server
 func (n *Notifier) NotifyAfterPushPull(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionName string,
 	client *schema.ClientDoc,
 	datatype *schema.DatatypeDoc,
 	sseq uint64,
-) errors.OrtooError {
+) errors.OrdaError {
 	topic := fmt.Sprintf("%s/%s", collectionName, datatype.Key)
 	msg := model.Notification{
 		CUID: client.CUID,

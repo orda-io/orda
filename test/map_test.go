@@ -1,12 +1,12 @@
 package integration
 
 import (
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/operations"
-	"github.com/knowhunger/ortoo/pkg/ortoo"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/operations"
+	"github.com/orda-io/orda/pkg/orda"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,8 +14,8 @@ func (its *IntegrationTestSuite) TestMap() {
 	key := GetFunctionName()
 
 	its.Run("Can update snapshot for hash map", func() {
-		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
-		client1 := ortoo.NewClient(config, "client1")
+		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_MANUALLY)
+		client1 := orda.NewClient(config, "client1")
 
 		err := client1.Connect()
 		require.NoError(its.T(), err)
@@ -23,14 +23,14 @@ func (its *IntegrationTestSuite) TestMap() {
 			_ = client1.Close()
 		}()
 
-		map1 := client1.CreateMap(key, ortoo.NewHandlers(
-			func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+		map1 := client1.CreateMap(key, orda.NewHandlers(
+			func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 
 			},
-			func(dt ortoo.Datatype, opList []interface{}) {
+			func(dt orda.Datatype, opList []interface{}) {
 
 			},
-			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
+			func(dt orda.Datatype, errs ...errors.OrdaError) {
 
 			}))
 		_, _ = map1.Put("hello", "world")

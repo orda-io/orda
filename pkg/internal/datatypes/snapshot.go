@@ -2,9 +2,9 @@ package datatypes
 
 import (
 	"encoding/json"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/operations"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/operations"
 )
 
 type SnapshotDatatype struct {
@@ -23,7 +23,7 @@ func NewSnapshotDatatype(b *BaseDatatype, snap iface.Snapshot) *SnapshotDatatype
 	}
 }
 
-func (its *SnapshotDatatype) ApplySnapshot(snapBody []byte) errors.OrtooError {
+func (its *SnapshotDatatype) ApplySnapshot(snapBody []byte) errors.OrdaError {
 	its.L().Infof("apply SnapshotOperation: %v", string(snapBody))
 	if err := json.Unmarshal(snapBody, its.Snapshot); err != nil {
 		return errors.DatatypeSnapshot.New(its.L(), err.Error())
@@ -35,7 +35,7 @@ func (its *SnapshotDatatype) GetSnapshot() iface.Snapshot {
 	return its.Snapshot
 }
 
-func (its *SnapshotDatatype) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError) {
+func (its *SnapshotDatatype) GetMetaAndSnapshot() ([]byte, []byte, errors.OrdaError) {
 	meta, oErr := its.GetMeta()
 	if oErr != nil {
 		return nil, nil, oErr
@@ -47,7 +47,7 @@ func (its *SnapshotDatatype) GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooE
 	return meta, snap, nil
 }
 
-func (its *SnapshotDatatype) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError {
+func (its *SnapshotDatatype) SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrdaError {
 	if err := its.SetMeta(meta); err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (its *SnapshotDatatype) SetMetaAndSnapshot(meta []byte, snap []byte) errors
 	return nil
 }
 
-func (its *SnapshotDatatype) CreateSnapshotOperation() (iface.Operation, errors.OrtooError) {
+func (its *SnapshotDatatype) CreateSnapshotOperation() (iface.Operation, errors.OrdaError) {
 	snap, err := json.Marshal(its.Snapshot)
 	if err != nil {
 		return nil, errors.DatatypeMarshal.New(its.L(), err.Error())

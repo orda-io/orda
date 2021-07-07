@@ -2,9 +2,9 @@ package operations
 
 import (
 	"encoding/json"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // ////////////////// TransactionOperation ////////////////////
@@ -49,7 +49,7 @@ func (its *TransactionOperation) GetNumOfOps() int32 {
 // ////////////////// ErrorOperation ////////////////////
 
 // NewErrorOperation creates an ErrorOperation.
-func NewErrorOperation(err errors.OrtooError) *ErrorOperation {
+func NewErrorOperation(err errors.OrdaError) *ErrorOperation {
 	return &ErrorOperation{
 		baseOperation: newBaseOperation(
 			model.TypeOfOperation_ERROR,
@@ -123,7 +123,7 @@ func NewSnapshotOperation(snapshot []byte) *SnapshotOperation {
 	}
 }
 
-func NewSnapshotOperationFromDatatype(datatype iface.Datatype) (*SnapshotOperation, errors.OrtooError) {
+func NewSnapshotOperationFromDatatype(datatype iface.Datatype) (*SnapshotOperation, errors.OrdaError) {
 	snap, err := json.Marshal(datatype.GetSnapshot())
 	if err != nil {
 		return nil, errors.DatatypeMarshal.New(datatype.L(), err.Error())

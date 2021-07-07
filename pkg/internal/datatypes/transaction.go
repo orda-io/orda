@@ -2,15 +2,15 @@ package datatypes
 
 import (
 	"encoding/json"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/operations"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/operations"
 	"sync"
 )
 
 // NotUserTransactionTag ...
-const NotUserTransactionTag = "NotUserTransactionTag!@#$%ORTOO"
+const NotUserTransactionTag = "NotUserTransactionTag!@#$%Orda"
 
 // TransactionContext is a context used for transactions
 type TransactionContext struct {
@@ -47,7 +47,7 @@ func NewTransactionDatatype(b *BaseDatatype) *TransactionDatatype {
 	}
 }
 
-func (its *TransactionDatatype) ResetTransaction() errors.OrtooError {
+func (its *TransactionDatatype) ResetTransaction() errors.OrdaError {
 	snap, err := json.Marshal(its.GetSnapshot())
 	if err != nil {
 		return errors.DatatypeMarshal.New(its.L(), err.Error())
@@ -68,7 +68,7 @@ func (its *TransactionDatatype) SentenceInTx(
 	ctx *TransactionContext,
 	op iface.Operation,
 	isLocal bool,
-) (interface{}, errors.OrtooError) {
+) (interface{}, errors.OrdaError) {
 	transactionCtx := its.BeginTransaction(NotUserTransactionTag, ctx, false)
 	defer func() {
 		if err := its.EndTransaction(transactionCtx, false, isLocal); err != nil {
@@ -124,7 +124,7 @@ func (its *TransactionDatatype) BeginTransaction(
 }
 
 // Rollback is called to rollback a transaction
-func (its *TransactionDatatype) Rollback() errors.OrtooError {
+func (its *TransactionDatatype) Rollback() errors.OrdaError {
 	its.L().Infof("Begin the rollback: '%s'", its.txCtx.tag)
 	if err := its.SetMetaAndSnapshot(its.rollbackMeta, its.rollbackSnapshot); err != nil {
 		return errors.DatatypeTransaction.New(its.L(), "rollback failed")
@@ -134,7 +134,7 @@ func (its *TransactionDatatype) Rollback() errors.OrtooError {
 			return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 		}
 	}
-	var err errors.OrtooError
+	var err errors.OrdaError
 	if its.rollbackMeta, its.rollbackSnapshot, err = its.GetMetaAndSnapshot(); err != nil {
 		return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 	}
@@ -149,7 +149,7 @@ func (its *TransactionDatatype) SetTransactionFail() {
 }
 
 // EndTransaction is called when a transaction ends
-func (its *TransactionDatatype) EndTransaction(txCtx *TransactionContext, withOp, isLocal bool) errors.OrtooError {
+func (its *TransactionDatatype) EndTransaction(txCtx *TransactionContext, withOp, isLocal bool) errors.OrdaError {
 	if txCtx == its.txCtx {
 		defer its.unlock()
 		if its.success {
@@ -188,7 +188,7 @@ func (its *TransactionDatatype) DoTransaction(
 	tag string,
 	currentTxCtx *TransactionContext,
 	funcWithCloneDatatype func(txCtx *TransactionContext) error,
-) errors.OrtooError {
+) errors.OrdaError {
 	txCtx := its.BeginTransaction(tag, currentTxCtx, true)
 	defer func() {
 		if err := its.EndTransaction(txCtx, true, true); err != nil {
@@ -207,7 +207,7 @@ func (its *TransactionDatatype) ExecuteRemoteTransactionWithCtx(
 	transaction []*model.Operation,
 	currentTxCtx *TransactionContext,
 	obtainList bool,
-) ([]interface{}, errors.OrtooError) {
+) ([]interface{}, errors.OrdaError) {
 	var txCtx *TransactionContext
 	if len(transaction) > 1 {
 		txOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
@@ -220,7 +220,7 @@ func (its *TransactionDatatype) ExecuteRemoteTransactionWithCtx(
 		txCtx = its.BeginTransaction(txOp.GetBody().Tag, currentTxCtx, false)
 		defer func() {
 			if err := its.EndTransaction(txCtx, false, false); err != nil {
-				// _ = log.OrtooError(err)
+				// _ = log.OrdaError(err)
 			}
 		}()
 		transaction = transaction[1:]

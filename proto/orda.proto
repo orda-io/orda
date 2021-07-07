@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+option go_package = ".;model";
+package orda;
+
+import "orda.enum.proto";
+
+message Client {
+  string CUID = 1;
+  string alias = 2;
+  string collection = 3;
+  ClientType type = 4;
+  SyncType syncType = 5;
+}
+
+message Timestamp {
+  // @inject_tag: json:"e,omitempty"
+  uint32 era = 1;
+  // @inject_tag: json:"l,omitempty"
+  uint64 lamport = 2 [jstype = JS_STRING];
+  // @inject_tag: json:"c,omitempty"
+  string CUID = 3;
+  // @inject_tag: json:"d,omitempty"
+  uint32 delimiter = 4;
+}
+
+message OperationID {
+  // @inject_tag: json:"e,omitempty"
+  uint32 era = 1;
+  // @inject_tag: json:"l,omitempty"
+  uint64 lamport = 2 [jstype = JS_STRING];
+  // @inject_tag: json:"c,omitempty"
+  string CUID = 3;
+  // @inject_tag: json:"s,omitempty"
+  uint64 seq = 4 [jstype = JS_STRING];
+}
+
+message Operation {
+  OperationID ID = 1;
+  TypeOfOperation opType = 2;
+  bytes body = 3;
+}
+
+
+message PushPullPack {
+  string DUID = 1;
+  string key = 2;
+  fixed32 option = 3;
+  CheckPoint checkPoint = 4;
+  uint32 era = 5;
+  TypeOfDatatype type = 6;
+  repeated Operation operations = 7;
+}
+
+message CheckPoint {
+  // @inject_tag: bson:"s",json:"s"
+  uint64 sseq = 1 [jstype = JS_STRING];
+  // @inject_tag: bson:"c",json:"c"
+  uint64 cseq = 2 [jstype = JS_STRING];
+}
+
+message Notification {
+  string CUID = 1;
+  string DUID = 2;
+  uint64 sseq = 3 [jstype = JS_STRING];
+}
+
+message DatatypeMeta {
+  string key = 1;
+  string DUID = 2;
+  OperationID opID = 3;
+  TypeOfDatatype typeOf = 4;
+}
+
+message Header {
+  string version = 1;
+  string agent = 2;
+  RequestType type = 3;
+}
+
+message ClientMessage {
+  Header header = 1;
+  string collection = 2;
+  string cuid = 3;
+  string clientAlias = 4;
+  ClientType clientType = 5;
+  SyncType syncType = 6;
+}
+
+message PushPullMessage {
+  Header header = 1;
+  string collection = 2;
+  string cuid = 3;
+  repeated PushPullPack PushPullPacks = 4;
+}
+
+message CollectionMessage {
+  string collection = 1;
+}

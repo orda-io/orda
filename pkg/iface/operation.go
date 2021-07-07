@@ -1,7 +1,7 @@
 package iface
 
 import (
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // Operation defines the interfaces of any operation

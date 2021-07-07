@@ -3,15 +3,15 @@ package service
 import (
 	gocontext "context"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/svrcontext"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/server/constants"
+	"github.com/orda-io/orda/server/svrcontext"
 	"reflect"
 )
 
 // ProcessPushPull processes a GRPC for Push-Pull
-func (its *OrtooService) ProcessPushPull(goCtx gocontext.Context, in *model.PushPullMessage) (*model.PushPullMessage, error) {
+func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushPullMessage) (*model.PushPullMessage, error) {
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagPushPull).UpdateClient(in.Cuid)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Collection)
 	if rpcErr != nil {

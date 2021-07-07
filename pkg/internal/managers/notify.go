@@ -3,12 +3,12 @@ package managers
 import (
 	"encoding/json"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
 )
 
-// NotifyManager manages notifications from Ortoo Server
+// NotifyManager manages notifications from Orda Server
 type NotifyManager struct {
 	client   mqtt.Client
 	ctx      *context.ClientContext
@@ -50,7 +50,7 @@ func NewNotifyManager(ctx *context.ClientContext, pubSubAddr string, cm *model.C
 }
 
 // SubscribeNotification subscribes notification for a topic.
-func (its *NotifyManager) SubscribeNotification(topic string) errors.OrtooError {
+func (its *NotifyManager) SubscribeNotification(topic string) errors.OrdaError {
 	token := its.client.Subscribe(topic, 0, its.notificationSubscribeFunc)
 	if token.Wait() && token.Error() != nil {
 		return errors.ClientConnect.New(its.ctx.L(), "notification ", token.Error())
@@ -76,8 +76,8 @@ func (its *NotifyManager) notificationSubscribeFunc(client mqtt.Client, msg mqtt
 	its.channel <- notificationPushPull
 }
 
-// Connect make a connection with Ortoo notification server.
-func (its *NotifyManager) Connect() errors.OrtooError {
+// Connect make a connection with Orda notification server.
+func (its *NotifyManager) Connect() errors.OrdaError {
 	if token := its.client.Connect(); token.Wait() && token.Error() != nil {
 		return errors.ClientConnect.New(its.ctx.L(), "notification server")
 	}
@@ -86,7 +86,7 @@ func (its *NotifyManager) Connect() errors.OrtooError {
 	return nil
 }
 
-// Close closes a connection with Ortoo notification server.
+// Close closes a connection with Orda notification server.
 func (its *NotifyManager) Close() {
 	its.channel <- &notificationMsg{
 		typeOf: notificationQuit,

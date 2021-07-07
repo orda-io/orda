@@ -1,22 +1,22 @@
 package errors
 
-import "github.com/knowhunger/ortoo/pkg/log"
+import "github.com/orda-io/orda/pkg/log"
 
-// ErrorCode is a type for error code of OrtooError
+// ErrorCode is a type for error code of OrdaError
 type ErrorCode uint32
 
 // New creates an error related to the datatype
-func (its ErrorCode) New(l *log.OrtooLog, args ...interface{}) OrtooError {
+func (its ErrorCode) New(l *log.OrdaLog, args ...interface{}) OrdaError {
 	code := uint32(its) / 100
 	switch code {
 	case 1:
-		return newSingleOrtooError(l, its, "ClientError", clientErrFormats[its], args...)
+		return newSingleOrdaError(l, its, "ClientError", clientErrFormats[its], args...)
 	case 2:
-		return newSingleOrtooError(l, its, "DatatypeError", datatypeErrFormats[its], args...)
+		return newSingleOrdaError(l, its, "DatatypeError", datatypeErrFormats[its], args...)
 	case 3:
-		return newSingleOrtooError(l, its, "PushPullError", pushPullErrFormats[its], args...)
+		return newSingleOrdaError(l, its, "PushPullError", pushPullErrFormats[its], args...)
 	case 4:
-		return newSingleOrtooError(l, its, "ServerError", serverErrFormats[its], args...)
+		return newSingleOrdaError(l, its, "ServerError", serverErrFormats[its], args...)
 
 	}
 	panic("Unsupported error")
@@ -31,7 +31,7 @@ const (
 )
 
 const (
-	// MultipleErrors is an error code that includes many OrtooErrors
+	// MultipleErrors is an error code that includes many OrdaErrors
 	MultipleErrors = baseBasicCode + iota
 )
 

@@ -2,9 +2,9 @@ package operations
 
 import (
 	"encoding/json"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // ModelToOperation changes a model.Operation to an operations.Operation

@@ -2,14 +2,14 @@ package datatypes
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/constants"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/operations"
+	"github.com/orda-io/orda/pkg/constants"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/operations"
 )
 
-// WiredDatatype implements the datatype features related to the synchronization with Ortoo server
+// WiredDatatype implements the datatype features related to the synchronization with Orda server
 type WiredDatatype struct {
 	*TransactionDatatype
 	wire        iface.Wire
@@ -36,7 +36,7 @@ func (its *WiredDatatype) String() string {
 }
 
 // ReceiveRemoteModelOperations ...
-func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrtooError) {
+func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrdaError) {
 	// datatype := its.datatype
 	var opList []interface{}
 	for i := 0; i < len(ops); {
@@ -110,7 +110,7 @@ func (its *WiredDatatype) calculatePullingOperations(newCheckPoint *model.CheckP
 	return int((newCheckPoint.Sseq - its.checkPoint.Sseq) - (newCheckPoint.Cseq - its.checkPoint.Cseq))
 }
 
-func (its *WiredDatatype) checkOptionAndError(ppp *model.PushPullPack) errors.OrtooError {
+func (its *WiredDatatype) checkOptionAndError(ppp *model.PushPullPack) errors.OrdaError {
 	if ppp.GetPushPullPackOption().HasErrorBit() {
 		modelOp := ppp.GetOperations()[0]
 		errOp, ok := operations.ModelToOperation(modelOp).(*operations.ErrorOperation)
@@ -172,8 +172,8 @@ func (its *WiredDatatype) syncCheckPoint(newCheckPoint *model.CheckPoint) {
 
 func (its *WiredDatatype) updateStateOfDatatype(
 	ppp *model.PushPullPack,
-) (model.StateOfDatatype, model.StateOfDatatype, errors.OrtooError) {
-	var err errors.OrtooError = nil
+) (model.StateOfDatatype, model.StateOfDatatype, errors.OrdaError) {
+	var err errors.OrdaError = nil
 	oldState := its.state
 	switch its.state {
 	case model.StateOfDatatype_DUE_TO_CREATE,
@@ -207,7 +207,7 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	its.L().Infof("begin ApplyPushPull:%v", ppp.ToString())
 	defer its.L().Infof("end ApplyPushPull")
 	var oldState, newState model.StateOfDatatype
-	var errs errors.OrtooError = &errors.MultipleOrtooErrors{}
+	var errs errors.OrdaError = &errors.MultipleOrdaErrors{}
 	var opList []interface{}
 	err := its.checkOptionAndError(ppp)
 	if err == nil {
@@ -228,7 +228,7 @@ func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 }
 
 func (its *WiredDatatype) callHandlers(
-	errs errors.OrtooError,
+	errs errors.OrdaError,
 	oldState,
 	newState model.StateOfDatatype,
 	opList []interface{},

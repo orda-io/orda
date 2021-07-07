@@ -1,9 +1,9 @@
 package mongodb
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"reflect"
@@ -22,10 +22,10 @@ type MongoCollections struct {
 
 // Create creates an empty collection by inserting a document and immediately deleting it.
 func (its *MongoCollections) createCollection(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collection *mongo.Collection,
 	docModel schema.MongoDBDoc,
-) errors.OrtooError {
+) errors.OrdaError {
 	result, err := collection.InsertOne(ctx, bson.D{})
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
@@ -41,10 +41,10 @@ func (its *MongoCollections) createCollection(
 }
 
 func (its *MongoCollections) createIndex(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collection *mongo.Collection,
 	docModel schema.MongoDBDoc,
-) errors.OrtooError {
+) errors.OrdaError {
 	if docModel != nil {
 		indexModel := docModel.GetIndexModel()
 		if len(indexModel) > 0 {
@@ -59,9 +59,9 @@ func (its *MongoCollections) createIndex(
 }
 
 func (its *MongoCollections) doTransaction(
-	ctx context.OrtooContext,
-	transactions func() errors.OrtooError,
-) errors.OrtooError {
+	ctx context.OrdaContext,
+	transactions func() errors.OrdaError,
+) errors.OrdaError {
 	session, err := its.mongoClient.StartSession()
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
@@ -79,7 +79,7 @@ func (its *MongoCollections) doTransaction(
 		}
 		return nil
 	}); err != nil {
-		return err.(errors.OrtooError)
+		return err.(errors.OrdaError)
 	}
 	session.EndSession(ctx)
 	return nil

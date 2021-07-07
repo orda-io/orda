@@ -7,27 +7,27 @@ CONFIG_DIR = config
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
 
 GO_SRCS := $(shell find . -path ./vendor -prune -o -type f -name "*.go" -print)
-GO_PROJECT = github.com/knowhunger/ortoo
+GO_PROJECT = github.com/orda-io/orda
 GO_LDFLAGS ?=
 GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.GitCommit=${GIT_COMMIT}'
 GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.Version=${VERSION}'
 
 PROTOC_INCLUDE := -I=./proto -I=./proto/third_party
-PROTOC_PROTO_FILES := ortoo.enum.proto ortoo.proto ortoo.grpc.proto
+PROTOC_PROTO_FILES := orda.enum.proto orda.proto orda.grpc.proto
 
 .PHONY: protoc-gen
 protoc-gen:
-	-rm ./pkg/model/*.pb.go ./pkg/model/*.pb.gw.go ./server/swagger-ui/ortoo.grpc.swagger.json
+	-rm ./pkg/model/*.pb.go ./pkg/model/*.pb.gw.go ./server/swagger-ui/orda.grpc.swagger.json
 	protoc $(PROTOC_INCLUDE) \
 		--gofast_out=,plugins=grpc,:./pkg/model/ \
 		$(PROTOC_PROTO_FILES)
-	protoc-go-inject-tag -input=./pkg/model/ortoo.pb.go
+	protoc-go-inject-tag -input=./pkg/model/orda.pb.go
 	protoc $(PROTOC_INCLUDE) \
 		--grpc-gateway_out ./pkg/model \
 		--grpc-gateway_opt logtostderr=true \
 		--openapiv2_out ./server/swagger-ui \
 		--openapiv2_opt logtostderr=true \
-		ortoo.grpc.proto
+		orda.grpc.proto
 
 .PHONY: build-server
 build-server:
@@ -66,7 +66,7 @@ copy-assets:
 .PHONY: fmt
 fmt:
 	gofmt -w $(GO_SRCS)
-	goimports -w -local github.com/knowhunger $(GO_SRCS)
+	goimports -w -local github.com/orda-io $(GO_SRCS)
 
 .PHONY: integration-test
 integration-test: docker-up dependency
@@ -88,7 +88,7 @@ docker-down:
 build-local-docker-server: build-server
 	-mkdir -p $(DEPLOY_DIR)/tmp
 	cp $(BUILD_DIR)/server  $(DEPLOY_DIR)/tmp
-	@cd $(DEPLOY_DIR) && docker build -t knowhunger/ortoo:$(VERSION) .
+	@cd $(DEPLOY_DIR) && docker build -t orda-io/orda:$(VERSION) .
 	-rm -rf $(DEPLOY_DIR)/tmp
 
 .PHONY: clear

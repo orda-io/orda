@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/orda-io/orda/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"strings"

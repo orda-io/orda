@@ -2,14 +2,14 @@ package service
 
 import (
 	gocontext "context"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/operations"
-	"github.com/knowhunger/ortoo/pkg/ortoo"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/operations"
+	"github.com/orda-io/orda/pkg/orda"
 )
 
-func (its *OrtooService) decodeModelOp(in *model.Operation) iface.Operation {
+func (its *OrdaService) decodeModelOp(in *model.Operation) iface.Operation {
 	defer func() {
 		if r := recover(); r != nil {
 			return
@@ -19,7 +19,7 @@ func (its *OrtooService) decodeModelOp(in *model.Operation) iface.Operation {
 	return op
 }
 
-func (its *OrtooService) TestEncodingOperation(
+func (its *OrdaService) TestEncodingOperation(
 	goCtx gocontext.Context,
 	in *model.EncodingMessage,
 ) (ret *model.EncodingMessage, er error) {
@@ -110,7 +110,7 @@ func (its *OrtooService) TestEncodingOperation(
 	return in, nil
 }
 
-func (its *OrtooService) testEncodingSnapshotOperation(
+func (its *OrdaService) testEncodingSnapshotOperation(
 	goCtx gocontext.Context,
 	typeOf model.TypeOfDatatype,
 	sOp *operations.SnapshotOperation,
@@ -118,7 +118,7 @@ func (its *OrtooService) testEncodingSnapshotOperation(
 	*model.EncodingMessage,
 	error,
 ) {
-	client := ortoo.NewClient(ortoo.NewLocalClientConfig("ENCODING"), "ortoo-encoding-tester")
+	client := orda.NewClient(orda.NewLocalClientConfig("ENCODING"), "orda-encoding-tester")
 	datatype := client.CreateDatatype("Testing", typeOf, nil).(iface.Datatype)
 
 	if _, err := datatype.ExecuteRemote(sOp); err != nil {
