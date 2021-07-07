@@ -1,9 +1,9 @@
 package iface
 
 import (
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // BaseDatatype defines a base operations for datatype
@@ -14,46 +14,46 @@ type BaseDatatype interface {
 	GetDUID() string                      // @baseDatatype
 	GetCUID() string                      // @baseDatatype
 	SetState(state model.StateOfDatatype) // @baseDatatype
-	SetLogger(l *log.OrtooLog)            // @baseDatatype
-	GetMeta() ([]byte, errors.OrtooError)
-	SetMeta(meta []byte) errors.OrtooError
+	SetLogger(l *log.OrdaLog)             // @baseDatatype
+	GetMeta() ([]byte, errors.OrdaError)
+	SetMeta(meta []byte) errors.OrdaError
 	GetSummary() string
-	L() *log.OrtooLog
+	L() *log.OrdaLog
 }
 
 // SnapshotDatatype defines the interfaces of the datatype that enables the snapshot.
 type SnapshotDatatype interface {
 	ResetSnapshot()
 	GetSnapshot() Snapshot
-	GetMetaAndSnapshot() ([]byte, []byte, errors.OrtooError)
-	SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrtooError
-	CreateSnapshotOperation() (Operation, errors.OrtooError)
+	GetMetaAndSnapshot() ([]byte, []byte, errors.OrdaError)
+	SetMetaAndSnapshot(meta []byte, snap []byte) errors.OrdaError
+	CreateSnapshotOperation() (Operation, errors.OrdaError)
 	ToJSON() interface{}
 }
 
-// WiredDatatype defines the internal interface related to the synchronization with Ortoo server
+// WiredDatatype defines the internal interface related to the synchronization with Orda server
 type WiredDatatype interface {
 	BaseDatatype
-	ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrtooError)
+	ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrdaError)
 	ApplyPushPullPack(*model.PushPullPack)
 	CreatePushPullPack() *model.PushPullPack
 	DeliverTransaction(transaction []Operation)
 	NeedPull(sseq uint64) bool
 	NeedPush() bool
-	SubscribeOrCreate(state model.StateOfDatatype) errors.OrtooError
+	SubscribeOrCreate(state model.StateOfDatatype) errors.OrdaError
 }
 
 // OperationalDatatype defines interfaces related to executing operations.
 type OperationalDatatype interface {
-	ExecuteLocal(op interface{}) (interface{}, errors.OrtooError)  // @Real datatype
-	ExecuteRemote(op interface{}) (interface{}, errors.OrtooError) // @Real datatype
-	ExecuteRemoteTransaction(transaction []*model.Operation, obtainList bool) ([]interface{}, errors.OrtooError)
+	ExecuteLocal(op interface{}) (interface{}, errors.OrdaError)  // @Real datatype
+	ExecuteRemote(op interface{}) (interface{}, errors.OrdaError) // @Real datatype
+	ExecuteRemoteTransaction(transaction []*model.Operation, obtainList bool) ([]interface{}, errors.OrdaError)
 }
 
-// HandleableDatatype defines handlers for Ortoo datatype
+// HandleableDatatype defines handlers for Orda datatype
 type HandleableDatatype interface {
 	HandleStateChange(oldState, newState model.StateOfDatatype)
-	HandleErrors(err ...errors.OrtooError)
+	HandleErrors(err ...errors.OrdaError)
 	HandleRemoteOperations(operations []interface{})
 }
 

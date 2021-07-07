@@ -4,16 +4,16 @@ import (
 	gocontext "context"
 	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/knowhunger/ortoo/pkg/constants"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
-	svrConstant "github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/mongodb"
-	"github.com/knowhunger/ortoo/server/notification"
-	"github.com/knowhunger/ortoo/server/service"
-	"github.com/knowhunger/ortoo/server/svrcontext"
+	"github.com/orda-io/orda/pkg/constants"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
+	svrConstant "github.com/orda-io/orda/server/constants"
+	"github.com/orda-io/orda/server/mongodb"
+	"github.com/orda-io/orda/server/notification"
+	"github.com/orda-io/orda/server/service"
+	"github.com/orda-io/orda/server/svrcontext"
 	"google.golang.org/grpc"
 	"net"
 	"net/http"
@@ -25,32 +25,34 @@ import (
 )
 
 const banner = `       
-     _/_/                _/                         
-  _/    _/  _/  _/_/  _/_/_/_/    _/_/      _/_/    
- _/    _/  _/_/        _/      _/    _/  _/    _/   
-_/    _/  _/          _/      _/    _/  _/    _/    
- _/_/    _/            _/_/    _/_/      _/_/
+    .::::                 .::          
+  .::    .::              .::          
+.::        .::.: .:::     .::   .::    
+.::        .:: .::    .:: .:: .::  .:: 
+.::        .:: .::   .:   .::.::   .:: 
+  .::     .::  .::   .:   .::.::   .:: 
+    .::::     .:::    .:: .::  .:: .:::
 
 `
 
 const defaultGracefulTimeout = 10 * time.Second
 
-// OrtooServer is an Ortoo server
-type OrtooServer struct {
+// OrdaServer is an Orda server
+type OrdaServer struct {
 	closed     bool
 	mutex      sync.Mutex
 	closedCh   chan struct{}
 	rpcServer  *grpc.Server
 	restServer *RestServer
-	ctx        context.OrtooContext
-	conf       *OrtooServerConfig
-	service    *service.OrtooService
+	ctx        context.OrdaContext
+	conf       *OrdaServerConfig
+	service    *service.OrdaService
 	notifier   *notification.Notifier
 	Mongo      *mongodb.RepositoryMongo
 }
 
-// NewOrtooServer creates a new Ortoo server
-func NewOrtooServer(goCtx gocontext.Context, conf *OrtooServerConfig) (*OrtooServer, errors.OrtooError) {
+// NewOrdaServer creates a new Orda server
+func NewOrdaServer(goCtx gocontext.Context, conf *OrdaServerConfig) (*OrdaServer, errors.OrdaError) {
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, errors.ServerInit.New(log.Logger, err.Error())
@@ -63,7 +65,7 @@ func NewOrtooServer(goCtx gocontext.Context, conf *OrtooServerConfig) (*OrtooSer
 		return nil, oErr
 	}
 
-	return &OrtooServer{
+	return &OrdaServer{
 		ctx:      ctx,
 		conf:     conf,
 		Mongo:    mongo,
@@ -72,14 +74,14 @@ func NewOrtooServer(goCtx gocontext.Context, conf *OrtooServerConfig) (*OrtooSer
 	}, nil
 }
 
-// Start start the Ortoo Server
-func (its *OrtooServer) Start() errors.OrtooError {
+// Start start the Orda Server
+func (its *OrdaServer) Start() errors.OrdaError {
 	its.mutex.Lock()
 	defer its.mutex.Unlock()
 
-	server := fmt.Sprintf("Ortoo-Server-%s(%s)", constants.Version, constants.GitCommit)
+	server := fmt.Sprintf("Orda-Server-%s(%s)", constants.Version, constants.GitCommit)
 
-	var oErr errors.OrtooError
+	var oErr errors.OrdaError
 	its.notifier, oErr = notification.NewNotifier(its.ctx, its.conf.Notification, server)
 	if oErr != nil {
 		return oErr
@@ -90,8 +92,8 @@ func (its *OrtooServer) Start() errors.OrtooError {
 		return errors.ServerInit.New(its.ctx.L(), "cannot listen RPC:"+err.Error())
 	}
 	its.rpcServer = grpc.NewServer()
-	its.service = service.NewOrtooService(its.Mongo, its.notifier)
-	model.RegisterOrtooServiceServer(its.rpcServer, its.service)
+	its.service = service.NewOrdaService(its.Mongo, its.notifier)
+	model.RegisterOrdaServiceServer(its.rpcServer, its.service)
 
 	go func() {
 		its.ctx.L().Infof("open port: tcp://0.0.0.0%s", its.conf.GetRPCServerAddr())
@@ -111,15 +113,15 @@ func (its *OrtooServer) Start() errors.OrtooError {
 		}
 	}()
 
-	its.ctx.L().Info("start Ortoo server successfully")
+	its.ctx.L().Info("start Orda server successfully")
 	return nil
 }
 
-func (its *OrtooServer) runRpcGwServer() errors.OrtooError {
+func (its *OrdaServer) runRpcGwServer() errors.OrdaError {
 	gwMux := runtime.NewServeMux()
 	gwOpts := []grpc.DialOption{grpc.WithInsecure()}
 
-	gwErr := model.RegisterOrtooServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts)
+	gwErr := model.RegisterOrdaServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts)
 	if gwErr != nil {
 		return errors.ServerNoResource.New(its.ctx.L(), gwErr.Error())
 	}
@@ -139,7 +141,7 @@ func (its *OrtooServer) runRpcGwServer() errors.OrtooError {
 }
 
 // Close closes all the server threads.
-func (its *OrtooServer) Close(graceful bool) {
+func (its *OrdaServer) Close(graceful bool) {
 	its.mutex.Lock()
 	defer func() {
 		its.mutex.Unlock()
@@ -156,7 +158,7 @@ func (its *OrtooServer) Close(graceful bool) {
 }
 
 // HandleSignals can handle signals to the server.
-func (its *OrtooServer) HandleSignals() int {
+func (its *OrdaServer) HandleSignals() int {
 	its.ctx.L().Infof("ready to handle signals")
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)

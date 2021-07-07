@@ -1,9 +1,9 @@
 package integration
 
 import (
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/ortoo"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/orda"
 	"github.com/stretchr/testify/require"
 	"sync"
 )
@@ -12,23 +12,23 @@ func (its *IntegrationTestSuite) TestClientServer() {
 	key := GetFunctionName()
 
 	its.Run("Can create a client and a datatype with server", func() {
-		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
-		client1 := ortoo.NewClient(config, "client1")
+		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_MANUALLY)
+		client1 := orda.NewClient(config, "client1")
 		err := client1.Connect()
 		require.NoError(its.T(), err)
 		defer client1.Close()
 		wg := sync.WaitGroup{}
 		wg.Add(1)
-		client1.CreateCounter(key, ortoo.NewHandlers(
-			func(dt ortoo.Datatype, oldState, newState model.StateOfDatatype) {
-				intCounter := dt.(ortoo.Counter)
+		client1.CreateCounter(key, orda.NewHandlers(
+			func(dt orda.Datatype, oldState, newState model.StateOfDatatype) {
+				intCounter := dt.(orda.Counter)
 				_, _ = intCounter.Increase()
 				_, _ = intCounter.Increase()
 				_, _ = intCounter.Increase()
 				require.NoError(its.T(), client1.Sync())
 				wg.Done()
 			}, nil,
-			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
+			func(dt orda.Datatype, errs ...errors.OrdaError) {
 				its.T().Fatal(errs[0])
 			}))
 		require.NoError(its.T(), client1.Sync())
@@ -36,8 +36,8 @@ func (its *IntegrationTestSuite) TestClientServer() {
 	})
 
 	its.Run("Can subscribe not existing datatype", func() {
-		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
-		client2 := ortoo.NewClient(config, "client2")
+		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_MANUALLY)
+		client2 := orda.NewClient(config, "client2")
 		err := client2.Connect()
 		require.NoError(its.T(), err)
 		defer func() {
@@ -45,11 +45,11 @@ func (its *IntegrationTestSuite) TestClientServer() {
 		}()
 		wg := sync.WaitGroup{}
 		wg.Add(1)
-		client2.SubscribeCounter("NOT_EXISTING", ortoo.NewHandlers(
+		client2.SubscribeCounter("NOT_EXISTING", orda.NewHandlers(
 			nil, nil,
-			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
-				for _, ortooError := range errs {
-					if ortooError.GetCode() == errors.DatatypeSubscribe {
+			func(dt orda.Datatype, errs ...errors.OrdaError) {
+				for _, ordaError := range errs {
+					if ordaError.GetCode() == errors.DatatypeSubscribe {
 						wg.Done()
 						return
 					}

@@ -2,7 +2,7 @@ package operations
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // ////////////////// baseOperation ////////////////////

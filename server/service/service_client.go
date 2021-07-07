@@ -3,16 +3,16 @@ package service
 import (
 	gocontext "context"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
-	"github.com/knowhunger/ortoo/server/svrcontext"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/server/constants"
+	"github.com/orda-io/orda/server/mongodb/schema"
+	"github.com/orda-io/orda/server/svrcontext"
 	"time"
 )
 
 // ProcessClient processes ClientRequest and returns ClientResponse
-func (its *OrtooService) ProcessClient(
+func (its *OrdaService) ProcessClient(
 	goCtx gocontext.Context,
 	req *model.ClientMessage,
 ) (*model.ClientMessage, error) {

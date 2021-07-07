@@ -2,32 +2,32 @@ package context
 
 import (
 	"context"
-	"github.com/knowhunger/ortoo/pkg/constants"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/constants"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
 )
 
-// OrtooContext is a context used in Ortoo
-type OrtooContext interface {
+// OrdaContext is a context used in Orda
+type OrdaContext interface {
 	context.Context
-	L() *log.OrtooLog
+	L() *log.OrdaLog
 	Ctx() context.Context
-	SetLogger(l *log.OrtooLog)
+	SetLogger(l *log.OrdaLog)
 	UpdateTags(tag1, tag2 string)
 }
 
-type ortooContext struct {
+type ordaContext struct {
 	context.Context
-	logger *log.OrtooLog
+	logger *log.OrdaLog
 }
 
-func (its *ortooContext) UpdateTags(tag1, tag2 string) {
+func (its *ordaContext) UpdateTags(tag1, tag2 string) {
 	its.logger.SetTags(tag1, tag2)
 }
 
 type ClientContext struct {
-	OrtooContext
+	OrdaContext
 	Client *model.Client
 }
 
@@ -36,9 +36,9 @@ type DatatypeContext struct {
 	Data iface.BaseDatatype
 }
 
-func NewOrtooContext(ctx context.Context, tag1 string, tag2 string) OrtooContext {
+func NewOrdaContext(ctx context.Context, tag1 string, tag2 string) OrdaContext {
 	logger := log.NewWithTags(tag1, tag2)
-	return &ortooContext{
+	return &ordaContext{
 		Context: ctx,
 		logger:  logger,
 	}
@@ -46,8 +46,8 @@ func NewOrtooContext(ctx context.Context, tag1 string, tag2 string) OrtooContext
 
 func NewClientContext(ctx context.Context, client *model.Client) *ClientContext {
 	return &ClientContext{
-		OrtooContext: NewOrtooContext(ctx, constants.TagSdkClient, client.GetSummary()),
-		Client:       client,
+		OrdaContext: NewOrdaContext(ctx, constants.TagSdkClient, client.GetSummary()),
+		Client:      client,
 	}
 }
 
@@ -55,7 +55,7 @@ func NewDatatypeContext(clientContext *ClientContext, baseDatatype iface.BaseDat
 	logger := log.NewWithTags(constants.TagSdkDatatype, clientContext.Client.GetSummary()+"|"+baseDatatype.GetSummary())
 	return &DatatypeContext{
 		ClientContext: &ClientContext{
-			OrtooContext: &ortooContext{
+			OrdaContext: &ordaContext{
 				Context: clientContext.Ctx(),
 				logger:  logger,
 			},
@@ -65,18 +65,18 @@ func NewDatatypeContext(clientContext *ClientContext, baseDatatype iface.BaseDat
 	}
 }
 
-// L returns OrtooLog
-func (its *ortooContext) L() *log.OrtooLog {
+// L returns OrdaLog
+func (its *ordaContext) L() *log.OrdaLog {
 	if its.logger == nil {
 		return log.Logger
 	}
 	return its.logger
 }
 
-func (its *ortooContext) Ctx() context.Context {
+func (its *ordaContext) Ctx() context.Context {
 	return its.Context
 }
 
-func (its *ortooContext) SetLogger(l *log.OrtooLog) {
+func (its *ordaContext) SetLogger(l *log.OrdaLog) {
 	its.logger = l
 }

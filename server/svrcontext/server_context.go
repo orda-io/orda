@@ -3,11 +3,11 @@ package svrcontext
 import (
 	gocontext "context"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/context"
+	"github.com/orda-io/orda/pkg/context"
 )
 
 type ServerContext struct {
-	context.OrtooContext
+	context.OrdaContext
 	collection string
 	client     string
 	datatype   string
@@ -16,10 +16,10 @@ type ServerContext struct {
 // NewServerContext creates a new ServerContext
 func NewServerContext(ctx gocontext.Context, tag1 string) *ServerContext {
 	newCtx := &ServerContext{
-		OrtooContext: context.NewOrtooContext(ctx, tag1, ""),
-		collection:   "N/A",
-		client:       "N/A",
-		datatype:     "N/A",
+		OrdaContext: context.NewOrdaContext(ctx, tag1, ""),
+		collection:  "N/A",
+		client:      "N/A",
+		datatype:    "N/A",
 	}
 	newCtx.updateLogger()
 	return newCtx
@@ -27,10 +27,10 @@ func NewServerContext(ctx gocontext.Context, tag1 string) *ServerContext {
 
 func (its *ServerContext) CloneWithNewContext(tag1 string) *ServerContext {
 	return (&ServerContext{
-		OrtooContext: context.NewOrtooContext(gocontext.TODO(), tag1, ""),
-		collection:   its.collection,
-		client:       its.client,
-		datatype:     its.datatype,
+		OrdaContext: context.NewOrdaContext(gocontext.TODO(), tag1, ""),
+		collection:  its.collection,
+		client:      its.client,
+		datatype:    its.datatype,
 	}).updateLogger()
 }
 

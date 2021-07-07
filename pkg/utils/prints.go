@@ -3,10 +3,10 @@ package utils
 import (
 	"encoding/json"
 	"github.com/TylerBrock/colorjson"
-	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/orda-io/orda/pkg/log"
 )
 
-func PrintMarshalDoc(l *log.OrtooLog, doc interface{}) {
+func PrintMarshalDoc(l *log.OrdaLog, doc interface{}) {
 	f := colorjson.NewFormatter()
 	f.Indent = 2
 	f.DisabledColor = true

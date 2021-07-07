@@ -1,9 +1,9 @@
 package mongodb
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -15,12 +15,12 @@ const (
 
 // InsertRealSnapshot inserts a snapshot for real collection.
 func (r *RepositoryMongo) InsertRealSnapshot(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionName string,
 	id string,
 	data interface{},
 	sseq uint64,
-) errors.OrtooError {
+) errors.OrdaError {
 	collection := r.db.Collection(collectionName)
 
 	// interface{} is currently transformed to bson.M through two phases: interface{} -> bytes{} -> bson.M
@@ -47,10 +47,10 @@ func (r *RepositoryMongo) InsertRealSnapshot(
 }
 
 func (r *RepositoryMongo) GetRealSnapshot(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionName string,
 	id string,
-) (map[string]interface{}, errors.OrtooError) {
+) (map[string]interface{}, errors.OrdaError) {
 	collection := r.db.Collection(collectionName)
 	f := schema.FilterByID(id)
 	result := collection.FindOne(ctx, f)

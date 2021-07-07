@@ -1,7 +1,7 @@
 version: "3.4"
 services:
-  ortoo-mongodb:
-    container_name: ortoo-mongodb
+  orda-mongodb:
+    container_name: orda-mongodb
     image: mongo:latest
     restart: always
     volumes:
@@ -11,10 +11,10 @@ services:
       - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: ortoo-test
+      MONGO_INITDB_ROOT_PASSWORD: orda-test
 
-  ortoo-emqx:
-    container_name: ortoo-emqx
+  orda-emqx:
+    container_name: orda-emqx
     image: emqx/emqx:latest
     restart: always
     ports:
@@ -30,7 +30,7 @@ services:
     #      - "6369"  # for distributed node
     #      - "8081"  # for mgmt API
     environment:
-      EMQX_NAME: ortoo-emqx
+      EMQX_NAME: orda-emqx
       EMQX_HOST: 127.0.0.1
       EMQX_LOADED_PLUGINS: "emqx_recon,emqx_retainer,emqx_management,emqx_dashboard"
       EMQX_LOG__LEVEL: "debug"
@@ -39,11 +39,11 @@ services:
       - emqx-etc:/opt/emqx/etc
       - emqx-log:/opt/emqx/log
 
-  ortoo-server:
-    container_name: ortoo-server
-    image: knowhunger/ortoo:0.0.1
+  orda-server:
+    container_name: orda-server
+    image: orda-io/orda:0.0.1
     restart: always
-    command: sh -c "sleep 5 && /app/ortoo_server --conf /config/local-config.json"
+    command: sh -c "sleep 5 && /app/orda_server --conf /config/local-config.json"
     ports:
       - 19061:19061  # for port gRPC protocol
       - 19861:19861  # for port HTTP control
@@ -53,8 +53,8 @@ services:
         target: /config/local-config.json
         read_only: true
     depends_on:
-      - ortoo-mongodb
-      - ortoo-emqx
+      - orda-mongodb
+      - orda-emqx
 
 volumes:
   mongodb-configdb: { }

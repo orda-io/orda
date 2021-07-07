@@ -1,29 +1,29 @@
 package service
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
-	"github.com/knowhunger/ortoo/server/notification"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb"
+	"github.com/orda-io/orda/server/mongodb/schema"
+	"github.com/orda-io/orda/server/notification"
 )
 
-// OrtooService is a rpc service of Ortoo
-type OrtooService struct {
+// OrdaService is a rpc service of Orda
+type OrdaService struct {
 	mongo    *mongodb.RepositoryMongo
 	notifier *notification.Notifier
 }
 
-// NewOrtooService creates a new OrtooService
-func NewOrtooService(mongo *mongodb.RepositoryMongo, notifier *notification.Notifier) *OrtooService {
-	return &OrtooService{
+// NewOrdaService creates a new OrdaService
+func NewOrdaService(mongo *mongodb.RepositoryMongo, notifier *notification.Notifier) *OrdaService {
+	return &OrdaService{
 		mongo:    mongo,
 		notifier: notifier,
 	}
 }
 
-func (its *OrtooService) getCollectionDocWithRPCError(
-	ctx context.OrtooContext,
+func (its *OrdaService) getCollectionDocWithRPCError(
+	ctx context.OrdaContext,
 	collection string,
 ) (*schema.CollectionDoc, error) {
 	collectionDoc, err := its.mongo.GetCollection(ctx, collection)

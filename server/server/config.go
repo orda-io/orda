@@ -3,30 +3,30 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/server/mongodb"
 	"io/ioutil"
 )
 
-// OrtooServerConfig is a configuration of OrtooServer
-type OrtooServerConfig struct {
+// OrdaServerConfig is a configuration of OrdaServer
+type OrdaServerConfig struct {
 	RPCServerPort int            `json:"RPCServerPort"`
 	RestfulPort   int            `json:"RestfulPort"`
 	Notification  string         `json:"Notification"`
 	Mongo         mongodb.Config `json:"Mongo"`
 }
 
-// LoadOrtooServerConfig loads config from file.
-func LoadOrtooServerConfig(filePath string) (*OrtooServerConfig, errors.OrtooError) {
-	conf := &OrtooServerConfig{}
+// LoadOrdaServerConfig loads config from file.
+func LoadOrdaServerConfig(filePath string) (*OrdaServerConfig, errors.OrdaError) {
+	conf := &OrdaServerConfig{}
 	if err := conf.loadConfig(filePath); err != nil {
 		return nil, err
 	}
 	return conf, nil
 }
 
-func (its *OrtooServerConfig) loadConfig(filepath string) errors.OrtooError {
+func (its *OrdaServerConfig) loadConfig(filepath string) errors.OrdaError {
 	data, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		return errors.ServerInit.New(log.Logger, "cannot read server config file "+filepath)
@@ -37,10 +37,10 @@ func (its *OrtooServerConfig) loadConfig(filepath string) errors.OrtooError {
 	return nil
 }
 
-func (its *OrtooServerConfig) GetRPCServerAddr() string {
+func (its *OrdaServerConfig) GetRPCServerAddr() string {
 	return fmt.Sprintf(":%d", its.RPCServerPort)
 }
 
-func (its *OrtooServerConfig) GetRestfulAddr() string {
+func (its *OrdaServerConfig) GetRestfulAddr() string {
 	return fmt.Sprintf(":%d", its.RestfulPort)
 }

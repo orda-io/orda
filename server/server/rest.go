@@ -3,10 +3,10 @@ package server
 import (
 	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/server/mongodb"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/server/mongodb"
 	"google.golang.org/grpc"
 	"net/http"
 	"strings"
@@ -18,15 +18,15 @@ const (
 	apiCollections   = "/collections/"
 )
 
-// RestServer is a control server to set up Ortoo system.
+// RestServer is a control server to set up Orda system.
 type RestServer struct {
-	ctx   context.OrtooContext
-	conf  *OrtooServerConfig
+	ctx   context.OrdaContext
+	conf  *OrdaServerConfig
 	mongo *mongodb.RepositoryMongo
 }
 
 // New creates a control server.
-func New(ctx context.OrtooContext, conf *OrtooServerConfig, mongo *mongodb.RepositoryMongo) *RestServer {
+func New(ctx context.OrdaContext, conf *OrdaServerConfig, mongo *mongodb.RepositoryMongo) *RestServer {
 
 	return &RestServer{
 		ctx:   ctx,
@@ -36,7 +36,7 @@ func New(ctx context.OrtooContext, conf *OrtooServerConfig, mongo *mongodb.Repos
 }
 
 // Start starts a RestServer
-func (its *RestServer) Start() errors.OrtooError {
+func (its *RestServer) Start() errors.OrdaError {
 
 	mux := http.NewServeMux()
 
@@ -67,11 +67,11 @@ func (its *RestServer) allowCors(h http.Handler) http.Handler {
 	})
 }
 
-func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrtooError {
+func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrdaError {
 	gwMux := runtime.NewServeMux()
 	gwOpts := []grpc.DialOption{grpc.WithInsecure()}
 
-	if gwErr := model.RegisterOrtooServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts); gwErr != nil {
+	if gwErr := model.RegisterOrdaServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts); gwErr != nil {
 		return errors.ServerInit.New(its.ctx.L(), gwErr.Error())
 	}
 

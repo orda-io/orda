@@ -1,12 +1,12 @@
 package integration
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/ortoo"
-	"github.com/knowhunger/ortoo/server/mongodb"
-	"github.com/knowhunger/ortoo/server/server"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/orda"
+	"github.com/orda-io/orda/server/mongodb"
+	"github.com/orda-io/orda/server/server"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -31,7 +31,7 @@ func GetFileName() string {
 }
 
 // GetMongo returns an instance of RepositoryMongo for testing.
-func GetMongo(ctx context.OrtooContext, dbName string) (*mongodb.RepositoryMongo, errors.OrtooError) {
+func GetMongo(ctx context.OrdaContext, dbName string) (*mongodb.RepositoryMongo, errors.OrdaError) {
 	if m, ok := mongoDB[dbName]; ok {
 		return m, nil
 	}
@@ -44,9 +44,9 @@ func GetMongo(ctx context.OrtooContext, dbName string) (*mongodb.RepositoryMongo
 	return mongo, nil
 }
 
-// NewTestOrtooClientConfig generates an OrtooClientConfig for testing.
-func NewTestOrtooClientConfig(collectionName string, syncType model.SyncType) *ortoo.ClientConfig {
-	return &ortoo.ClientConfig{
+// NewTestOrdaClientConfig generates an OrdaClientConfig for testing.
+func NewTestOrdaClientConfig(collectionName string, syncType model.SyncType) *orda.ClientConfig {
+	return &orda.ClientConfig{
 		ServerAddr:       "127.0.0.1:59062",
 		CollectionName:   collectionName,
 		NotificationAddr: "tcp://127.0.0.1:18181",
@@ -54,9 +54,9 @@ func NewTestOrtooClientConfig(collectionName string, syncType model.SyncType) *o
 	}
 }
 
-// NewTestOrtooServerConfig generates an OrtooServerConfig for testing.
-func NewTestOrtooServerConfig(dbName string) *server.OrtooServerConfig {
-	return &server.OrtooServerConfig{
+// NewTestOrdaServerConfig generates an OrdaServerConfig for testing.
+func NewTestOrdaServerConfig(dbName string) *server.OrdaServerConfig {
+	return &server.OrdaServerConfig{
 		RPCServerPort: 59062,
 		RestfulPort:   59862,
 		Notification:  "tcp://127.0.0.1:18181",

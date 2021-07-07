@@ -1,15 +1,15 @@
 package mongodb
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
 // GetCollection gets a collectionDoc with the specified name.
-func (its *MongoCollections) GetCollection(ctx context.OrtooContext, name string) (*schema.CollectionDoc, errors.OrtooError) {
+func (its *MongoCollections) GetCollection(ctx context.OrdaContext, name string) (*schema.CollectionDoc, errors.OrdaError) {
 	sr := its.collections.FindOne(ctx, schema.FilterByID(name))
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -25,7 +25,7 @@ func (its *MongoCollections) GetCollection(ctx context.OrtooContext, name string
 }
 
 // DeleteCollection deletes collections with the specified name.
-func (its *MongoCollections) DeleteCollection(ctx context.OrtooContext, name string) errors.OrtooError {
+func (its *MongoCollections) DeleteCollection(ctx context.OrdaContext, name string) errors.OrdaError {
 	result, err := its.collections.DeleteOne(ctx, schema.FilterByID(name))
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
@@ -38,10 +38,10 @@ func (its *MongoCollections) DeleteCollection(ctx context.OrtooContext, name str
 
 // InsertCollection inserts a document for the specified collection.
 func (its *MongoCollections) InsertCollection(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	name string,
-) (collection *schema.CollectionDoc, err errors.OrtooError) {
-	if err := its.doTransaction(ctx, func() errors.OrtooError {
+) (collection *schema.CollectionDoc, err errors.OrdaError) {
+	if err := its.doTransaction(ctx, func() errors.OrdaError {
 		num, err := its.GetNextCollectionNum(ctx)
 		if err != nil {
 			return err
@@ -64,8 +64,8 @@ func (its *MongoCollections) InsertCollection(
 }
 
 // PurgeAllDocumentsOfCollection purges all data for the specified collection.
-func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrtooContext, name string) errors.OrtooError {
-	if err := its.doTransaction(ctx, func() errors.OrtooError {
+func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrdaContext, name string) errors.OrdaError {
+	if err := its.doTransaction(ctx, func() errors.OrdaError {
 		collectionDoc, err := its.GetCollection(ctx, name)
 		if err != nil {
 			return err

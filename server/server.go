@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/knowhunger/ortoo/server/server"
+	"github.com/orda-io/orda/server/server"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -20,11 +20,11 @@ func main() {
 		Action: func(c *cli.Context) error {
 			confFile := c.String("conf")
 
-			conf, err := server.LoadOrtooServerConfig(confFile)
+			conf, err := server.LoadOrdaServerConfig(confFile)
 			if err != nil {
 				os.Exit(1)
 			}
-			svr, err := server.NewOrtooServer(c.Context, conf)
+			svr, err := server.NewOrdaServer(c.Context, conf)
 			if err != nil {
 				os.Exit(1)
 			}

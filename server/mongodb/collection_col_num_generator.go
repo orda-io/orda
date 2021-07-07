@@ -1,9 +1,9 @@
 package mongodb
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,7 +14,7 @@ const (
 )
 
 // GetNextCollectionNum gets a collection number that is assigned to a collection.
-func (its *MongoCollections) GetNextCollectionNum(ctx context.OrtooContext) (uint32, errors.OrtooError) {
+func (its *MongoCollections) GetNextCollectionNum(ctx context.OrdaContext) (uint32, errors.OrdaError) {
 	opts := options.FindOneAndUpdate()
 	opts.SetUpsert(true)
 	var update = bson.M{

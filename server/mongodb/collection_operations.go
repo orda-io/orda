@@ -2,20 +2,20 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/server/constants"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // InsertOperations inserts operations into MongoDB
 func (its *MongoCollections) InsertOperations(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	operations []interface{},
-) errors.OrtooError {
+) errors.OrdaError {
 	if operations == nil {
 		return nil
 	}
@@ -33,10 +33,10 @@ func (its *MongoCollections) InsertOperations(
 
 // DeleteOperation deletes operations for the specified sseq
 func (its *MongoCollections) DeleteOperation(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	duid string,
 	sseq uint32,
-) (int64, errors.OrtooError) {
+) (int64, errors.OrdaError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterEQ(schema.OperationDocFields.Sseq, sseq)
@@ -49,10 +49,10 @@ func (its *MongoCollections) DeleteOperation(
 
 // GetOperations gets operations of the specified range. For each operation, a given handler is called.
 func (its *MongoCollections) GetOperations(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	duid string,
 	from, to uint64,
-) ([]*model.Operation, []uint64, errors.OrtooError) {
+) ([]*model.Operation, []uint64, errors.OrdaError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterGTE(schema.OperationDocFields.Sseq, from)
@@ -79,7 +79,7 @@ func (its *MongoCollections) GetOperations(
 }
 
 // PurgeOperations purges operations for the specified datatype.
-func (its *MongoCollections) PurgeOperations(ctx context.OrtooContext, collectionNum uint32, duid string) errors.OrtooError {
+func (its *MongoCollections) PurgeOperations(ctx context.OrdaContext, collectionNum uint32, duid string) errors.OrdaError {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.OperationDocFields.DUID, duid)

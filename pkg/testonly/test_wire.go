@@ -1,10 +1,10 @@
 package testonly
 
 import (
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/internal/datatypes"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/internal/datatypes"
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // TestWire ...
@@ -33,7 +33,7 @@ func (its *TestWire) DeliverTransaction(wired iface.WiredDatatype) {
 }
 
 // OnChangeDatatypeState ...
-func (its *TestWire) OnChangeDatatypeState(dt iface.Datatype, state model.StateOfDatatype) errors.OrtooError {
+func (its *TestWire) OnChangeDatatypeState(dt iface.Datatype, state model.StateOfDatatype) errors.OrdaError {
 	return nil
 }
 

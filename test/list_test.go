@@ -1,9 +1,9 @@
 package integration
 
 import (
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/ortoo"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/orda"
 	"github.com/stretchr/testify/require"
 	"time"
 )
@@ -12,8 +12,8 @@ func (its *IntegrationTestSuite) TestList() {
 	key := GetFunctionName()
 
 	its.Run("Can update snapshot for list", func() {
-		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
-		client1 := ortoo.NewClient(config, "listClient")
+		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_MANUALLY)
+		client1 := orda.NewClient(config, "listClient")
 
 		err := client1.Connect()
 		require.NoError(its.T(), err)
@@ -21,14 +21,14 @@ func (its *IntegrationTestSuite) TestList() {
 			_ = client1.Close()
 		}()
 
-		list1 := client1.CreateList(key, ortoo.NewHandlers(
-			func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+		list1 := client1.CreateList(key, orda.NewHandlers(
+			func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 
 			},
-			func(dt ortoo.Datatype, opList []interface{}) {
+			func(dt orda.Datatype, opList []interface{}) {
 
 			},
-			func(dt ortoo.Datatype, errs ...errors.OrtooError) {
+			func(dt orda.Datatype, errs ...errors.OrdaError) {
 
 			}))
 		_, _ = list1.InsertMany(0, "a", 2, 3.141592, time.Now())

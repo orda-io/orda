@@ -2,11 +2,11 @@ package integration
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/ortoo"
-	"github.com/knowhunger/ortoo/pkg/testonly"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/orda"
+	"github.com/orda-io/orda/pkg/testonly"
 	"github.com/stretchr/testify/require"
 	"time"
 )
@@ -37,14 +37,14 @@ var (
 		},
 	}
 
-	handler = ortoo.NewHandlers(
-		func(dt ortoo.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+	handler = orda.NewHandlers(
+		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 
 		},
-		func(dt ortoo.Datatype, opList []interface{}) {
+		func(dt orda.Datatype, opList []interface{}) {
 
 		},
-		func(dt ortoo.Datatype, errs ...errors.OrtooError) {
+		func(dt orda.Datatype, errs ...errors.OrdaError) {
 
 		})
 )
@@ -52,9 +52,9 @@ var (
 func (its *IntegrationTestSuite) TestDocument() {
 
 	its.Run("Can exploit OPX", func() {
-		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
-		client1 := ortoo.NewClient(config, "docClient1")
-		client2 := ortoo.NewClient(config, "docClient2")
+		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_MANUALLY)
+		client1 := orda.NewClient(config, "docClient1")
+		client2 := orda.NewClient(config, "docClient2")
 
 		err := client1.Connect()
 		require.NoError(its.T(), err)
@@ -90,8 +90,8 @@ func (its *IntegrationTestSuite) TestDocument() {
 	})
 
 	its.Run("Can store real snapshot for Document", func() {
-		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
-		client1 := ortoo.NewClient(config, its.getTestName())
+		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_MANUALLY)
+		client1 := orda.NewClient(config, its.getTestName())
 
 		err := client1.Connect()
 		require.NoError(its.T(), err)
@@ -120,7 +120,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 		log.Logger.Infof("%v", testonly.Marshal(its.T(), doc1.ToJSON()))
 
 		// Check the child Document
-		require.Equal(its.T(), doc2.GetTypeOfJSON(), ortoo.TypeJSONObject)
+		require.Equal(its.T(), doc2.GetTypeOfJSON(), orda.TypeJSONObject)
 
 		// Can put a new value to the child Document
 		old4, err := doc2.PutToObject("E3", "world")
@@ -130,7 +130,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 		// Can obtain JSONArray: doc3 = ["world",1234,3.14]
 		doc3, err := doc1.GetFromObject("A3")
 		require.NoError(its.T(), err)
-		require.Equal(its.T(), doc3.GetTypeOfJSON(), ortoo.TypeJSONArray)
+		require.Equal(its.T(), doc3.GetTypeOfJSON(), orda.TypeJSONArray)
 
 		// Can insert a new JSONObject to the child JSONArray Document
 		doc3a, err := doc3.InsertToArray(1, str1)
@@ -153,9 +153,9 @@ func (its *IntegrationTestSuite) TestDocument() {
 	})
 
 	its.Run("Can test a transaction for Document", func() {
-		config := NewTestOrtooClientConfig(its.collectionName, model.SyncType_MANUALLY)
-		client1 := ortoo.NewClient(config, "docClient1")
-		client2 := ortoo.NewClient(config, "docClient2")
+		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_MANUALLY)
+		client1 := orda.NewClient(config, "docClient1")
+		client2 := orda.NewClient(config, "docClient2")
 
 		oErr := client1.Connect()
 		require.NoError(its.T(), oErr)
@@ -172,7 +172,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 		doc2 := client2.SubscribeDocument(its.getTestName(), handler)
 		require.NoError(its.T(), client2.Sync())
 
-		err := doc1.Transaction("T1", func(document ortoo.DocumentInTx) error {
+		err := doc1.Transaction("T1", func(document orda.DocumentInTx) error {
 			_, _ = document.PutToObject("K1", "V1")
 			_, _ = document.PutToObject("K2", str1)
 			_, _ = document.PutToObject("K3", arr1)
@@ -184,7 +184,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 		its.ctx.L().Infof("doc1:%v", testonly.Marshal(its.T(), doc1.ToJSON()))
 		its.ctx.L().Infof("doc2:%v", testonly.Marshal(its.T(), doc2.ToJSON()))
 
-		err = doc2.Transaction("T2", func(document ortoo.DocumentInTx) error {
+		err = doc2.Transaction("T2", func(document orda.DocumentInTx) error {
 			_, _ = document.PutToObject("K1", "V2")
 			k3, _ := document.GetFromObject("K3")
 			_, _ = k3.InsertToArray(0, "V3")

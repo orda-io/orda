@@ -1,7 +1,7 @@
 package operations
 
 import (
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // ////////////////// DocPutInObjOperation ////////////////////

@@ -1,20 +1,20 @@
 package managers
 
 import (
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
 	"google.golang.org/grpc"
 )
 
-// SyncManager is a manager exchanging request and response with Ortoo server.
+// SyncManager is a manager exchanging request and response with Orda server.
 type SyncManager struct {
 	seq           uint32
 	ctx           *context.ClientContext
 	conn          *grpc.ClientConn
 	client        *model.Client
 	serverAddr    string
-	serviceClient model.OrtooServiceClient
+	serviceClient model.OrdaServiceClient
 	notifyManager *NotifyManager
 }
 
@@ -47,14 +47,14 @@ func (its *SyncManager) nextSeq() uint32 {
 	return currentSeq
 }
 
-// Connect makes connections with Ortoo GRPC and notification servers.
-func (its *SyncManager) Connect() errors.OrtooError {
+// Connect makes connections with Orda GRPC and notification servers.
+func (its *SyncManager) Connect() errors.OrdaError {
 	conn, err := grpc.Dial(its.serverAddr, grpc.WithInsecure())
 	if err != nil {
 		return errors.ClientConnect.New(its.ctx.L(), err.Error())
 	}
 	its.conn = conn
-	its.serviceClient = model.NewOrtooServiceClient(its.conn)
+	its.serviceClient = model.NewOrdaServiceClient(its.conn)
 	its.ctx.L().Info("connect to grpc server")
 	if its.notifyManager != nil {
 		if err := its.notifyManager.Connect(); err != nil {
@@ -64,8 +64,8 @@ func (its *SyncManager) Connect() errors.OrtooError {
 	return nil
 }
 
-// Close closes connections with Ortoo GRPC and notification servers.
-func (its *SyncManager) Close() errors.OrtooError {
+// Close closes connections with Orda GRPC and notification servers.
+func (its *SyncManager) Close() errors.OrdaError {
 	if its.notifyManager != nil {
 		its.notifyManager.Close()
 	}
@@ -76,7 +76,7 @@ func (its *SyncManager) Close() errors.OrtooError {
 }
 
 // Sync exchanges PUSHPULL_REQUEST and PUSHPULL_RESPONSE
-func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullMessage, errors.OrtooError) {
+func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullMessage, errors.OrdaError) {
 	request := model.NewPushPullMessage(its.nextSeq(), its.client, pppList...)
 	its.ctx.L().Infof("REQ[PUPU] %s", request.ToString())
 	response, err := its.serviceClient.ProcessPushPull(its.ctx, request)
@@ -88,7 +88,7 @@ func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullMes
 }
 
 // ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
-func (its *SyncManager) ExchangeClientRequestResponse() errors.OrtooError {
+func (its *SyncManager) ExchangeClientRequestResponse() errors.OrdaError {
 	request := model.NewClientMessage(its.client)
 	its.ctx.L().Infof("REQ[CLIE] %s", request.ToString())
 	response, err := its.serviceClient.ProcessClient(its.ctx, request)
@@ -99,7 +99,7 @@ func (its *SyncManager) ExchangeClientRequestResponse() errors.OrtooError {
 	return nil
 }
 
-func (its *SyncManager) subscribeNotification(topic string) errors.OrtooError {
+func (its *SyncManager) subscribeNotification(topic string) errors.OrdaError {
 	if its.notifyManager != nil {
 		return its.notifyManager.SubscribeNotification(topic)
 	}

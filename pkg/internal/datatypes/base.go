@@ -3,13 +3,13 @@ package datatypes
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/iface"
-	"github.com/knowhunger/ortoo/pkg/log"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/types"
-	"github.com/knowhunger/ortoo/pkg/utils"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/iface"
+	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/types"
+	"github.com/orda-io/orda/pkg/utils"
 )
 
 // BaseDatatype is the base datatype which contains
@@ -52,7 +52,7 @@ func (its *BaseDatatype) GetEra() uint32 {
 	return its.opID.GetEra()
 }
 
-func (its *BaseDatatype) SetLogger(l *log.OrtooLog) {
+func (its *BaseDatatype) SetLogger(l *log.OrdaLog) {
 	its.ctx.SetLogger(l)
 }
 
@@ -60,7 +60,7 @@ func (its *BaseDatatype) String() string {
 	return fmt.Sprintf("%s", its.id)
 }
 
-func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, errors.OrtooError) {
+func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, errors.OrdaError) {
 	its.SetNextOpID(op)
 	switch op.GetType() {
 	case model.TypeOfOperation_TRANSACTION, model.TypeOfOperation_ERROR, model.TypeOfOperation_SNAPSHOT:
@@ -79,7 +79,7 @@ func (its *BaseDatatype) executeRemoteBase(op iface.Operation) {
 }
 
 // Replay replays an already executed operation.
-func (its *BaseDatatype) Replay(op iface.Operation) errors.OrtooError {
+func (its *BaseDatatype) Replay(op iface.Operation) errors.OrdaError {
 	if its.opID.CUID == op.GetID().CUID {
 		_, err := its.executeLocalBase(op)
 		if err != nil { // TODO: if an operation fails to be executed, opID should be rollbacked.
@@ -136,7 +136,7 @@ func (its *BaseDatatype) GetOpID() *model.OperationID {
 }
 
 // GetMeta returns the binary of metadata of the datatype.
-func (its *BaseDatatype) GetMeta() ([]byte, errors.OrtooError) {
+func (its *BaseDatatype) GetMeta() ([]byte, errors.OrdaError) {
 	meta := model.DatatypeMeta{
 		Key:    its.Key,
 		DUID:   its.id,
@@ -151,7 +151,7 @@ func (its *BaseDatatype) GetMeta() ([]byte, errors.OrtooError) {
 }
 
 // SetMeta sets the metadata with binary metadata.
-func (its *BaseDatatype) SetMeta(meta []byte) errors.OrtooError {
+func (its *BaseDatatype) SetMeta(meta []byte) errors.OrdaError {
 	m := model.DatatypeMeta{}
 	if err := json.Unmarshal(meta, &m); err != nil {
 		return errors.DatatypeMarshal.New(its.ctx.L(), string(meta))
@@ -163,7 +163,7 @@ func (its *BaseDatatype) SetMeta(meta []byte) errors.OrtooError {
 	return nil
 }
 
-func (its *BaseDatatype) L() *log.OrtooLog {
+func (its *BaseDatatype) L() *log.OrdaLog {
 	return its.ctx.L()
 }
 

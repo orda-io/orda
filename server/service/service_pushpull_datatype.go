@@ -2,16 +2,16 @@ package service
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/pkg/operations"
-	"github.com/knowhunger/ortoo/server/constants"
-	"github.com/knowhunger/ortoo/server/mongodb"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
-	"github.com/knowhunger/ortoo/server/notification"
-	"github.com/knowhunger/ortoo/server/snapshot"
-	"github.com/knowhunger/ortoo/server/svrcontext"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/pkg/operations"
+	"github.com/orda-io/orda/server/constants"
+	"github.com/orda-io/orda/server/mongodb"
+	"github.com/orda-io/orda/server/mongodb/schema"
+	"github.com/orda-io/orda/server/notification"
+	"github.com/orda-io/orda/server/snapshot"
+	"github.com/orda-io/orda/server/svrcontext"
 	"runtime/debug"
 	"time"
 )
@@ -46,7 +46,7 @@ type PushPullHandler struct {
 	DUID string
 	CUID string
 
-	err      errors.OrtooError
+	err      errors.OrdaError
 	ctx      *svrcontext.ServerContext
 	mongo    *mongodb.RepositoryMongo
 	notifier *notification.Notifier
@@ -74,7 +74,7 @@ func newPushPullHandler(
 	ppp *model.PushPullPack,
 	clientDoc *schema.ClientDoc,
 	collectionDoc *schema.CollectionDoc,
-	service *OrtooService,
+	service *OrdaService,
 ) *PushPullHandler {
 
 	newCtx := svrcontext.NewServerContext(ctx.Ctx(), constants.TagPushPull).
@@ -86,7 +86,7 @@ func newPushPullHandler(
 		DUID:            ppp.DUID,
 		CUID:            clientDoc.CUID,
 		ctx:             newCtx,
-		err:             &errors.MultipleOrtooErrors{},
+		err:             &errors.MultipleOrdaErrors{},
 		mongo:           service.mongo,
 		notifier:        service.notifier,
 		clientDoc:       clientDoc,
@@ -103,7 +103,7 @@ func (its *PushPullHandler) Start() <-chan *model.PushPullPack {
 	return retCh
 }
 
-func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.OrtooError {
+func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.OrdaError {
 	its.retCh = retCh
 	its.resPushPullPack = its.gotPushPullPack.GetResponsePushPullPack()
 	its.resPushPullPack.Option = uint32(model.PushPullBitNormal)
@@ -201,7 +201,7 @@ func (its *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	return
 }
 
-func (its *PushPullHandler) sendNotification(ctx context.OrtooContext) errors.OrtooError {
+func (its *PushPullHandler) sendNotification(ctx context.OrdaContext) errors.OrdaError {
 	return its.notifier.NotifyAfterPushPull(
 		ctx,
 		its.collectionDoc.Name,
@@ -210,7 +210,7 @@ func (its *PushPullHandler) sendNotification(ctx context.OrtooContext) errors.Or
 		its.currentCP.Sseq)
 }
 
-func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrtooContext) error {
+func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrdaContext) error {
 	snapshotManager := snapshot.NewManager(ctx, its.mongo, its.datatypeDoc, its.collectionDoc)
 	if err := snapshotManager.UpdateSnapshot(); err != nil { // TODO: should be asynchronous
 		return err
@@ -218,7 +218,7 @@ func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrtooContext) erro
 	return nil
 }
 
-func (its *PushPullHandler) commitToMongoDB() errors.OrtooError {
+func (its *PushPullHandler) commitToMongoDB() errors.OrdaError {
 	its.datatypeDoc.SseqEnd = its.currentCP.Sseq
 	its.resPushPullPack.CheckPoint = its.currentCP
 
@@ -241,7 +241,7 @@ func (its *PushPullHandler) commitToMongoDB() errors.OrtooError {
 	return nil
 }
 
-func (its *PushPullHandler) pullOperations() errors.OrtooError {
+func (its *PushPullHandler) pullOperations() errors.OrdaError {
 	sseqBegin := its.gotPushPullPack.CheckPoint.Sseq + 1
 	if its.datatypeDoc.SseqBegin <= sseqBegin && !its.gotOption.HasSnapshotBit() {
 		opList, sseqList, err := its.mongo.GetOperations(its.ctx, its.DUID, sseqBegin, constants.InfinitySseq)
@@ -256,7 +256,7 @@ func (its *PushPullHandler) pullOperations() errors.OrtooError {
 	return nil
 }
 
-func (its *PushPullHandler) pushOperations() errors.OrtooError {
+func (its *PushPullHandler) pushOperations() errors.OrdaError {
 
 	its.currentCP.Sseq = its.datatypeDoc.SseqEnd
 	for _, op := range its.gotPushPullPack.Operations {
@@ -277,7 +277,7 @@ func (its *PushPullHandler) pushOperations() errors.OrtooError {
 	return nil
 }
 
-func (its *PushPullHandler) processSubscribeOrCreate(code pushPullCase) errors.OrtooError {
+func (its *PushPullHandler) processSubscribeOrCreate(code pushPullCase) errors.OrdaError {
 	if its.gotOption.HasSubscribeBit() && its.gotOption.HasCreateBit() {
 		switch code {
 		case caseMatchNothing:
@@ -314,7 +314,7 @@ func (its *PushPullHandler) processSubscribeOrCreate(code pushPullCase) errors.O
 	return nil
 }
 
-func (its *PushPullHandler) subscribeDatatype() errors.OrtooError {
+func (its *PushPullHandler) subscribeDatatype() errors.OrdaError {
 	its.DUID = its.datatypeDoc.DUID
 	its.clientDoc.CheckPoints[its.CUID] = its.currentCP
 	its.gotPushPullPack.Operations = nil
@@ -341,8 +341,8 @@ func (its *PushPullHandler) createDatatype() {
 	its.ctx.L().Infof("create new %s", its.datatypeDoc)
 }
 
-func (its *PushPullHandler) evaluatePushPullCase() (pushPullCase, errors.OrtooError) {
-	var err errors.OrtooError
+func (its *PushPullHandler) evaluatePushPullCase() (pushPullCase, errors.OrdaError) {
+	var err errors.OrdaError
 	its.datatypeDoc, err = its.mongo.GetDatatypeByKey(its.ctx, its.collectionDoc.Num, its.gotPushPullPack.Key)
 	if err != nil {
 		return caseError, err

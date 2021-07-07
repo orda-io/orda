@@ -2,75 +2,75 @@ package errors
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/log"
+	"github.com/orda-io/orda/pkg/log"
 	"github.com/ztrue/tracerr"
 	"strings"
 )
 
 type tError tracerr.Error
 
-// OrtooError defines an OrtooError
-type OrtooError interface {
+// OrdaError defines an OrdaError
+type OrdaError interface {
 	tError
 	GetCode() ErrorCode
-	Append(e OrtooError) OrtooError
-	Return() OrtooError
+	Append(e OrdaError) OrdaError
+	Return() OrdaError
 	Have(code ErrorCode) int
-	ToArray() []OrtooError
+	ToArray() []OrdaError
 	Size() int
-	Print(l *log.OrtooLog, skip int)
+	Print(l *log.OrdaLog, skip int)
 }
 
-// singleOrtooError implements an error related to Ortoo
-type singleOrtooError struct {
+// singleOrdaError implements an error related to Orda
+type singleOrdaError struct {
 	tError
 	Code ErrorCode
 }
 
-func (its *singleOrtooError) Size() int {
+func (its *singleOrdaError) Size() int {
 	return 1
 }
 
-func (its *singleOrtooError) ToArray() []OrtooError {
-	return []OrtooError{its}
+func (its *singleOrdaError) ToArray() []OrdaError {
+	return []OrdaError{its}
 }
 
-func (its *singleOrtooError) Have(code ErrorCode) int {
+func (its *singleOrdaError) Have(code ErrorCode) int {
 	if its.Code == code {
 		return 1
 	}
 	return 0
 }
 
-func (its *singleOrtooError) Error() string {
+func (its *singleOrdaError) Error() string {
 	return its.tError.Error()
 }
 
 // GetCode returns ErrorCode
-func (its *singleOrtooError) GetCode() ErrorCode {
+func (its *singleOrdaError) GetCode() ErrorCode {
 	return its.Code
 }
 
-func (its *singleOrtooError) Return() OrtooError {
+func (its *singleOrdaError) Return() OrdaError {
 	return its
 }
 
-func (its *singleOrtooError) Append(e OrtooError) OrtooError {
-	var errs []*singleOrtooError
+func (its *singleOrdaError) Append(e OrdaError) OrdaError {
+	var errs []*singleOrdaError
 	switch cast := e.(type) {
-	case *singleOrtooError:
+	case *singleOrdaError:
 		errs = append(errs, its, cast)
-	case *MultipleOrtooErrors:
+	case *MultipleOrdaErrors:
 		errs = append(errs, its)
 		errs = append(errs, cast.errs...)
 	}
-	return &MultipleOrtooErrors{
-		tError: tracerr.New("Multiple OrtooErrors"),
+	return &MultipleOrdaErrors{
+		tError: tracerr.New("Multiple OrdaErrors"),
 		errs:   errs,
 	}
 }
 
-func (its *singleOrtooError) Print(l *log.OrtooLog, skip int) {
+func (its *singleOrdaError) Print(l *log.OrdaLog, skip int) {
 	var sb strings.Builder
 	sb.WriteString(its.tError.Error())
 	for _, frame := range its.StackTrace()[skip:] {
@@ -80,32 +80,32 @@ func (its *singleOrtooError) Print(l *log.OrtooLog, skip int) {
 	l.Error(sb.String())
 }
 
-// ToOrtooError casts an error to OrtooError if it is a OrtooError type
-func ToOrtooError(err error) OrtooError {
-	if dErr, ok := err.(OrtooError); ok {
+// ToOrdaError casts an error to OrdaError if it is a OrdaError type
+func ToOrdaError(err error) OrdaError {
+	if dErr, ok := err.(OrdaError); ok {
 		return dErr
 	}
 	return nil
 }
 
-type MultipleOrtooErrors struct {
+type MultipleOrdaErrors struct {
 	tError
-	errs []*singleOrtooError
+	errs []*singleOrdaError
 }
 
-func (its *MultipleOrtooErrors) Size() int {
+func (its *MultipleOrdaErrors) Size() int {
 	return len(its.errs)
 }
 
-func (its *MultipleOrtooErrors) ToArray() []OrtooError {
-	var errs []OrtooError
+func (its *MultipleOrdaErrors) ToArray() []OrdaError {
+	var errs []OrdaError
 	for _, e := range its.errs {
 		errs = append(errs, e)
 	}
 	return errs
 }
 
-func (its *MultipleOrtooErrors) Have(code ErrorCode) int {
+func (its *MultipleOrdaErrors) Have(code ErrorCode) int {
 	cnt := 0
 	for _, e := range its.errs {
 		if e.Code == code {
@@ -115,7 +115,7 @@ func (its *MultipleOrtooErrors) Have(code ErrorCode) int {
 	return cnt
 }
 
-func (its *MultipleOrtooErrors) Error() string {
+func (its *MultipleOrdaErrors) Error() string {
 	var ret []string
 	for _, err := range its.errs {
 		ret = append(ret, err.Error())
@@ -123,31 +123,31 @@ func (its *MultipleOrtooErrors) Error() string {
 	return fmt.Sprintf("%+q", ret)
 }
 
-func (its *MultipleOrtooErrors) GetCode() ErrorCode {
+func (its *MultipleOrdaErrors) GetCode() ErrorCode {
 	return MultipleErrors
 }
 
-func (its *MultipleOrtooErrors) Append(e OrtooError) OrtooError {
+func (its *MultipleOrdaErrors) Append(e OrdaError) OrdaError {
 	if e == nil {
 		return its
 	}
 	switch cast := e.(type) {
-	case *singleOrtooError:
+	case *singleOrdaError:
 		its.errs = append(its.errs, cast)
-	case *MultipleOrtooErrors:
+	case *MultipleOrdaErrors:
 		its.errs = append(its.errs, cast.errs...)
 	}
 	return its
 }
 
-func (its *MultipleOrtooErrors) Return() OrtooError {
+func (its *MultipleOrdaErrors) Return() OrdaError {
 	if len(its.errs) > 0 {
 		return its
 	}
 	return nil
 }
 
-func (its *MultipleOrtooErrors) Print(l *log.OrtooLog, skip int) {
+func (its *MultipleOrdaErrors) Print(l *log.OrdaLog, skip int) {
 	var sb strings.Builder
 	sb.WriteString(its.tError.Error())
 	for _, frame := range its.StackTrace()[skip:] {
@@ -157,9 +157,9 @@ func (its *MultipleOrtooErrors) Print(l *log.OrtooLog, skip int) {
 	l.Error(sb.String())
 }
 
-func newSingleOrtooError(l *log.OrtooLog, code ErrorCode, name string, msgFormat string, args ...interface{}) OrtooError {
+func newSingleOrdaError(l *log.OrdaLog, code ErrorCode, name string, msgFormat string, args ...interface{}) OrdaError {
 	format := fmt.Sprintf("[%s: %d] %s", name, code, msgFormat)
-	err := &singleOrtooError{
+	err := &singleOrdaError{
 		tError: tracerr.New(fmt.Sprintf(format, args...)),
 		Code:   code,
 	}

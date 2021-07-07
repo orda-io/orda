@@ -2,10 +2,10 @@ package integration
 
 import (
 	gocontext "context"
-	context "github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/server/mongodb"
-	"github.com/knowhunger/ortoo/server/server"
+	context "github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/server/mongodb"
+	"github.com/orda-io/orda/server/server"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"strings"
@@ -23,16 +23,16 @@ type IntegrationTestSuite struct {
 	suite.Suite
 	collectionName string
 	collectionNum  uint32
-	server         *server.OrtooServer
+	server         *server.OrdaServer
 	mongo          *mongodb.RepositoryMongo
-	ctx            context.OrtooContext
+	ctx            context.OrdaContext
 }
 
 // SetupTest builds some prerequisite for testing.
 func (its *IntegrationTestSuite) SetupSuite() {
-	its.ctx = context.NewOrtooContext(gocontext.TODO(), TagTest, context.MakeTagInTest(its.T().Name()))
-	var err errors.OrtooError
-	its.server, err = server.NewOrtooServer(gocontext.TODO(), NewTestOrtooServerConfig(dbName))
+	its.ctx = context.NewOrdaContext(gocontext.TODO(), TagTest, context.MakeTagInTest(its.T().Name()))
+	var err errors.OrdaError
+	its.server, err = server.NewOrdaServer(gocontext.TODO(), NewTestOrdaServerConfig(dbName))
 	if err != nil {
 		its.Fail("fail to setup")
 	}

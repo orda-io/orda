@@ -2,10 +2,10 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/knowhunger/ortoo/pkg/context"
-	"github.com/knowhunger/ortoo/pkg/errors"
-	"github.com/knowhunger/ortoo/pkg/model"
-	"github.com/knowhunger/ortoo/server/mongodb/schema"
+	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/pkg/model"
+	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -13,9 +13,9 @@ import (
 
 // UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
 func (its *MongoCollections) UpdateClient(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	client *schema.ClientDoc,
-) errors.OrtooError {
+) errors.OrdaError {
 	result, err := its.clients.UpdateOne(ctx, schema.FilterByID(client.CUID), client.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
@@ -29,11 +29,11 @@ func (its *MongoCollections) UpdateClient(
 
 // UpdateCheckPointInClient updates a CheckPoint for the given datatype in a client.
 func (its *MongoCollections) UpdateCheckPointInClient(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	cuid string,
 	duid string,
 	checkPoint *model.CheckPoint,
-) errors.OrtooError {
+) errors.OrdaError {
 	filter := schema.GetFilter().AddSetCheckPoint(duid, checkPoint)
 	result, err := its.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(filter), schema.UpsertOption)
 	if err != nil {
@@ -48,10 +48,10 @@ func (its *MongoCollections) UpdateCheckPointInClient(
 
 // UnsubscribeDatatypeFromClient makes the specified client unsubscribe the specified datatype.
 func (its *MongoCollections) UnsubscribeDatatypeFromClient(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	cuid string,
 	duid string,
-) errors.OrtooError {
+) errors.OrdaError {
 	filter := schema.GetFilter().AddUnsetCheckPoint(duid)
 	result, err := its.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(filter))
 	if err != nil {
@@ -66,9 +66,9 @@ func (its *MongoCollections) UnsubscribeDatatypeFromClient(
 
 // UnsubscribeDatatypeFromAllClients makes the specified datatype unsubscribed from all the clients.
 func (its *MongoCollections) UnsubscribeDatatypeFromAllClients(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	duid string,
-) errors.OrtooError {
+) errors.OrdaError {
 	findFilter := schema.GetFilter().AddExists(fmt.Sprintf("%s.%s", schema.ClientDocFields.CheckPoints, duid))
 	updateFilter := schema.GetFilter().AddUnsetCheckPoint(duid)
 	result, err := its.clients.UpdateMany(ctx, findFilter, bson.D(updateFilter))
@@ -84,7 +84,7 @@ func (its *MongoCollections) UnsubscribeDatatypeFromAllClients(
 }
 
 // DeleteClient deletes the specified client.
-func (its *MongoCollections) DeleteClient(ctx context.OrtooContext, cuid string) errors.OrtooError {
+func (its *MongoCollections) DeleteClient(ctx context.OrdaContext, cuid string) errors.OrdaError {
 	result, err := its.clients.DeleteOne(ctx, schema.FilterByID(cuid))
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
@@ -98,10 +98,10 @@ func (its *MongoCollections) DeleteClient(ctx context.OrtooContext, cuid string)
 
 // GetCheckPointFromClient returns a checkpoint for the specified datatype from the specified client.
 func (its *MongoCollections) GetCheckPointFromClient(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	cuid string,
 	duid string,
-) (*model.CheckPoint, errors.OrtooError) {
+) (*model.CheckPoint, errors.OrdaError) {
 	opts := options.FindOne()
 	projectField := fmt.Sprintf("checkpoints.%s", duid)
 	opts.SetProjection(bson.M{projectField: 1})
@@ -125,25 +125,25 @@ func (its *MongoCollections) GetCheckPointFromClient(
 
 // GetClientWithoutCheckPoints returns a ClientDoc without CheckPoints for the specified CUID
 func (its *MongoCollections) GetClientWithoutCheckPoints(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	cuid string,
-) (*schema.ClientDoc, errors.OrtooError) {
+) (*schema.ClientDoc, errors.OrdaError) {
 	return its.getClient(ctx, cuid, false)
 }
 
 // GetClient returns a ClientDoc for the specified CUID.
 func (its *MongoCollections) GetClient(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	cuid string,
-) (*schema.ClientDoc, errors.OrtooError) {
+) (*schema.ClientDoc, errors.OrdaError) {
 	return its.getClient(ctx, cuid, true)
 }
 
 func (its *MongoCollections) getClient(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	cuid string,
 	withCheckPoint bool,
-) (*schema.ClientDoc, errors.OrtooError) {
+) (*schema.ClientDoc, errors.OrdaError) {
 	opts := options.FindOne()
 	if !withCheckPoint {
 		opts.SetProjection(bson.M{schema.ClientDocFields.CheckPoints: 0})
@@ -164,9 +164,9 @@ func (its *MongoCollections) getClient(
 }
 
 func (its *MongoCollections) purgeAllCollectionClients(
-	ctx context.OrtooContext,
+	ctx context.OrdaContext,
 	collectionNum uint32,
-) errors.OrtooError {
+) errors.OrdaError {
 	filter := schema.GetFilter().AddFilterEQ(schema.ClientDocFields.CollectionNum, collectionNum)
 	r1, err := its.clients.DeleteMany(ctx, filter)
 	if err != nil {

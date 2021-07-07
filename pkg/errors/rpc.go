@@ -23,7 +23,7 @@ var formatMap = map[errorCodeRPC]string{
 }
 
 // NewRPCError creates a RPC error
-func NewRPCError(oErr OrtooError) error {
+func NewRPCError(oErr OrdaError) error {
 	var c codes.Code
 	code := oErr.GetCode()
 	switch code {
