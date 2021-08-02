@@ -265,7 +265,7 @@ func (its *PushPullHandler) pushOperations() errors.OrdaError {
 			its.currentCP.Sseq++
 			opDoc := schema.NewOperationDoc(op, its.DUID, its.currentCP.Sseq, its.collectionDoc.Num)
 			its.pushingOperations = append(its.pushingOperations, opDoc)
-			its.ctx.L().Infof("%v) push %v", its.currentCP.Sseq, op)
+			its.ctx.L().Infof("%v) push %v", its.currentCP.Sseq, op.ToString())
 			its.currentCP.SyncCseq(op.ID.GetSeq())
 		case its.currentCP.Cseq >= op.ID.GetSeq():
 			its.ctx.L().Warnf("reject operation due to duplicate: %v", op.String())

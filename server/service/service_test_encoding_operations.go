@@ -125,7 +125,7 @@ func (its *OrdaService) testEncodingSnapshotOperation(
 		return nil, err
 	}
 
-	regenOp, err := operations.NewSnapshotOperationFromDatatype(datatype)
+	regenOp, err := datatype.CreateSnapshotOperation()
 	if err != nil {
 		return nil, err
 	}

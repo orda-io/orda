@@ -16,7 +16,7 @@ func TestOperationEncoding(t *testing.T) {
 		counter1, _ := newCounter(base, nil, nil)
 		counter1.IncreaseBy(1024)
 
-		gOp1, err := operations.NewSnapshotOperationFromDatatype(counter1.(iface.Datatype))
+		gOp1, err := counter1.(iface.Datatype).CreateSnapshotOperation()
 
 		require.NoError(t, err)
 		log.Logger.Infof("%v", testonly.Marshal(t, gOp1))
@@ -30,7 +30,7 @@ func TestOperationEncoding(t *testing.T) {
 		counter2, _ := newCounter(base, nil, nil)
 		counter2.(iface.Datatype).ExecuteRemote(gOp1)
 
-		gOp2, err := operations.NewSnapshotOperationFromDatatype(counter2.(iface.Datatype))
+		gOp2, err := counter2.(iface.Datatype).CreateSnapshotOperation()
 		require.NoError(t, err)
 		log.Logger.Infof("%v", testonly.Marshal(t, gOp2))
 		require.Equal(t, testonly.Marshal(t, gOp1), testonly.Marshal(t, gOp2))

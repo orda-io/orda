@@ -51,7 +51,12 @@ func (its *baseOperation) ToJSON() interface{} {
 }
 
 func (its *baseOperation) String() string {
-	return fmt.Sprintf("%s(%s|%+v)", its.Type, its.ID.ToString(), its.Body)
+	body := its.Body
+	switch body.(type) {
+	case []byte:
+		body = string(its.Body.([]byte))
+	}
+	return fmt.Sprintf("%s(%s|%+v)", its.Type, its.ID.ToString(), body)
 }
 
 func (its *baseOperation) ToModelOperation() *model.Operation {

@@ -46,7 +46,7 @@ func (its *Manager) UpdateSnapshot() errors.OrdaError {
 	}
 	if snapshotDoc != nil {
 		lastSseq = snapshotDoc.Sseq
-		if err := datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot); err != nil {
+		if err = datatype.SetMetaAndSnapshot(snapshotDoc.Meta, snapshotDoc.Snapshot); err != nil {
 			return err
 		}
 	}

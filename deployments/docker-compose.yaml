@@ -43,14 +43,14 @@ services:
     container_name: orda-server
     image: orda-io/orda:0.0.1
     restart: always
-    command: sh -c "sleep 5 && /app/orda_server --conf /config/local-config.json"
+    command: sh -c "sleep 5 && /app/orda_server --conf /config/docker-config.json"
     ports:
       - 19061:19061  # for port gRPC protocol
       - 19861:19861  # for port HTTP control
     volumes:
       - type: bind
-        source: ./config/local-config.json
-        target: /config/local-config.json
+        source: ./config/docker-config.json
+        target: /config/docker-config.json
         read_only: true
     depends_on:
       - orda-mongodb
