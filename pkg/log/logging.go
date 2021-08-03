@@ -91,18 +91,19 @@ func (o *ordaFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	b.WriteString("\x1b[0m ")
 	b.WriteString("[")
 	// main level
+
+	if v, ok := entry.Data[tag2Field]; ok && v != "" {
+		b.WriteString(v.(string))
+		b.WriteString("|")
+	}
 	if v, ok := entry.Data[tag1Field]; ok {
 		b.WriteString(v.(string))
 	} else if strings.Contains(entry.Caller.File, "server/") {
-		b.WriteString("SERV")
+		b.WriteString("👽")
 	} else if strings.Contains(entry.Caller.File, "pkg/") {
-		b.WriteString("SDKS")
+		b.WriteString("🛠")
 	} else {
-		b.WriteString("NONE")
-	}
-	if v, ok := entry.Data[tag2Field]; ok && v != "" {
-		b.WriteString("|")
-		b.WriteString(v.(string))
+		b.WriteString("❌")
 	}
 	b.WriteString("] ")
 
