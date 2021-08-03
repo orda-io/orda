@@ -13,7 +13,7 @@ type SnapshotDoc struct {
 	CollectionNum uint32    `bson:"colNum"`
 	DUID          string    `bson:"duid"`
 	Sseq          uint64    `bson:"sseq"`
-	Meta          []byte    `bson:"meta"`
+	Meta          string    `bson:"meta"`
 	Snapshot      []byte    `bson:"snapshot"`
 	CreatedAt     time.Time `bson:"createdAt"`
 }

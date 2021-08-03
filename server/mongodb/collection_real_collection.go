@@ -6,6 +6,7 @@ import (
 	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -35,8 +36,9 @@ func (r *RepositoryMongo) InsertRealSnapshot(
 	}
 
 	bsonM[ver] = sseq
-	filter := schema.GetFilter().AddSnapshot(bsonM)
-	res, err := collection.UpdateOne(ctx, schema.FilterByID(id), bson.D(filter), schema.UpsertOption)
+	option := &options.ReplaceOptions{}
+	option.SetUpsert(true)
+	res, err := collection.ReplaceOne(ctx, schema.FilterByID(id), bsonM, option)
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
