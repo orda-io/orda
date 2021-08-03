@@ -21,7 +21,7 @@ func (its *MongoCollections) GetLatestSnapshot(
 		AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.SnapshotDocFields.DUID, duid)
 	opt := options.FindOne()
-	opt.SetSort(bson.D{{schema.SnapshotDocFields.Sseq, 1}})
+	opt.SetSort(bson.D{{schema.SnapshotDocFields.Sseq, -1}})
 	result := its.snapshots.FindOne(ctx, f, opt)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -50,7 +50,7 @@ func (its *MongoCollections) InsertSnapshot(
 		CollectionNum: collectionNum,
 		DUID:          duid,
 		Sseq:          sseq,
-		Meta:          meta,
+		Meta:          string(meta),
 		Snapshot:      snapshot,
 		CreatedAt:     time.Now(),
 	}

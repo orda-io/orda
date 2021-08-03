@@ -62,8 +62,9 @@ func (its *BaseDatatype) String() string {
 
 func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, errors.OrdaError) {
 	its.SetNextOpID(op)
-	switch op.GetType() {
-	case model.TypeOfOperation_TRANSACTION, model.TypeOfOperation_ERROR, model.TypeOfOperation_SNAPSHOT:
+	if op.GetType() == model.TypeOfOperation_TRANSACTION ||
+		op.GetType() == model.TypeOfOperation_ERROR ||
+		op.GetType()%10 == 0 {
 		return nil, nil
 	}
 	ret, err := its.ExecuteLocal(op)
@@ -139,11 +140,11 @@ func (its *BaseDatatype) GetOpID() *model.OperationID {
 func (its *BaseDatatype) GetMeta() ([]byte, errors.OrdaError) {
 	meta := model.DatatypeMeta{
 		Key:    its.Key,
+		TypeOf: its.TypeOf,
 		DUID:   its.id,
 		OpID:   its.opID,
-		TypeOf: its.TypeOf,
 	}
-	metab, err := json.Marshal(&meta)
+	metab, err := json.Marshal(meta)
 	if err != nil {
 		return nil, errors.DatatypeMarshal.New(its.ctx.L(), meta)
 	}

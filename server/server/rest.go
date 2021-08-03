@@ -59,7 +59,6 @@ func (its *RestServer) allowCors(h http.Handler) http.Handler {
 				w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
 				methods := []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodDelete}
 				w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
-				its.ctx.L().Infof("send preflight: %s", r.URL.Path)
 				return
 			}
 		}

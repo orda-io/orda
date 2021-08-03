@@ -52,7 +52,7 @@ func (its *MongoCollections) GetOperations(
 	ctx context.OrdaContext,
 	duid string,
 	from, to uint64,
-) ([]*model.Operation, []uint64, errors.OrdaError) {
+) (model.OpList, []uint64, errors.OrdaError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterGTE(schema.OperationDocFields.Sseq, from)

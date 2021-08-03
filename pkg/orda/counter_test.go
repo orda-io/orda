@@ -5,7 +5,6 @@ import (
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/pkg/operations"
 	"github.com/orda-io/orda/pkg/testonly"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -36,7 +35,7 @@ func TestCounterTransactions(t *testing.T) {
 		}))
 		require.Equal(t, int32(6), counter1.Get())
 
-		sOp, err := operations.NewSnapshotOperationFromDatatype(counter1.(iface.Datatype))
+		sOp, err := counter1.(iface.Datatype).CreateSnapshotOperation()
 		require.NoError(t, err)
 		log.Logger.Infof("%v", sOp)
 		log.Logger.Infof("%v", sOp.ToModelOperation())

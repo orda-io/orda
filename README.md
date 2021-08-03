@@ -9,15 +9,26 @@
     .::::     .:::    .:: .::  .:: .:::                                       
 ```
 
-[Orda (or ordu, ordo, or ordon)](https://en.wikipedia.org/wiki/Orda_(organization)) means the Mongolian mobile tent or place tent.
-As stated in [Civilization WIKI](https://civilization.fandom.com/wiki/Ordu_(Civ6)), Orda(or Ordu) was the center of the tribe for the nomadic Mongolians.
-Orda project is a multi-device data synchronization platform based on MongoDB (which could be other document databases). 
-Orda is based on CRDT(conflict-free data types), which enables operation-based synchronization.  
+[Orda (or ordu, ordo, or ordon)](https://en.wikipedia.org/wiki/Orda_(organization)) means the Mongolian mobile tent or
+place tent. As stated in [Civilization WIKI](https://civilization.fandom.com/wiki/Ordu_(Civ6)), Orda (or Ordu) was the
+center of the tribe for the nomadic Mongolians. Orda project is a multi-device data synchronization platform based on
+MongoDB (which could be other document databases). Orda is based on CRDT(conflict-free data types), which enables
+operation-based synchronization.
 
+This project is mainly based on these two papers.
+
+- Hyun-Gul Roh et
+  al. [Replicated abstract data types: Building blocks for collaborative applications](https://www.sciencedirect.com/science/article/abs/pii/S0743731510002716)
+  , JPDC, March, 2011.
+- Hyun-Gul Roh et
+  al. [Kaleido: Implementing a Novel Data System for Multi-Device Synchronization](https://ieeexplore.ieee.org/document/7962464)
+  , IEEE MDM, July, 2017.
+
+## Concepts
 
 ## Getting started
 
-### Working envirnment (Maybe work on less versions of them)
+### Working environment (Maybe work on lower versions of them)
 
 - go 1.16
 - docker latest, docker-compose (for deploying local orda-server)

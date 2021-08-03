@@ -62,6 +62,6 @@ func (its *SnapshotDatatype) CreateSnapshotOperation() (iface.Operation, errors.
 	if err != nil {
 		return nil, errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
-	snapOp := operations.NewSnapshotOperation(snap)
+	snapOp := operations.NewSnapshotOperation(its.TypeOf, snap)
 	return snapOp, nil
 }

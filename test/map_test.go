@@ -5,7 +5,6 @@ import (
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/pkg/operations"
 	"github.com/orda-io/orda/pkg/orda"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +47,7 @@ func (its *IntegrationTestSuite) TestMap() {
 		_, _ = map1.Remove("Removed")
 		require.Nil(its.T(), map1.Get("Removed"))
 		require.NoError(its.T(), client1.Sync())
-		sop, err := operations.NewSnapshotOperationFromDatatype(map1.(iface.Datatype))
+		sop, err := map1.(iface.Datatype).CreateSnapshotOperation()
 		log.Logger.Infof("%v", sop.String())
 	})
 }

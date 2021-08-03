@@ -152,7 +152,7 @@ func TestMongo(t *testing.T) {
 	t.Run("Can manipulate operationDoc", func(t *testing.T) {
 		snap, err := json.Marshal(&testSnapshot{Value: 1})
 		require.NoError(t, err)
-		op := operations.NewSnapshotOperation(snap)
+		op := operations.NewSnapshotOperation(model.TypeOfDatatype_DOCUMENT, snap)
 
 		op.ID = model.NewOperationIDWithCUID(types.NewUID())
 		modelOp := op.ToModelOperation()
@@ -200,10 +200,5 @@ type testSnapshot struct {
 }
 
 func (its *testSnapshot) ToJSON() interface{} {
-	// j, err := json.Marshal(its)
-	// if err != nil {
-	// 	return "", errors.NewDatatypeError(errors.ErrDatatypeSnapshot, err.Error())
-
-	// }
 	return its
 }

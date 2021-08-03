@@ -8,7 +8,7 @@ COPY ./tmp/server /app/orda_server
 
 WORKDIR /app
 
-CMD ["/app/orda_server", "--conf", "/config/local-config.json"]
+CMD ["/app/orda_server", "--conf", "/config/docker-config.json"]
 
 EXPOSE 19061
 EXPOSE 19861

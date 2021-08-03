@@ -10,9 +10,12 @@ import (
 // ModelToOperation changes a model.Operation to an operations.Operation
 func ModelToOperation(op *model.Operation) iface.Operation {
 	switch op.OpType {
-	case model.TypeOfOperation_SNAPSHOT:
+	case model.TypeOfOperation_COUNTER_SNAPSHOT,
+		model.TypeOfOperation_MAP_SNAPSHOT,
+		model.TypeOfOperation_LIST_SNAPSHOT,
+		model.TypeOfOperation_DOC_SNAPSHOT:
 		return &SnapshotOperation{
-			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, "")),
+			baseOperation: newBaseOperation(op.OpType, op.ID, op.Body),
 		}
 	case model.TypeOfOperation_ERROR:
 		return &ErrorOperation{

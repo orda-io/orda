@@ -1,9 +1,7 @@
 package operations
 
 import (
-	"encoding/json"
 	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/model"
 )
 
@@ -107,36 +105,13 @@ func (its *ErrorOperation) GetMessage() string {
 
 // ////////////////// SnapshotOperation ////////////////////
 
-type snapshotBody struct {
-	Type     model.TypeOfDatatype
-	Snapshot []byte
-}
-
 // NewSnapshotOperation creates a SnapshotOperation
-func NewSnapshotOperation(snapshot []byte) *SnapshotOperation {
+func NewSnapshotOperation(typeOf model.TypeOfDatatype, snapshot []byte) *SnapshotOperation {
+	var typeOfOp = model.TypeOfOperation(typeOf*10 + 10)
+
 	return &SnapshotOperation{
-		baseOperation: newBaseOperation(
-			model.TypeOfOperation_SNAPSHOT,
-			model.NewOperationID(),
-			string(snapshot),
-		),
+		baseOperation: newBaseOperation(typeOfOp, model.NewOperationID(), snapshot),
 	}
-}
-
-func NewSnapshotOperationFromDatatype(datatype iface.Datatype) (*SnapshotOperation, errors.OrdaError) {
-	snap, err := json.Marshal(datatype.GetSnapshot())
-	if err != nil {
-		return nil, errors.DatatypeMarshal.New(datatype.L(), err.Error())
-	}
-	snapOp := NewSnapshotOperation(snap)
-	return snapOp, nil
-}
-
-func (its *snapshotBody) String() string {
-	if marshaled, err := json.Marshal(its.Snapshot); err != nil {
-		return string(marshaled)
-	}
-	return ""
 }
 
 // SnapshotOperation is used to deliver the snapshot of a datatype.
@@ -145,5 +120,5 @@ type SnapshotOperation struct {
 }
 
 func (its *SnapshotOperation) GetBody() []byte {
-	return []byte(its.Body.(string))
+	return its.Body.([]byte)
 }
