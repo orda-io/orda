@@ -7,7 +7,10 @@ import (
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/server/mongodb"
+	"github.com/swaggo/http-swagger"
+	"github.com/swaggo/swag"
 	"google.golang.org/grpc"
+	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -16,6 +19,7 @@ const (
 	apiGrpcGw        = "/api/"
 	apiGrpcGwSwagger = "/swagger/"
 	apiCollections   = "/collections/"
+	swaggerJson      = "./proto/orda.grpc.swagger.json"
 )
 
 // RestServer is a control server to set up Orda system.
@@ -66,6 +70,16 @@ func (its *RestServer) allowCors(h http.Handler) http.Handler {
 	})
 }
 
+type swaggerDoc struct{}
+
+func (its *swaggerDoc) ReadDoc() string {
+	bytes, err := ioutil.ReadFile(swaggerJson)
+	if err != nil {
+		panic("")
+	}
+	return string(bytes)
+}
+
 func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrdaError {
 	gwMux := runtime.NewServeMux()
 	gwOpts := []grpc.DialOption{grpc.WithInsecure()}
@@ -77,8 +91,11 @@ func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrdaErro
 	mux.Handle(apiGrpcGw, gwMux)
 	its.ctx.L().Infof("open port: http://localhost%s%s",
 		its.conf.GetRestfulAddr(), apiGrpcGw)
-	fs := http.FileServer(http.Dir("./server/swagger-ui"))
-	mux.Handle(apiGrpcGwSwagger, http.StripPrefix(apiGrpcGwSwagger, fs))
+	swag.Register(swag.Name, &swaggerDoc{})
+
+	swaggerHandler := httpSwagger.Handler(httpSwagger.URL("./doc.json"))
+
+	mux.Handle(apiGrpcGwSwagger, swaggerHandler)
 	its.ctx.L().Infof("open port: http://localhost%s%s",
 		its.conf.GetRestfulAddr(), apiGrpcGwSwagger)
 

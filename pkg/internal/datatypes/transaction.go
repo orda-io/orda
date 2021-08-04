@@ -75,7 +75,7 @@ func (its *TransactionDatatype) SentenceInTx(
 
 		}
 	}()
-	its.ctx.L().Infof("sentence: %+v", op.String())
+	its.ctx.L().Infof("sentence: %+v", op)
 	if isLocal {
 		ret, err := its.executeLocalBase(op)
 		if err != nil {
