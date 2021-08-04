@@ -17,15 +17,13 @@ PROTOC_PROTO_FILES := orda.enum.proto orda.proto orda.grpc.proto
 
 .PHONY: protoc-gen
 protoc-gen:
-	-rm ./pkg/model/*.pb.go ./pkg/model/*.pb.gw.go ./server/swagger-ui/orda.grpc.swagger.json
-	protoc $(PROTOC_INCLUDE) \
-		--gofast_out=,plugins=grpc,:./pkg/model/ \
-		$(PROTOC_PROTO_FILES)
+	-rm ./pkg/model/*.pb.go ./pkg/model/*.pb.gw.go ./proto/orda.grpc.swagger.json
+	protoc $(PROTOC_INCLUDE) --gofast_out=,plugins=grpc,:./pkg/model/ $(PROTOC_PROTO_FILES)
 	protoc-go-inject-tag -input=./pkg/model/orda.pb.go
 	protoc $(PROTOC_INCLUDE) \
 		--grpc-gateway_out ./pkg/model \
 		--grpc-gateway_opt logtostderr=true \
-		--openapiv2_out ./server/swagger-ui \
+		--openapiv2_out ./proto \
 		--openapiv2_opt logtostderr=true \
 		orda.grpc.proto
 

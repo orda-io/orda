@@ -16,3 +16,4 @@ docker_volumes/
 deployments/docker_volumes
 build/
 bin/
+proto/orda.grpc.swagger.json

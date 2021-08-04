@@ -84,6 +84,9 @@ func (its *OperationID) Clone() *OperationID {
 
 // ToString returns customized string
 func (its *OperationID) ToString() string {
+	if its == nil {
+		return ""
+	}
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "[%d:%d:%s:%d]",
 		its.Era, its.Lamport, its.CUID, its.Seq)
