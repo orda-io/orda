@@ -2,7 +2,9 @@ package managers
 
 import (
 	"encoding/json"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"

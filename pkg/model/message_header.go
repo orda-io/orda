@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+
 	"google.golang.org/grpc"
 )
 

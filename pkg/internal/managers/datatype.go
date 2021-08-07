@@ -2,12 +2,14 @@ package managers
 
 import (
 	"fmt"
+	"strings"
+
+	"golang.org/x/sync/semaphore"
+
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/model"
-	"golang.org/x/sync/semaphore"
-	"strings"
 )
 
 // DatatypeManager manages Orda datatypes regarding operations

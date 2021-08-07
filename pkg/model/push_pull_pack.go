@@ -2,8 +2,9 @@ package model
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/pkg/utils"
 	"strings"
+
+	"github.com/orda-io/orda/pkg/utils"
 )
 
 // PushPullBitXXX denotes a bit for the option for PushPull

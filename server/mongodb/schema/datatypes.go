@@ -2,11 +2,13 @@ package schema
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/pkg/model"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
-	"time"
+
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // DatatypeDoc defines a document for datatype, stored in MongoDB

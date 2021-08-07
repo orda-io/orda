@@ -1,12 +1,13 @@
 package integration
 
 import (
+	"github.com/stretchr/testify/require"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/orda"
-	"github.com/stretchr/testify/require"
 )
 
 func (its *IntegrationTestSuite) TestMap() {

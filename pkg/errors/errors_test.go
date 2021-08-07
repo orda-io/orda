@@ -1,9 +1,10 @@
 package errors_test
 
 import (
+	"testing"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/log"
-	"testing"
 )
 
 func TestOrdaError(t *testing.T) {

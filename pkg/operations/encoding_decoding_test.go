@@ -2,9 +2,10 @@ package operations
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
-	"testing"
 )
 
 func TestConvertingOperations(t *testing.T) {

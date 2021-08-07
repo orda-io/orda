@@ -1,17 +1,18 @@
 package integration
 
 import (
+	"path/filepath"
+	"runtime"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/orda"
 	"github.com/orda-io/orda/server/mongodb"
 	"github.com/orda-io/orda/server/server"
-	"path/filepath"
-	"runtime"
-	"strings"
-	"sync"
-	"time"
 )
 
 var mongoDB = make(map[string]*mongodb.RepositoryMongo)
@@ -35,7 +36,7 @@ func GetMongo(ctx context.OrdaContext, dbName string) (*mongodb.RepositoryMongo,
 	if m, ok := mongoDB[dbName]; ok {
 		return m, nil
 	}
-	conf := mongodb.NewTestMongoDBConfig(dbName)
+	conf := NewTestMongoDBConfig(dbName)
 	mongo, err := mongodb.New(ctx, conf)
 	if err != nil {
 		return nil, err
@@ -47,9 +48,9 @@ func GetMongo(ctx context.OrdaContext, dbName string) (*mongodb.RepositoryMongo,
 // NewTestOrdaClientConfig generates an OrdaClientConfig for testing.
 func NewTestOrdaClientConfig(collectionName string, syncType model.SyncType) *orda.ClientConfig {
 	return &orda.ClientConfig{
-		ServerAddr:       "127.0.0.1:59062",
+		ServerAddr:       "localhost:59062",
 		CollectionName:   collectionName,
-		NotificationAddr: "tcp://127.0.0.1:18181",
+		NotificationAddr: "tcp://localhost:18181",
 		SyncType:         syncType,
 	}
 }
@@ -59,8 +60,8 @@ func NewTestOrdaServerConfig(dbName string) *server.OrdaServerConfig {
 	return &server.OrdaServerConfig{
 		RPCServerPort: 59062,
 		RestfulPort:   59862,
-		Notification:  "tcp://127.0.0.1:18181",
-		Mongo:         *mongodb.NewTestMongoDBConfig(dbName),
+		Notification:  "tcp://localhost:18181",
+		Mongo:         *NewTestMongoDBConfig(dbName),
 	}
 }
 
@@ -75,5 +76,13 @@ func WaitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 		return true
 	case <-time.After(timeout):
 		return false
+	}
+}
+
+// NewTestMongoDBConfig creates a new MongoDBConfig for Test
+func NewTestMongoDBConfig(dbName string) *mongodb.Config {
+	return &mongodb.Config{
+		Host:   "mongodb://root:orda-test@localhost:27017",
+		OrdaDB: dbName,
 	}
 }

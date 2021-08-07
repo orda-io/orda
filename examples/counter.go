@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/orda"
-	"sync"
 )
 
 const (

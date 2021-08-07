@@ -1,12 +1,14 @@
 package orda
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/testonly"
-	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 var (

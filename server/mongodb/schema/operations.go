@@ -2,10 +2,12 @@ package schema
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/pkg/model"
+	"time"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
-	"time"
+
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // NewOperationDoc creates a new OperationDoc with the given parameters

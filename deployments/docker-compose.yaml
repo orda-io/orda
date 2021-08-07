@@ -8,7 +8,7 @@ services:
       - mongodb-configdb:/data/configdb
       - mongodb-db:/data/db
     ports:
-      - 27017:27017
+      - 0.0.0.0:27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: orda-test
@@ -18,9 +18,9 @@ services:
     image: emqx/emqx:latest
     restart: always
     ports:
-      - 18181:1883  # port for MQTT
-      - 18881:8083  # for WebSocket/HTTP
-      - 18081:18083  # for dashboard
+      - 0.0.0.0:18181:1883  # port for MQTT
+      - 0.0.0.0:18881:8083  # for WebSocket/HTTP
+      - 0.0.0.0:18081:18083  # for dashboard
     #      - "8883"  # port for MQTT(SSL)
     #      - "8084"  # for WSS / HTTPS
     #      - "11883" # port for internal MQTT/TCP
@@ -31,7 +31,7 @@ services:
     #      - "8081"  # for mgmt API
     environment:
       EMQX_NAME: orda-emqx
-      EMQX_HOST: 127.0.0.1
+      EMQX_HOST: 0.0.0.0
       EMQX_LOADED_PLUGINS: "emqx_recon,emqx_retainer,emqx_management,emqx_dashboard"
       EMQX_LOG__LEVEL: "debug"
     volumes:
@@ -41,12 +41,12 @@ services:
 
   orda-server:
     container_name: orda-server
-    image: orda-io/orda:0.0.1
+    image: orda-io/orda:${VERSION}
     restart: always
     command: sh -c "sleep 5 && /app/orda_server --conf /config/docker-config.json"
     ports:
-      - 19061:19061  # for port gRPC protocol
-      - 19861:19861  # for port HTTP control
+      - 0.0.0.0:19061:19061  # for port gRPC protocol
+      - 0.0.0.0:19861:19861  # for port HTTP control
     volumes:
       - type: bind
         source: ./config/docker-config.json

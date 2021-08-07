@@ -2,11 +2,12 @@ package datatypes
 
 import (
 	"encoding/json"
+	"sync"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/operations"
-	"sync"
 )
 
 // NotUserTransactionTag ...

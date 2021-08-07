@@ -2,15 +2,17 @@ package integration
 
 import (
 	gocontext "context"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
 	context "github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/server/mongodb"
 	"github.com/orda-io/orda/server/server"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (

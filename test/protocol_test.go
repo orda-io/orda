@@ -1,11 +1,13 @@
 package integration
 
 import (
+	"sync"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/orda"
-	"github.com/stretchr/testify/require"
-	"sync"
 )
 
 func (its *IntegrationTestSuite) TestProtocol() {

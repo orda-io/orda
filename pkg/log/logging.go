@@ -3,10 +3,11 @@ package log
 import (
 	"bytes"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // OrdaLog defines the log of OrdaLog

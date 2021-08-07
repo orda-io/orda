@@ -2,13 +2,15 @@ package integration
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/orda"
 	"github.com/orda-io/orda/pkg/testonly"
-	"github.com/stretchr/testify/require"
-	"time"
 )
 
 var (

@@ -4,6 +4,11 @@ import (
 	gocontext "context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"gotest.tools/assert"
+
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/operations"
@@ -11,10 +16,7 @@ import (
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/mongodb/schema"
 	"github.com/orda-io/orda/server/svrcontext"
-	"github.com/orda-io/orda/test"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-	"gotest.tools/assert"
+	integration "github.com/orda-io/orda/test"
 
 	"sync"
 	"testing"

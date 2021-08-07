@@ -2,13 +2,14 @@ package orda
 
 import (
 	"encoding/json"
+	"strings"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/internal/datatypes"
 	"github.com/orda-io/orda/pkg/model"
 	operations "github.com/orda-io/orda/pkg/operations"
 	"github.com/orda-io/orda/pkg/types"
-	"strings"
 )
 
 // Map is an Orda datatype which provides the hash map interfaces.

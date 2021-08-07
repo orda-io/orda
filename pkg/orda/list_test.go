@@ -3,12 +3,14 @@ package orda
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/testonly"
-	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func initList(t *testing.T, list *listSnapshot, opID *model.OperationID) {

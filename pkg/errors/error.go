@@ -2,9 +2,11 @@ package errors
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/pkg/log"
-	"github.com/ztrue/tracerr"
 	"strings"
+
+	"github.com/ztrue/tracerr"
+
+	"github.com/orda-io/orda/pkg/log"
 )
 
 type tError tracerr.Error
