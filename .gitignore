@@ -16,7 +16,6 @@ docker_volumes/
 deployments/docker_volumes
 build/
 bin/
-resources/
 proto/thirdparty
 pkg/model/*.pb.go
 pkg/model/*.gw.go

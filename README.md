@@ -1,4 +1,7 @@
-# Orda
+# 🐎🎪Orda
+
+----
+
 ```
     .::::                 .::          
   .::    .::              .::          
@@ -28,6 +31,9 @@ This project is mainly based on these two papers.
 ## Concepts
 
 - Using Orda SDKs, you can allow multiple users to synchronize any document in a collection of DocumentDB.
+
+!<img src="https://user-images.githubusercontent.com/3905310/128593526-747bb040-6952-4204-b99a-80ebd6c50170.png" width="700"/>
+
 - Any field can be added, removed and updated using JSON operations.
 - For example, [Orda-JSONEditor](https://github.com/orda-io/orda-jsoneditor) implemented
   with [Orda-js](https://github.com/orda-io/orda-js) allows multiple users concurrently to edit any document in a
@@ -35,12 +41,11 @@ This project is mainly based on these two papers.
 
 ![ezgif com-gif-maker](https://user-images.githubusercontent.com/3905310/128254096-cf0a9238-2337-4153-8a5d-a91db78e0607.gif)
 
-- You can see the full video of the example usage of Orda JSONEditor [here](https://www.youtube.com/watch?v=t_R47AWMv6s)
-  .
+- You can see the full video of the example usage of Orda JSONEditor At
+  YouTube [here](https://www.youtube.com/watch?v=t_R47AWMv6s).
 
-  [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/t_R47AWMv6s/0.jpg)]()
-- You can use the documents in the collection for the analytics or read-only workloads. It is not recommended modifying
-  them directly.
+- The documents in the MongoDB collection can be used for the analytics or read-only workloads. It is not recommended
+  modifying them directly.
 
 ## Working environment
 
@@ -62,7 +67,7 @@ This project is mainly based on these two papers.
  $ make protoc-gen # generate protobuf codes
  ```
 
-### Running local Orda server
+### Run Orda Server
 
 - You can run orda server with docker-compose.
 
@@ -132,30 +137,29 @@ defer func() {
 ```go
 // CreateXXXX() is used to create a new datatype. 
 // If there already exists a datatype for the key, it returns an error via error handler.
-intCounter := client.CreateCounter("key", orda.NewHandlers(...)
+Counter := client.CreateCounter("key", orda.NewHandlers(...)
 
 // SubscribeXXXX() is used to subscribe an existing datatype. 
 // If there exists no datatype for the key, it returns an error via error handler
-intCounter := client.SubscribeCounter("key", orda.NewHandlers(...)
+Counter := client.SubscribeCounter("key", orda.NewHandlers(...)
 
 // SubscribeOrCreateXXXX() is used to subscribe an existing datatype. 
 // If no datatype exists for the key, a new datatype is created. 
 // It is recommended to use this method to shorten code lines.
-intCounter := client.SubscribeOrCreateCounter("key", orda.NewHandlers(...)
+Counter := client.SubscribeOrCreateCounter("key", orda.NewHandlers(...)
 
 // Client should sync with Orda server.
-if err:= client.Sync(); err !=nil {
-    panic(err)
+if err := client.Sync(); err !=nil {
+panic(err)
 }
 ```
 
-#### Handlers
+# Contribute to Orda Project
 
-#### Counter
+----
+We always welcome your participation. Especially, we are very pleased if you want to implement SDKs for other languages.
 
-#### Map
+# License
 
-#### List
-
-#### Transaction
-
+----
+Orda is licensed under Apache 2.0 License that can be found in the LICENSE file. 
