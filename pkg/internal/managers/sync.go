@@ -1,10 +1,11 @@
 package managers
 
 import (
+	"google.golang.org/grpc"
+
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
-	"google.golang.org/grpc"
 )
 
 // SyncManager is a manager exchanging request and response with Orda server.

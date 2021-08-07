@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-option go_package = ".;model";
+option go_package = "pkg/model";
 package orda;
 
 import "orda.proto";
 import "orda.enum.proto";
-import "google/api/annotations.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "thirdparty/google/api/annotations.proto";
+import "thirdparty/protoc-gen-openapiv2/options/annotations.proto";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {

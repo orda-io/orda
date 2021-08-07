@@ -3,10 +3,11 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/server/mongodb"
-	"io/ioutil"
 )
 
 // OrdaServerConfig is a configuration of OrdaServer

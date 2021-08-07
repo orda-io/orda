@@ -2,12 +2,14 @@ package schema
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/pkg/model"
+	"strconv"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
-	"strconv"
-	"time"
+
+	"github.com/orda-io/orda/pkg/model"
 )
 
 // ClientDoc defines the document for client, stored in MongoDB.

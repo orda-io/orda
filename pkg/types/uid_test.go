@@ -1,11 +1,13 @@
 package types
 
 import (
-	"github.com/orda-io/orda/pkg/log"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/orda-io/orda/pkg/log"
 )
 
 func TestUID(t *testing.T) {

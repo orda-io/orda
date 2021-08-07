@@ -1,8 +1,9 @@
 package model
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestClientId(t *testing.T) {

@@ -2,24 +2,26 @@ package server
 
 import (
 	"fmt"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/swaggo/swag"
+	"google.golang.org/grpc"
+
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/server/mongodb"
-	"github.com/swaggo/http-swagger"
-	"github.com/swaggo/swag"
-	"google.golang.org/grpc"
-	"io/ioutil"
-	"net/http"
-	"strings"
 )
 
 const (
 	apiGrpcGw        = "/api/"
 	apiGrpcGwSwagger = "/swagger/"
 	apiCollections   = "/collections/"
-	swaggerJson      = "./proto/orda.grpc.swagger.json"
+	swaggerJson      = "./resources/orda.grpc.swagger.json"
 )
 
 // RestServer is a control server to set up Orda system.

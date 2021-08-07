@@ -2,8 +2,9 @@ package types
 
 import (
 	"bytes"
-	"github.com/matoous/go-nanoid/v2"
 	"strings"
+
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 const (

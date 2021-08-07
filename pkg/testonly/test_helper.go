@@ -3,13 +3,15 @@ package testonly
 import (
 	gocontext "context"
 	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/internal/datatypes"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/types"
-	"github.com/stretchr/testify/require"
-	"strings"
-	"testing"
 )
 
 // OperationsToString returns a string of an array of operations

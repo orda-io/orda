@@ -3,7 +3,17 @@ package server
 import (
 	gocontext "context"
 	"fmt"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+
 	"github.com/orda-io/orda/pkg/constants"
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
@@ -14,14 +24,6 @@ import (
 	"github.com/orda-io/orda/server/notification"
 	"github.com/orda-io/orda/server/service"
 	"github.com/orda-io/orda/server/svrcontext"
-	"google.golang.org/grpc"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-	"time"
 )
 
 const banner = `       

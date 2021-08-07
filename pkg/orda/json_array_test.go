@@ -1,12 +1,14 @@
 package orda
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/testonly"
 	"github.com/orda-io/orda/pkg/types"
-	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 var strt1 = map[string]interface{}{

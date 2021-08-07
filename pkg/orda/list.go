@@ -3,13 +3,14 @@ package orda
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/internal/datatypes"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/operations"
 	"github.com/orda-io/orda/pkg/types"
-	"strings"
 )
 
 // List is an Orda datatype which provides the list interfaces.

@@ -1,11 +1,13 @@
 package mongodb
 
 import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/server/mongodb/schema"
-	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 // GetCollection gets a collectionDoc with the specified name.

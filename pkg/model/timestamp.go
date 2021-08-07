@@ -2,8 +2,9 @@ package model
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/pkg/types"
 	"strings"
+
+	"github.com/orda-io/orda/pkg/types"
 )
 
 // OldestTimestamp returns the oldest timestamp.

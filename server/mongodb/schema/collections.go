@@ -2,9 +2,10 @@ package schema
 
 import (
 	"fmt"
+	"time"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
-	"time"
 )
 
 // CollectionDoc defines the document of Collections collection, stored in MongoDB. More specifically, it stores a number associated to the collection.

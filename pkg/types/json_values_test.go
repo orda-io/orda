@@ -1,11 +1,13 @@
 package types
 
 import (
-	"github.com/orda-io/orda/pkg/log"
-	"github.com/stretchr/testify/require"
 	"math"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/orda-io/orda/pkg/log"
 )
 
 func TestConvertToJSONSupportedType(t *testing.T) {

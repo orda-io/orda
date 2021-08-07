@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/orda-io/orda/server/server"
 	"os"
+
+	"github.com/orda-io/orda/server/server"
 
 	"github.com/urfave/cli/v2"
 )

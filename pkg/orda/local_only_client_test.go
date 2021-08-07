@@ -1,9 +1,11 @@
 package orda
 
 import (
-	"github.com/orda-io/orda/pkg/iface"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/orda-io/orda/pkg/iface"
 )
 
 func TestLocalOnlyClientTest(t *testing.T) {

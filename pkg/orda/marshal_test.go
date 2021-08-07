@@ -3,9 +3,11 @@ package orda
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/orda-io/orda/pkg/log"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/orda-io/orda/pkg/log"
 )
 
 type HelloIface interface {

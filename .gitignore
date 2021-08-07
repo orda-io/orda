@@ -16,4 +16,7 @@ docker_volumes/
 deployments/docker_volumes
 build/
 bin/
-proto/orda.grpc.swagger.json
+resources/
+proto/thirdparty
+pkg/model/*.pb.go
+pkg/model/*.gw.go

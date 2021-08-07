@@ -1,6 +1,7 @@
-VERSION = 0.0.1
+VERSION = 0.1.0
 
 BUILD_DIR = bin
+RESOURCES_DIR = resources
 DEPLOY_DIR = deployments
 CONFIG_DIR = config
 
@@ -12,86 +13,86 @@ GO_LDFLAGS ?=
 GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.GitCommit=${GIT_COMMIT}'
 GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.Version=${VERSION}'
 
-PROTOC_INCLUDE := -I=./proto -I=./proto/third_party
+PROJECT_ROOT = $(shell pwd)
+
+PROTOC_INCLUDE := -I=./proto/thirdparty -I=./proto
 PROTOC_PROTO_FILES := orda.enum.proto orda.proto orda.grpc.proto
+
+ORDA_BUILDER := docker run --network host --rm -v ${PROJECT_ROOT}:${PROJECT_ROOT} -w ${PROJECT_ROOT} orda-builder sh -c
+
+.PHONY: init
+init:
+	docker build -t orda-builder .
 
 .PHONY: protoc-gen
 protoc-gen:
-	-rm ./pkg/model/*.pb.go ./pkg/model/*.pb.gw.go ./proto/orda.grpc.swagger.json
-	protoc $(PROTOC_INCLUDE) --gofast_out=,plugins=grpc,:./pkg/model/ $(PROTOC_PROTO_FILES)
-	protoc-go-inject-tag -input=./pkg/model/orda.pb.go
-	protoc $(PROTOC_INCLUDE) \
+	- $(ORDA_BUILDER) "rm -rf ./proto/thirdparty ./pkg/model/*.pb.go ./pkg/model/*.gw.go"
+	$(ORDA_BUILDER) "mkdir -p ./proto/thirdparty/google"
+	$(ORDA_BUILDER) "cp -rf /root/googleapis/google/api ./proto/thirdparty/google/"
+	$(ORDA_BUILDER) "mkdir -p ./proto/thirdparty/protoc-gen-openapiv2"
+	$(ORDA_BUILDER) "cp -rf /root/grpc-gateway/protoc-gen-openapiv2/options ./proto/thirdparty/protoc-gen-openapiv2/"
+	$(ORDA_BUILDER) "protoc $(PROTOC_INCLUDE) --go_out=,plugins=grpc,:. $(PROTOC_PROTO_FILES)"
+	$(ORDA_BUILDER) "protoc-go-inject-tag -input=./pkg/model/orda.pb.go"
+	$(ORDA_BUILDER) "protoc $(PROTOC_INCLUDE) \
 		--grpc-gateway_out ./pkg/model \
+		--grpc-gateway_opt paths=source_relative \
 		--grpc-gateway_opt logtostderr=true \
-		--openapiv2_out ./proto \
+		--grpc-gateway_opt generate_unbound_methods=true \
+		--openapiv2_out $(RESOURCES_DIR) \
 		--openapiv2_opt logtostderr=true \
-		orda.grpc.proto
+		orda.grpc.proto"
 
-.PHONY: build-server
-build-server:
-	echo $(GO_SRCS)
-	mkdir -p $(BUILD_DIR)
-	cd server && go build -gcflags='all=-N -l' -ldflags "${GO_LDFLAGS}" -o ../$(BUILD_DIR)
-
-.PHONY: dependency
-dependency:
-	go get -v ./...
-	go get github.com/gogo/protobuf/proto
-	go get github.com/gogo/protobuf/gogoproto
-	go get github.com/gogo/protobuf/protoc-gen-gogo
-	go get github.com/gogo/protobuf/protoc-gen-gofast
+.PHONY: golib-install
+get-golibs:
 	go get github.com/tebeka/go2xunit
 	go get golang.org/x/lint/golint
 	go get github.com/axw/gocov/gocov
 	go get github.com/AlekSi/gocov-xml
 	go get github.com/favadi/protoc-go-inject-tag
 	go get github.com/amsokol/protoc-gen-gotag
-	go get github.com/protoc-gen-swagger
+	go get golang.org/x/tools/cmd/goimports
 	go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
 	go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
-	go get google.golang.org/protobuf/cmd/protoc-gen-go
-	go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	go get github.com/golang/protobuf/protoc-gen-go
+	go get google.golang.org/grpc
 
-
-.PHONY: copy-assets
-copy-assets:
-	-rm -rf ./proto/third_party
-	-mkdir -p ./proto/third_party/google
-	-mkdir -p ./proto/third_party/protoc-gen-openapiv2
-	cp -rf $(shell go env GOMODCACHE)/github.com/grpc-ecosystem/grpc-gateway/v2@v2.1.0/third_party/googleapis/google/api ./proto/third_party/google
-	cp -rf $(shell go env GOMODCACHE)/github.com/grpc-ecosystem/grpc-gateway/v2@v2.1.0/protoc-gen-openapiv2/options ./proto/third_party/protoc-gen-openapiv2
+.PHONY: dependency
+dependency: get-golibs
+	go get -v ./...
 
 .PHONY: fmt
 fmt:
-	gofmt -w $(GO_SRCS)
-	goimports -w -local github.com/orda-io $(GO_SRCS)
+	$(ORDA_BUILDER) gofmt -w $(GO_SRCS)
+	$(ORDA_BUILDER) goimports -w -local github.com/orda-io $(GO_SRCS)
 
-.PHONY: integration-test
-integration-test: docker-up dependency
-	@go test -v -race ./...
+.PHONY: lint
+lint:
+	$(ORDA_BUILDER) golint ./...
 
-.PHONY: unit-test
-unit-test: dependency
-	@go test -v -short -race ./...
+.PHONY: test
+test:
+	$(ORDA_BUILDER) "go test ./..."
 
-.PHONY: docker-up
-docker-up:
-	@cd $(DEPLOY_DIR); docker-compose up -d
+.PHONY: build-server
+build-server:
+	$(ORDA_BUILDER) "mkdir -p $(BUILD_DIR)"
+	$(ORDA_BUILDER) "cd server && go build -gcflags='all=-N -l' -ldflags '${GO_LDFLAGS}' -o ../$(BUILD_DIR)"
 
-.PHONY: docker-down
-docker-down:
-	@cd $(DEPLOY_DIR); docker-compose down
-
-.PHONY: build-local-docker-server
-build-local-docker-server: build-server
-	-mkdir -p $(DEPLOY_DIR)/tmp
-	cp $(BUILD_DIR)/server  $(DEPLOY_DIR)/tmp
+.PHONY: build-docker-server
+build-docker-server: build-server
+	- $(ORDA_BUILDER) "mkdir -p $(DEPLOY_DIR)/tmp"
+	$(ORDA_BUILDER) "cp $(BUILD_DIR)/server  $(DEPLOY_DIR)/tmp"
+	$(ORDA_BUILDER) "cp -rf $(RESOURCES_DIR) $(DEPLOY_DIR)/tmp"
 	@cd $(DEPLOY_DIR) && docker build -t orda-io/orda:$(VERSION) .
-	-rm -rf $(DEPLOY_DIR)/tmp
+	-$(ORDA_BUILDER) "rm -rf $(DEPLOY_DIR)/tmp"
 
 .PHONY: clear
 clear: docker-down
 
-.PHONY: lint
-lint: dependency
-	golint ./...
+.PHONY: docker-up
+docker-up:
+	@cd $(DEPLOY_DIR); VERSION=$(VERSION) docker-compose up -d
+
+.PHONY: docker-down
+docker-down:
+	@cd $(DEPLOY_DIR); VERSION=$(VERSION) docker-compose down

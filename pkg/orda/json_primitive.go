@@ -2,12 +2,13 @@ package orda
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/types"
-	"reflect"
 )
 
 // TypeOfJSON is a type to denote the type of JSON.
