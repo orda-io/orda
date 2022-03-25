@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	intCounterKey = "intCounter_example"
+	counterKey = "intCounter_example"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 			panic(err)
 		}
 		defer closeClient(client1)
-		createIntCounter(client1)
+		createCounter(client1)
 		wg.Done()
 	}()
 	go func() {
@@ -31,7 +31,7 @@ func main() {
 			panic(err)
 		}
 		defer closeClient(client2)
-		createOrSubscribeIntCounter(client2)
+		createOrSubscribeCounter(client2)
 		wg.Done()
 	}()
 	wg.Wait()
@@ -40,7 +40,7 @@ func main() {
 		panic(err)
 	}
 	defer closeClient(client3)
-	subscribeIntCounter(client3)
+	subscribeCounter(client3)
 }
 
 func createClient(alias string) (orda.Client, error) {
@@ -65,8 +65,8 @@ func closeClient(client orda.Client) {
 	}
 }
 
-func createIntCounter(client orda.Client) {
-	intCounter := client.CreateCounter(intCounterKey, orda.NewHandlers(
+func createCounter(client orda.Client) {
+	intCounter := client.CreateCounter(counterKey, orda.NewHandlers(
 		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
@@ -93,8 +93,8 @@ func createIntCounter(client orda.Client) {
 	}
 }
 
-func createOrSubscribeIntCounter(client orda.Client) {
-	intCounter := client.SubscribeOrCreateCounter(intCounterKey, orda.NewHandlers(
+func createOrSubscribeCounter(client orda.Client) {
+	intCounter := client.SubscribeOrCreateCounter(counterKey, orda.NewHandlers(
 		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
@@ -121,8 +121,8 @@ func createOrSubscribeIntCounter(client orda.Client) {
 	}
 }
 
-func subscribeIntCounter(client orda.Client) {
-	intCounter := client.SubscribeCounter(intCounterKey, orda.NewHandlers(
+func subscribeCounter(client orda.Client) {
+	intCounter := client.SubscribeCounter(counterKey, orda.NewHandlers(
 		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
