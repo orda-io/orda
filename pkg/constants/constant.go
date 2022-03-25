@@ -6,6 +6,6 @@ const (
 )
 
 const (
-	TagSdkClient   = "SDKC"
-	TagSdkDatatype = "SDKD"
+	TagSdkClient   = "🎪"
+	TagSdkDatatype = "🐎"
 )

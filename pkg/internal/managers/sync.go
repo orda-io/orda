@@ -91,12 +91,12 @@ func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullMes
 // ExchangeClientRequestResponse exchanges CLIENT_REQUEST and CLIENT_RESPONSE
 func (its *SyncManager) ExchangeClientRequestResponse() errors.OrdaError {
 	request := model.NewClientMessage(its.client)
-	its.ctx.L().Infof("REQ[CLIE] %s", request.ToString())
+
 	response, err := its.serviceClient.ProcessClient(its.ctx, request)
 	if err != nil {
 		return errors.ClientSync.New(its.ctx.L(), err.Error())
 	}
-	its.ctx.L().Infof("RES[CLIE] %s", response.ToString())
+	its.ctx.L().Infof("RES[CLIE] response: %s", response.ToString())
 	return nil
 }
 
