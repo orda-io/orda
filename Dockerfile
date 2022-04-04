@@ -14,4 +14,4 @@ RUN rm -f protoc-3.17.3-linux-x86_64.zip
 RUN git clone https://github.com/googleapis/googleapis.git
 RUN git clone https://github.com/grpc-ecosystem/grpc-gateway.git
 COPY Makefile /root
-RUN make get-golibs
+RUN make install-golibs
