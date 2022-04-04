@@ -49,7 +49,7 @@ This project is mainly based on these two papers.
 
 ## Working environment
 
-- go 1.16
+- go 1.18
 - docker latest, docker-compose (for building and deploying local orda-server)
 - protobuf / grpc / grpc-gateway
 - [MongoDB latest](https://hub.docker.com/_/mongo)
