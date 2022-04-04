@@ -22,7 +22,7 @@ ORDA_BUILDER := docker run --network host --rm -v ${PROJECT_ROOT}:${PROJECT_ROOT
 
 .PHONY: init
 init:
-	docker build -t orda-builder .
+	docker build --platform linux/x86_64 -t orda-builder .
 
 .PHONY: protoc-gen
 protoc-gen:
@@ -44,17 +44,17 @@ protoc-gen:
 
 .PHONY: golib-install
 get-golibs:
-	go get github.com/tebeka/go2xunit
-	go get golang.org/x/lint/golint
-	go get github.com/axw/gocov/gocov
-	go get github.com/AlekSi/gocov-xml
-	go get github.com/favadi/protoc-go-inject-tag
-	go get github.com/amsokol/protoc-gen-gotag
-	go get golang.org/x/tools/cmd/goimports
-	go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
-	go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
-	go get github.com/golang/protobuf/protoc-gen-go
-	go get google.golang.org/grpc
+	go install github.com/tebeka/go2xunit@latest
+	go install golang.org/x/lint/golint@latest
+	go install github.com/axw/gocov/gocov@latest
+	go install github.com/AlekSi/gocov-xml@latest
+	go install github.com/favadi/protoc-go-inject-tag@latest
+	go install github.com/amsokol/protoc-gen-gotag@latest
+	go install golang.org/x/tools/cmd/goimports@latest
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
+	go install github.com/golang/protobuf/protoc-gen-go@latest
+	go install google.golang.org/grpc@latest
 
 .PHONY: dependency
 dependency: get-golibs
