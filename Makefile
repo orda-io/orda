@@ -54,10 +54,9 @@ install-golibs:
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 	go install github.com/golang/protobuf/protoc-gen-go@latest
-	go get -d google.golang.org/grpc@latest
 
 .PHONY: dependency
-dependency: get-golibs
+dependency: install-golibs
 	go get -v ./...
 
 .PHONY: fmt
