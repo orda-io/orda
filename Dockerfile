@@ -1,4 +1,4 @@
-FROM golang:latest
+FROM golang:1.18
 
 RUN apt -y update
 RUN apt -y upgrade
