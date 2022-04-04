@@ -42,8 +42,8 @@ protoc-gen:
 		--openapiv2_opt logtostderr=true \
 		orda.grpc.proto"
 
-.PHONY: golib-install
-get-golibs:
+.PHONY: install-golibs
+install-golibs:
 	go install github.com/tebeka/go2xunit@latest
 	go install golang.org/x/lint/golint@latest
 	go install github.com/axw/gocov/gocov@latest
