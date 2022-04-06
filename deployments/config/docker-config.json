@@ -3,7 +3,9 @@
   "RestfulPort": 19861,
   "Notification": "tcp://orda-emqx:1883",
   "Mongo": {
-    "MongoHost": "mongodb://root:orda-test@orda-mongodb:27017",
-    "OrdaDB": "ordadb"
+    "MongoHost": "orda-mongodb:27017",
+    "OrdaDB": "ordadb",
+    "User": "root",
+    "Password": "orda-test"
   }
 }

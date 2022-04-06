@@ -78,6 +78,7 @@ var datatypeErrFormats = map[ErrorCode]string{
 // ServerXXX denotes the error when Server is running.
 const (
 	ServerDBQuery = baseServerCode + iota
+	ServerDBInit
 	ServerDBDecode
 	ServerNoResource
 	ServerNoPermission

@@ -82,7 +82,9 @@ func WaitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 // NewTestMongoDBConfig creates a new MongoDBConfig for Test
 func NewTestMongoDBConfig(dbName string) *mongodb.Config {
 	return &mongodb.Config{
-		Host:   "mongodb://root:orda-test@localhost:27017",
-		OrdaDB: dbName,
+		Host:     "localhost:27017",
+		OrdaDB:   dbName,
+		User:     "root",
+		Password: "orda-test",
 	}
 }
