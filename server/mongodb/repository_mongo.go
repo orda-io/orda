@@ -1,12 +1,15 @@
 package mongodb
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/server/mongodb/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"io/ioutil"
 )
 
 // RepositoryMongo is a tool struct for MongoDB
@@ -19,7 +22,17 @@ type RepositoryMongo struct {
 
 // New creates a new RepositoryMongo
 func New(ctx context.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaError) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.Host)) // "mongodb://root:orda-test@localhost:27017"))
+
+	option := options.Client().ApplyURI(conf.getConnectionString())
+	if conf.CertFile != "" {
+		tlsConfig, err := getCustomTlsConfig(ctx, conf.CertFile)
+		if err != nil {
+			return nil, err
+		}
+		option.SetTLSConfig(tlsConfig)
+	}
+
+	client, err := mongo.Connect(ctx, option)
 	if err != nil {
 		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
@@ -40,6 +53,26 @@ func New(ctx context.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaEr
 	}
 
 	return repo, nil
+}
+
+func getCustomTlsConfig(ctx context.OrdaContext, caFile string) (*tls.Config, errors.OrdaError) {
+	tlsConfig := new(tls.Config)
+	d, err1 := ioutil.ReadDir(".")
+	if err1 != nil {
+		ctx.L().Error("%v", err1)
+	}
+	ctx.L().Infof("%v", d)
+
+	certs, err := ioutil.ReadFile(caFile)
+
+	if err != nil {
+		return tlsConfig, errors.ServerDBInit.New(ctx.L(), err.Error())
+	}
+	tlsConfig.RootCAs = x509.NewCertPool()
+	if ok := tlsConfig.RootCAs.AppendCertsFromPEM(certs); !ok {
+		return tlsConfig, errors.ServerDBInit.New(ctx.L(), err.Error())
+	}
+	return tlsConfig, nil
 }
 
 // InitializeCollections initializes collections

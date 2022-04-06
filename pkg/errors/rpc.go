@@ -29,6 +29,8 @@ func NewRPCError(oErr OrdaError) error {
 	switch code {
 	case ServerDBQuery:
 		c = codes.Unavailable // temporally unavailable
+	case ServerDBInit:
+		c = codes.Internal
 	case ServerDBDecode:
 		c = codes.Internal // something is broken
 	case ServerNoResource:
