@@ -12,10 +12,12 @@ import (
 
 // OrdaServerConfig is a configuration of OrdaServer
 type OrdaServerConfig struct {
-	RPCServerPort int            `json:"RPCServerPort"`
-	RestfulPort   int            `json:"RestfulPort"`
-	Notification  string         `json:"Notification"`
-	Mongo         mongodb.Config `json:"Mongo"`
+	RPCServerPort   int            `json:"RPCServerPort"`
+	RestfulPort     int            `json:"RestfulPort"`
+	SwaggerBasePath string         `json:"SwaggerBasePath"`
+	SwaggerJSON     string         `json:"SwaggerJSON"`
+	Notification    string         `json:"Notification"`
+	Mongo           mongodb.Config `json:"Mongo"`
 }
 
 // LoadOrdaServerConfig loads config from file.
