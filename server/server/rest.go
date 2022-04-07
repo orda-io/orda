@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"google.golang.org/grpc/credentials/insecure"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -21,7 +22,6 @@ const (
 	apiGrpcGw        = "/api/"
 	apiGrpcGwSwagger = "/swagger/"
 	apiCollections   = "/collections/"
-	swaggerJson      = "./resources/orda.grpc.swagger.json"
 )
 
 // RestServer is a control server to set up Orda system.
@@ -31,8 +31,8 @@ type RestServer struct {
 	mongo *mongodb.RepositoryMongo
 }
 
-// New creates a control server.
-func New(ctx context.OrdaContext, conf *OrdaServerConfig, mongo *mongodb.RepositoryMongo) *RestServer {
+// NewRestServer creates a control server.
+func NewRestServer(ctx context.OrdaContext, conf *OrdaServerConfig, mongo *mongodb.RepositoryMongo) *RestServer {
 
 	return &RestServer{
 		ctx:   ctx,
@@ -72,34 +72,46 @@ func (its *RestServer) allowCors(h http.Handler) http.Handler {
 	})
 }
 
-type swaggerDoc struct{}
+type swaggerDoc struct {
+	jsonDoc string
+}
+
+func (its *swaggerDoc) init(conf *OrdaServerConfig) {
+	bytes, err := ioutil.ReadFile(conf.SwaggerJSON)
+	if err != nil {
+		panic(err.Error())
+	}
+	its.jsonDoc = string(bytes)
+
+	its.jsonDoc = strings.ReplaceAll(its.jsonDoc, "\"/api/", "\"/"+strings.Trim(conf.SwaggerBasePath, "/")+"/api/")
+}
 
 func (its *swaggerDoc) ReadDoc() string {
-	bytes, err := ioutil.ReadFile(swaggerJson)
-	if err != nil {
-		panic("")
-	}
-	return string(bytes)
+	return its.jsonDoc
 }
 
 func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrdaError {
 	gwMux := runtime.NewServeMux()
-	gwOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	// register grpc proxy
+	gwOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
 
 	if gwErr := model.RegisterOrdaServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts); gwErr != nil {
 		return errors.ServerInit.New(its.ctx.L(), gwErr.Error())
 	}
-
 	mux.Handle(apiGrpcGw, gwMux)
 	its.ctx.L().Infof("open port: http://localhost%s%s",
 		its.conf.GetRestfulAddr(), apiGrpcGw)
-	swag.Register(swag.Name, &swaggerDoc{})
 
+	// register swagger for grpc
+	swaggerJson := &swaggerDoc{}
+	swaggerJson.init(its.conf)
+	swag.Register(swag.Name, swaggerJson)
 	swaggerHandler := httpSwagger.Handler(httpSwagger.URL("./doc.json"))
-
 	mux.Handle(apiGrpcGwSwagger, swaggerHandler)
-	its.ctx.L().Infof("open port: http://localhost%s%s",
-		its.conf.GetRestfulAddr(), apiGrpcGwSwagger)
+	its.ctx.L().Infof("open port: http://localhost%s%s", its.conf.GetRestfulAddr(), apiGrpcGwSwagger)
 
 	return nil
 }

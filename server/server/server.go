@@ -76,7 +76,7 @@ func NewOrdaServer(goCtx gocontext.Context, conf *OrdaServerConfig) (*OrdaServer
 	}, nil
 }
 
-// Start start the Orda Server
+// Start starts the Orda Server
 func (its *OrdaServer) Start() errors.OrdaError {
 	its.mutex.Lock()
 	defer its.mutex.Unlock()
@@ -107,7 +107,7 @@ func (its *OrdaServer) Start() errors.OrdaError {
 
 	its.ctx.L().Printf("%s Started at %s %s", server, time.Now().String(), banner)
 
-	its.restServer = New(its.ctx, its.conf, its.Mongo)
+	its.restServer = NewRestServer(its.ctx, its.conf, its.Mongo)
 	go func() {
 		if err := its.restServer.Start(); err != nil {
 			_ = errors.ServerInit.New(its.ctx.L(), err.Error())

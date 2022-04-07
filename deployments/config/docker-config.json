@@ -2,6 +2,7 @@
   "RPCServerPort": 19061,
   "RestfulPort": 19861,
   "Notification": "tcp://orda-emqx:1883",
+  "SwaggerJSON": "./resources/orda.grpc.swagger.json",
   "Mongo": {
     "MongoHost": "orda-mongodb:27017",
     "OrdaDB": "ordadb",

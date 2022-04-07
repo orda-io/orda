@@ -1,6 +1,7 @@
 {
   "RPCServerPort": 29062,
   "RestfulPort": 29862,
+  "SwaggerJSON": "../resources/orda.grpc.swagger.json",
   "Notification": "tcp://127.0.0.1:18181",
   "Mongo": {
     "MongoHost": "127.0.0.1:27017",

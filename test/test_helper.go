@@ -60,6 +60,7 @@ func NewTestOrdaServerConfig(dbName string) *server.OrdaServerConfig {
 	return &server.OrdaServerConfig{
 		RPCServerPort: 59062,
 		RestfulPort:   59862,
+		SwaggerJSON:   "../resources/orda.grpc.swagger.json",
 		Notification:  "tcp://localhost:18181",
 		Mongo:         *NewTestMongoDBConfig(dbName),
 	}
