@@ -60,6 +60,7 @@ const (
 	DatatypeNoOp
 	DatatypeMarshal
 	DatatypeNoTarget
+	DatatypeInvalidPatch
 )
 
 var datatypeErrFormats = map[ErrorCode]string{
@@ -73,6 +74,7 @@ var datatypeErrFormats = map[ErrorCode]string{
 	DatatypeNoOp:              "fail to issue operation: %v",
 	DatatypeMarshal:           "fail to (un)marshal: %v",
 	DatatypeNoTarget:          "fail to find target: %v",
+	DatatypeInvalidPatch:      "fail to patch: %v",
 }
 
 // ServerXXX denotes the error when Server is running.

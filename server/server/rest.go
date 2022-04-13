@@ -82,8 +82,9 @@ func (its *swaggerDoc) init(conf *OrdaServerConfig) {
 		panic(err.Error())
 	}
 	its.jsonDoc = string(bytes)
-
-	its.jsonDoc = strings.ReplaceAll(its.jsonDoc, "\"/api/", "\"/"+strings.Trim(conf.SwaggerBasePath, "/")+"/api/")
+	if conf.SwaggerBasePath != "" {
+		its.jsonDoc = strings.ReplaceAll(its.jsonDoc, "\"/api/", "\"/"+strings.Trim(conf.SwaggerBasePath, "/")+"/api/")
+	}
 }
 
 func (its *swaggerDoc) ReadDoc() string {

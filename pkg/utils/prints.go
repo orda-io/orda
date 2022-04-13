@@ -18,3 +18,8 @@ func PrintMarshalDoc(l *log.OrdaLog, doc interface{}) {
 	s, _ := f.Marshal(obj)
 	l.Infof("%v", string(s))
 }
+
+func ToStringMarshalDoc(doc interface{}) string {
+	m, _ := json.Marshal(doc)
+	return string(m)
+}

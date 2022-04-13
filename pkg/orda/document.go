@@ -1,11 +1,16 @@
 package orda
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/internal/datatypes"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/operations"
+	"github.com/wI2L/jsondiff"
+	"strconv"
+	"strings"
 )
 
 // Document is an Orda datatype which provides document (JSON-like) interfaces.
@@ -25,16 +30,23 @@ type DocumentInTx interface {
 	DeleteInArray(pos int) (Document, errors.OrdaError)
 	DeleteManyInArray(pos int, numOfNodes int) ([]Document, errors.OrdaError)
 
+	GetByPath(path string) (Document, errors.OrdaError)
+
 	GetFromObject(key string) (Document, errors.OrdaError)
 	GetFromArray(pos int) (Document, errors.OrdaError)
 	GetManyFromArray(pos int, numOfNodes int) ([]Document, errors.OrdaError)
 	GetValue() interface{}
+
+	Patch(ops ...jsondiff.Operation) errors.OrdaError
+	PatchByJSON(jsonStr string) errors.OrdaError
 
 	GetParentDocument() Document
 	GetRootDocument() Document
 	GetTypeOfJSON() TypeOfJSON
 	IsGarbage() bool
 	Equal(o Document) bool
+
+	ToJSONString() []byte
 }
 
 func newDocument(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Document, errors.OrdaError) {
@@ -48,6 +60,123 @@ func newDocument(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handle
 type document struct {
 	*datatype
 	*datatypes.SnapshotDatatype
+}
+
+func (its *document) PatchByJSON(jsonStr string) errors.OrdaError {
+
+	if !json.Valid([]byte(jsonStr)) {
+		return errors.DatatypeInvalidPatch.New(its.L(), "invalid json string:%v", jsonStr)
+	}
+	patches, err := jsondiff.CompareJSON(its.ToJSONString(), []byte(jsonStr))
+	if err != nil {
+		return errors.DatatypeInvalidPatch.New(its.L(), "")
+	}
+	return its.Patch(patches...)
+}
+
+func (its *document) ToJSONString() []byte {
+	m, _ := json.Marshal(its.ToJSON())
+	return m
+}
+
+func (its *document) Patch(patches ...jsondiff.Operation) errors.OrdaError {
+	if len(patches) == 1 {
+		return its.patchEach(patches[0])
+	} else {
+		tag := fmt.Sprintf("%d patches", len(patches))
+		if err := its.Transaction(tag, func(doc DocumentInTx) error {
+			for _, patch := range patches {
+				if err := doc.(*document).patchEach(patch); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			if ordaErr, ok := err.(errors.OrdaError); ok {
+				return ordaErr
+			}
+			return errors.DatatypeInvalidPatch.New(its.L(), err.Error())
+		}
+	}
+	return nil
+}
+
+func (its *document) GetByPath(path string) (Document, errors.OrdaError) {
+	path = strings.Trim(path, "/")
+	paths := strings.Split(path, "/")
+	if len(paths) == 1 && paths[0] == "" {
+		return its, nil
+	}
+	target, err := its.snapshot().getTargetByPaths(paths)
+	if err != nil {
+		return nil, err
+	}
+	return its.toDocument(target), nil
+}
+
+func (its *document) patchEach(op jsondiff.Operation) errors.OrdaError {
+	its.L().Infof("%v", op)
+	target, key, err := its.snapshot().getTargetFromPatch(op.Path.String())
+	if err != nil {
+		return err
+	}
+	its.L().Infof("target:%#v key:%v", target, key)
+	switch op.Type {
+	case jsondiff.OperationAdd:
+		if op.Value == nil {
+			return errors.DatatypeInvalidPatch.New(its.L(), "invalid JSONPatch:"+op.String())
+		}
+		if target.getType() == TypeJSONObject {
+			if _, err := its.toDocument(target).PutToObject(key, op.Value); err != nil {
+				return err
+			}
+			//its.snapshot().PutCommonInObject(target.getTime(), key, op.Value, its.snapshot().getTime())
+		} else if target.getType() == TypeJSONArray {
+			pos, err := strconv.Atoi(key)
+			if err != nil {
+				return errors.DatatypeInvalidPatch.New(its.L(), "invalid array position in JSONPatch:"+op.String())
+			}
+			if _, err := its.toDocument(target).InsertToArray(pos, op.Value); err != nil {
+				return err
+			}
+		}
+		return nil
+	case jsondiff.OperationRemove:
+		if target.getType() == TypeJSONObject {
+			if _, err := its.toDocument(target).DeleteInObject(key); err != nil {
+				return err
+			}
+		} else if target.getType() == TypeJSONArray {
+			pos, err := strconv.Atoi(key)
+			if err != nil {
+				return errors.DatatypeInvalidPatch.New(its.L(), "invalid array position in JSONPatch:"+op.String())
+			}
+			if _, err := its.toDocument(target).DeleteInArray(pos); err != nil {
+				return err
+			}
+		}
+		return nil
+	case jsondiff.OperationReplace:
+		if op.Value == nil {
+			return errors.DatatypeInvalidPatch.New(its.L(), "invalid JSONPatch:"+op.String())
+		}
+		if target.getType() == TypeJSONObject {
+			if _, err := its.toDocument(target).PutToObject(key, op.Value); err != nil {
+				return err
+			}
+		} else if target.getType() == TypeJSONArray {
+			pos, err := strconv.Atoi(key)
+			if err != nil {
+				return errors.DatatypeInvalidPatch.New(its.L(), "invalid array position in JSONPatch:"+op.String())
+			}
+			if _, err := its.toDocument(target).UpdateManyInArray(pos, op.Value); err != nil {
+				return err
+			}
+		}
+	default:
+		return errors.DatatypeInvalidPatch.New(its.L(), "unsupported JSONPatch:"+op.String())
+	}
+	return nil
 }
 
 func (its *document) Transaction(tag string, userFunc func(document DocumentInTx) error) error {
