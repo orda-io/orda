@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/server/mongodb"
 	"time"
 
 	"github.com/stretchr/testify/require"
@@ -146,7 +147,7 @@ func (its *IntegrationTestSuite) TestDocument() {
 		require.Eventually(its.T(), func() bool {
 			snap, err := its.mongo.GetRealSnapshot(its.ctx, its.collectionName, its.getTestName())
 			require.NoError(its.T(), err)
-			if snap != nil && snap["_ver"] == int64(6) {
+			if snap != nil && snap[mongodb.Ver] == int64(6) {
 				log.Logger.Infof("%v", testonly.Marshal(its.T(), snap))
 				return true
 			}

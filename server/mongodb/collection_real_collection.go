@@ -1,18 +1,18 @@
 package mongodb
 
 import (
+	"github.com/orda-io/orda/server/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/server/mongodb/schema"
 )
 
 const (
-	// ver is the field name that notes the version.
-	ver = "_ver"
+	// Ver is the field name that notes the version.
+	Ver = "_orda_ver_"
 )
 
 // InsertRealSnapshot inserts a snapshot for real collection.
@@ -36,7 +36,7 @@ func (r *RepositoryMongo) InsertRealSnapshot(
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 
-	bsonM[ver] = sseq
+	bsonM[Ver] = sseq
 	option := &options.ReplaceOptions{}
 	option.SetUpsert(true)
 	res, err := collection.ReplaceOne(ctx, schema.FilterByID(id), bsonM, option)
@@ -44,7 +44,7 @@ func (r *RepositoryMongo) InsertRealSnapshot(
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if res.ModifiedCount == 1 {
-		ctx.L().Infof("update snapshot for key: %s in %s", id, collectionName)
+		ctx.L().Infof("update snapshot for 'key': %s (_orda_ver_:%d): in '%s'", id, sseq, collectionName)
 	}
 	return nil
 }

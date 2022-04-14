@@ -30,10 +30,16 @@ func NewWiredDatatype(w iface.Wire, t *TransactionDatatype) *WiredDatatype {
 
 func (its *WiredDatatype) ResetWired() {
 	its.localBuffer = make([]*model.Operation, 0, constants.OperationBufferSize)
+	its.opID.Seq = 0
 }
 
 func (its *WiredDatatype) String() string {
 	return its.BaseDatatype.String()
+}
+
+func (its *WiredDatatype) SetCheckPoint(sseq uint64, cseq uint64) {
+	its.checkPoint.Sseq = sseq
+	its.checkPoint.Cseq = cseq
 }
 
 // ReceiveRemoteModelOperations ...
@@ -96,6 +102,7 @@ func (its *WiredDatatype) getModelOperations(cseq uint64) []*model.Operation {
 	}
 	op := its.localBuffer[0]
 	startCseq := op.ID.GetSeq()
+	its.L().Infof("%d cseq:%v startCseq:%d", len(its.localBuffer), cseq, startCseq)
 	var start = int(cseq - startCseq)
 	if start >= 0 && len(its.localBuffer) > start {
 		return its.localBuffer[start:]

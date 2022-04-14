@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/server/schema"
 	"runtime/debug"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/orda-io/orda/pkg/operations"
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/mongodb"
-	"github.com/orda-io/orda/server/mongodb/schema"
 	"github.com/orda-io/orda/server/notification"
 	"github.com/orda-io/orda/server/snapshot"
 	"github.com/orda-io/orda/server/svrcontext"
@@ -235,14 +235,19 @@ func (its *PushPullHandler) commitToMongoDB() errors.OrdaError {
 	}
 	its.ctx.L().Infof("commit Datatype %s", its.datatypeDoc)
 
-	if err := its.mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCP); err != nil {
-		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
+	if !its.clientDoc.IsAdmin() {
+		if err := its.mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCP); err != nil {
+			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
+		}
+		its.ctx.L().Infof("commit CheckPoint with %s", its.currentCP.String())
 	}
-	its.ctx.L().Infof("commit CheckPoint with %s", its.currentCP.String())
 	return nil
 }
 
 func (its *PushPullHandler) pullOperations() errors.OrdaError {
+	if its.clientDoc.IsAdmin() {
+		return nil
+	}
 	sseqBegin := its.gotPushPullPack.CheckPoint.Sseq + 1
 	if its.datatypeDoc.SseqBegin <= sseqBegin && !its.gotOption.HasSnapshotBit() {
 		opList, sseqList, err := its.mongo.GetOperations(its.ctx, its.DUID, sseqBegin, constants.InfinitySseq)

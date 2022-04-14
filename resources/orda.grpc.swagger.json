@@ -104,14 +104,14 @@
         ]
       }
     },
-    "/api/v1/collections/{collection}/datatypes/{key}": {
-      "get": {
-        "operationId": "OrdaService_SnapshotDatatype",
+    "/api/v1/collections/{collection}/documents/{key}": {
+      "post": {
+        "operationId": "OrdaService_PatchDocument",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ordaSnapshotResponse"
+              "$ref": "#/definitions/ordaPatchMessage"
             }
           },
           "default": {
@@ -135,17 +135,17 @@
             "type": "string"
           },
           {
-            "name": "duid",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "sseq",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "json": {
+                  "type": "string"
+                }
+              }
+            }
           }
         ],
         "tags": [
@@ -326,23 +326,6 @@
         }
       }
     },
-    "ordaDatatypeMeta": {
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string"
-        },
-        "DUID": {
-          "type": "string"
-        },
-        "opID": {
-          "$ref": "#/definitions/ordaOperationID"
-        },
-        "typeOf": {
-          "$ref": "#/definitions/ordaTypeOfDatatype"
-        }
-      }
-    },
     "ordaEncodingMessage": {
       "type": "object",
       "properties": {
@@ -407,6 +390,20 @@
         }
       }
     },
+    "ordaPatchMessage": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "collection": {
+          "type": "string"
+        },
+        "json": {
+          "type": "string"
+        }
+      }
+    },
     "ordaPushPullMessage": {
       "type": "object",
       "properties": {
@@ -465,17 +462,6 @@
         "PUSHPULLS"
       ],
       "default": "CLIENTS"
-    },
-    "ordaSnapshotResponse": {
-      "type": "object",
-      "properties": {
-        "meta": {
-          "$ref": "#/definitions/ordaDatatypeMeta"
-        },
-        "json": {
-          "type": "string"
-        }
-      }
     },
     "ordaSyncType": {
       "type": "string",

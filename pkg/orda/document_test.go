@@ -218,7 +218,7 @@ func TestDocument(t *testing.T) {
 		require.NoError(t, err)
 
 		utils.PrintMarshalDoc(log.Logger, original.ToJSON())
-		err = byPatch.PatchByJSON(utils.ToStringMarshalDoc(original.ToJSON()))
+		_, err = byPatch.PatchByJSON(utils.ToStringMarshalDoc(original.ToJSON()))
 		require.NoError(t, err)
 		utils.PrintMarshalDoc(log.Logger, byPatch.ToJSON())
 		utils.PrintMarshalDoc(log.Logger, original.ToJSON())
@@ -259,7 +259,10 @@ func TestDocument(t *testing.T) {
 			Path:  "/objKey/K2",
 			Value: 5678,
 		}
+
 		original := utils.ToStringMarshalDoc(root.ToJSON())
+
+		// should fail patch transaction
 		require.Error(t, root.Patch(p1, p2, p3))
 		require.Equal(t, original, utils.ToStringMarshalDoc(root.ToJSON()))
 

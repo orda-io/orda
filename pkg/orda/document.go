@@ -8,6 +8,7 @@ import (
 	"github.com/orda-io/orda/pkg/internal/datatypes"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/operations"
+	"github.com/orda-io/orda/pkg/utils"
 	"github.com/wI2L/jsondiff"
 	"strconv"
 	"strings"
@@ -38,7 +39,7 @@ type DocumentInTx interface {
 	GetValue() interface{}
 
 	Patch(ops ...jsondiff.Operation) errors.OrdaError
-	PatchByJSON(jsonStr string) errors.OrdaError
+	PatchByJSON(jsonStr string) (int, errors.OrdaError)
 
 	GetParentDocument() Document
 	GetRootDocument() Document
@@ -46,7 +47,7 @@ type DocumentInTx interface {
 	IsGarbage() bool
 	Equal(o Document) bool
 
-	ToJSONString() []byte
+	ToJSONBytes() []byte
 }
 
 func newDocument(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Document, errors.OrdaError) {
@@ -62,19 +63,22 @@ type document struct {
 	*datatypes.SnapshotDatatype
 }
 
-func (its *document) PatchByJSON(jsonStr string) errors.OrdaError {
+func (its *document) PatchByJSON(jsonStr string) (int, errors.OrdaError) {
 
 	if !json.Valid([]byte(jsonStr)) {
-		return errors.DatatypeInvalidPatch.New(its.L(), "invalid json string:%v", jsonStr)
+		return 0, errors.DatatypeInvalidPatch.New(its.L(), "invalid json string:"+jsonStr)
 	}
-	patches, err := jsondiff.CompareJSON(its.ToJSONString(), []byte(jsonStr))
+	patches, err := jsondiff.CompareJSON(its.ToJSONBytes(), []byte(jsonStr))
 	if err != nil {
-		return errors.DatatypeInvalidPatch.New(its.L(), "")
+		return 0, errors.DatatypeInvalidPatch.New(its.L(), "")
 	}
-	return its.Patch(patches...)
+	if len(patches) == 0 {
+		return 0, nil
+	}
+	return len(patches), its.Patch(patches...)
 }
 
-func (its *document) ToJSONString() []byte {
+func (its *document) ToJSONBytes() []byte {
 	m, _ := json.Marshal(its.ToJSON())
 	return m
 }
@@ -83,7 +87,8 @@ func (its *document) Patch(patches ...jsondiff.Operation) errors.OrdaError {
 	if len(patches) == 1 {
 		return its.patchEach(patches[0])
 	} else {
-		tag := fmt.Sprintf("%d patches", len(patches))
+
+		tag := fmt.Sprintf("%d patches-%s", len(patches), utils.HashSum(patches))
 		if err := its.Transaction(tag, func(doc DocumentInTx) error {
 			for _, patch := range patches {
 				if err := doc.(*document).patchEach(patch); err != nil {
@@ -115,12 +120,12 @@ func (its *document) GetByPath(path string) (Document, errors.OrdaError) {
 }
 
 func (its *document) patchEach(op jsondiff.Operation) errors.OrdaError {
-	its.L().Infof("%v", op)
+	//its.L().Infof("%v", op)
 	target, key, err := its.snapshot().getTargetFromPatch(op.Path.String())
 	if err != nil {
 		return err
 	}
-	its.L().Infof("target:%#v key:%v", target, key)
+	//its.L().Infof("target:%#v key:%v", target, key)
 	switch op.Type {
 	case jsondiff.OperationAdd:
 		if op.Value == nil {

@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/server/schema"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,7 +11,6 @@ import (
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/server/mongodb/schema"
 )
 
 // UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.

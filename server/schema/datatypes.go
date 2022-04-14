@@ -48,7 +48,7 @@ var DatatypeDocFields = struct {
 }
 
 func (its *DatatypeDoc) String() string {
-	return fmt.Sprintf("%s:%s:%d:%d", its.Type, its.Key, its.SseqBegin, its.SseqEnd)
+	return fmt.Sprintf("%s:%s:%s:%d:%d", its.Type, its.Key, its.DUID, its.SseqBegin, its.SseqEnd)
 }
 
 // GetIndexModel returns the index models of the collection of ClientDoc

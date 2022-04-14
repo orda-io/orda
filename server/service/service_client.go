@@ -3,12 +3,12 @@ package service
 import (
 	gocontext "context"
 	"fmt"
+	"github.com/orda-io/orda/server/schema"
 	"time"
 
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/server/constants"
-	"github.com/orda-io/orda/server/mongodb/schema"
 	"github.com/orda-io/orda/server/svrcontext"
 )
 

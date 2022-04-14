@@ -15,18 +15,11 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   }
 };
 
-message SnapshotRequest {
+message PatchMessage {
   string key = 1;
   string collection = 2;
-  string duid = 3;
-  uint64 sseq = 4 [jstype = JS_STRING];
+  string json = 3;
 }
-
-message SnapshotResponse {
-  DatatypeMeta meta = 1;
-  string json = 2;
-}
-
 
 service OrdaService {
   rpc ProcessPushPull (PushPullMessage) returns (PushPullMessage) {
@@ -41,9 +34,10 @@ service OrdaService {
       body: "*"
     };
   }
-  rpc SnapshotDatatype (SnapshotRequest) returns (SnapshotResponse) {
+  rpc PatchDocument (PatchMessage) returns (PatchMessage) {
     option (google.api.http) = {
-      get: "/api/v1/collections/{collection}/datatypes/{key}"
+      post: "/api/v1/collections/{collection}/documents/{key}"
+      body: "*"
     };
   }
   rpc CreateCollection (CollectionMessage) returns (CollectionMessage) {

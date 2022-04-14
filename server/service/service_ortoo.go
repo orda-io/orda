@@ -4,8 +4,8 @@ import (
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/server/mongodb"
-	"github.com/orda-io/orda/server/mongodb/schema"
 	"github.com/orda-io/orda/server/notification"
+	"github.com/orda-io/orda/server/schema"
 )
 
 // OrdaService is a rpc service of Orda

@@ -86,6 +86,7 @@ const (
 	ServerNoPermission
 	ServerInit
 	ServerNotify
+	ServerBadRequest
 )
 
 var serverErrFormats = map[ErrorCode]string{
@@ -95,6 +96,7 @@ var serverErrFormats = map[ErrorCode]string{
 	ServerNoPermission: "have no permission: %v",
 	ServerInit:         "fail to initialize server: %v",
 	ServerNotify:       "fail to notify push-pull: %v",
+	ServerBadRequest:   "fail to process due to bad request: %v",
 }
 
 const (
