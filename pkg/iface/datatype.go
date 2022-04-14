@@ -12,6 +12,7 @@ type BaseDatatype interface {
 	GetState() model.StateOfDatatype
 	GetKey() string                       // @baseDatatype
 	GetDUID() string                      // @baseDatatype
+	SetDUID(duid string)                  // @baseDatatype
 	GetCUID() string                      // @baseDatatype
 	SetState(state model.StateOfDatatype) // @baseDatatype
 	SetLogger(l *log.OrdaLog)             // @baseDatatype
@@ -34,6 +35,7 @@ type SnapshotDatatype interface {
 // WiredDatatype defines the internal interface related to the synchronization with Orda server
 type WiredDatatype interface {
 	BaseDatatype
+	SetCheckPoint(sseq uint64, cseq uint64)
 	ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrdaError)
 	ApplyPushPullPack(*model.PushPullPack)
 	CreatePushPullPack() *model.PushPullPack
@@ -41,6 +43,7 @@ type WiredDatatype interface {
 	NeedPull(sseq uint64) bool
 	NeedPush() bool
 	SubscribeOrCreate(state model.StateOfDatatype) errors.OrdaError
+	ResetWired()
 }
 
 // OperationalDatatype defines interfaces related to executing operations.

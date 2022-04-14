@@ -11,6 +11,7 @@ const (
 	TagCreate       = "✨"
 	TagClient       = "🚖"
 	TagPushPull     = "🐙"
-	TagPostPushPull = "📀"
+	TagPostPushPull = "🧽"
 	TagTest         = "🦠"
+	TagPatch        = "🪡"
 )

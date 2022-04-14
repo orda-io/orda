@@ -3,6 +3,8 @@ package orda
 import (
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
@@ -111,6 +113,8 @@ type jsonType interface {
 	addToNodeMap(j jsonType)
 	addToCemetery(j jsonType)
 	removeFromNodeMap(j jsonType)
+	getTargetByPaths(paths []string) (jsonType, errors.OrdaError)
+	getTargetFromPatch(path string) (jsonType, string, errors.OrdaError)
 	isGarbage() bool
 	funeral(j jsonType, ts *model.Timestamp)
 	createJSONType(parent jsonType, v interface{}, ts *model.Timestamp) jsonType
@@ -202,6 +206,46 @@ func (its *jsonPrimitive) isGarbage() bool {
 		p = p.getParent()
 	}
 	return false
+}
+
+func (its *jsonPrimitive) getTargetByPaths(paths []string) (jsonType, errors.OrdaError) {
+	var node jsonType = its.getRoot()
+	for _, s := range paths {
+
+		switch node.getType() {
+		case TypeJSONElement:
+			its.common.L().Errorf("invalid target")
+		case TypeJSONObject:
+			node = node.(*jsonObject).getAsJSONType(s)
+		case TypeJSONArray:
+			pos, err := strconv.Atoi(s)
+			if err != nil {
+				return nil, errors.DatatypeNoTarget.New(its.common.L(), "invalid path:%v from %v", s, strings.Join(paths, "/"))
+			}
+			node = node.(*jsonArray).getJSONType(pos)
+		}
+
+		if node == nil || node.isGarbage() {
+			return nil, errors.DatatypeNoTarget.New(its.common.L(), strings.Join(paths, "/"))
+		}
+	}
+	return node, nil
+}
+
+func (its *jsonPrimitive) getTargetFromPatch(path string) (jsonType, string, errors.OrdaError) {
+	paths := strings.Split(path, "/")
+
+	if len(paths) < 1 {
+		return nil, "", errors.DatatypeInvalidPatch.New(its.common.L(), "incorrect path: %v", path)
+	}
+	key := paths[len(paths)-1]
+	paths = paths[1 : len(paths)-1]
+
+	target, err := its.getTargetByPaths(paths)
+	if err != nil {
+		return nil, "", err
+	}
+	return target, key, nil
 }
 
 func (its *jsonPrimitive) funeral(j jsonType, ts *model.Timestamp) {

@@ -17,6 +17,7 @@ require (
 	github.com/swaggo/http-swagger v1.0.0
 	github.com/swaggo/swag v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
+	github.com/wI2L/jsondiff v0.2.0 // indirect
 	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.7.1
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c

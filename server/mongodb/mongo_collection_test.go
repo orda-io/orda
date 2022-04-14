@@ -4,6 +4,7 @@ import (
 	gocontext "context"
 	"encoding/json"
 	"fmt"
+	"github.com/orda-io/orda/server/schema"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,7 +15,6 @@ import (
 	"github.com/orda-io/orda/pkg/operations"
 	"github.com/orda-io/orda/pkg/types"
 	"github.com/orda-io/orda/server/constants"
-	"github.com/orda-io/orda/server/mongodb/schema"
 	"github.com/orda-io/orda/server/svrcontext"
 	integration "github.com/orda-io/orda/test"
 

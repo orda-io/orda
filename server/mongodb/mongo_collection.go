@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"github.com/orda-io/orda/server/schema"
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/server/mongodb/schema"
 )
 
 // MongoCollections is a bunch of collections used to provide

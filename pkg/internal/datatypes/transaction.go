@@ -93,7 +93,7 @@ func (its *TransactionDatatype) SentenceInTx(
 // make a transaction and lock
 func (its *TransactionDatatype) setTransactionContextAndLock(tag string) *TransactionContext {
 	if tag != NotUserTransactionTag {
-		its.L().Infof("Begin the transaction: `%s`", tag)
+		its.L().Infof("Begin the transaction: '%s'", tag)
 	}
 	its.mutex.Lock()
 	its.isLocked = true

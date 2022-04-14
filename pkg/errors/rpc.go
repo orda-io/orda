@@ -37,6 +37,12 @@ func NewRPCError(oErr OrdaError) error {
 		c = codes.NotFound
 	case ServerNoPermission:
 		c = codes.Unauthenticated
+	case ServerInit:
+		c = codes.Internal
+	case ServerNotify:
+		c = codes.Internal
+	case ServerBadRequest:
+		c = codes.InvalidArgument
 	}
 	return status.Error(c, oErr.Error())
 }

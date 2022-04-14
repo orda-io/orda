@@ -1,6 +1,8 @@
 package orda
 
 import (
+	"github.com/orda-io/orda/pkg/utils"
+	"github.com/wI2L/jsondiff"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -204,5 +206,116 @@ func TestDocument(t *testing.T) {
 		// }))
 		// require.Equal(t, int32(6), outDoc.Get())
 
+	})
+
+	t.Run("Can execute PatchByJSON", func(t *testing.T) {
+		tw := testonly.NewTestWire(true)
+		original, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		byPatch, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		_, err := original.PutToObject("k1", str1)
+		require.NoError(t, err)
+		_, err = original.PutToObject("k2", arr1)
+		require.NoError(t, err)
+
+		utils.PrintMarshalDoc(log.Logger, original.ToJSON())
+		_, err = byPatch.PatchByJSON(utils.ToStringMarshalDoc(original.ToJSON()))
+		require.NoError(t, err)
+		utils.PrintMarshalDoc(log.Logger, byPatch.ToJSON())
+		utils.PrintMarshalDoc(log.Logger, original.ToJSON())
+
+		require.Equal(t, utils.ToStringMarshalDoc(original), utils.ToStringMarshalDoc(byPatch))
+	})
+
+	t.Run("Can execute Patch", func(t *testing.T) {
+
+		obj1 := struct {
+			K1 string
+			K2 int
+			K3 bool
+		}{
+			K1: "hello",
+			K2: 1234,
+			K3: true,
+		}
+		arr1 := []interface{}{"world", 1234, 3.141592, false}
+		tw := testonly.NewTestWire(true)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		_, err := root.PutToObject("objKey", obj1)
+		require.NoError(t, err)
+		_, err = root.PutToObject("arrKey", arr1)
+		require.NoError(t, err)
+
+		p1 := jsondiff.Operation{
+			Type:  "add",
+			Path:  "/objKey",
+			Value: arr1,
+		}
+		p2 := jsondiff.Operation{
+			Type: "remove",
+			Path: "/objKey/K1",
+		}
+		p3 := jsondiff.Operation{
+			Type:  "replace",
+			Path:  "/objKey/K2",
+			Value: 5678,
+		}
+
+		original := utils.ToStringMarshalDoc(root.ToJSON())
+
+		// should fail patch transaction
+		require.Error(t, root.Patch(p1, p2, p3))
+		require.Equal(t, original, utils.ToStringMarshalDoc(root.ToJSON()))
+
+		p1.Path = "/objKey/newKey"
+		require.NoError(t, root.Patch(p1, p2, p3))
+
+		utils.PrintMarshalDoc(log.Logger, root.ToJSON())
+
+		getObj1, err := root.GetByPath("/")
+		require.NoError(t, err)
+		require.True(t, getObj1.Equal(root))
+
+		newKey, err := root.GetByPath("/objKey/newKey")
+		require.NoError(t, err)
+		require.Equal(t, utils.ToStringMarshalDoc(newKey.ToJSON()), utils.ToStringMarshalDoc(arr1))
+
+		removeKey, err := root.GetByPath("objKey/K1")
+		require.Error(t, err)
+		require.Nil(t, removeKey)
+
+		replaceKey, err := root.GetByPath("objKey/K2")
+		require.NoError(t, err)
+		require.Equal(t, float64(5678), replaceKey.GetValue())
+
+		p4 := jsondiff.Operation{
+			Path:  "/arrKey/0",
+			Type:  "add",
+			Value: obj1,
+		}
+
+		p5 := jsondiff.Operation{
+			Path: "/arrKey/1",
+			Type: "remove",
+		}
+
+		p6 := jsondiff.Operation{
+			Path:  "/arrKey/1",
+			Type:  "replace",
+			Value: 5678,
+		}
+		require.NoError(t, root.Patch(p4, p5, p6))
+		utils.PrintMarshalDoc(log.Logger, root.ToJSON())
+
+		arrKey0, err := root.GetByPath("/arrKey/0")
+		require.NoError(t, err)
+		require.Equal(t, utils.ToStringMarshalDoc(arrKey0.ToJSON()), utils.ToStringMarshalDoc(obj1))
+
+		arrKey, err := root.GetByPath("/arrKey")
+		require.NoError(t, err)
+		require.Equal(t, len(arrKey.ToJSON().([]interface{})), 4)
+
+		arrKey1, err := root.GetByPath("/arrKey/1")
+		require.NoError(t, err)
+		require.Equal(t, float64(5678), arrKey1.GetValue())
 	})
 }

@@ -3,13 +3,13 @@ package notification
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/orda-io/orda/server/schema"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
 	"github.com/orda-io/orda/pkg/context"
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/server/mongodb/schema"
 )
 
 // Notifier is a struct that takes responsibility for notification
