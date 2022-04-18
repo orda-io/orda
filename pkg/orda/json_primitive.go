@@ -369,7 +369,7 @@ func (its *jsonPrimitive) createJSONTypeFromReflectValue(parent jsonType, rv ref
 		return its.createJSONObject(parent, rv.Interface(), ts)
 	case reflect.Slice, reflect.Array:
 		return its.createJSONArray(parent, rv.Interface(), ts)
-	case reflect.Ptr:
+	case reflect.Ptr, reflect.Interface:
 		ptrVal := rv.Elem()
 		return its.createJSONTypeFromReflectValue(parent, ptrVal, ts)
 	default:

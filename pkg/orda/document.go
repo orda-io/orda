@@ -39,7 +39,7 @@ type DocumentInTx interface {
 	GetValue() interface{}
 
 	Patch(ops ...jsondiff.Operation) errors.OrdaError
-	PatchByJSON(jsonStr string) (int, errors.OrdaError)
+	PatchByJSON(jsonStr string) ([]jsondiff.Operation, errors.OrdaError)
 
 	GetParentDocument() Document
 	GetRootDocument() Document
@@ -63,19 +63,19 @@ type document struct {
 	*datatypes.SnapshotDatatype
 }
 
-func (its *document) PatchByJSON(jsonStr string) (int, errors.OrdaError) {
+func (its *document) PatchByJSON(jsonStr string) ([]jsondiff.Operation, errors.OrdaError) {
 
 	if !json.Valid([]byte(jsonStr)) {
-		return 0, errors.DatatypeInvalidPatch.New(its.L(), "invalid json string:"+jsonStr)
+		return []jsondiff.Operation{}, errors.DatatypeInvalidPatch.New(its.L(), "invalid json string:"+jsonStr)
 	}
 	patches, err := jsondiff.CompareJSON(its.ToJSONBytes(), []byte(jsonStr))
 	if err != nil {
-		return 0, errors.DatatypeInvalidPatch.New(its.L(), "")
+		return []jsondiff.Operation{}, errors.DatatypeInvalidPatch.New(its.L(), "")
 	}
 	if len(patches) == 0 {
-		return 0, nil
+		return patches, nil
 	}
-	return len(patches), its.Patch(patches...)
+	return patches, its.Patch(patches...)
 }
 
 func (its *document) ToJSONBytes() []byte {
