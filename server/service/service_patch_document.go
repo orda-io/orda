@@ -50,12 +50,12 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 		data.(iface.Datatype).SetCheckPoint(lastSseq, 0)
 	}
 	doc := data.(orda.Document)
-	n, err := doc.(orda.Document).PatchByJSON(req.Json)
+	patches, err := doc.(orda.Document).PatchByJSON(req.Json)
 	if err != nil {
 		return nil, errors.NewRPCError(errors.ServerBadRequest.New(ctx.L(), err.Error()))
 	}
 
-	if n > 0 {
+	if len(patches) > 0 {
 		ppp := doc.(iface.Datatype).CreatePushPullPack()
 		ctx.L().Infof("%v", ppp.ToString())
 

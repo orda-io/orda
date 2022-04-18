@@ -102,7 +102,6 @@ func (its *WiredDatatype) getModelOperations(cseq uint64) []*model.Operation {
 	}
 	op := its.localBuffer[0]
 	startCseq := op.ID.GetSeq()
-	its.L().Infof("%d cseq:%v startCseq:%d", len(its.localBuffer), cseq, startCseq)
 	var start = int(cseq - startCseq)
 	if start >= 0 && len(its.localBuffer) > start {
 		return its.localBuffer[start:]

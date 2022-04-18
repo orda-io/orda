@@ -4,14 +4,12 @@ import (
 	gocontext "context"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 
 	"github.com/orda-io/orda/pkg/constants"
@@ -116,29 +114,6 @@ func (its *OrdaServer) Start() errors.OrdaError {
 	}()
 
 	its.ctx.L().Info("start Orda server successfully")
-	return nil
-}
-
-func (its *OrdaServer) runRpcGwServer() errors.OrdaError {
-	gwMux := runtime.NewServeMux()
-	gwOpts := []grpc.DialOption{grpc.WithInsecure()}
-
-	gwErr := model.RegisterOrdaServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts)
-	if gwErr != nil {
-		return errors.ServerNoResource.New(its.ctx.L(), gwErr.Error())
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("/api/", gwMux)
-
-	fs := http.FileServer(http.Dir("./server/swagger-ui"))
-	mux.Handle("/swaggerui/", http.StripPrefix("/swaggerui/", fs))
-
-	go func() {
-		if err := http.ListenAndServe(":22222", mux); err != nil {
-			panic("fail to serve rpc gateway server")
-		}
-	}()
 	return nil
 }
 

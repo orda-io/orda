@@ -318,4 +318,25 @@ func TestDocument(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, float64(5678), arrKey1.GetValue())
 	})
+
+	t.Run("Can patch nested json", func(t *testing.T) {
+		json := "{\"k1\":[ {\"k1-0-1\":\"v1\",\"k1-0-2\":\"v2\"}, {\"k1-1-1\":\"v3\",\"k1-1-2\":\"v4\"} ],\"k2\":[ {\"k2-0-1\":\"v5\",\"k2-0-2\":\"v6\"}, {\"k2-1-1\":\"v7\",\"k2-1-2\":\"v8\"} ] }"
+		tw := testonly.NewTestWire(true)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		patches, err := root.PatchByJSON(json)
+		require.NoError(t, err)
+		require.Equal(t, 2, len(patches))
+
+		elem, err := root.GetByPath("/k1/0/k1-0-1")
+		require.NoError(t, err)
+		require.Equal(t, "v1", elem.GetValue())
+
+		obj, err := root.GetByPath("/k1/1")
+		require.NoError(t, err)
+		require.Equal(t, TypeJSONObject, obj.GetTypeOfJSON())
+
+		elem2, err := obj.GetFromObject("k1-1-1")
+		require.NoError(t, err)
+		require.Equal(t, elem2.GetValue(), "v3")
+	})
 }
