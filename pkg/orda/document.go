@@ -137,9 +137,15 @@ func (its *document) patchEach(op jsondiff.Operation) errors.OrdaError {
 			}
 			//its.snapshot().PutCommonInObject(target.getTime(), key, op.Value, its.snapshot().getTime())
 		} else if target.getType() == TypeJSONArray {
-			pos, err := strconv.Atoi(key)
-			if err != nil {
-				return errors.DatatypeInvalidPatch.New(its.L(), "invalid array position in JSONPatch:"+op.String())
+			var pos int
+			if key == "-" {
+				pos = target.(*jsonArray).size
+			} else {
+				var err2 error
+				pos, err2 = strconv.Atoi(key)
+				if err2 != nil {
+					return errors.DatatypeInvalidPatch.New(its.L(), "invalid array position in JSONPatch:"+op.String())
+				}
 			}
 			if _, err := its.toDocument(target).InsertToArray(pos, op.Value); err != nil {
 				return err
