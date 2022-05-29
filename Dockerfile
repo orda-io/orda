@@ -1,5 +1,4 @@
 FROM --platform=linux/amd64 golang:latest
-
 RUN apt -y update
 RUN apt -y upgrade
 RUN apt install -y protobuf-compiler

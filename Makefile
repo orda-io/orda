@@ -61,12 +61,12 @@ dependency: install-golibs
 
 .PHONY: fmt
 fmt:
-	$(ORDA_BUILDER) gofmt -w $(GO_SRCS)
-	$(ORDA_BUILDER) goimports -w -local github.com/orda-io $(GO_SRCS)
+	$(ORDA_BUILDER) "gofmt -w $(GO_SRCS)"
+	$(ORDA_BUILDER) "goimports -w -local github.com/orda-io $(GO_SRCS)"
 
 .PHONY: lint
 lint:
-	$(ORDA_BUILDER) golint ./...
+	$(ORDA_BUILDER) "golint ./..."
 
 .PHONY: test
 test:
