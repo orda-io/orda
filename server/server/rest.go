@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/server/managers"
 	"google.golang.org/grpc/credentials/insecure"
 	"io/ioutil"
 	"net/http"
@@ -26,18 +27,18 @@ const (
 
 // RestServer is a control server to set up Orda system.
 type RestServer struct {
-	ctx   context.OrdaContext
-	conf  *OrdaServerConfig
-	mongo *mongodb.RepositoryMongo
+	ctx      context.OrdaContext
+	conf     *managers.OrdaServerConfig
+	managers *managers.Managers
 }
 
 // NewRestServer creates a control server.
-func NewRestServer(ctx context.OrdaContext, conf *OrdaServerConfig, mongo *mongodb.RepositoryMongo) *RestServer {
+func NewRestServer(ctx context.OrdaContext, conf *managers.OrdaServerConfig, clients *managers.Managers) *RestServer {
 
 	return &RestServer{
-		ctx:   ctx,
-		conf:  conf,
-		mongo: mongo,
+		ctx:      ctx,
+		conf:     conf,
+		managers: clients,
 	}
 }
 
@@ -76,7 +77,7 @@ type swaggerDoc struct {
 	jsonDoc string
 }
 
-func (its *swaggerDoc) init(conf *OrdaServerConfig) {
+func (its *swaggerDoc) init(conf *managers.OrdaServerConfig) {
 	bytes, err := ioutil.ReadFile(conf.SwaggerJSON)
 	if err != nil {
 		panic(err.Error())
@@ -121,7 +122,7 @@ func (its *RestServer) createCollections(res http.ResponseWriter, req *http.Requ
 	switch req.Method {
 	case http.MethodPut:
 		collectionName := strings.TrimPrefix(req.URL.Path, apiCollections)
-		num, err := mongodb.MakeCollection(its.ctx, its.mongo, collectionName)
+		num, err := mongodb.MakeCollection(its.ctx, its.managers.Mongo, collectionName)
 		var msg string
 		if err != nil {
 			msg = fmt.Sprintf("Fail to create collection '%s'", collectionName)

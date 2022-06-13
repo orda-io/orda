@@ -2,7 +2,9 @@ package service
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/server/managers"
 	"github.com/orda-io/orda/server/schema"
+	"github.com/orda-io/orda/server/utils"
 	"runtime/debug"
 	"time"
 
@@ -11,8 +13,6 @@ import (
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/operations"
 	"github.com/orda-io/orda/server/constants"
-	"github.com/orda-io/orda/server/mongodb"
-	"github.com/orda-io/orda/server/notification"
 	"github.com/orda-io/orda/server/snapshot"
 	"github.com/orda-io/orda/server/svrcontext"
 )
@@ -49,8 +49,8 @@ type PushPullHandler struct {
 
 	err      errors.OrdaError
 	ctx      *svrcontext.ServerContext
-	mongo    *mongodb.RepositoryMongo
-	notifier *notification.Notifier
+	managers *managers.Managers
+	lock     utils.Lock
 
 	casePushPull      pushPullCase
 	initialCheckPoint *model.CheckPoint
@@ -75,7 +75,7 @@ func newPushPullHandler(
 	ppp *model.PushPullPack,
 	clientDoc *schema.ClientDoc,
 	collectionDoc *schema.CollectionDoc,
-	service *OrdaService,
+	clients *managers.Managers,
 ) *PushPullHandler {
 
 	newCtx := svrcontext.NewServerContext(ctx.Ctx(), constants.TagPushPull).
@@ -88,8 +88,7 @@ func newPushPullHandler(
 		CUID:            clientDoc.CUID,
 		ctx:             newCtx,
 		err:             &errors.MultipleOrdaErrors{},
-		mongo:           service.mongo,
-		notifier:        service.notifier,
+		managers:        clients,
 		clientDoc:       clientDoc,
 		collectionDoc:   collectionDoc,
 		gotPushPullPack: ppp,
@@ -97,9 +96,14 @@ func newPushPullHandler(
 	}
 }
 
-// Start begins the push pull for a datatype and returns the result with the channel 'retCh'
+func (its *PushPullHandler) getLockKey() string {
+	return fmt.Sprintf("PP:%d:%s", its.collectionDoc.Num, its.Key)
+}
+
+// Start begins the push-pull for a datatype and returns the result with the channel 'retCh'
 func (its *PushPullHandler) Start() <-chan *model.PushPullPack {
 	retCh := make(chan *model.PushPullPack)
+	its.lock = its.managers.GetLock(its.ctx, its.getLockKey())
 	go its.process(retCh)
 	return retCh
 }
@@ -109,7 +113,7 @@ func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.Or
 	its.resPushPullPack = its.gotPushPullPack.GetResponsePushPullPack()
 	its.resPushPullPack.Option = uint32(model.PushPullBitNormal)
 
-	checkPoint, err := its.mongo.GetCheckPointFromClient(its.ctx, its.CUID, its.DUID)
+	checkPoint, err := its.managers.Mongo.GetCheckPointFromClient(its.ctx, its.CUID, its.DUID)
 	if err != nil {
 		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 	}
@@ -128,6 +132,7 @@ func (its *PushPullHandler) finalize() {
 		its.ctx.L().Errorf("panic")
 		return
 	}
+	defer its.lock.Unlock()
 	if its.err == nil {
 		its.ctx.L().Infof("finish with CP (%v) -> (%v) and pulled ops: %d",
 			its.initialCheckPoint, its.currentCP, len(its.resPushPullPack.Operations))
@@ -174,6 +179,9 @@ func (its *PushPullHandler) logInitialConditions() {
 }
 
 func (its *PushPullHandler) process(retCh chan *model.PushPullPack) {
+
+	its.lock.TryLock()
+
 	defer its.finalize()
 
 	if its.err = its.initialize(retCh); its.err != nil {
@@ -199,11 +207,10 @@ func (its *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	if its.err = its.commitToMongoDB(); its.err != nil {
 		return
 	}
-	return
 }
 
 func (its *PushPullHandler) sendNotification(ctx context.OrdaContext) errors.OrdaError {
-	return its.notifier.NotifyAfterPushPull(
+	return its.managers.Notifier.NotifyAfterPushPull(
 		ctx,
 		its.collectionDoc.Name,
 		its.clientDoc,
@@ -212,7 +219,7 @@ func (its *PushPullHandler) sendNotification(ctx context.OrdaContext) errors.Ord
 }
 
 func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrdaContext) error {
-	snapshotManager := snapshot.NewManager(ctx, its.mongo, its.datatypeDoc, its.collectionDoc)
+	snapshotManager := snapshot.NewManager(ctx, its.managers, its.datatypeDoc, its.collectionDoc)
 	if err := snapshotManager.UpdateSnapshot(); err != nil { // TODO: should be asynchronous
 		return err
 	}
@@ -224,19 +231,19 @@ func (its *PushPullHandler) commitToMongoDB() errors.OrdaError {
 	its.resPushPullPack.CheckPoint = its.currentCP
 
 	if len(its.pushingOperations) > 0 {
-		if err := its.mongo.InsertOperations(its.ctx, its.pushingOperations); err != nil {
+		if err := its.managers.Mongo.InsertOperations(its.ctx, its.pushingOperations); err != nil {
 			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}
 		its.ctx.L().Infof("commit %d Operations finally", len(its.pushingOperations))
 	}
 
-	if err := its.mongo.UpdateDatatype(its.ctx, its.datatypeDoc); err != nil {
+	if err := its.managers.Mongo.UpdateDatatype(its.ctx, its.datatypeDoc); err != nil {
 		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 	}
 	its.ctx.L().Infof("commit Datatype %s", its.datatypeDoc)
 
 	if !its.clientDoc.IsAdmin() {
-		if err := its.mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCP); err != nil {
+		if err := its.managers.Mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCP); err != nil {
 			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}
 		its.ctx.L().Infof("commit CheckPoint with %s", its.currentCP.String())
@@ -250,7 +257,7 @@ func (its *PushPullHandler) pullOperations() errors.OrdaError {
 	}
 	sseqBegin := its.gotPushPullPack.CheckPoint.Sseq + 1
 	if its.datatypeDoc.SseqBegin <= sseqBegin && !its.gotOption.HasSnapshotBit() {
-		opList, sseqList, err := its.mongo.GetOperations(its.ctx, its.DUID, sseqBegin, constants.InfinitySseq)
+		opList, sseqList, err := its.managers.Mongo.GetOperations(its.ctx, its.DUID, sseqBegin, constants.InfinitySseq)
 		if err != nil {
 			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}
@@ -349,12 +356,12 @@ func (its *PushPullHandler) createDatatype() {
 
 func (its *PushPullHandler) evaluatePushPullCase() (pushPullCase, errors.OrdaError) {
 	var err errors.OrdaError
-	its.datatypeDoc, err = its.mongo.GetDatatypeByKey(its.ctx, its.collectionDoc.Num, its.gotPushPullPack.Key)
+	its.datatypeDoc, err = its.managers.Mongo.GetDatatypeByKey(its.ctx, its.collectionDoc.Num, its.gotPushPullPack.Key)
 	if err != nil {
 		return caseError, err
 	}
 	if its.datatypeDoc == nil {
-		its.datatypeDoc, err = its.mongo.GetDatatype(its.ctx, its.DUID)
+		its.datatypeDoc, err = its.managers.Mongo.GetDatatype(its.ctx, its.DUID)
 		if err != nil {
 			return caseError, errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}

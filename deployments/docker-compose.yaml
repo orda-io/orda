@@ -39,7 +39,16 @@ services:
       - emqx-etc:/opt/emqx/etc
       - emqx-log:/opt/emqx/log
 
+  orda-redis:
+    container_name: orda-redis
+    image: redis:alpine
+    hostname: orda-redis
+    command: redis-server --port 6379
+    ports:
+      - 0.0.0.0:16379:6379
+
   orda-server:
+    platform: linux/amd64
     container_name: orda-server
     image: orda-io/orda:${VERSION}
     restart: always
@@ -55,6 +64,7 @@ services:
     depends_on:
       - orda-mongodb
       - orda-emqx
+      - orda-redis
 
 volumes:
   mongodb-configdb: { }
@@ -62,4 +72,5 @@ volumes:
   emqx-data: { }
   emqx-etc: { }
   emqx-log: { }
+  etcd-data: { }
 

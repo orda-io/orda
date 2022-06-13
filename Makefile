@@ -18,11 +18,11 @@ PROJECT_ROOT = $(shell pwd)
 PROTOC_INCLUDE := -I=./proto/thirdparty -I=./proto
 PROTOC_PROTO_FILES := orda.enum.proto orda.proto orda.grpc.proto
 
-ORDA_BUILDER := docker run --network host --rm -v ${PROJECT_ROOT}:${PROJECT_ROOT} -w ${PROJECT_ROOT} orda-builder sh -c
+ORDA_BUILDER := docker run --platform linux/amd64 --network host --rm -v ${PROJECT_ROOT}:${PROJECT_ROOT} -w ${PROJECT_ROOT} orda-builder sh -c
 
 .PHONY: init
 init:
-	docker build --platform linux/x86_64 -t orda-builder .
+	docker build --platform linux/amd64 -t orda-builder .
 
 .PHONY: protoc-gen
 protoc-gen:
@@ -70,7 +70,7 @@ lint:
 
 .PHONY: test
 test:
-	$(ORDA_BUILDER) "go test ./..."
+	$(ORDA_BUILDER) "go test -v --race ./..."
 
 .PHONY: build-server
 build-server:
@@ -82,7 +82,7 @@ build-docker-server: build-server
 	- $(ORDA_BUILDER) "mkdir -p $(DEPLOY_DIR)/tmp"
 	$(ORDA_BUILDER) "cp $(BUILD_DIR)/server  $(DEPLOY_DIR)/tmp"
 	$(ORDA_BUILDER) "cp -rf $(RESOURCES_DIR) $(DEPLOY_DIR)/tmp"
-	@cd $(DEPLOY_DIR) && docker build -t orda-io/orda:$(VERSION) .
+	@cd $(DEPLOY_DIR) && docker build --platform linux/amd64 -t orda-io/orda:$(VERSION) .
 	-$(ORDA_BUILDER) "rm -rf $(DEPLOY_DIR)/tmp"
 
 .PHONY: clear

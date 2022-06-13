@@ -3,13 +3,15 @@
 ----
 
 ```
+
     .::::                 .::          
   .::    .::              .::          
 .::        .::.: .:::     .::   .::    
 .::        .:: .::    .:: .:: .::  .:: 
 .::        .:: .::   .:   .::.::   .:: 
   .::     .::  .::   .:   .::.::   .:: 
-    .::::     .:::    .:: .::  .:: .:::                                       
+    .::::     .:::    .:: .::  .:: .:::
+                                          
 ```
 
 [Orda (or ordu, ordo, or ordon)](https://en.wikipedia.org/wiki/Orda_(organization)) means the Mongolian mobile tent or
@@ -54,6 +56,7 @@ This project is mainly based on these two papers.
 - protobuf / grpc / grpc-gateway
 - [MongoDB latest](https://hub.docker.com/_/mongo)
 - MQTT: [EQM](https://www.emqx.io/)
+- Redis latest
 - Maybe work on lower versions of them
 
 ## Getting started
@@ -87,6 +90,8 @@ This project is mainly based on these two papers.
     - 18181(host):1883(internal) : for MQTT
     - 18881(host):8083(internal) : for websocket / HTTP
     - 18081(host):18083(internal) : for [dashboard](http://localhost:18081)
+  * orda-redis
+    - 16379(host):6379(internal) : for client
 
 ### Make a collection
 

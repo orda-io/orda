@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/orda-io/orda/server/managers"
 	"os"
 
 	"github.com/orda-io/orda/server/server"
@@ -21,7 +22,7 @@ func main() {
 		Action: func(c *cli.Context) error {
 			confFile := c.String("conf")
 
-			conf, err := server.LoadOrdaServerConfig(confFile)
+			conf, err := managers.LoadOrdaServerConfig(confFile)
 			if err != nil {
 				os.Exit(1)
 			}

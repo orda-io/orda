@@ -20,7 +20,7 @@ func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushP
 	}
 	ctx.UpdateCollection(collectionDoc.GetSummary())
 
-	clientDoc, err := its.mongo.GetClient(ctx, in.Cuid)
+	clientDoc, err := its.managers.Mongo.GetClient(ctx, in.Cuid)
 	if err != nil {
 		return nil, errors.NewRPCError(err)
 	}
@@ -44,7 +44,7 @@ func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushP
 	var chanList []<-chan *model.PushPullPack
 
 	for _, ppp := range in.PushPullPacks {
-		handler := newPushPullHandler(ctx, ppp, clientDoc, collectionDoc, its)
+		handler := newPushPullHandler(ctx, ppp, clientDoc, collectionDoc, its.managers)
 		chanList = append(chanList, handler.Start())
 	}
 	remainingChan := len(chanList)

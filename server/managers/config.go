@@ -1,8 +1,9 @@
-package server
+package managers
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/orda-io/orda/server/redis"
 	"io/ioutil"
 
 	"github.com/orda-io/orda/pkg/errors"
@@ -18,6 +19,7 @@ type OrdaServerConfig struct {
 	SwaggerJSON     string         `json:"SwaggerJSON"`
 	Notification    string         `json:"Notification"`
 	Mongo           mongodb.Config `json:"Mongo"`
+	Redis           redis.Config   `json:"Redis"`
 }
 
 // LoadOrdaServerConfig loads config from file.
@@ -32,7 +34,7 @@ func LoadOrdaServerConfig(filePath string) (*OrdaServerConfig, errors.OrdaError)
 func (its *OrdaServerConfig) loadConfig(filepath string) errors.OrdaError {
 	data, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return errors.ServerInit.New(log.Logger, "cannot read server config file "+filepath)
+		return errors.ServerInit.New(log.Logger, fmt.Sprintf("cannot read config file: %v", err.Error()))
 	}
 	if err := json.Unmarshal(data, its); err != nil {
 		return errors.ServerInit.New(log.Logger, "cannot unmarshal server config file:"+err.Error())

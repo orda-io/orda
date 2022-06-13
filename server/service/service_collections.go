@@ -14,7 +14,7 @@ import (
 // CreateCollection creates a collection
 func (its *OrdaService) CreateCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagCreate).UpdateCollection(in.Collection)
-	num, err := mongodb.MakeCollection(ctx, its.mongo, in.Collection)
+	num, err := mongodb.MakeCollection(ctx, its.managers.Mongo, in.Collection)
 	var msg string
 	if err != nil {
 		return nil, errors.NewRPCError(err)
@@ -28,7 +28,7 @@ func (its *OrdaService) CreateCollection(goCtx goctx.Context, in *model.Collecti
 // ResetCollection resets a collection
 func (its *OrdaService) ResetCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagReset).UpdateCollection(in.Collection)
-	if err := its.mongo.PurgeCollection(ctx, in.Collection); err != nil {
+	if err := its.managers.Mongo.PurgeCollection(ctx, in.Collection); err != nil {
 		return nil, errors.NewRPCError(err)
 	}
 	ctx.L().Infof("reset %s collection", in.Collection)

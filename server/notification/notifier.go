@@ -3,6 +3,7 @@ package notification
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/orda-io/orda/pkg/constants"
 	"github.com/orda-io/orda/server/schema"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -18,7 +19,8 @@ type Notifier struct {
 }
 
 // NewNotifier creates an instance of Notifier
-func NewNotifier(ctx context.OrdaContext, pubSubAddr string, serverName string) (*Notifier, errors.OrdaError) {
+func NewNotifier(ctx context.OrdaContext, pubSubAddr string) (*Notifier, errors.OrdaError) {
+	serverName := fmt.Sprintf("Orda-Server-%s(%s)", constants.Version, constants.GitCommit)
 	opts := mqtt.NewClientOptions().AddBroker(pubSubAddr).SetUsername(serverName)
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {

@@ -8,10 +8,5 @@
     "OrdaDB": "ordadb",
     "User": "root",
     "Password": "orda-test"
-  },
-  "Redis": {
-    "Addrs": [
-      "127.0.0.1:16379"
-    ]
   }
 }

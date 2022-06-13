@@ -1,13 +1,11 @@
 package integration
 
 import (
-	"time"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/orda"
+	"github.com/stretchr/testify/require"
+	"time"
 )
 
 func (its *IntegrationTestSuite) TestList() {
@@ -19,10 +17,11 @@ func (its *IntegrationTestSuite) TestList() {
 
 		err := client1.Connect()
 		require.NoError(its.T(), err)
+		its.ctx.L().Infof("end")
 		defer func() {
-			_ = client1.Close()
+			require.NoError(its.T(), client1.Close())
 		}()
-
+		// time.Sleep(3 * time.Second)
 		list1 := client1.CreateList(key, orda.NewHandlers(
 			func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 

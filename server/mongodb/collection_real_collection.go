@@ -16,14 +16,14 @@ const (
 )
 
 // InsertRealSnapshot inserts a snapshot for real collection.
-func (r *RepositoryMongo) InsertRealSnapshot(
+func (its *RepositoryMongo) InsertRealSnapshot(
 	ctx context.OrdaContext,
 	collectionName string,
 	id string,
 	data interface{},
 	sseq uint64,
 ) errors.OrdaError {
-	collection := r.db.Collection(collectionName)
+	collection := its.db.Collection(collectionName)
 
 	// interface{} is currently transformed to bson.M through two phases: interface{} -> bytes{} -> bson.M
 	// TODO: need to develop a direct transformation method.
@@ -49,12 +49,12 @@ func (r *RepositoryMongo) InsertRealSnapshot(
 	return nil
 }
 
-func (r *RepositoryMongo) GetRealSnapshot(
+func (its *RepositoryMongo) GetRealSnapshot(
 	ctx context.OrdaContext,
 	collectionName string,
 	id string,
 ) (map[string]interface{}, errors.OrdaError) {
-	collection := r.db.Collection(collectionName)
+	collection := its.db.Collection(collectionName)
 	f := schema.FilterByID(id)
 	result := collection.FindOne(ctx, f)
 	if result.Err() != nil {

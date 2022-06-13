@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"github.com/orda-io/orda/server/managers"
+	redis "github.com/orda-io/orda/server/redis"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -12,7 +14,6 @@ import (
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/orda"
 	"github.com/orda-io/orda/server/mongodb"
-	"github.com/orda-io/orda/server/server"
 )
 
 var mongoDB = make(map[string]*mongodb.RepositoryMongo)
@@ -56,13 +57,16 @@ func NewTestOrdaClientConfig(collectionName string, syncType model.SyncType) *or
 }
 
 // NewTestOrdaServerConfig generates an OrdaServerConfig for testing.
-func NewTestOrdaServerConfig(dbName string) *server.OrdaServerConfig {
-	return &server.OrdaServerConfig{
+func NewTestOrdaServerConfig(dbName string) *managers.OrdaServerConfig {
+	return &managers.OrdaServerConfig{
 		RPCServerPort: 59062,
 		RestfulPort:   59862,
 		SwaggerJSON:   "../resources/orda.grpc.swagger.json",
 		Notification:  "tcp://localhost:18181",
 		Mongo:         *NewTestMongoDBConfig(dbName),
+		Redis: redis.Config{
+			Addrs: []string{"127.0.0.1:16379"},
+		},
 	}
 }
 
