@@ -2,6 +2,7 @@ package service
 
 import (
 	gocontext "context"
+
 	"github.com/orda-io/orda/pkg/errors"
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/model"
@@ -10,6 +11,7 @@ import (
 	"github.com/orda-io/orda/server/schema"
 	"github.com/orda-io/orda/server/snapshot"
 	"github.com/orda-io/orda/server/svrcontext"
+	"github.com/orda-io/orda/server/utils"
 )
 
 func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchMessage) (*model.PatchMessage, error) {
@@ -18,13 +20,19 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
+	ctx.L().Infof("BEGIN PatchDocument: '%v' %#v", req.Key, req.GetJson())
+	defer ctx.L().Infof("END PatchDocument: '%v'", req.Key)
 
 	clientDoc := schema.NewPatchClient(collectionDoc)
 	ctx.UpdateCollection(collectionDoc.GetSummary()).UpdateClient(clientDoc.ToString())
-	ctx.L().Infof("BEGIN PatchDocument: %#v", req.GetJson())
-	defer ctx.L().Infof("END PatchDocument")
 
-	datatypeDoc, rpcErr := its.mongo.GetDatatypeByKey(ctx, collectionDoc.Num, req.Key)
+	lock := its.managers.GetLock(ctx, utils.GetLockName("PD", collectionDoc.Num, req.Key))
+	if !lock.TryLock() {
+		return nil, errors.NewRPCError(errors.ServerInit.New(ctx.L(), "fail to lock"))
+	}
+	defer lock.Unlock()
+
+	datatypeDoc, rpcErr := its.managers.Mongo.GetDatatypeByKey(ctx, collectionDoc.Num, req.Key)
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
@@ -39,15 +47,17 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 	if datatypeDoc.Type != model.TypeOfDatatype_DOCUMENT.String() {
 		return nil, errors.NewRPCError(errors.ServerBadRequest.New(ctx.L(), "not document type: "+datatypeDoc.Type))
 	}
-	snapshotManager := snapshot.NewManager(ctx, its.mongo, datatypeDoc, collectionDoc)
+
+	snapshotManager := snapshot.NewManager(ctx, its.managers, datatypeDoc, collectionDoc)
 	data, lastSseq, err := snapshotManager.GetLatestDatatype()
-	ctx.UpdateDatatype(data.GetSummary())
 	if err != nil {
 		return nil, errors.NewRPCError(err)
 	}
+	ctx.UpdateDatatype(data.GetSummary())
+
 	if lastSseq > 0 {
 		data.SetState(model.StateOfDatatype_SUBSCRIBED)
-		data.(iface.Datatype).SetCheckPoint(lastSseq, 0)
+		data.SetCheckPoint(lastSseq, 0)
 	}
 	doc := data.(orda.Document)
 	patches, err := doc.(orda.Document).PatchByJSON(req.Json)
@@ -59,7 +69,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 		ppp := doc.(iface.Datatype).CreatePushPullPack()
 		ctx.L().Infof("%v", ppp.ToString())
 
-		pushPullHandler := newPushPullHandler(ctx, ppp, clientDoc, collectionDoc, its)
+		pushPullHandler := newPushPullHandler(ctx, ppp, clientDoc, collectionDoc, its.managers)
 		pppCh := pushPullHandler.Start()
 		_ = <-pppCh
 	}

@@ -2,14 +2,12 @@ package orda
 
 import (
 	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/orda-io/orda/pkg/iface"
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/pkg/testonly"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestCounterTransactions(t *testing.T) {
@@ -91,7 +89,6 @@ func TestCounterTransactions(t *testing.T) {
 		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), nil, nil)
 		_, _ = counter1.Increase()
 		_, _ = counter1.IncreaseBy(1234)
-
 		clone, _ := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), nil, nil)
 		meta1, snap1, err := counter1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)

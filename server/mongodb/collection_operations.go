@@ -62,7 +62,11 @@ func (its *MongoCollections) GetOperations(
 		f.AddFilterLTE(schema.OperationDocFields.Sseq, to)
 	}
 	opt := options.Find()
-	opt.SetSort(bson.D{{schema.OperationDocFields.Sseq, 1}})
+
+	opt.SetSort(bson.D{{
+		Key:   schema.OperationDocFields.Sseq,
+		Value: 1,
+	}})
 	cursor, err := its.operations.Find(ctx, f, opt)
 	if err != nil {
 		return nil, nil, errors.ServerDBQuery.New(ctx.L(), err.Error())

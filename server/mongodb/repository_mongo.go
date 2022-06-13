@@ -76,15 +76,15 @@ func getCustomTlsConfig(ctx context.OrdaContext, caFile string) (*tls.Config, er
 }
 
 // InitializeCollections initializes collections
-func (r *RepositoryMongo) InitializeCollections(ctx context.OrdaContext) errors.OrdaError {
-	r.clients = r.db.Collection(schema.CollectionNameClients)
-	r.counters = r.db.Collection(schema.CollectionNameColNumGenerator)
-	r.snapshots = r.db.Collection(schema.CollectionNameSnapshot)
-	r.datatypes = r.db.Collection(schema.CollectionNameDatatypes)
-	r.operations = r.db.Collection(schema.CollectionNameOperations)
-	r.collections = r.db.Collection(schema.CollectionNameCollections)
+func (its *RepositoryMongo) InitializeCollections(ctx context.OrdaContext) errors.OrdaError {
+	its.clients = its.db.Collection(schema.CollectionNameClients)
+	its.counters = its.db.Collection(schema.CollectionNameColNumGenerator)
+	its.snapshots = its.db.Collection(schema.CollectionNameSnapshot)
+	its.datatypes = its.db.Collection(schema.CollectionNameDatatypes)
+	its.operations = its.db.Collection(schema.CollectionNameOperations)
+	its.collections = its.db.Collection(schema.CollectionNameCollections)
 
-	names, err := r.db.ListCollectionNames(ctx, bson.D{})
+	names, err := its.db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
@@ -94,27 +94,27 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.OrdaContext) errors.
 	}
 
 	if _, ok := realCollections[schema.CollectionNameClients]; !ok {
-		if err := r.createCollection(ctx, r.clients, &schema.ClientDoc{}); err != nil {
+		if err := its.createCollection(ctx, its.clients, &schema.ClientDoc{}); err != nil {
 			return errors.ServerDBQuery.New(ctx.L(), schema.CollectionNameClients+err.Error())
 		}
 	}
 	if _, ok := realCollections[schema.CollectionNameDatatypes]; !ok {
-		if err := r.createCollection(ctx, r.datatypes, &schema.DatatypeDoc{}); err != nil {
+		if err := its.createCollection(ctx, its.datatypes, &schema.DatatypeDoc{}); err != nil {
 			return errors.ServerDBQuery.New(ctx.L(), schema.CollectionNameDatatypes+err.Error())
 		}
 	}
 	if _, ok := realCollections[schema.CollectionNameOperations]; !ok {
-		if err := r.createCollection(ctx, r.operations, &schema.OperationDoc{}); err != nil {
+		if err := its.createCollection(ctx, its.operations, &schema.OperationDoc{}); err != nil {
 			return errors.ServerDBQuery.New(ctx.L(), schema.CollectionNameOperations+err.Error())
 		}
 	}
 	if _, ok := realCollections[schema.CollectionNameSnapshot]; !ok {
-		if err := r.createCollection(ctx, r.snapshots, &schema.SnapshotDoc{}); err != nil {
+		if err := its.createCollection(ctx, its.snapshots, &schema.SnapshotDoc{}); err != nil {
 			return errors.ServerDBQuery.New(ctx.L(), schema.CollectionNameSnapshot+err.Error())
 		}
 	}
 	if _, ok := realCollections[schema.CollectionNameCollections]; !ok {
-		if err := r.createCollection(ctx, r.collections, &schema.CollectionDoc{}); err != nil {
+		if err := its.createCollection(ctx, its.collections, &schema.CollectionDoc{}); err != nil {
 			return errors.ServerDBQuery.New(ctx.L(), schema.CollectionNameCollections+err.Error())
 		}
 	}
@@ -122,11 +122,11 @@ func (r *RepositoryMongo) InitializeCollections(ctx context.OrdaContext) errors.
 }
 
 // PurgeCollection purges all collections related to collectionName
-func (r *RepositoryMongo) PurgeCollection(ctx context.OrdaContext, collectionName string) errors.OrdaError {
-	if err := r.PurgeAllDocumentsOfCollection(ctx, collectionName); err != nil {
+func (its *RepositoryMongo) PurgeCollection(ctx context.OrdaContext, collectionName string) errors.OrdaError {
+	if err := its.PurgeAllDocumentsOfCollection(ctx, collectionName); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-	collection := r.db.Collection(collectionName)
+	collection := its.db.Collection(collectionName)
 	if err := collection.Drop(ctx); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
@@ -134,14 +134,21 @@ func (r *RepositoryMongo) PurgeCollection(ctx context.OrdaContext, collectionNam
 }
 
 // GetOrCreateRealCollection is a method that gets or creates a collection of snapshot
-func (r *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrdaContext, name string) errors.OrdaError {
-	names, err := r.db.ListCollectionNames(ctx, schema.FilterByName(name))
+func (its *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrdaContext, name string) errors.OrdaError {
+	names, err := its.db.ListCollectionNames(ctx, schema.FilterByName(name))
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 
 	if len(names) == 0 {
-		return r.createCollection(ctx, r.db.Collection(name), nil)
+		return its.createCollection(ctx, its.db.Collection(name), nil)
+	}
+	return nil
+}
+
+func (its *RepositoryMongo) Close(ctx context.OrdaContext) errors.OrdaError {
+	if err := its.mongoClient.Disconnect(ctx); err != nil {
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	return nil
 }

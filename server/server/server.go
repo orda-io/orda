@@ -3,6 +3,7 @@ package server
 import (
 	gocontext "context"
 	"fmt"
+	"github.com/orda-io/orda/server/managers"
 	"net"
 	"os"
 	"os/signal"
@@ -18,8 +19,6 @@ import (
 	"github.com/orda-io/orda/pkg/log"
 	"github.com/orda-io/orda/pkg/model"
 	svrConstant "github.com/orda-io/orda/server/constants"
-	"github.com/orda-io/orda/server/mongodb"
-	"github.com/orda-io/orda/server/notification"
 	"github.com/orda-io/orda/server/service"
 	"github.com/orda-io/orda/server/svrcontext"
 )
@@ -45,14 +44,13 @@ type OrdaServer struct {
 	rpcServer  *grpc.Server
 	restServer *RestServer
 	ctx        context.OrdaContext
-	conf       *OrdaServerConfig
+	conf       *managers.OrdaServerConfig
 	service    *service.OrdaService
-	notifier   *notification.Notifier
-	Mongo      *mongodb.RepositoryMongo
+	managers   *managers.Managers
 }
 
 // NewOrdaServer creates a new Orda server
-func NewOrdaServer(goCtx gocontext.Context, conf *OrdaServerConfig) (*OrdaServer, errors.OrdaError) {
+func NewOrdaServer(goCtx gocontext.Context, conf *managers.OrdaServerConfig) (*OrdaServer, errors.OrdaError) {
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, errors.ServerInit.New(log.Logger, err.Error())
@@ -60,15 +58,10 @@ func NewOrdaServer(goCtx gocontext.Context, conf *OrdaServerConfig) (*OrdaServer
 	ctx := svrcontext.NewServerContext(goCtx, svrConstant.TagServer).
 		UpdateCollection(context.MakeTagInServer(host, conf.RPCServerPort))
 	ctx.L().Infof("Config: %#v", conf)
-	mongo, oErr := mongodb.New(ctx, &conf.Mongo)
-	if oErr != nil {
-		return nil, oErr
-	}
 
 	return &OrdaServer{
 		ctx:      ctx,
 		conf:     conf,
-		Mongo:    mongo,
 		closed:   false,
 		closedCh: make(chan struct{}),
 	}, nil
@@ -79,20 +72,17 @@ func (its *OrdaServer) Start() errors.OrdaError {
 	its.mutex.Lock()
 	defer its.mutex.Unlock()
 
-	server := fmt.Sprintf("Orda-Server-%s(%s)", constants.Version, constants.GitCommit)
-
 	var oErr errors.OrdaError
-	its.notifier, oErr = notification.NewNotifier(its.ctx, its.conf.Notification, server)
-	if oErr != nil {
+	if its.managers, oErr = managers.New(its.ctx, its.conf); oErr != nil {
 		return oErr
 	}
 
 	lis, err := net.Listen("tcp", its.conf.GetRPCServerAddr())
 	if err != nil {
-		return errors.ServerInit.New(its.ctx.L(), "cannot listen RPC:"+err.Error())
+		return errors.ServerInit.New(its.ctx.L(), "fail to listen RPC:"+err.Error())
 	}
 	its.rpcServer = grpc.NewServer()
-	its.service = service.NewOrdaService(its.Mongo, its.notifier)
+	its.service = service.NewOrdaService(its.managers)
 	model.RegisterOrdaServiceServer(its.rpcServer, its.service)
 
 	go func() {
@@ -103,16 +93,15 @@ func (its *OrdaServer) Start() errors.OrdaError {
 		}
 	}()
 
-	its.ctx.L().Printf("%s Started at %s %s", server, time.Now().String(), banner)
-
-	its.restServer = NewRestServer(its.ctx, its.conf, its.Mongo)
+	its.restServer = NewRestServer(its.ctx, its.conf, its.managers)
 	go func() {
 		if err := its.restServer.Start(); err != nil {
 			_ = errors.ServerInit.New(its.ctx.L(), err.Error())
 			panic("fail to serve control server")
 		}
 	}()
-
+	server := fmt.Sprintf("Orda-Server-%s(%s)", constants.Version, constants.GitCommit)
+	its.ctx.L().Infof("%s Started at %s %s", server, time.Now().String(), banner)
 	its.ctx.L().Info("start Orda server successfully")
 	return nil
 }
@@ -121,6 +110,7 @@ func (its *OrdaServer) Start() errors.OrdaError {
 func (its *OrdaServer) Close(graceful bool) {
 	its.mutex.Lock()
 	defer func() {
+		its.managers.Close(its.ctx)
 		its.mutex.Unlock()
 		its.closed = true
 	}()

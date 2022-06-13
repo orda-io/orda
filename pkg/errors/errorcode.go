@@ -87,16 +87,22 @@ const (
 	ServerInit
 	ServerNotify
 	ServerBadRequest
+	ServerDBClose
+	ServerUpdateSnapshot
+	ServerInternal
 )
 
 var serverErrFormats = map[ErrorCode]string{
-	ServerDBQuery:      "fail to succeed DB query: %v",
-	ServerDBDecode:     "fail to decode in DB: %v",
-	ServerNoResource:   "find no resource: %v",
-	ServerNoPermission: "have no permission: %v",
-	ServerInit:         "fail to initialize server: %v",
-	ServerNotify:       "fail to notify push-pull: %v",
-	ServerBadRequest:   "fail to process due to bad request: %v",
+	ServerDBQuery:        "fail to succeed DB query: %v",
+	ServerDBDecode:       "fail to decode in DB: %v",
+	ServerNoResource:     "find no resource: %v",
+	ServerNoPermission:   "have no permission: %v",
+	ServerInit:           "fail to initialize server: %v",
+	ServerNotify:         "fail to notify push-pull: %v",
+	ServerBadRequest:     "fail to process due to bad request: %v",
+	ServerDBClose:        "fail to close mongoDB: %v",
+	ServerUpdateSnapshot: "fail to update snapshot: %v",
+	ServerInternal:       "internal server error: %v",
 }
 
 const (

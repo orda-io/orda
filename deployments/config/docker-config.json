@@ -8,5 +8,10 @@
     "OrdaDB": "ordadb",
     "User": "root",
     "Password": "orda-test"
+  },
+  "Redis": {
+    "Addrs": [
+      "orda-redis:6379"
+    ]
   }
 }

@@ -106,7 +106,6 @@ func (its *clientImpl) Connect() (err error) {
 	if err = its.syncManager.Connect(); err != nil {
 		return errors.ClientConnect.New(its.ctx.L(), err.Error())
 	}
-
 	err = its.syncManager.ExchangeClientRequestResponse()
 	return
 }
