@@ -13,13 +13,13 @@ import (
 
 // OrdaServerConfig is a configuration of OrdaServer
 type OrdaServerConfig struct {
-	RPCServerPort   int            `json:"RPCServerPort"`
-	RestfulPort     int            `json:"RestfulPort"`
-	SwaggerBasePath string         `json:"SwaggerBasePath"`
-	SwaggerJSON     string         `json:"SwaggerJSON"`
-	Notification    string         `json:"Notification"`
-	Mongo           mongodb.Config `json:"Mongo"`
-	Redis           redis.Config   `json:"Redis"`
+	RPCServerPort   int             `json:"RPCServerPort"`
+	RestfulPort     int             `json:"RestfulPort"`
+	SwaggerBasePath string          `json:"SwaggerBasePath"`
+	SwaggerJSON     string          `json:"SwaggerJSON"`
+	Notification    string          `json:"Notification"`
+	Mongo           *mongodb.Config `json:"Mongo"`
+	Redis           *redis.Config   `json:"Redis,omitempty"`
 }
 
 // LoadOrdaServerConfig loads config from file.
@@ -48,4 +48,9 @@ func (its *OrdaServerConfig) GetRPCServerAddr() string {
 
 func (its *OrdaServerConfig) GetRestfulAddr() string {
 	return fmt.Sprintf(":%d", its.RestfulPort)
+}
+
+func (its *OrdaServerConfig) String() string {
+	b, _ := json.Marshal(its)
+	return string(b)
 }

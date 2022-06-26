@@ -55,11 +55,11 @@ func (its *IntegrationTestSuite) SetupSuite() {
 
 func (its *IntegrationTestSuite) setupClients() errors.OrdaError {
 	var err errors.OrdaError
-	if its.mongo, err = mongodb.New(its.ctx, &its.conf.Mongo); err != nil {
+	if its.mongo, err = mongodb.New(its.ctx, its.conf.Mongo); err != nil {
 		return err
 	}
 
-	if its.redis, err = redis.New(its.ctx, &its.conf.Redis); err != nil {
+	if its.redis, err = redis.New(its.ctx, its.conf.Redis); err != nil {
 		return err
 	}
 	return nil

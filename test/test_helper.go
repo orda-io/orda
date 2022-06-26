@@ -63,8 +63,8 @@ func NewTestOrdaServerConfig(dbName string) *managers.OrdaServerConfig {
 		RestfulPort:   59862,
 		SwaggerJSON:   "../resources/orda.grpc.swagger.json",
 		Notification:  "tcp://localhost:18181",
-		Mongo:         *NewTestMongoDBConfig(dbName),
-		Redis: redis.Config{
+		Mongo:         NewTestMongoDBConfig(dbName),
+		Redis: &redis.Config{
 			Addrs: []string{"127.0.0.1:16379"},
 		},
 	}

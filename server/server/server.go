@@ -57,8 +57,7 @@ func NewOrdaServer(goCtx gocontext.Context, conf *managers.OrdaServerConfig) (*O
 	}
 	ctx := svrcontext.NewServerContext(goCtx, svrConstant.TagServer).
 		UpdateCollection(context.MakeTagInServer(host, conf.RPCServerPort))
-	ctx.L().Infof("Config: %#v", conf)
-
+	ctx.L().Infof("Config: %v", conf)
 	return &OrdaServer{
 		ctx:      ctx,
 		conf:     conf,
@@ -127,6 +126,7 @@ func (its *OrdaServer) Close(graceful bool) {
 // HandleSignals can handle signals to the server.
 func (its *OrdaServer) HandleSignals() int {
 	its.ctx.L().Infof("ready to handle signals")
+
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 

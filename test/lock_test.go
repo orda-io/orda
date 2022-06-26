@@ -123,7 +123,7 @@ func (its *IntegrationTestSuite) tryRedisLock(t *testing.T, cliName string, unlo
 
 	ordaCtx := context.NewOrdaContext(ctx.TODO(), "test", cliName)
 
-	cli1, err1 := redis.New(ordaCtx, &its.conf.Redis)
+	cli1, err1 := redis.New(ordaCtx, its.conf.Redis)
 	require.NoError(t, err1)
 	defer func() {
 		if err := cli1.Close(); err != nil {

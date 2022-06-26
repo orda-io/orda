@@ -1,4 +1,4 @@
-VERSION = 0.1.0
+VERSION := $(shell cat version)
 
 BUILD_DIR = bin
 RESOURCES_DIR = resources

@@ -1,7 +1,9 @@
 package mongodb
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/orda-io/orda/pkg/log"
 	"net/url"
 )
 
@@ -23,5 +25,32 @@ func (its *Config) getConnectionString() string {
 		return ret
 	}
 	return ret + "?" + its.Options
+}
 
+func (its *Config) String() string {
+	clone := struct {
+		Config
+	}{
+		*its,
+	}
+	clone.Password = ""
+	log.Logger.Infof("%v", clone)
+	b, _ := json.Marshal(clone)
+	return string(b)
+}
+
+func (its *Config) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Host     string
+		OrdaDB   string
+		User     string
+		CertFile string
+		Options  string
+	}{
+		Host:     its.Host,
+		OrdaDB:   its.OrdaDB,
+		User:     its.User,
+		CertFile: its.CertFile,
+		Options:  its.Options,
+	})
 }
