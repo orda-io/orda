@@ -57,12 +57,6 @@ func New(ctx context.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaEr
 
 func getCustomTlsConfig(ctx context.OrdaContext, caFile string) (*tls.Config, errors.OrdaError) {
 	tlsConfig := new(tls.Config)
-	d, err1 := ioutil.ReadDir(".")
-	if err1 != nil {
-		ctx.L().Error("%v", err1)
-	}
-	ctx.L().Infof("%v", d)
-
 	certs, err := ioutil.ReadFile(caFile)
 
 	if err != nil {

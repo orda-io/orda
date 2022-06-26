@@ -308,8 +308,3 @@ func (its *jsonArray) unmarshal(marshaled *marshaledJSONType, assistant *unmarsh
 	}
 	its.size = marshaled.A.S
 }
-
-// func (its *jsonArray) SetSnapshot(snap interface{}) errors.OrdaError {
-//
-// 	return nil
-// }

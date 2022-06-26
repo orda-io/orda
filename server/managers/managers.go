@@ -18,7 +18,7 @@ type Managers struct {
 func New(ctx context.OrdaContext, conf *OrdaServerConfig) (*Managers, errors.OrdaError) {
 	var oErr errors.OrdaError
 	clients := &Managers{}
-	if clients.Mongo, oErr = mongodb.New(ctx, &conf.Mongo); oErr != nil {
+	if clients.Mongo, oErr = mongodb.New(ctx, conf.Mongo); oErr != nil {
 		return clients, oErr
 	}
 
@@ -26,7 +26,7 @@ func New(ctx context.OrdaContext, conf *OrdaServerConfig) (*Managers, errors.Ord
 		return clients, oErr
 	}
 
-	if clients.Redis, oErr = redis.New(ctx, &conf.Redis); oErr != nil {
+	if clients.Redis, oErr = redis.New(ctx, conf.Redis); oErr != nil {
 		return clients, oErr
 	}
 	return clients, nil
