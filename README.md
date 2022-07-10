@@ -167,4 +167,4 @@ We always welcome your participation. Especially, we are very pleased if you wan
 # License
 
 ----
-Orda is licensed under Apache 2.0 License that can be found in the LICENSE file. 
+Orda is licensed under Apache 2.0 License that can be found in the [LICENSE file](LICENSE). 
