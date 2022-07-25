@@ -3,12 +3,12 @@ package service
 import (
 	gocontext "context"
 	"fmt"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/model"
 	"time"
 
 	"github.com/orda-io/orda/server/schema"
 
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/svrcontext"
 )
@@ -32,26 +32,26 @@ func (its *OrdaService) ProcessClient(
 
 	clientDocFromDB, err := its.managers.Mongo.GetClient(ctx, clientDocFromReq.CUID)
 	if err != nil {
-		return nil, errors.NewRPCError(err)
+		return nil, errors2.NewRPCError(err)
 	}
 	if clientDocFromDB == nil {
 		clientDocFromReq.CreatedAt = time.Now()
 		ctx.L().Infof("create a new client:%+v", clientDocFromReq)
 		if err := its.managers.Mongo.GetOrCreateRealCollection(ctx, req.Collection); err != nil {
-			return nil, errors.NewRPCError(err)
+			return nil, errors2.NewRPCError(err)
 		}
 	} else {
 
 		if clientDocFromDB.CollectionNum != clientDocFromReq.CollectionNum {
 			msg := fmt.Sprintf("client '%s' accesses collection(%d)",
 				clientDocFromDB.ToString(), clientDocFromReq.CollectionNum)
-			return nil, errors.NewRPCError(errors.ServerNoPermission.New(ctx.L(), msg))
+			return nil, errors2.NewRPCError(errors2.ServerNoPermission.New(ctx.L(), msg))
 		}
 		ctx.L().Infof("Client will be updated:%+v", clientDocFromReq)
 	}
 	clientDocFromReq.CreatedAt = time.Now()
 	if err = its.managers.Mongo.UpdateClient(ctx, clientDocFromReq); err != nil {
-		return nil, errors.NewRPCError(err)
+		return nil, errors2.NewRPCError(err)
 	}
 	ctx.L().Infof("RES[CLIE] %s", req.ToString())
 	return req, nil

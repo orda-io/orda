@@ -112,6 +112,14 @@ Created collection 'hello_world(1)'
 - An Orda client manages the connection with the Orda server and synchronization of Orda datatypes.
 - An Orda client participates in a collection of MongoDB, which means that the snapshot of any created datatype is
   written to the collection of MongoDB.
+- The orda client package should be imported as follows.
+
+```shell
+$ cd YOUR_PORJECT_PACKAGE
+$ go get -u github.com/orda-io/orda/client
+```
+
+- To create client, you
 
 ```go
 clientConf := &orda.ClientConfig{
@@ -159,12 +167,15 @@ panic(err)
 }
 ```
 
-# Contribute to Orda Project
+## Contribute to Orda Project
 
 ----
-We always welcome your participation. Especially, we are very pleased if you want to implement SDKs for other languages.
+We always welcome your participation. Please see [contributing doc](CONTRIBUTING.md).
+If you're also interested in writing academic papers with our orda implementations such as JSON CRDTs, feel free contact
+us:
+<img style="margin-bottom:-5px" height="20" src=".\assets\email-image.png"/>
 
-# License
+## License
 
 ----
 Orda is licensed under Apache 2.0 License that can be found in the LICENSE file. 

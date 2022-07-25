@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/orda-io/orda/pkg/context"
-	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/context"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/server/managers"
 	"github.com/orda-io/orda/server/schema"
 )
@@ -25,10 +25,10 @@ func (its *OrdaService) getCollectionDocWithRPCError(
 ) (*schema.CollectionDoc, error) {
 	collectionDoc, err := its.managers.Mongo.GetCollection(ctx, collection)
 	if err != nil {
-		return nil, errors.NewRPCError(err)
+		return nil, errors2.NewRPCError(err)
 	}
 	if collectionDoc == nil {
-		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), "collection "+collection))
+		return nil, errors2.NewRPCError(errors2.ServerNoResource.New(ctx.L(), "collection "+collection))
 	}
 	return collectionDoc, nil
 }

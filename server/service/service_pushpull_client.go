@@ -3,10 +3,10 @@ package service
 import (
 	gocontext "context"
 	"fmt"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/model"
 	"reflect"
 
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/svrcontext"
 )
@@ -22,17 +22,17 @@ func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushP
 
 	clientDoc, err := its.managers.Mongo.GetClient(ctx, in.Cuid)
 	if err != nil {
-		return nil, errors.NewRPCError(err)
+		return nil, errors2.NewRPCError(err)
 	}
 	if clientDoc == nil {
 		msg := fmt.Sprintf("no client '%s:%s'", in.Collection, in.Cuid)
-		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), msg))
+		return nil, errors2.NewRPCError(errors2.ServerNoResource.New(ctx.L(), msg))
 	}
 	ctx.UpdateClient(clientDoc.ToString())
 	ctx.L().Infof("REQ[PUPU] %v", in.ToString())
 	if clientDoc.CollectionNum != collectionDoc.Num {
 		msg := fmt.Sprintf("client '%s' accesses collection(%d)", clientDoc.ToString(), collectionDoc.Num)
-		return nil, errors.NewRPCError(errors.ServerNoPermission.New(ctx.L(), msg))
+		return nil, errors2.NewRPCError(errors2.ServerNoPermission.New(ctx.L(), msg))
 	}
 
 	response := &model.PushPullMessage{

@@ -2,31 +2,30 @@ package mongodb
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/context"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/schema"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/orda-io/orda/pkg/context"
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/model"
 )
 
 // UpdateClient updates a clientDoc; if not exists, a new clientDoc is inserted.
 func (its *MongoCollections) UpdateClient(
 	ctx context.OrdaContext,
 	client *schema.ClientDoc,
-) errors.OrdaError {
+) errors2.OrdaError {
 	result, err := its.clients.UpdateOne(ctx, schema.FilterByID(client.CUID), client.ToUpdateBSON(), schema.UpsertOption)
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 
 	if result.ModifiedCount == 1 || result.UpsertedCount == 1 {
 		return nil
 	}
-	return errors.ServerDBQuery.New(ctx.L(), "fail to update client")
+	return errors2.ServerDBQuery.New(ctx.L(), "fail to update client")
 }
 
 // UpdateCheckPointInClient updates a CheckPoint for the given datatype in a client.
@@ -35,11 +34,11 @@ func (its *MongoCollections) UpdateCheckPointInClient(
 	cuid string,
 	duid string,
 	checkPoint *model.CheckPoint,
-) errors.OrdaError {
+) errors2.OrdaError {
 	filter := schema.GetFilter().AddSetCheckPoint(duid, checkPoint)
 	result, err := its.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(filter), schema.UpsertOption)
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.ModifiedCount == 1 {
 		return nil
@@ -53,11 +52,11 @@ func (its *MongoCollections) UnsubscribeDatatypeFromClient(
 	ctx context.OrdaContext,
 	cuid string,
 	duid string,
-) errors.OrdaError {
+) errors2.OrdaError {
 	filter := schema.GetFilter().AddUnsetCheckPoint(duid)
 	result, err := its.clients.UpdateOne(ctx, schema.FilterByID(cuid), bson.D(filter))
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.ModifiedCount == 1 {
 		return nil
@@ -70,12 +69,12 @@ func (its *MongoCollections) UnsubscribeDatatypeFromClient(
 func (its *MongoCollections) UnsubscribeDatatypeFromAllClients(
 	ctx context.OrdaContext,
 	duid string,
-) errors.OrdaError {
+) errors2.OrdaError {
 	findFilter := schema.GetFilter().AddExists(fmt.Sprintf("%s.%s", schema.ClientDocFields.CheckPoints, duid))
 	updateFilter := schema.GetFilter().AddUnsetCheckPoint(duid)
 	result, err := its.clients.UpdateMany(ctx, findFilter, bson.D(updateFilter))
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.ModifiedCount > 0 {
 		ctx.L().Infof("unsubscribed datatype `%s` form %d clients", duid, result.ModifiedCount)
@@ -86,10 +85,10 @@ func (its *MongoCollections) UnsubscribeDatatypeFromAllClients(
 }
 
 // DeleteClient deletes the specified client.
-func (its *MongoCollections) DeleteClient(ctx context.OrdaContext, cuid string) errors.OrdaError {
+func (its *MongoCollections) DeleteClient(ctx context.OrdaContext, cuid string) errors2.OrdaError {
 	result, err := its.clients.DeleteOne(ctx, schema.FilterByID(cuid))
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.DeletedCount == 1 {
 		return nil
@@ -103,7 +102,7 @@ func (its *MongoCollections) GetCheckPointFromClient(
 	ctx context.OrdaContext,
 	cuid string,
 	duid string,
-) (*model.CheckPoint, errors.OrdaError) {
+) (*model.CheckPoint, errors2.OrdaError) {
 	opts := options.FindOne()
 	projectField := fmt.Sprintf("checkpoints.%s", duid)
 	opts.SetProjection(bson.M{projectField: 1})
@@ -112,11 +111,11 @@ func (its *MongoCollections) GetCheckPointFromClient(
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return nil, errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	var client schema.ClientDoc
 	if err := sr.Decode(&client); err != nil {
-		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
+		return nil, errors2.ServerDBDecode.New(ctx.L(), err.Error())
 	}
 	checkPoint, ok := client.CheckPoints[duid]
 	if !ok {
@@ -129,7 +128,7 @@ func (its *MongoCollections) GetCheckPointFromClient(
 func (its *MongoCollections) GetClientWithoutCheckPoints(
 	ctx context.OrdaContext,
 	cuid string,
-) (*schema.ClientDoc, errors.OrdaError) {
+) (*schema.ClientDoc, errors2.OrdaError) {
 	return its.getClient(ctx, cuid, false)
 }
 
@@ -137,7 +136,7 @@ func (its *MongoCollections) GetClientWithoutCheckPoints(
 func (its *MongoCollections) GetClient(
 	ctx context.OrdaContext,
 	cuid string,
-) (*schema.ClientDoc, errors.OrdaError) {
+) (*schema.ClientDoc, errors2.OrdaError) {
 	return its.getClient(ctx, cuid, true)
 }
 
@@ -145,7 +144,7 @@ func (its *MongoCollections) getClient(
 	ctx context.OrdaContext,
 	cuid string,
 	withCheckPoint bool,
-) (*schema.ClientDoc, errors.OrdaError) {
+) (*schema.ClientDoc, errors2.OrdaError) {
 	opts := options.FindOne()
 	if !withCheckPoint {
 		opts.SetProjection(bson.M{schema.ClientDocFields.CheckPoints: 0})
@@ -155,12 +154,12 @@ func (its *MongoCollections) getClient(
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return nil, errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 
 	var client schema.ClientDoc
 	if err := sr.Decode(&client); err != nil {
-		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
+		return nil, errors2.ServerDBDecode.New(ctx.L(), err.Error())
 	}
 	return &client, nil
 }
@@ -168,11 +167,11 @@ func (its *MongoCollections) getClient(
 func (its *MongoCollections) purgeAllCollectionClients(
 	ctx context.OrdaContext,
 	collectionNum uint32,
-) errors.OrdaError {
+) errors2.OrdaError {
 	filter := schema.GetFilter().AddFilterEQ(schema.ClientDocFields.CollectionNum, collectionNum)
 	r1, err := its.clients.DeleteMany(ctx, filter)
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if r1.DeletedCount > 0 {
 		ctx.L().Infof("delete %d clients in collection %d", r1.DeletedCount, collectionNum)

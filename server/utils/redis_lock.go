@@ -3,7 +3,7 @@ package utils
 import (
 	ctx "context"
 	"github.com/go-redsync/redsync/v4"
-	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/client/pkg/context"
 )
 
 type RedisLock struct {

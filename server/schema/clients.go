@@ -2,26 +2,25 @@ package schema
 
 import (
 	"fmt"
+	model2 "github.com/orda-io/orda/client/pkg/model"
 	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
-
-	"github.com/orda-io/orda/pkg/model"
 )
 
 // ClientDoc defines the document for client, stored in MongoDB.
 type ClientDoc struct {
-	CUID          string                       `bson:"_id"`
-	Alias         string                       `bson:"alias"`
-	CollectionNum uint32                       `bson:"colNum"`
-	Type          int8                         `bson:"type"`
-	SyncType      int8                         `bson:"syncType"`
-	CheckPoints   map[string]*model.CheckPoint `bson:"checkpoints,omitempty"`
-	CreatedAt     time.Time                    `bson:"createdAt"`
-	UpdatedAt     time.Time                    `bson:"updatedAt"`
+	CUID          string                        `bson:"_id"`
+	Alias         string                        `bson:"alias"`
+	CollectionNum uint32                        `bson:"colNum"`
+	Type          int8                          `bson:"type"`
+	SyncType      int8                          `bson:"syncType"`
+	CheckPoints   map[string]*model2.CheckPoint `bson:"checkpoints,omitempty"`
+	CreatedAt     time.Time                     `bson:"createdAt"`
+	UpdatedAt     time.Time                     `bson:"updatedAt"`
 }
 
 // ClientDocFields defines the fields of ClientDoc
@@ -93,7 +92,7 @@ func (its *ClientDoc) GetIndexModel() []mongo.IndexModel {
 }
 
 // GetCheckPoint returns a CheckPoint of a datatype
-func (its *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
+func (its *ClientDoc) GetCheckPoint(duid string) *model2.CheckPoint {
 	if checkPoint, ok := its.CheckPoints[duid]; ok {
 		return checkPoint
 	}
@@ -101,7 +100,7 @@ func (its *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
 }
 
 // ClientModelToBson returns a ClientDoc from a model.Client
-func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
+func ClientModelToBson(model *model2.Client, collectionNum uint32) *ClientDoc {
 	return &ClientDoc{
 		CUID:          model.CUID,
 		Alias:         model.Alias,
@@ -111,13 +110,13 @@ func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	}
 }
 
-func (its *ClientDoc) GetModel() *model.Client {
-	return &model.Client{
+func (its *ClientDoc) GetModel() *model2.Client {
+	return &model2.Client{
 		CUID:       its.CUID,
 		Alias:      its.Alias,
 		Collection: strconv.Itoa(int(its.CollectionNum)),
-		Type:       model.ClientType(its.Type),
-		SyncType:   model.SyncType(its.SyncType),
+		Type:       model2.ClientType(its.Type),
+		SyncType:   model2.SyncType(its.SyncType),
 	}
 }
 

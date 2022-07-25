@@ -2,6 +2,9 @@ package server
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/context"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/managers"
 	"google.golang.org/grpc/credentials/insecure"
 	"io/ioutil"
@@ -13,9 +16,6 @@ import (
 	"github.com/swaggo/swag"
 	"google.golang.org/grpc"
 
-	"github.com/orda-io/orda/pkg/context"
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/server/mongodb"
 )
 
@@ -43,7 +43,7 @@ func NewRestServer(ctx context.OrdaContext, conf *managers.OrdaServerConfig, cli
 }
 
 // Start starts a RestServer
-func (its *RestServer) Start() errors.OrdaError {
+func (its *RestServer) Start() errors2.OrdaError {
 
 	mux := http.NewServeMux()
 
@@ -52,7 +52,7 @@ func (its *RestServer) Start() errors.OrdaError {
 	}
 
 	if err := http.ListenAndServe(its.conf.GetRestfulAddr(), its.allowCors(mux)); err != nil {
-		return errors.ServerInit.New(its.ctx.L(), err)
+		return errors2.ServerInit.New(its.ctx.L(), err)
 	}
 	return nil
 }
@@ -92,7 +92,7 @@ func (its *swaggerDoc) ReadDoc() string {
 	return its.jsonDoc
 }
 
-func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrdaError {
+func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors2.OrdaError {
 	gwMux := runtime.NewServeMux()
 
 	// register grpc proxy
@@ -101,7 +101,7 @@ func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrdaErro
 	}
 
 	if gwErr := model.RegisterOrdaServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts); gwErr != nil {
-		return errors.ServerInit.New(its.ctx.L(), gwErr.Error())
+		return errors2.ServerInit.New(its.ctx.L(), gwErr.Error())
 	}
 	mux.Handle(apiGrpcGw, gwMux)
 	its.ctx.L().Infof("open port: http://localhost%s%s",
@@ -131,7 +131,7 @@ func (its *RestServer) createCollections(res http.ResponseWriter, req *http.Requ
 		}
 		_, err2 := res.Write([]byte(msg))
 		if err2 != nil {
-			_ = errors.ServerInit.New(its.ctx.L(), err2.Error())
+			_ = errors2.ServerInit.New(its.ctx.L(), err2.Error())
 			return
 		}
 		its.ctx.L().Infof(msg)

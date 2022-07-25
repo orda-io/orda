@@ -2,110 +2,109 @@ package service
 
 import (
 	gocontext "context"
-
-	"github.com/orda-io/orda/pkg/iface"
-	"github.com/orda-io/orda/pkg/log"
-	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/pkg/operations"
-	"github.com/orda-io/orda/pkg/orda"
+	iface2 "github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/log"
+	model2 "github.com/orda-io/orda/client/pkg/model"
+	operations2 "github.com/orda-io/orda/client/pkg/operations"
+	orda2 "github.com/orda-io/orda/client/pkg/orda"
 )
 
-func (its *OrdaService) decodeModelOp(in *model.Operation) iface.Operation {
+func (its *OrdaService) decodeModelOp(in *model2.Operation) iface2.Operation {
 	defer func() {
 		if r := recover(); r != nil {
 			return
 		}
 	}()
-	op := operations.ModelToOperation(in)
+	op := operations2.ModelToOperation(in)
 	return op
 }
 
 func (its *OrdaService) TestEncodingOperation(
 	goCtx gocontext.Context,
-	in *model.EncodingMessage,
-) (ret *model.EncodingMessage, er error) {
+	in *model2.EncodingMessage,
+) (ret *model2.EncodingMessage, er error) {
 	log.Logger.Infof("Receive %v", in)
 	defer func() {
 		log.Logger.Infof("Returns %v, %v", ret, er)
 	}()
 	decodedOp := its.decodeModelOp(in.Op)
 	switch cast := decodedOp.(type) {
-	case *operations.SnapshotOperation:
+	case *operations2.SnapshotOperation:
 		return its.testEncodingSnapshotOperation(goCtx, in.Type, cast)
-	case *operations.ErrorOperation:
+	case *operations2.ErrorOperation:
 		{
-			op := operations.NewErrorOperationWithCodeAndMsg(cast.GetCode(), cast.GetMessage())
+			op := operations2.NewErrorOperationWithCodeAndMsg(cast.GetCode(), cast.GetMessage())
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.TransactionOperation:
+	case *operations2.TransactionOperation:
 		{
-			op := operations.NewTransactionOperation(cast.GetBody().Tag)
+			op := operations2.NewTransactionOperation(cast.GetBody().Tag)
 			op.SetNumOfOps(int(cast.GetBody().NumOfOps))
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.IncreaseOperation:
+	case *operations2.IncreaseOperation:
 		{
-			op := operations.NewIncreaseOperation(cast.GetBody().Delta)
+			op := operations2.NewIncreaseOperation(cast.GetBody().Delta)
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.PutOperation:
+	case *operations2.PutOperation:
 		{
-			op := operations.NewPutOperation(cast.GetBody().Key, cast.GetBody().Value)
+			op := operations2.NewPutOperation(cast.GetBody().Key, cast.GetBody().Value)
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.RemoveOperation:
+	case *operations2.RemoveOperation:
 		{
-			op := operations.NewRemoveOperation(cast.GetBody().Key)
+			op := operations2.NewRemoveOperation(cast.GetBody().Key)
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.InsertOperation:
+	case *operations2.InsertOperation:
 		{
-			op := operations.NewInsertOperation(cast.Pos, cast.GetBody().V)
+			op := operations2.NewInsertOperation(cast.Pos, cast.GetBody().V)
 			op.GetBody().T = cast.GetBody().T
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.DeleteOperation:
+	case *operations2.DeleteOperation:
 		{
-			op := operations.NewDeleteOperation(cast.Pos, cast.NumOfNodes)
+			op := operations2.NewDeleteOperation(cast.Pos, cast.NumOfNodes)
 			op.GetBody().T = cast.GetBody().T
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.UpdateOperation:
+	case *operations2.UpdateOperation:
 		{
-			op := operations.NewUpdateOperation(cast.Pos, cast.GetBody().V)
+			op := operations2.NewUpdateOperation(cast.Pos, cast.GetBody().V)
 			op.GetBody().T = cast.GetBody().T
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.DocPutInObjOperation:
+	case *operations2.DocPutInObjOperation:
 		{
-			op := operations.NewDocPutInObjOperation(cast.GetBody().P, cast.GetBody().K, cast.GetBody().V)
+			op := operations2.NewDocPutInObjOperation(cast.GetBody().P, cast.GetBody().K, cast.GetBody().V)
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.DocRemoveInObjOperation:
+	case *operations2.DocRemoveInObjOperation:
 		{
-			op := operations.NewDocRemoveInObjOperation(cast.GetBody().P, cast.GetBody().K)
+			op := operations2.NewDocRemoveInObjOperation(cast.GetBody().P, cast.GetBody().K)
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.DocInsertToArrayOperation:
+	case *operations2.DocInsertToArrayOperation:
 		{
-			op := operations.NewDocInsertToArrayOperation(cast.GetBody().P, 0, cast.GetBody().V)
+			op := operations2.NewDocInsertToArrayOperation(cast.GetBody().P, 0, cast.GetBody().V)
 			op.GetBody().T = cast.GetBody().T
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.DocDeleteInArrayOperation:
+	case *operations2.DocDeleteInArrayOperation:
 		{
-			op := operations.NewDocDeleteInArrayOperation(cast.GetBody().P, 0, 0)
+			op := operations2.NewDocDeleteInArrayOperation(cast.GetBody().P, 0, 0)
 			op.GetBody().T = cast.GetBody().T
 			in.Op = op.ToModelOperation()
 		}
-	case *operations.DocUpdateInArrayOperation:
+	case *operations2.DocUpdateInArrayOperation:
 		{
-			op := operations.NewDocUpdateInArrayOperation(cast.GetBody().P, 0, cast.GetBody().V)
+			op := operations2.NewDocUpdateInArrayOperation(cast.GetBody().P, 0, cast.GetBody().V)
 			op.GetBody().T = cast.GetBody().T
 			in.Op = op.ToModelOperation()
 		}
 	default:
-		in.Op = operations.NewDeleteOperation(1, 10).ToModelOperation()
+		in.Op = operations2.NewDeleteOperation(1, 10).ToModelOperation()
 	}
 	in.Op.ID = decodedOp.GetID()
 	return in, nil
@@ -113,14 +112,14 @@ func (its *OrdaService) TestEncodingOperation(
 
 func (its *OrdaService) testEncodingSnapshotOperation(
 	goCtx gocontext.Context,
-	typeOf model.TypeOfDatatype,
-	sOp *operations.SnapshotOperation,
+	typeOf model2.TypeOfDatatype,
+	sOp *operations2.SnapshotOperation,
 ) (
-	*model.EncodingMessage,
+	*model2.EncodingMessage,
 	error,
 ) {
-	client := orda.NewClient(orda.NewLocalClientConfig("ENCODING"), "orda-encoding-tester")
-	datatype := client.CreateDatatype("Testing", typeOf, nil).(iface.Datatype)
+	client := orda2.NewClient(orda2.NewLocalClientConfig("ENCODING"), "orda-encoding-tester")
+	datatype := client.CreateDatatype("Testing", typeOf, nil).(iface2.Datatype)
 
 	if _, err := datatype.ExecuteRemote(sOp); err != nil {
 		return nil, err
@@ -131,5 +130,5 @@ func (its *OrdaService) testEncodingSnapshotOperation(
 		return nil, err
 	}
 	regenOp.SetID(sOp.ID)
-	return &model.EncodingMessage{Type: typeOf, Op: regenOp.ToModelOperation()}, nil
+	return &model2.EncodingMessage{Type: typeOf, Op: regenOp.ToModelOperation()}, nil
 }

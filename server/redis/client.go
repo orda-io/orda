@@ -4,8 +4,8 @@ import (
 	goredislib "github.com/go-redis/redis/v8"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
-	"github.com/orda-io/orda/pkg/context"
-	"github.com/orda-io/orda/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/context"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/server/utils"
 )
 
@@ -16,7 +16,7 @@ type Client struct {
 	mutexMap map[string]*redsync.Mutex
 }
 
-func New(ctx context.OrdaContext, conf *Config) (*Client, errors.OrdaError) {
+func New(ctx context.OrdaContext, conf *Config) (*Client, errors2.OrdaError) {
 	if conf == nil {
 		return &Client{
 			ctx: ctx,
@@ -46,7 +46,7 @@ func (its *Client) GetLock(ctx context.OrdaContext, lockName string) utils.Lock 
 	return utils.GetRedisLock(ctx, lockName, its.rs)
 }
 
-func (its *Client) Close() errors.OrdaError {
+func (its *Client) Close() errors2.OrdaError {
 	if its.client == nil {
 		return nil
 	}
@@ -60,7 +60,7 @@ func (its *Client) Close() errors.OrdaError {
 		}
 	}
 	if err := its.client.Close(); err != nil {
-		return errors.ServerInit.New(its.ctx.L(), "[🔒] fail to close redis")
+		return errors2.ServerInit.New(its.ctx.L(), "[🔒] fail to close redis")
 	}
 	return nil
 }

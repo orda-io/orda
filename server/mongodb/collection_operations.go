@@ -2,14 +2,14 @@ package mongodb
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/context"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	model2 "github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/schema"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/orda-io/orda/pkg/context"
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/model"
 	"github.com/orda-io/orda/server/constants"
 )
 
@@ -17,18 +17,18 @@ import (
 func (its *MongoCollections) InsertOperations(
 	ctx context.OrdaContext,
 	operations []interface{},
-) errors.OrdaError {
+) errors2.OrdaError {
 	if operations == nil {
 		return nil
 	}
 	result, err := its.operations.InsertMany(ctx, operations)
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if len(result.InsertedIDs) != len(operations) {
 		msg := fmt.Sprintf("the inserted operations (%d) are less than all the intended ones (%d)",
 			len(result.InsertedIDs), len(operations))
-		return errors.ServerDBQuery.New(ctx.L(), msg)
+		return errors2.ServerDBQuery.New(ctx.L(), msg)
 	}
 	return nil
 }
@@ -38,13 +38,13 @@ func (its *MongoCollections) DeleteOperation(
 	ctx context.OrdaContext,
 	duid string,
 	sseq uint32,
-) (int64, errors.OrdaError) {
+) (int64, errors2.OrdaError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterEQ(schema.OperationDocFields.Sseq, sseq)
 	result, err := its.operations.DeleteOne(ctx, f)
 	if err != nil {
-		return 0, errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return 0, errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	return result.DeletedCount, nil
 }
@@ -54,7 +54,7 @@ func (its *MongoCollections) GetOperations(
 	ctx context.OrdaContext,
 	duid string,
 	from, to uint64,
-) (model.OpList, []uint64, errors.OrdaError) {
+) (model2.OpList, []uint64, errors2.OrdaError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.DUID, duid).
 		AddFilterGTE(schema.OperationDocFields.Sseq, from)
@@ -69,14 +69,14 @@ func (its *MongoCollections) GetOperations(
 	}})
 	cursor, err := its.operations.Find(ctx, f, opt)
 	if err != nil {
-		return nil, nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return nil, nil, errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-	var opList []*model.Operation
+	var opList []*model2.Operation
 	var sseqList []uint64
 	for cursor.Next(ctx) {
 		var opDoc schema.OperationDoc
 		if err := cursor.Decode(&opDoc); err != nil {
-			return nil, nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
+			return nil, nil, errors2.ServerDBDecode.New(ctx.L(), err.Error())
 		}
 		opList = append(opList, opDoc.GetOperation())
 		sseqList = append(sseqList, opDoc.Sseq)
@@ -85,13 +85,13 @@ func (its *MongoCollections) GetOperations(
 }
 
 // PurgeOperations purges operations for the specified datatype.
-func (its *MongoCollections) PurgeOperations(ctx context.OrdaContext, collectionNum uint32, duid string) errors.OrdaError {
+func (its *MongoCollections) PurgeOperations(ctx context.OrdaContext, collectionNum uint32, duid string) errors2.OrdaError {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.OperationDocFields.DUID, duid)
 	result, err := its.operations.DeleteMany(ctx, f)
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.DeletedCount > 0 {
 		ctx.L().Infof("deleted %d operations of %s(%d)", result.DeletedCount, duid, collectionNum)

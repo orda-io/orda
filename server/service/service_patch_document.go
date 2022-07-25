@@ -2,11 +2,11 @@ package service
 
 import (
 	gocontext "context"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
+	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/orda"
 
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/iface"
-	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/pkg/orda"
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/schema"
 	"github.com/orda-io/orda/server/snapshot"
@@ -14,7 +14,7 @@ import (
 	"github.com/orda-io/orda/server/utils"
 )
 
-func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchMessage) (*model.PatchMessage, error) {
+func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model2.PatchMessage) (*model2.PatchMessage, error) {
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagPatch).UpdateCollection(req.Collection)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, req.Collection)
 	if rpcErr != nil {
@@ -28,7 +28,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 
 	lock := its.managers.GetLock(ctx, utils.GetLockName("PD", collectionDoc.Num, req.Key))
 	if !lock.TryLock() {
-		return nil, errors.NewRPCError(errors.ServerInit.New(ctx.L(), "fail to lock"))
+		return nil, errors2.NewRPCError(errors2.ServerInit.New(ctx.L(), "fail to lock"))
 	}
 	defer lock.Unlock()
 
@@ -41,28 +41,28 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 		datatypeDoc = &schema.DatatypeDoc{
 			Key:           req.Key,
 			CollectionNum: collectionDoc.Num,
-			Type:          model.TypeOfDatatype_DOCUMENT.String(),
+			Type:          model2.TypeOfDatatype_DOCUMENT.String(),
 		}
 	}
-	if datatypeDoc.Type != model.TypeOfDatatype_DOCUMENT.String() {
-		return nil, errors.NewRPCError(errors.ServerBadRequest.New(ctx.L(), "not document type: "+datatypeDoc.Type))
+	if datatypeDoc.Type != model2.TypeOfDatatype_DOCUMENT.String() {
+		return nil, errors2.NewRPCError(errors2.ServerBadRequest.New(ctx.L(), "not document type: "+datatypeDoc.Type))
 	}
 
 	snapshotManager := snapshot.NewManager(ctx, its.managers, datatypeDoc, collectionDoc)
 	data, lastSseq, err := snapshotManager.GetLatestDatatype()
 	if err != nil {
-		return nil, errors.NewRPCError(err)
+		return nil, errors2.NewRPCError(err)
 	}
 	ctx.UpdateDatatype(data.GetSummary())
 
 	if lastSseq > 0 {
-		data.SetState(model.StateOfDatatype_SUBSCRIBED)
+		data.SetState(model2.StateOfDatatype_SUBSCRIBED)
 		data.SetCheckPoint(lastSseq, 0)
 	}
 	doc := data.(orda.Document)
 	patches, err := doc.(orda.Document).PatchByJSON(req.Json)
 	if err != nil {
-		return nil, errors.NewRPCError(errors.ServerBadRequest.New(ctx.L(), err.Error()))
+		return nil, errors2.NewRPCError(errors2.ServerBadRequest.New(ctx.L(), err.Error()))
 	}
 
 	if len(patches) > 0 {
@@ -74,7 +74,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 		_ = <-pppCh
 	}
 
-	return &model.PatchMessage{
+	return &model2.PatchMessage{
 		Key:        req.Key,
 		Collection: req.Collection,
 		Json:       string(doc.ToJSONBytes()),

@@ -3,7 +3,7 @@ package mongodb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/orda-io/orda/pkg/log"
+	"github.com/orda-io/orda/client/pkg/log"
 	"net/url"
 )
 

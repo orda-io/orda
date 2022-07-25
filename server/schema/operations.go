@@ -2,16 +2,15 @@ package schema
 
 import (
 	"fmt"
+	model2 "github.com/orda-io/orda/client/pkg/model"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/x/bsonx"
-
-	"github.com/orda-io/orda/pkg/model"
 )
 
 // NewOperationDoc creates a new OperationDoc with the given parameters
-func NewOperationDoc(op *model.Operation, duid string, sseq uint64, colNum uint32) *OperationDoc {
+func NewOperationDoc(op *model2.Operation, duid string, sseq uint64, colNum uint32) *OperationDoc {
 
 	return &OperationDoc{
 		ID:            fmt.Sprintf("%s:%d", duid, sseq),
@@ -51,16 +50,16 @@ type OperationDoc struct {
 }
 
 // GetOperation returns a model.Operation by composing parameters of OperationDoc.
-func (its *OperationDoc) GetOperation() *model.Operation {
-	opID := &model.OperationID{
+func (its *OperationDoc) GetOperation() *model2.Operation {
+	opID := &model2.OperationID{
 		Era:     its.OpID.Era,
 		Lamport: its.OpID.Lamport,
 		CUID:    its.OpID.CUID,
 		Seq:     its.OpID.Seq,
 	}
-	return &model.Operation{
+	return &model2.Operation{
 		ID:     opID,
-		OpType: model.TypeOfOperation(model.TypeOfOperation_value[its.OpType]),
+		OpType: model2.TypeOfOperation(model2.TypeOfOperation_value[its.OpType]),
 		Body:   its.Body,
 	}
 }

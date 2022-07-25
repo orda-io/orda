@@ -1,13 +1,12 @@
 package integration
 
 import (
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/log"
+	"github.com/orda-io/orda/client/pkg/model"
+	orda2 "github.com/orda-io/orda/client/pkg/orda"
 	"github.com/stretchr/testify/require"
-
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/iface"
-	"github.com/orda-io/orda/pkg/log"
-	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/pkg/orda"
 )
 
 func (its *IntegrationTestSuite) TestMap() {
@@ -15,7 +14,7 @@ func (its *IntegrationTestSuite) TestMap() {
 
 	its.Run("Can update snapshot for hash map", func() {
 		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_MANUALLY)
-		client1 := orda.NewClient(config, "client1")
+		client1 := orda2.NewClient(config, "client1")
 
 		err := client1.Connect()
 		require.NoError(its.T(), err)
@@ -23,14 +22,14 @@ func (its *IntegrationTestSuite) TestMap() {
 			_ = client1.Close()
 		}()
 
-		map1 := client1.CreateMap(key, orda.NewHandlers(
-			func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+		map1 := client1.CreateMap(key, orda2.NewHandlers(
+			func(dt orda2.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 
 			},
-			func(dt orda.Datatype, opList []interface{}) {
+			func(dt orda2.Datatype, opList []interface{}) {
 
 			},
-			func(dt orda.Datatype, errs ...errors.OrdaError) {
+			func(dt orda2.Datatype, errs ...errors.OrdaError) {
 
 			}))
 		_, _ = map1.Put("hello", "world")

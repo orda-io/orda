@@ -2,15 +2,14 @@ package integration
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/log"
+	"github.com/orda-io/orda/client/pkg/model"
+	orda2 "github.com/orda-io/orda/client/pkg/orda"
 	"sync"
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/log"
-	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/pkg/orda"
 )
 
 func (its *IntegrationTestSuite) TestNotification() {
@@ -18,13 +17,13 @@ func (its *IntegrationTestSuite) TestNotification() {
 
 	its.Run("Can notify remote change", func() {
 		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_REALTIME)
-		client1 := orda.NewClient(config, "client1")
+		client1 := orda2.NewClient(config, "client1")
 		require.NoError(its.T(), client1.Connect())
 		defer func() {
 			_ = client1.Close()
 		}()
 
-		client2 := orda.NewClient(config, "client2")
+		client2 := orda2.NewClient(config, "client2")
 		require.NoError(its.T(), client2.Connect())
 		defer func() {
 			_ = client2.Close()
@@ -40,14 +39,14 @@ func (its *IntegrationTestSuite) TestNotification() {
 		wg1.Add(2)
 		wg2 := sync.WaitGroup{}
 		wg2.Add(1)
-		intCounter2 := client2.SubscribeCounter(key, orda.NewHandlers(
-			func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
-				intCounter := dt.(orda.Counter)
+		intCounter2 := client2.SubscribeCounter(key, orda2.NewHandlers(
+			func(dt orda2.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+				intCounter := dt.(orda2.Counter)
 				log.Logger.Infof("STATE: %s -> %s %d", old, new, intCounter.Get())
 				require.Equal(its.T(), int32(1), intCounter.Get())
 				wg1.Done() // one time
 			},
-			func(dt orda.Datatype, opList []interface{}) {
+			func(dt orda2.Datatype, opList []interface{}) {
 				log.Logger.Infof("opList.size: %v", len(opList))
 				for _, op := range opList {
 					opCount += 1
@@ -61,7 +60,7 @@ func (its *IntegrationTestSuite) TestNotification() {
 					wg2.Done()
 				}
 			},
-			func(dt orda.Datatype, err ...errors.OrdaError) {
+			func(dt orda2.Datatype, err ...errors.OrdaError) {
 				require.NoError(its.T(), err[0])
 			}))
 
@@ -75,13 +74,13 @@ func (its *IntegrationTestSuite) TestNotification() {
 	its.Run("Can test realtime delivery", func() {
 		key := key + "-rt"
 		config := NewTestOrdaClientConfig(its.collectionName, model.SyncType_REALTIME)
-		client1 := orda.NewClient(config, "realtime_client1")
+		client1 := orda2.NewClient(config, "realtime_client1")
 		require.NoError(its.T(), client1.Connect())
 		defer func() {
 			_ = client1.Close()
 		}()
 
-		client2 := orda.NewClient(config, "realtime_client2")
+		client2 := orda2.NewClient(config, "realtime_client2")
 		require.NoError(its.T(), client2.Connect())
 		defer func() {
 			_ = client2.Close()
@@ -90,14 +89,14 @@ func (its *IntegrationTestSuite) TestNotification() {
 		wg1.Add(1)
 		wg3 := new(sync.WaitGroup)
 		wg3.Add(1)
-		counter1 := client1.CreateCounter(key, orda.NewHandlers(
-			func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+		counter1 := client1.CreateCounter(key, orda2.NewHandlers(
+			func(dt orda2.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 				if new == model.StateOfDatatype_SUBSCRIBED {
 					wg1.Done()
 					return
 				}
 				require.Fail(its.T(), "fail state")
-			}, func(dt orda.Datatype, opList []interface{}) {
+			}, func(dt orda2.Datatype, opList []interface{}) {
 				for _, op := range opList {
 					log.Logger.Infof("%v", op)
 					wg3.Done()
@@ -110,8 +109,8 @@ func (its *IntegrationTestSuite) TestNotification() {
 		wg2 := new(sync.WaitGroup)
 		wg2.Add(3)
 		log.Logger.Infof("SUBSCRIBED by client2")
-		counter2 := client2.SubscribeCounter(key, orda.NewHandlers(
-			func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+		counter2 := client2.SubscribeCounter(key, orda2.NewHandlers(
+			func(dt orda2.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 				log.Logger.Infof("subscribe:%s -> %s", old, new)
 				if new == model.StateOfDatatype_SUBSCRIBED {
 					wg2.Done()
@@ -119,7 +118,7 @@ func (its *IntegrationTestSuite) TestNotification() {
 				}
 				require.Fail(its.T(), "fail state")
 			},
-			func(dt orda.Datatype, opList []interface{}) {
+			func(dt orda2.Datatype, opList []interface{}) {
 				for _, op := range opList {
 					log.Logger.Infof("%v", op)
 					wg2.Done()
