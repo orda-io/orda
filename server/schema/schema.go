@@ -2,11 +2,10 @@ package schema
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/model"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/orda-io/orda/pkg/model"
 )
 
 // CollectionNameXXXX  is the name of the collection for XXXX

@@ -3,8 +3,7 @@ package svrcontext
 import (
 	gocontext "context"
 	"fmt"
-
-	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/client/pkg/context"
 )
 
 type ServerContext struct {

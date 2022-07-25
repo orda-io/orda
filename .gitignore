@@ -17,6 +17,4 @@ deployments/docker_volumes
 build/
 bin/
 proto/thirdparty
-pkg/model/*.pb.go
-pkg/model/*.gw.go
 .vscode

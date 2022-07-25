@@ -1,6 +1,10 @@
 package integration
 
 import (
+	"github.com/orda-io/orda/client/pkg/context"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/orda"
 	"github.com/orda-io/orda/server/managers"
 	redis "github.com/orda-io/orda/server/redis"
 	"path/filepath"
@@ -9,10 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/orda-io/orda/pkg/context"
-	"github.com/orda-io/orda/pkg/errors"
-	"github.com/orda-io/orda/pkg/model"
-	"github.com/orda-io/orda/pkg/orda"
 	"github.com/orda-io/orda/server/mongodb"
 )
 

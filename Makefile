@@ -14,11 +14,12 @@ GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.GitCommit=${GIT_COMMIT}'
 GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.Version=${VERSION}'
 
 PROJECT_ROOT = $(shell pwd)
+DOCKER_PROJECT_ROOT = /app
 
 PROTOC_INCLUDE := -I=./proto/thirdparty -I=./proto
 PROTOC_PROTO_FILES := orda.enum.proto orda.proto orda.grpc.proto
 
-ORDA_BUILDER := docker run --platform linux/amd64 --network host --rm -v ${PROJECT_ROOT}:${PROJECT_ROOT} -w ${PROJECT_ROOT} orda-builder sh -c
+ORDA_BUILDER := docker run --platform linux/amd64 --network host --rm -v $(PROJECT_ROOT):${DOCKER_PROJECT_ROOT} -w ${DOCKER_PROJECT_ROOT} orda-builder sh -c
 
 .PHONY: init
 init:
@@ -74,6 +75,7 @@ test:
 
 .PHONY: build-server
 build-server:
+	echo $(PROJECT_ROOT)
 	$(ORDA_BUILDER) "mkdir -p $(BUILD_DIR)"
 	$(ORDA_BUILDER) "cd server && go build -gcflags='all=-N -l' -ldflags '${GO_LDFLAGS}' -o ../$(BUILD_DIR)"
 

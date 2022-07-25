@@ -1,36 +1,35 @@
 package mongodb
 
 import (
+	"github.com/orda-io/orda/client/pkg/context"
+	errors2 "github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/server/schema"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/orda-io/orda/pkg/context"
-	"github.com/orda-io/orda/pkg/errors"
 )
 
 // GetCollection gets a collectionDoc with the specified name.
-func (its *MongoCollections) GetCollection(ctx context.OrdaContext, name string) (*schema.CollectionDoc, errors.OrdaError) {
+func (its *MongoCollections) GetCollection(ctx context.OrdaContext, name string) (*schema.CollectionDoc, errors2.OrdaError) {
 	sr := its.collections.FindOne(ctx, schema.FilterByID(name))
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return nil, errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	var collection schema.CollectionDoc
 	if err := sr.Decode(&collection); err != nil {
-		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
+		return nil, errors2.ServerDBDecode.New(ctx.L(), err.Error())
 	}
 	return &collection, nil
 }
 
 // DeleteCollection deletes collections with the specified name.
-func (its *MongoCollections) DeleteCollection(ctx context.OrdaContext, name string) errors.OrdaError {
+func (its *MongoCollections) DeleteCollection(ctx context.OrdaContext, name string) errors2.OrdaError {
 	result, err := its.collections.DeleteOne(ctx, schema.FilterByID(name))
 	if err != nil {
-		return errors.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.DeletedCount == 1 {
 		ctx.L().Infof("Collection is successfully removed:%s", name)
@@ -42,8 +41,8 @@ func (its *MongoCollections) DeleteCollection(ctx context.OrdaContext, name stri
 func (its *MongoCollections) InsertCollection(
 	ctx context.OrdaContext,
 	name string,
-) (collection *schema.CollectionDoc, err errors.OrdaError) {
-	if err := its.doTransaction(ctx, func() errors.OrdaError {
+) (collection *schema.CollectionDoc, err errors2.OrdaError) {
+	if err := its.doTransaction(ctx, func() errors2.OrdaError {
 		num, err := its.GetNextCollectionNum(ctx)
 		if err != nil {
 			return err
@@ -55,7 +54,7 @@ func (its *MongoCollections) InsertCollection(
 		}
 		_, err2 := its.collections.InsertOne(ctx, collection)
 		if err2 != nil {
-			return errors.ServerDBQuery.New(ctx.L(), err2.Error())
+			return errors2.ServerDBQuery.New(ctx.L(), err2.Error())
 		}
 		ctx.L().Infof("insert collection: %+v", collection)
 		return nil
@@ -66,8 +65,8 @@ func (its *MongoCollections) InsertCollection(
 }
 
 // PurgeAllDocumentsOfCollection purges all data for the specified collection.
-func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrdaContext, name string) errors.OrdaError {
-	if err := its.doTransaction(ctx, func() errors.OrdaError {
+func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrdaContext, name string) errors2.OrdaError {
+	if err := its.doTransaction(ctx, func() errors2.OrdaError {
 		collectionDoc, err := its.GetCollection(ctx, name)
 		if err != nil {
 			return err
@@ -86,7 +85,7 @@ func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrdaConte
 
 		result, err2 := its.collections.DeleteOne(ctx, filter)
 		if err2 != nil {
-			return errors.ServerDBQuery.New(ctx.L(), err2.Error())
+			return errors2.ServerDBQuery.New(ctx.L(), err2.Error())
 		}
 		if result.DeletedCount > 0 {
 			ctx.L().Infof("delete collection '%s'", name)

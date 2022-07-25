@@ -2,7 +2,7 @@ package utils
 
 import (
 	ctx "context"
-	"github.com/orda-io/orda/pkg/context"
+	"github.com/orda-io/orda/client/pkg/context"
 	golock "github.com/viney-shih/go-lock"
 	"sync"
 )
