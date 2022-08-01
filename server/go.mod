@@ -12,7 +12,7 @@ require (
 	github.com/go-redsync/redsync/v4 v4.5.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.0
 	github.com/orda-io/orda v0.0.0-00010101000000-000000000000
-	github.com/orda-io/orda/client v0.0.0-00010101000000-000000000000
+	github.com/orda-io/orda/client v0.0.0-20220801082945-cf9794afb5e4
 	github.com/stretchr/testify v1.8.0
 	github.com/swaggo/http-swagger v1.3.0
 	github.com/swaggo/swag v1.8.4
