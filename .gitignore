@@ -10,7 +10,6 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
-*.sum
 .idea/
 docker_volumes/
 deployments/docker_volumes
