@@ -1,13 +1,13 @@
 package orda
 
 import (
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 )
 
 type orderedType interface {
 	timedType
-	getOrderTime() *model2.Timestamp
-	setOrderTime(ts *model2.Timestamp)
+	getOrderTime() *model.Timestamp
+	setOrderTime(ts *model.Timestamp)
 	getPrev() orderedType
 	setPrev(n orderedType)
 	getNext() orderedType
@@ -22,7 +22,7 @@ type orderedType interface {
 
 type orderedNode struct {
 	timedType
-	O    *model2.Timestamp
+	O    *model.Timestamp
 	prev orderedType
 	next orderedType
 }
@@ -30,17 +30,17 @@ type orderedNode struct {
 func newHead() *orderedNode {
 	return &orderedNode{
 		timedType: newTimedNode(nil, nil),
-		O:         model2.OldestTimestamp(),
+		O:         model.OldestTimestamp(),
 		prev:      nil,
 		next:      nil,
 	}
 }
 
-func (its *orderedNode) getOrderTime() *model2.Timestamp {
+func (its *orderedNode) getOrderTime() *model.Timestamp {
 	return its.O
 }
 
-func (its *orderedNode) setOrderTime(ts *model2.Timestamp) {
+func (its *orderedNode) setOrderTime(ts *model.Timestamp) {
 	its.O = ts
 }
 

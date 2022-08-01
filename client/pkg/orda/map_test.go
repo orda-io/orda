@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/log"
-	model2 "github.com/orda-io/orda/client/pkg/model"
-	testonly2 "github.com/orda-io/orda/client/pkg/testonly"
+	"github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/testonly"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,8 +15,8 @@ import (
 func TestHashMap(t *testing.T) {
 
 	t.Run("Can run transaction", func(t *testing.T) {
-		tw := testonly2.NewTestWire(true)
-		map1, _ := newMap(testonly2.NewBase("key1", model2.TypeOfDatatype_MAP), tw, nil)
+		tw := testonly.NewTestWire(true)
+		map1, _ := newMap(testonly.NewBase("key1", model.TypeOfDatatype_MAP), tw, nil)
 		key1 := "k1"
 		key2 := "k2"
 
@@ -54,13 +54,13 @@ func TestHashMap(t *testing.T) {
 	})
 
 	t.Run("Can set and get mapSnapshot", func(t *testing.T) {
-		hashMap1, _ := newMap(testonly2.NewBase("key1", model2.TypeOfDatatype_MAP), nil, nil)
+		hashMap1, _ := newMap(testonly.NewBase("key1", model.TypeOfDatatype_MAP), nil, nil)
 		_, _ = hashMap1.Put("k1", 1)
 		_, _ = hashMap1.Put("k2", "2")
 		_, _ = hashMap1.Put("k3", 3.141592)
 		_, _ = hashMap1.Remove("k2")
 
-		clone, _ := newMap(testonly2.NewBase("key2", model2.TypeOfDatatype_MAP), nil, nil)
+		clone, _ := newMap(testonly.NewBase("key2", model.TypeOfDatatype_MAP), nil, nil)
 		meta1, snap1, err := hashMap1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
 		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)
@@ -81,10 +81,10 @@ func TestHashMap(t *testing.T) {
 
 	t.Run("Can do operations with mapSnapshot", func(t *testing.T) {
 
-		opID1 := model2.NewOperationID()
-		opID2 := model2.NewOperationID().Next()
+		opID1 := model.NewOperationID()
+		opID2 := model.NewOperationID().Next()
 
-		base := testonly2.NewBase("test", model2.TypeOfDatatype_MAP)
+		base := testonly.NewBase("test", model.TypeOfDatatype_MAP)
 		snap := newMapSnapshot(base)
 		old1, err := snap.putCommon("key1", "v1", opID1.Next().GetTimestamp())
 		require.NoError(t, err)
@@ -100,18 +100,18 @@ func TestHashMap(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "v4", old4)
 
-		log.Logger.Infof("%+v", testonly2.Marshal(t, snap))
-		require.Equal(t, `{"key1":"v2","key2":"v3"}`, testonly2.Marshal(t, snap.ToJSON()))
+		log.Logger.Infof("%+v", testonly.Marshal(t, snap))
+		require.Equal(t, `{"key1":"v2","key2":"v3"}`, testonly.Marshal(t, snap.ToJSON()))
 		require.Equal(t, 2, snap.size())
 
 		removed1, err := snap.removeRemote("key1", opID2.Next().GetTimestamp())
 		require.NoError(t, err)
 		require.Equal(t, "v2", removed1)
 
-		removed2, err := snap.removeRemote("key2", model2.OldestTimestamp()) // remove with older timestamp; not effective
+		removed2, err := snap.removeRemote("key2", model.OldestTimestamp()) // remove with older timestamp; not effective
 		require.NoError(t, err)
 		require.Nil(t, removed2)
-		log.Logger.Infof("%+v", testonly2.Marshal(t, snap))
+		log.Logger.Infof("%+v", testonly.Marshal(t, snap))
 
 		// marshal and unmarshal snapshot
 		snap1, err2 := json.Marshal(snap)

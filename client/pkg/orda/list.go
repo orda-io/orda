@@ -3,11 +3,11 @@ package orda
 import (
 	"encoding/json"
 	"fmt"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
-	iface2 "github.com/orda-io/orda/client/pkg/iface"
-	datatypes2 "github.com/orda-io/orda/client/pkg/internal/datatypes"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/internal/datatypes"
 	"github.com/orda-io/orda/client/pkg/model"
-	operations2 "github.com/orda-io/orda/client/pkg/operations"
+	"github.com/orda-io/orda/client/pkg/operations"
 	"github.com/orda-io/orda/client/pkg/types"
 	"strings"
 )
@@ -21,31 +21,31 @@ type List interface {
 
 // ListInTx is an Orda datatype which provides the list interfaces in a transaction.
 type ListInTx interface {
-	Insert(pos int, value interface{}) (interface{}, errors2.OrdaError)
-	InsertMany(pos int, value ...interface{}) (interface{}, errors2.OrdaError)
-	Get(pos int) (interface{}, errors2.OrdaError)
-	GetMany(pos int, numOfNodes int) ([]interface{}, errors2.OrdaError)
-	Delete(pos int) (interface{}, errors2.OrdaError)
-	DeleteMany(pos int, numOfNodes int) ([]interface{}, errors2.OrdaError)
-	Update(pos int, values ...interface{}) ([]interface{}, errors2.OrdaError)
+	Insert(pos int, value interface{}) (interface{}, errors.OrdaError)
+	InsertMany(pos int, value ...interface{}) (interface{}, errors.OrdaError)
+	Get(pos int) (interface{}, errors.OrdaError)
+	GetMany(pos int, numOfNodes int) ([]interface{}, errors.OrdaError)
+	Delete(pos int) (interface{}, errors.OrdaError)
+	DeleteMany(pos int, numOfNodes int) ([]interface{}, errors.OrdaError)
+	Update(pos int, values ...interface{}) ([]interface{}, errors.OrdaError)
 	Size() int
 }
 
 type list struct {
 	*datatype
-	*datatypes2.SnapshotDatatype
+	*datatypes.SnapshotDatatype
 }
 
-func newList(base *datatypes2.BaseDatatype, wire iface2.Wire, handlers *Handlers) (List, errors2.OrdaError) {
+func newList(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (List, errors.OrdaError) {
 	li := &list{
 		datatype:         newDatatype(base, wire, handlers),
-		SnapshotDatatype: datatypes2.NewSnapshotDatatype(base, nil),
+		SnapshotDatatype: datatypes.NewSnapshotDatatype(base, nil),
 	}
 	return li, li.init(li)
 }
 
 func (its *list) Transaction(tag string, userFunc func(list ListInTx) error) error {
-	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes2.TransactionContext) error {
+	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes.TransactionContext) error {
 		clone := &list{
 			datatype:         its.cloneDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
@@ -70,17 +70,17 @@ func (its *list) ToJSON() interface{} {
 	}
 }
 
-func (its *list) ExecuteLocal(op interface{}) (interface{}, errors2.OrdaError) {
+func (its *list) ExecuteLocal(op interface{}) (interface{}, errors.OrdaError) {
 	switch cast := op.(type) {
-	case *operations2.InsertOperation:
+	case *operations.InsertOperation:
 		target, ret := its.snapshot().insertLocal(cast.Pos, cast.GetTimestamp(), cast.GetBody().V...)
 		cast.GetBody().T = target
 		return ret, nil
-	case *operations2.DeleteOperation:
+	case *operations.DeleteOperation:
 		delTargets, _, delValues := its.snapshot().deleteLocal(cast.Pos, cast.NumOfNodes, cast.GetTimestamp())
 		cast.GetBody().T = delTargets
 		return delValues, nil
-	case *operations2.UpdateOperation:
+	case *operations.UpdateOperation:
 		uptTargets, uptValues, err := its.snapshot().updateLocal(cast.Pos, cast.GetTimestamp(), cast.GetBody().V)
 		if err != nil {
 			return nil, err
@@ -88,41 +88,41 @@ func (its *list) ExecuteLocal(op interface{}) (interface{}, errors2.OrdaError) {
 		cast.GetBody().T = uptTargets
 		return uptValues, nil
 	}
-	return nil, errors2.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
-func (its *list) ExecuteRemote(op interface{}) (interface{}, errors2.OrdaError) {
+func (its *list) ExecuteRemote(op interface{}) (interface{}, errors.OrdaError) {
 	switch cast := op.(type) {
-	case *operations2.SnapshotOperation:
+	case *operations.SnapshotOperation:
 		return nil, its.ApplySnapshot(cast.GetBody())
-	case *operations2.InsertOperation:
+	case *operations.InsertOperation:
 		return nil, its.snapshot().insertRemote(cast.GetBody().T, cast.ID.GetTimestamp(), cast.GetBody().V...)
-	case *operations2.DeleteOperation:
+	case *operations.DeleteOperation:
 		return its.snapshot().deleteRemote(cast.GetBody().T, cast.ID.GetTimestamp())
-	case *operations2.UpdateOperation:
+	case *operations.UpdateOperation:
 		ret, _ := its.snapshot().updateRemote(cast.GetBody().T, cast.GetBody().V, cast.ID.GetTimestamp())
 		return ret, nil
 	}
-	return nil, errors2.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *list) Size() int {
 	return its.snapshot().Size()
 }
 
-func (its *list) Insert(pos int, value interface{}) (interface{}, errors2.OrdaError) {
+func (its *list) Insert(pos int, value interface{}) (interface{}, errors.OrdaError) {
 	return its.InsertMany(pos, value)
 }
 
-func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, errors2.OrdaError) {
+func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, errors.OrdaError) {
 	if err := its.snapshot().validateInsertPosition(pos); err != nil {
 		return nil, err
 	}
 	jsonValues, err2 := types.ConvertValueList(values)
 	if err2 != nil {
-		return nil, errors2.DatatypeIllegalParameters.New(its.L(), err2.Error())
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), err2.Error())
 	}
-	op := operations2.NewInsertOperation(pos, jsonValues)
+	op := operations.NewInsertOperation(pos, jsonValues)
 	ret, err := its.SentenceInTx(its.TxCtx, op, true)
 	if err != nil {
 		return nil, err
@@ -130,15 +130,15 @@ func (its *list) InsertMany(pos int, values ...interface{}) (interface{}, errors
 	return ret, nil
 }
 
-func (its *list) Update(pos int, values ...interface{}) ([]interface{}, errors2.OrdaError) {
+func (its *list) Update(pos int, values ...interface{}) ([]interface{}, errors.OrdaError) {
 	if err := its.snapshot().validateGetRange(pos, len(values)); err != nil {
 		return nil, err
 	}
 	jsonValues, err2 := types.ConvertValueList(values)
 	if err2 != nil {
-		return nil, errors2.DatatypeIllegalParameters.New(its.L(), err2.Error())
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), err2.Error())
 	}
-	op := operations2.NewUpdateOperation(pos, jsonValues)
+	op := operations.NewUpdateOperation(pos, jsonValues)
 	ret, err := its.SentenceInTx(its.TxCtx, op, true)
 	if err != nil {
 		return nil, err
@@ -147,17 +147,17 @@ func (its *list) Update(pos int, values ...interface{}) ([]interface{}, errors2.
 }
 
 // Delete deletes one orderedType at index pos.
-func (its *list) Delete(pos int) (interface{}, errors2.OrdaError) {
+func (its *list) Delete(pos int) (interface{}, errors.OrdaError) {
 	ret, err := its.DeleteMany(pos, 1)
 	return ret[0], err
 }
 
 // DeleteMany deletes the nodes at index pos in sequence.
-func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, errors2.OrdaError) {
+func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, errors.OrdaError) {
 	if err := its.snapshot().validateGetRange(pos, numOfNode); err != nil {
 		return nil, err
 	}
-	op := operations2.NewDeleteOperation(pos, numOfNode)
+	op := operations.NewDeleteOperation(pos, numOfNode)
 	ret, err := its.SentenceInTx(its.TxCtx, op, true)
 	if err != nil {
 		return nil, err
@@ -169,14 +169,14 @@ func (its *list) DeleteMany(pos int, numOfNode int) ([]interface{}, errors2.Orda
 	return types.ToInterfaceArray(ret.([]types.JSONValue)), nil
 }
 
-func (its *list) Get(pos int) (interface{}, errors2.OrdaError) {
+func (its *list) Get(pos int) (interface{}, errors.OrdaError) {
 	if err := its.snapshot().validateGetPosition(pos); err != nil {
 		return nil, err
 	}
 	return its.snapshot().findValue(pos), nil
 }
 
-func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, errors2.OrdaError) {
+func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, errors.OrdaError) {
 	if err := its.snapshot().validateGetRange(pos, numOfNodes); err != nil {
 		return nil, err
 	}
@@ -188,13 +188,13 @@ func (its *list) GetMany(pos int, numOfNodes int) ([]interface{}, errors2.OrdaEr
 // ////////////////////////////////////////////////////////////////
 
 type listSnapshot struct {
-	iface2.BaseDatatype
+	iface.BaseDatatype
 	head orderedType
 	size int
 	Map  map[string]orderedType
 }
 
-func newListSnapshot(base iface2.BaseDatatype) *listSnapshot {
+func newListSnapshot(base iface.BaseDatatype) *listSnapshot {
 	head := newHead()
 	m := make(map[string]orderedType)
 	m[head.hash()] = head
@@ -210,7 +210,7 @@ func (its *listSnapshot) insertRemote(
 	pos *model.Timestamp,
 	ts *model.Timestamp,
 	values ...interface{},
-) errors2.OrdaError {
+) errors.OrdaError {
 	var tts []timedType
 	for _, v := range values {
 		tts = append(tts, newTimedNode(v, ts.GetAndNextDelimiter()))
@@ -221,7 +221,7 @@ func (its *listSnapshot) insertRemote(
 func (its *listSnapshot) insertRemoteWithTimedTypes(
 	pos *model.Timestamp,
 	tts ...timedType,
-) errors2.OrdaError {
+) errors.OrdaError {
 	if target, ok := its.Map[pos.Hash()]; ok {
 		// A -> T -> B, target: T, N: new one
 		for _, tt := range tts {
@@ -241,7 +241,7 @@ func (its *listSnapshot) insertRemoteWithTimedTypes(
 		}
 		return nil
 	}
-	return errors2.DatatypeNoTarget.New(its.L(), pos.Hash())
+	return errors.DatatypeNoTarget.New(its.L(), pos.Hash())
 }
 
 func (its *listSnapshot) insertLocal(
@@ -281,7 +281,7 @@ func (its *listSnapshot) updateLocal(
 	pos int,
 	ts *model.Timestamp,
 	values []interface{},
-) ([]*model.Timestamp, []interface{}, errors2.OrdaError) {
+) ([]*model.Timestamp, []interface{}, errors.OrdaError) {
 	target := its.findOrderedType(pos)
 	var updatedValues []interface{}
 	var updatedTargets []*model.Timestamp
@@ -299,9 +299,9 @@ func (its *listSnapshot) updateRemote(
 	targets []*model.Timestamp,
 	values []interface{},
 	ts *model.Timestamp,
-) ([]interface{}, errors2.OrdaError) {
+) ([]interface{}, errors.OrdaError) {
 	var updated []interface{}
-	errs := &errors2.MultipleOrdaErrors{}
+	errs := &errors.MultipleOrdaErrors{}
 	for i, t := range targets {
 		thisTS := ts.GetAndNextDelimiter()
 		if node, ok := its.Map[t.Hash()]; ok {
@@ -315,7 +315,7 @@ func (its *listSnapshot) updateRemote(
 				node.setTime(thisTS)
 			}
 		} else {
-			_ = errs.Append(errors2.DatatypeNoTarget.New(its.L(), t.ToString()))
+			_ = errs.Append(errors.DatatypeNoTarget.New(its.L(), t.ToString()))
 		}
 	}
 	return updated, errs.Return()
@@ -345,8 +345,8 @@ func (its *listSnapshot) deleteLocal(
 func (its *listSnapshot) deleteRemote(
 	targets []*model.Timestamp,
 	ts *model.Timestamp,
-) ([]timedType, errors2.OrdaError) {
-	errs := &errors2.MultipleOrdaErrors{}
+) ([]timedType, errors.OrdaError) {
+	errs := &errors.MultipleOrdaErrors{}
 	var deleted []timedType
 	for _, t := range targets {
 		thisTS := ts.GetAndNextDelimiter()
@@ -362,7 +362,7 @@ func (its *listSnapshot) deleteRemote(
 				}
 			}
 		} else {
-			_ = errs.Append(errors2.DatatypeNoTarget.New(its.L(), t.ToString()))
+			_ = errs.Append(errors.DatatypeNoTarget.New(its.L(), t.ToString()))
 		}
 	}
 	return deleted, errs.Return()
@@ -390,37 +390,37 @@ func (its *listSnapshot) retrieve(pos int) orderedType {
 	return ret
 }
 
-func (its *listSnapshot) validateGetRange(pos int, numOfNodes int) errors2.OrdaError {
+func (its *listSnapshot) validateGetRange(pos int, numOfNodes int) errors.OrdaError {
 	// 1st condition: if size==4, pos==3 is ok, but 4 is not ok
 	// 2nd condition: if size==4, (pos==3, numOfNodes==1) is ok, (pos==3, numOfNodes=2) is not ok.
 	if pos < 0 {
-		return errors2.DatatypeIllegalParameters.New(its.L(), "negative position")
+		return errors.DatatypeIllegalParameters.New(its.L(), "negative position")
 	}
 	if numOfNodes < 1 {
-		return errors2.DatatypeIllegalParameters.New(its.L(), "numOfNodes should be more than 0")
+		return errors.DatatypeIllegalParameters.New(its.L(), "numOfNodes should be more than 0")
 	}
 	if its.size-1 < pos || pos+numOfNodes > its.size {
-		return errors2.DatatypeIllegalParameters.New(its.L(), "out of bound index")
+		return errors.DatatypeIllegalParameters.New(its.L(), "out of bound index")
 	}
 	return nil
 }
 
-func (its *listSnapshot) validateInsertPosition(pos int) errors2.OrdaError {
+func (its *listSnapshot) validateInsertPosition(pos int) errors.OrdaError {
 	if pos < 0 {
-		return errors2.DatatypeIllegalParameters.New(its.L(), "negative position")
+		return errors.DatatypeIllegalParameters.New(its.L(), "negative position")
 	}
 	if pos > its.size { // size:0 => pos{0} , size:1 => pos{0, 1}
-		return errors2.DatatypeIllegalParameters.New(its.L(), "out of bound index")
+		return errors.DatatypeIllegalParameters.New(its.L(), "out of bound index")
 	}
 	return nil
 }
 
-func (its *listSnapshot) validateGetPosition(pos int) errors2.OrdaError {
+func (its *listSnapshot) validateGetPosition(pos int) errors.OrdaError {
 	if pos < 0 {
-		return errors2.DatatypeIllegalParameters.New(its.L(), "negative position")
+		return errors.DatatypeIllegalParameters.New(its.L(), "negative position")
 	}
 	if pos >= its.size { // size: 1 => pos {0}, size: 2 => pos {0, 1}
-		return errors2.DatatypeIllegalParameters.New(its.L(), "out of bound index")
+		return errors.DatatypeIllegalParameters.New(its.L(), "out of bound index")
 	}
 	return nil
 }

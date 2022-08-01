@@ -2,11 +2,11 @@ package orda
 
 import (
 	"encoding/json"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
-	iface2 "github.com/orda-io/orda/client/pkg/iface"
-	datatypes2 "github.com/orda-io/orda/client/pkg/internal/datatypes"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/internal/datatypes"
 	"github.com/orda-io/orda/client/pkg/model"
-	operations2 "github.com/orda-io/orda/client/pkg/operations"
+	"github.com/orda-io/orda/client/pkg/operations"
 	"github.com/orda-io/orda/client/pkg/types"
 	"strings"
 )
@@ -21,26 +21,26 @@ type Map interface {
 // MapInTx is an Orda datatype which provides hash map interface in a transaction.
 type MapInTx interface {
 	Get(key string) interface{}
-	Put(key string, value interface{}) (interface{}, errors2.OrdaError)
-	Remove(key string) (interface{}, errors2.OrdaError)
+	Put(key string, value interface{}) (interface{}, errors.OrdaError)
+	Remove(key string) (interface{}, errors.OrdaError)
 	Size() int
 }
 
 type ordaMap struct {
 	*datatype
-	*datatypes2.SnapshotDatatype
+	*datatypes.SnapshotDatatype
 }
 
-func newMap(base *datatypes2.BaseDatatype, wire iface2.Wire, handlers *Handlers) (Map, errors2.OrdaError) {
+func newMap(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Map, errors.OrdaError) {
 	oMap := &ordaMap{
 		datatype:         newDatatype(base, wire, handlers),
-		SnapshotDatatype: datatypes2.NewSnapshotDatatype(base, nil),
+		SnapshotDatatype: datatypes.NewSnapshotDatatype(base, nil),
 	}
 	return oMap, oMap.init(oMap)
 }
 
 func (its *ordaMap) Transaction(tag string, txFunc func(hm MapInTx) error) error {
-	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes2.TransactionContext) error {
+	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes.TransactionContext) error {
 		clone := &ordaMap{
 			datatype:         its.cloneDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
@@ -57,35 +57,35 @@ func (its *ordaMap) snapshot() *mapSnapshot {
 	return its.GetSnapshot().(*mapSnapshot)
 }
 
-func (its *ordaMap) ExecuteLocal(op interface{}) (interface{}, errors2.OrdaError) {
+func (its *ordaMap) ExecuteLocal(op interface{}) (interface{}, errors.OrdaError) {
 	switch cast := op.(type) {
-	case *operations2.PutOperation:
+	case *operations.PutOperation:
 		return its.snapshot().putCommon(cast.GetBody().Key, cast.GetBody().Value, cast.GetTimestamp())
-	case *operations2.RemoveOperation:
+	case *operations.RemoveOperation:
 		return its.snapshot().removeLocal(cast.GetBody().Key, cast.GetTimestamp())
 	}
-	return nil, errors2.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
-func (its *ordaMap) ExecuteRemote(op interface{}) (interface{}, errors2.OrdaError) {
+func (its *ordaMap) ExecuteRemote(op interface{}) (interface{}, errors.OrdaError) {
 	switch cast := op.(type) {
-	case *operations2.SnapshotOperation:
+	case *operations.SnapshotOperation:
 		return nil, its.ApplySnapshot(cast.GetBody())
-	case *operations2.PutOperation:
+	case *operations.PutOperation:
 		return its.snapshot().putCommon(cast.GetBody().Key, cast.GetBody().Value, cast.GetTimestamp())
-	case *operations2.RemoveOperation:
+	case *operations.RemoveOperation:
 		return its.snapshot().removeRemote(cast.GetBody().Key, cast.GetTimestamp())
 	}
-	return nil, errors2.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
-func (its *ordaMap) Put(key string, value interface{}) (interface{}, errors2.OrdaError) {
+func (its *ordaMap) Put(key string, value interface{}) (interface{}, errors.OrdaError) {
 	if key == "" || value == nil {
-		return nil, errors2.DatatypeIllegalParameters.New(its.L(), "neither empty key nor null value is not allowed")
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), "neither empty key nor null value is not allowed")
 	}
 	jsonSupportedType := types.ConvertToJSONSupportedValue(value)
 
-	op := operations2.NewPutOperation(key, jsonSupportedType)
+	op := operations.NewPutOperation(key, jsonSupportedType)
 	return its.SentenceInTx(its.TxCtx, op, true)
 }
 
@@ -93,11 +93,11 @@ func (its *ordaMap) Get(key string) interface{} {
 	return its.snapshot().get(key)
 }
 
-func (its *ordaMap) Remove(key string) (interface{}, errors2.OrdaError) {
+func (its *ordaMap) Remove(key string) (interface{}, errors.OrdaError) {
 	if key == "" {
-		return nil, errors2.DatatypeIllegalParameters.New(its.L(), "empty key is not allowed")
+		return nil, errors.DatatypeIllegalParameters.New(its.L(), "empty key is not allowed")
 	}
-	op := operations2.NewRemoveOperation(key)
+	op := operations.NewRemoveOperation(key)
 	return its.SentenceInTx(its.TxCtx, op, true)
 }
 
@@ -110,12 +110,12 @@ func (its *ordaMap) Size() int {
 // ////////////////////////////////////////////////////////////////
 
 type mapSnapshot struct {
-	iface2.BaseDatatype
+	iface.BaseDatatype
 	Map  map[string]timedType
 	Size int
 }
 
-func newMapSnapshot(base iface2.BaseDatatype) *mapSnapshot {
+func newMapSnapshot(base iface.BaseDatatype) *mapSnapshot {
 	return &mapSnapshot{
 		BaseDatatype: base,
 		Map:          make(map[string]timedType),
@@ -140,7 +140,7 @@ func (its *mapSnapshot) UnmarshalJSON(bytes []byte) error {
 	}{}
 	err := json.Unmarshal(bytes, temp)
 	if err != nil {
-		return errors2.DatatypeMarshal.New(its.L(), err.Error())
+		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
 	its.Map = make(map[string]timedType)
 	for k, v := range temp.Map {
@@ -158,7 +158,7 @@ func (its *mapSnapshot) putCommon(
 	key string,
 	value interface{},
 	ts *model.Timestamp,
-) (interface{}, errors2.OrdaError) {
+) (interface{}, errors.OrdaError) {
 	removed, _ := its.putCommonWithTimedType(key, newTimedNode(value, ts))
 	if removed != nil {
 		return removed.getValue(), nil
@@ -191,12 +191,12 @@ func (its *mapSnapshot) ToJSON() interface{} {
 	return m
 }
 
-func (its *mapSnapshot) removeLocal(key string, ts *model.Timestamp) (interface{}, errors2.OrdaError) {
+func (its *mapSnapshot) removeLocal(key string, ts *model.Timestamp) (interface{}, errors.OrdaError) {
 	_, oldV, err := its.removeLocalWithTimedType(key, ts)
 	return oldV, err
 }
 
-func (its *mapSnapshot) removeRemote(key string, ts *model.Timestamp) (interface{}, errors2.OrdaError) {
+func (its *mapSnapshot) removeRemote(key string, ts *model.Timestamp) (interface{}, errors.OrdaError) {
 	_, oldV, err := its.removeRemoteWithTimedType(key, ts)
 	return oldV, err
 }
@@ -204,7 +204,7 @@ func (its *mapSnapshot) removeRemote(key string, ts *model.Timestamp) (interface
 func (its *mapSnapshot) removeLocalWithTimedType(
 	key string,
 	ts *model.Timestamp,
-) (timedType, types.JSONValue, errors2.OrdaError) {
+) (timedType, types.JSONValue, errors.OrdaError) {
 	if tt, ok := its.Map[key]; ok && !tt.isTomb() {
 		oldV := tt.getValue()
 		if tt.getTime().Compare(ts) < 0 {
@@ -214,13 +214,13 @@ func (its *mapSnapshot) removeLocalWithTimedType(
 		}
 		// local remove cannot reach here; ts is always the newest;
 	}
-	return nil, nil, errors2.DatatypeNoOp.New(its.L(), "remove the value for not existing key")
+	return nil, nil, errors.DatatypeNoOp.New(its.L(), "remove the value for not existing key")
 }
 
 func (its *mapSnapshot) removeRemoteWithTimedType(
 	key string,
 	ts *model.Timestamp,
-) (timedType, types.JSONValue, errors2.OrdaError) {
+) (timedType, types.JSONValue, errors.OrdaError) {
 	if tt, ok := its.Map[key]; ok {
 		if tt.getTime().Compare(ts) < 0 {
 			if !tt.isTomb() {
@@ -232,7 +232,7 @@ func (its *mapSnapshot) removeRemoteWithTimedType(
 		}
 		return nil, nil, nil
 	}
-	return nil, nil, errors2.DatatypeNoTarget.New(its.L(), key)
+	return nil, nil, errors.DatatypeNoTarget.New(its.L(), key)
 }
 
 func (its *mapSnapshot) size() int {

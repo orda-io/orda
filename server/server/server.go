@@ -4,11 +4,12 @@ import (
 	gocontext "context"
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/constants"
-	context2 "github.com/orda-io/orda/client/pkg/context"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/context"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/managers"
+	"google.golang.org/grpc/reflection"
 	"net"
 	"os"
 	"os/signal"
@@ -43,20 +44,20 @@ type OrdaServer struct {
 	closedCh   chan struct{}
 	rpcServer  *grpc.Server
 	restServer *RestServer
-	ctx        context2.OrdaContext
+	ctx        context.OrdaContext
 	conf       *managers.OrdaServerConfig
 	service    *service.OrdaService
 	managers   *managers.Managers
 }
 
 // NewOrdaServer creates a new Orda server
-func NewOrdaServer(goCtx gocontext.Context, conf *managers.OrdaServerConfig) (*OrdaServer, errors2.OrdaError) {
+func NewOrdaServer(goCtx gocontext.Context, conf *managers.OrdaServerConfig) (*OrdaServer, errors.OrdaError) {
 	host, err := os.Hostname()
 	if err != nil {
-		return nil, errors2.ServerInit.New(log.Logger, err.Error())
+		return nil, errors.ServerInit.New(log.Logger, err.Error())
 	}
 	ctx := svrcontext.NewServerContext(goCtx, svrConstant.TagServer).
-		UpdateCollection(context2.MakeTagInServer(host, conf.RPCServerPort))
+		UpdateCollection(context.MakeTagInServer(host, conf.RPCServerPort))
 	ctx.L().Infof("Config: %v", conf)
 	return &OrdaServer{
 		ctx:      ctx,
@@ -67,27 +68,28 @@ func NewOrdaServer(goCtx gocontext.Context, conf *managers.OrdaServerConfig) (*O
 }
 
 // Start starts the Orda Server
-func (its *OrdaServer) Start() errors2.OrdaError {
+func (its *OrdaServer) Start() errors.OrdaError {
 	its.mutex.Lock()
 	defer its.mutex.Unlock()
 
-	var oErr errors2.OrdaError
+	var oErr errors.OrdaError
 	if its.managers, oErr = managers.New(its.ctx, its.conf); oErr != nil {
 		return oErr
 	}
 
 	lis, err := net.Listen("tcp", its.conf.GetRPCServerAddr())
 	if err != nil {
-		return errors2.ServerInit.New(its.ctx.L(), "fail to listen RPC:"+err.Error())
+		return errors.ServerInit.New(its.ctx.L(), "fail to listen RPC:"+err.Error())
 	}
 	its.rpcServer = grpc.NewServer()
+	reflection.Register(its.rpcServer)
 	its.service = service.NewOrdaService(its.managers)
 	model.RegisterOrdaServiceServer(its.rpcServer, its.service)
 
 	go func() {
 		its.ctx.L().Infof("open port: tcp://0.0.0.0%s", its.conf.GetRPCServerAddr())
 		if err := its.rpcServer.Serve(lis); err != nil {
-			_ = errors2.ServerInit.New(its.ctx.L(), err.Error())
+			_ = errors.ServerInit.New(its.ctx.L(), err.Error())
 			panic("fail to serve RPC Server")
 		}
 	}()
@@ -95,7 +97,7 @@ func (its *OrdaServer) Start() errors2.OrdaError {
 	its.restServer = NewRestServer(its.ctx, its.conf, its.managers)
 	go func() {
 		if err := its.restServer.Start(); err != nil {
-			_ = errors2.ServerInit.New(its.ctx.L(), err.Error())
+			_ = errors.ServerInit.New(its.ctx.L(), err.Error())
 			panic("fail to serve control server")
 		}
 	}()

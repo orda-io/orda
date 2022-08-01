@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/log"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/operations"
 	"github.com/orda-io/orda/client/pkg/types"
 	"github.com/orda-io/orda/server/schema"
@@ -67,9 +67,9 @@ func TestMongo(t *testing.T) {
 			CollectionNum: 1,
 			Type:          0,
 			SyncType:      0,
-			CheckPoints: map[string]*model2.CheckPoint{
-				"test_duid1": model2.NewCheckPoint().Set(1, 2),
-				"test_duid2": model2.NewCheckPoint().Set(3, 4),
+			CheckPoints: map[string]*model.CheckPoint{
+				"test_duid1": model.NewCheckPoint().Set(1, 2),
+				"test_duid2": model.NewCheckPoint().Set(3, 4),
 			},
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
@@ -82,7 +82,7 @@ func TestMongo(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = mongo.UpdateCheckPointInClient(ctx, c.CUID, "test_duid1", &model2.CheckPoint{Cseq: 2, Sseq: 2})
+		err = mongo.UpdateCheckPointInClient(ctx, c.CUID, "test_duid1", &model.CheckPoint{Cseq: 2, Sseq: 2})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,9 +154,9 @@ func TestMongo(t *testing.T) {
 	t.Run("Can manipulate operationDoc", func(t *testing.T) {
 		snap, err := json.Marshal(&testSnapshot{Value: 1})
 		require.NoError(t, err)
-		op := operations.NewSnapshotOperation(model2.TypeOfDatatype_DOCUMENT, snap)
+		op := operations.NewSnapshotOperation(model.TypeOfDatatype_DOCUMENT, snap)
 
-		op.ID = model2.NewOperationIDWithCUID(types.NewUID())
+		op.ID = model.NewOperationIDWithCUID(types.NewUID())
 		modelOp := op.ToModelOperation()
 		// opb, _ := proto.Marshal(op)
 

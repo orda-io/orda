@@ -3,7 +3,7 @@ package managers
 import (
 	"encoding/json"
 	"github.com/orda-io/orda/client/pkg/context"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/model"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -51,10 +51,10 @@ func NewNotifyManager(ctx *context.ClientContext, pubSubAddr string, cm *model.C
 }
 
 // SubscribeNotification subscribes notification for a topic.
-func (its *NotifyManager) SubscribeNotification(topic string) errors2.OrdaError {
+func (its *NotifyManager) SubscribeNotification(topic string) errors.OrdaError {
 	token := its.client.Subscribe(topic, 0, its.notificationSubscribeFunc)
 	if token.Wait() && token.Error() != nil {
-		return errors2.ClientConnect.New(its.ctx.L(), "notification ", token.Error())
+		return errors.ClientConnect.New(its.ctx.L(), "notification ", token.Error())
 	}
 	return nil
 }
@@ -78,9 +78,9 @@ func (its *NotifyManager) notificationSubscribeFunc(client mqtt.Client, msg mqtt
 }
 
 // Connect make a connection with Orda notification server.
-func (its *NotifyManager) Connect() errors2.OrdaError {
+func (its *NotifyManager) Connect() errors.OrdaError {
 	if token := its.client.Connect(); token.Wait() && token.Error() != nil {
-		return errors2.ClientConnect.New(its.ctx.L(), "notification server")
+		return errors.ClientConnect.New(its.ctx.L(), "notification server")
 	}
 	its.ctx.L().Infof("connect to notification server")
 	go its.notificationLoop()

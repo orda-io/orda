@@ -4,7 +4,7 @@ import (
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
-	testonly2 "github.com/orda-io/orda/client/pkg/testonly"
+	"github.com/orda-io/orda/client/pkg/testonly"
 	"github.com/orda-io/orda/client/pkg/utils"
 	"github.com/wI2L/jsondiff"
 	"testing"
@@ -27,8 +27,8 @@ var (
 
 func TestDocument(t *testing.T) {
 	t.Run("Can test operations of JSONObject Document", func(t *testing.T) {
-		tw := testonly2.NewTestWire(true)
-		root, _ := newDocument(testonly2.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		tw := testonly.NewTestWire(true)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
 		old1, oErr := root.PutToObject("K1", "V1")
 		require.NoError(t, oErr)
@@ -77,7 +77,7 @@ func TestDocument(t *testing.T) {
 		require.NoError(t, oErr)
 		require.Equal(t, "V3", e1.ToJSON())
 
-		log.Logger.Infof("%v", testonly2.Marshal(t, root.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		oldK3, oErr := root.PutToObject("K2", "V4")
 		require.NoError(t, oErr)
@@ -96,7 +96,7 @@ func TestDocument(t *testing.T) {
 		require.Equal(t, errors.DatatypeNoOp, oErr.GetCode())
 		require.Nil(t, oldE4a)
 
-		log.Logger.Infof("%v", testonly2.Marshal(t, root.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		require.True(t, root.GetRootDocument().Equal(k2.GetRootDocument()))
 
@@ -110,8 +110,8 @@ func TestDocument(t *testing.T) {
 	})
 
 	t.Run("Can test operations of JSONArray Document", func(t *testing.T) {
-		tw := testonly2.NewTestWire(true)
-		root, _ := newDocument(testonly2.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		tw := testonly.NewTestWire(true)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
 		old1, oErr := root.PutToObject("K1", arr)
 		require.NoError(t, oErr)
@@ -140,7 +140,7 @@ func TestDocument(t *testing.T) {
 		require.True(t, existing[1].IsGarbage())
 		require.Equal(t, "y", existing[0].ToJSON())
 		require.Equal(t, "a", existing[1].ToJSON())
-		log.Logger.Infof("%v", testonly2.Marshal(t, root.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 
 		// test DeleteInArray
 		deleted, oErr := array.DeleteManyInArray(0, 2)
@@ -170,13 +170,13 @@ func TestDocument(t *testing.T) {
 		require.Equal(t, oErr.GetCode(), errors.DatatypeNoOp)
 		require.True(t, insArr.Equal(sameArr))
 
-		log.Logger.Infof("%v", testonly2.Marshal(t, root.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
 	})
 
 	t.Run("Can transaction for Document", func(t *testing.T) {
-		tw := testonly2.NewTestWire(true)
+		tw := testonly.NewTestWire(true)
 
-		outDoc, _ := newDocument(testonly2.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		outDoc, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 
 		err := outDoc.Transaction("transaction1", func(doc DocumentInTx) error {
 			_, err := doc.PutToObject("K1", "V1")
@@ -208,9 +208,9 @@ func TestDocument(t *testing.T) {
 	})
 
 	t.Run("Can execute PatchByJSON", func(t *testing.T) {
-		tw := testonly2.NewTestWire(true)
-		original, _ := newDocument(testonly2.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
-		byPatch, _ := newDocument(testonly2.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		tw := testonly.NewTestWire(true)
+		original, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		byPatch, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 		_, err := original.PutToObject("k1", str1)
 		require.NoError(t, err)
 		_, err = original.PutToObject("k2", arr1)
@@ -237,8 +237,8 @@ func TestDocument(t *testing.T) {
 			K3: true,
 		}
 		arr1 := []interface{}{"world", 1234, 3.141592, false}
-		tw := testonly2.NewTestWire(true)
-		root, _ := newDocument(testonly2.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		tw := testonly.NewTestWire(true)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 		_, err := root.PutToObject("objKey", obj1)
 		require.NoError(t, err)
 		_, err = root.PutToObject("arrKey", arr1)
@@ -320,8 +320,8 @@ func TestDocument(t *testing.T) {
 
 	t.Run("Can patch nested json", func(t *testing.T) {
 		json := "{\"k1\":[ {\"k1-0-1\":\"v1\",\"k1-0-2\":\"v2\"}, {\"k1-1-1\":\"v3\",\"k1-1-2\":\"v4\"} ],\"k2\":[ {\"k2-0-1\":\"v5\",\"k2-0-2\":\"v6\"}, {\"k2-1-1\":\"v7\",\"k2-1-2\":\"v8\"} ] }"
-		tw := testonly2.NewTestWire(true)
-		root, _ := newDocument(testonly2.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		tw := testonly.NewTestWire(true)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
 		patches, err := root.PatchByJSON(json)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(patches))

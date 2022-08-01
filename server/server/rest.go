@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/context"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/managers"
 	"google.golang.org/grpc/credentials/insecure"
@@ -43,16 +43,18 @@ func NewRestServer(ctx context.OrdaContext, conf *managers.OrdaServerConfig, cli
 }
 
 // Start starts a RestServer
-func (its *RestServer) Start() errors2.OrdaError {
+func (its *RestServer) Start() errors.OrdaError {
 
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", its.echo)
 
 	if err := its.initGrpcGatewayServer(mux); err != nil {
 		return err
 	}
 
 	if err := http.ListenAndServe(its.conf.GetRestfulAddr(), its.allowCors(mux)); err != nil {
-		return errors2.ServerInit.New(its.ctx.L(), err)
+		return errors.ServerInit.New(its.ctx.L(), err)
 	}
 	return nil
 }
@@ -92,7 +94,7 @@ func (its *swaggerDoc) ReadDoc() string {
 	return its.jsonDoc
 }
 
-func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors2.OrdaError {
+func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrdaError {
 	gwMux := runtime.NewServeMux()
 
 	// register grpc proxy
@@ -101,7 +103,7 @@ func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors2.OrdaErr
 	}
 
 	if gwErr := model.RegisterOrdaServiceHandlerFromEndpoint(its.ctx, gwMux, its.conf.GetRPCServerAddr(), gwOpts); gwErr != nil {
-		return errors2.ServerInit.New(its.ctx.L(), gwErr.Error())
+		return errors.ServerInit.New(its.ctx.L(), gwErr.Error())
 	}
 	mux.Handle(apiGrpcGw, gwMux)
 	its.ctx.L().Infof("open port: http://localhost%s%s",
@@ -118,6 +120,10 @@ func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors2.OrdaErr
 	return nil
 }
 
+func (its *RestServer) echo(w http.ResponseWriter, r *http.Request) {
+	its.ctx.L().Infof("ignored request: %v  %v%v", r.Method, r.Host, r.URL)
+}
+
 func (its *RestServer) createCollections(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPut:
@@ -131,7 +137,7 @@ func (its *RestServer) createCollections(res http.ResponseWriter, req *http.Requ
 		}
 		_, err2 := res.Write([]byte(msg))
 		if err2 != nil {
-			_ = errors2.ServerInit.New(its.ctx.L(), err2.Error())
+			_ = errors.ServerInit.New(its.ctx.L(), err2.Error())
 			return
 		}
 		its.ctx.L().Infof(msg)

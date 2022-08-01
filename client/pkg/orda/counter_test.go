@@ -5,16 +5,16 @@ import (
 	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
-	testonly2 "github.com/orda-io/orda/client/pkg/testonly"
+	"github.com/orda-io/orda/client/pkg/testonly"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestCounterTransactions(t *testing.T) {
 	t.Run("Can transaction for Counter", func(t *testing.T) {
-		tw := testonly2.NewTestWire(true)
+		tw := testonly.NewTestWire(true)
 
-		counter1, _ := newCounter(testonly2.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
+		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
 
 		require.NoError(t, counter1.Transaction("transaction1", func(counter CounterInTx) error {
 			_, _ = counter.IncreaseBy(2)
@@ -40,15 +40,15 @@ func TestCounterTransactions(t *testing.T) {
 		log.Logger.Infof("%v", sOp)
 		log.Logger.Infof("%v", sOp.ToModelOperation())
 
-		counter2, _ := newCounter(testonly2.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
+		counter2, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
 		counter2.(iface.Datatype).ExecuteRemote(sOp)
 		log.Logger.Infof("%v", counter1.ToJSON())
 	})
 
 	t.Run("Can sync Counter operations with Test wire", func(t *testing.T) {
-		tw := testonly2.NewTestWire(true)
-		counter1, _ := newCounter(testonly2.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
-		counter2, _ := newCounter(testonly2.NewBase("key2", model.TypeOfDatatype_COUNTER), tw, nil)
+		tw := testonly.NewTestWire(true)
+		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), tw, nil)
+		counter2, _ := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), tw, nil)
 
 		tw.SetDatatypes(counter1.(*counter).WiredDatatype, counter2.(*counter).WiredDatatype)
 
@@ -86,10 +86,10 @@ func TestCounterTransactions(t *testing.T) {
 	})
 
 	t.Run("Can set and get counterSnapshot", func(t *testing.T) {
-		counter1, _ := newCounter(testonly2.NewBase("key1", model.TypeOfDatatype_COUNTER), nil, nil)
+		counter1, _ := newCounter(testonly.NewBase("key1", model.TypeOfDatatype_COUNTER), nil, nil)
 		_, _ = counter1.Increase()
 		_, _ = counter1.IncreaseBy(1234)
-		clone, _ := newCounter(testonly2.NewBase("key2", model.TypeOfDatatype_COUNTER), nil, nil)
+		clone, _ := newCounter(testonly.NewBase("key2", model.TypeOfDatatype_COUNTER), nil, nil)
 		meta1, snap1, err := counter1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
 		err = clone.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)

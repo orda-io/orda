@@ -2,7 +2,7 @@ package integration
 
 import (
 	gocontext "context"
-	context2 "github.com/orda-io/orda/client/pkg/context"
+	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/server/managers"
 	"github.com/orda-io/orda/server/redis"
@@ -31,12 +31,12 @@ type IntegrationTestSuite struct {
 	server         *server.OrdaServer
 	mongo          *mongodb.RepositoryMongo
 	redis          *redis.Client
-	ctx            context2.OrdaContext
+	ctx            context.OrdaContext
 }
 
 // SetupTest builds some prerequisite for testing.
 func (its *IntegrationTestSuite) SetupSuite() {
-	its.ctx = context2.NewOrdaContext(gocontext.TODO(), TagTest, context2.MakeTagInTest(its.T().Name()))
+	its.ctx = context.NewOrdaContext(gocontext.TODO(), TagTest, context.MakeTagInTest(its.T().Name()))
 	var err errors.OrdaError
 	its.conf = NewTestOrdaServerConfig(dbName)
 

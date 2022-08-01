@@ -2,8 +2,8 @@ package orda
 
 import (
 	"fmt"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
-	iface2 "github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/types"
@@ -45,47 +45,47 @@ type jsonTypeSnapshot interface {
 		key string,
 		value interface{},
 		ts *model.Timestamp,
-	) (jsonType, errors2.OrdaError)
+	) (jsonType, errors.OrdaError)
 	DeleteCommonInObject(
 		parent *model.Timestamp,
 		key string,
 		ts *model.Timestamp,
 		isLocal bool,
-	) (jsonType, errors2.OrdaError)
+	) (jsonType, errors.OrdaError)
 	InsertLocalInArray(
 		parent *model.Timestamp,
 		pos int,
 		ts *model.Timestamp,
 		values ...interface{},
-	) (*model.Timestamp, jsonType, errors2.OrdaError)
+	) (*model.Timestamp, jsonType, errors.OrdaError)
 	InsertRemoteInArray(
 		parent *model.Timestamp,
 		target *model.Timestamp,
 		ts *model.Timestamp,
 		values ...interface{},
-	) (jsonType, errors2.OrdaError)
+	) (jsonType, errors.OrdaError)
 	UpdateLocalInArray(
 		parent *model.Timestamp,
 		pos int,
 		ts *model.Timestamp,
 		values ...interface{},
-	) ([]*model.Timestamp, []jsonType, errors2.OrdaError)
+	) ([]*model.Timestamp, []jsonType, errors.OrdaError)
 	UpdateRemoteInArray(
 		parent *model.Timestamp,
 		ts *model.Timestamp,
 		targets []*model.Timestamp,
 		values []interface{},
-	) ([]jsonType, errors2.OrdaError)
+	) ([]jsonType, errors.OrdaError)
 	DeleteLocalInArray(
 		parent *model.Timestamp,
 		pos, numOfNodes int,
 		ts *model.Timestamp,
-	) ([]*model.Timestamp, []jsonType, errors2.OrdaError)
+	) ([]*model.Timestamp, []jsonType, errors.OrdaError)
 	DeleteRemoteInArray(
 		parent *model.Timestamp,
 		ts *model.Timestamp,
 		targets []*model.Timestamp,
-	) ([]jsonType, errors2.OrdaError)
+	) ([]jsonType, errors.OrdaError)
 }
 
 // ////////////////////////////////////
@@ -94,7 +94,7 @@ type jsonTypeSnapshot interface {
 
 type jsonType interface {
 	timedType
-	iface2.Snapshot
+	iface.Snapshot
 	jsonTypeSnapshot
 	getType() TypeOfJSON
 	getCommon() *jsonCommon
@@ -112,8 +112,8 @@ type jsonType interface {
 	addToNodeMap(j jsonType)
 	addToCemetery(j jsonType)
 	removeFromNodeMap(j jsonType)
-	getTargetByPaths(paths []string) (jsonType, errors2.OrdaError)
-	getTargetFromPatch(path string) (jsonType, string, errors2.OrdaError)
+	getTargetByPaths(paths []string) (jsonType, errors.OrdaError)
+	getTargetFromPatch(path string) (jsonType, string, errors.OrdaError)
 	isGarbage() bool
 	funeral(j jsonType, ts *model.Timestamp)
 	createJSONType(parent jsonType, v interface{}, ts *model.Timestamp) jsonType
@@ -123,7 +123,7 @@ type jsonType interface {
 }
 
 type jsonCommon struct {
-	iface2.BaseDatatype
+	iface.BaseDatatype
 	root     *jsonObject
 	NodeMap  map[string]jsonType // store all jsonPrimitive.K.hash => jsonType
 	Cemetery map[string]jsonType // store all deleted jsonType
@@ -158,7 +158,7 @@ func (its *jsonCommon) equal(o *jsonCommon) bool {
 	return true
 }
 
-func (its *jsonCommon) SetBase(base iface2.BaseDatatype) {
+func (its *jsonCommon) SetBase(base iface.BaseDatatype) {
 	its.BaseDatatype = base
 	for _, node := range its.NodeMap {
 		switch cast := node.(type) {
@@ -207,7 +207,7 @@ func (its *jsonPrimitive) isGarbage() bool {
 	return false
 }
 
-func (its *jsonPrimitive) getTargetByPaths(paths []string) (jsonType, errors2.OrdaError) {
+func (its *jsonPrimitive) getTargetByPaths(paths []string) (jsonType, errors.OrdaError) {
 	var node jsonType = its.getRoot()
 	for _, s := range paths {
 
@@ -219,23 +219,23 @@ func (its *jsonPrimitive) getTargetByPaths(paths []string) (jsonType, errors2.Or
 		case TypeJSONArray:
 			pos, err := strconv.Atoi(s)
 			if err != nil {
-				return nil, errors2.DatatypeNoTarget.New(its.common.L(), "invalid path:%v from %v", s, strings.Join(paths, "/"))
+				return nil, errors.DatatypeNoTarget.New(its.common.L(), "invalid path:%v from %v", s, strings.Join(paths, "/"))
 			}
 			node = node.(*jsonArray).getJSONType(pos)
 		}
 
 		if node == nil || node.isGarbage() {
-			return nil, errors2.DatatypeNoTarget.New(its.common.L(), strings.Join(paths, "/"))
+			return nil, errors.DatatypeNoTarget.New(its.common.L(), strings.Join(paths, "/"))
 		}
 	}
 	return node, nil
 }
 
-func (its *jsonPrimitive) getTargetFromPatch(path string) (jsonType, string, errors2.OrdaError) {
+func (its *jsonPrimitive) getTargetFromPatch(path string) (jsonType, string, errors.OrdaError) {
 	paths := strings.Split(path, "/")
 
 	if len(paths) < 1 {
-		return nil, "", errors2.DatatypeInvalidPatch.New(its.common.L(), "incorrect path: %v", path)
+		return nil, "", errors.DatatypeInvalidPatch.New(its.common.L(), "incorrect path: %v", path)
 	}
 	key := paths[len(paths)-1]
 	paths = paths[1 : len(paths)-1]
@@ -458,11 +458,11 @@ func (its *jsonPrimitive) PutCommonInObject(
 	key string,
 	value interface{},
 	ts *model.Timestamp,
-) (jsonType, errors2.OrdaError) {
+) (jsonType, errors.OrdaError) {
 	if parentObj, ok := its.findJSONObject(parent); ok {
 		return parentObj.putCommon(key, value, ts), nil
 	}
-	return nil, errors2.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) DeleteCommonInObject(
@@ -470,11 +470,11 @@ func (its *jsonPrimitive) DeleteCommonInObject(
 	key string,
 	ts *model.Timestamp,
 	isLocal bool,
-) (jsonType, errors2.OrdaError) {
+) (jsonType, errors.OrdaError) {
 	if parentObj, ok := its.findJSONObject(parent); ok {
 		return parentObj.deleteCommonInObject(key, ts, isLocal)
 	}
-	return nil, errors2.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 // InsertLocalInArray inserts values locally and returns the timestamp of target
@@ -486,13 +486,13 @@ func (its *jsonPrimitive) InsertLocalInArray(
 ) (
 	*model.Timestamp, // the timestamp of target
 	jsonType, // parent Array
-	errors2.OrdaError, // error
+	errors.OrdaError, // error
 ) {
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		target, _, err := parentArray.insertCommon(pos, nil, ts, values...)
 		return target, parentArray, err
 	}
-	return nil, nil, errors2.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) InsertRemoteInArray(
@@ -500,12 +500,12 @@ func (its *jsonPrimitive) InsertRemoteInArray(
 	target *model.Timestamp,
 	ts *model.Timestamp,
 	values ...interface{},
-) (jsonType, errors2.OrdaError) {
+) (jsonType, errors.OrdaError) {
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		_, _, err := parentArray.insertCommon(-1, target, ts, values...)
 		return parentArray, err
 	}
-	return nil, errors2.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) UpdateLocalInArray(
@@ -513,11 +513,11 @@ func (its *jsonPrimitive) UpdateLocalInArray(
 	pos int,
 	ts *model.Timestamp,
 	values ...interface{},
-) ([]*model.Timestamp, []jsonType, errors2.OrdaError) {
+) ([]*model.Timestamp, []jsonType, errors.OrdaError) {
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		return parentArray.updateLocal(pos, ts, values...)
 	}
-	return nil, nil, errors2.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) UpdateRemoteInArray(
@@ -525,34 +525,34 @@ func (its *jsonPrimitive) UpdateRemoteInArray(
 	ts *model.Timestamp,
 	targets []*model.Timestamp,
 	values []interface{},
-) ([]jsonType, errors2.OrdaError) {
+) ([]jsonType, errors.OrdaError) {
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		return parentArray.updateRemote(ts, targets, values)
 	}
-	return nil, errors2.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) DeleteLocalInArray(
 	parent *model.Timestamp,
 	pos, numOfNodes int,
 	ts *model.Timestamp,
-) ([]*model.Timestamp, []jsonType, errors2.OrdaError) {
+) ([]*model.Timestamp, []jsonType, errors.OrdaError) {
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		t, j := parentArray.deleteLocal(pos, numOfNodes, ts)
 		return t, j, nil
 	}
-	return nil, nil, errors2.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 func (its *jsonPrimitive) DeleteRemoteInArray(
 	parent *model.Timestamp,
 	ts *model.Timestamp,
 	targets []*model.Timestamp,
-) ([]jsonType, errors2.OrdaError) {
+) ([]jsonType, errors.OrdaError) {
 	if parentArray, ok := its.findJSONArray(parent); ok {
 		return parentArray.deleteRemote(targets, ts)
 	}
-	return nil, errors2.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
+	return nil, errors.DatatypeInvalidParent.New(its.getLogger(), parent.ToString())
 }
 
 // ///////////////////// methods of iface.Snapshot ///////////////////////////////////////

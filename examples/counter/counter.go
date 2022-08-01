@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/model"
-	orda2 "github.com/orda-io/orda/client/pkg/orda"
+	"github.com/orda-io/orda/client/pkg/orda"
 	"sync"
 )
 
@@ -42,40 +42,40 @@ func main() {
 	subscribeCounter(client3)
 }
 
-func createClient(alias string) (orda2.Client, error) {
-	clientConf := &orda2.ClientConfig{
+func createClient(alias string) (orda.Client, error) {
+	clientConf := &orda.ClientConfig{
 		ServerAddr:       "localhost:29065",       // Orda Server address. The port 29065 is the port when it is running on docker
 		NotificationAddr: "localhost:11883",       // notification server address.
 		CollectionName:   "hello_world",           // the collection name of MongoDB which the client participates in.
 		SyncType:         model.SyncType_REALTIME, // syncType that is notified in real-time from notification server.
 	}
 
-	client1 := orda2.NewClient(clientConf, alias) // create a client with alias "client1".
-	if err := client1.Connect(); err != nil {     // connect to Orda server
+	client1 := orda.NewClient(clientConf, alias) // create a client with alias "client1".
+	if err := client1.Connect(); err != nil {    // connect to Orda server
 		_ = fmt.Errorf("fail client to connect an Orda server: %v", err.Error())
 		return nil, err
 	}
 	return client1, nil
 }
 
-func closeClient(client orda2.Client) {
+func closeClient(client orda.Client) {
 	if err := client.Close(); err != nil { // close the client
 		_ = fmt.Errorf("fail to close client: %v", err.Error())
 	}
 }
 
-func createCounter(client orda2.Client) {
-	intCounter := client.CreateCounter(counterKey, orda2.NewHandlers(
-		func(dt orda2.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+func createCounter(client orda.Client) {
+	intCounter := client.CreateCounter(counterKey, orda.NewHandlers(
+		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
-		func(dt orda2.Datatype, opList []interface{}) {
+		func(dt orda.Datatype, opList []interface{}) {
 			fmt.Printf("Received remote operations\n")
 			for op := range opList {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt orda2.Datatype, errs ...errors.OrdaError) {
+		func(dt orda.Datatype, errs ...errors.OrdaError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err1 := client.Sync(); err1 != nil {
@@ -92,18 +92,18 @@ func createCounter(client orda2.Client) {
 	}
 }
 
-func createOrSubscribeCounter(client orda2.Client) {
-	intCounter := client.SubscribeOrCreateCounter(counterKey, orda2.NewHandlers(
-		func(dt orda2.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+func createOrSubscribeCounter(client orda.Client) {
+	intCounter := client.SubscribeOrCreateCounter(counterKey, orda.NewHandlers(
+		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
-		func(dt orda2.Datatype, opList []interface{}) {
+		func(dt orda.Datatype, opList []interface{}) {
 			fmt.Printf("Received remote operations\n")
 			for op := range opList {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt orda2.Datatype, errs ...errors.OrdaError) {
+		func(dt orda.Datatype, errs ...errors.OrdaError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err := client.Sync(); err != nil {
@@ -120,18 +120,18 @@ func createOrSubscribeCounter(client orda2.Client) {
 	}
 }
 
-func subscribeCounter(client orda2.Client) {
-	intCounter := client.SubscribeCounter(counterKey, orda2.NewHandlers(
-		func(dt orda2.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
+func subscribeCounter(client orda.Client) {
+	intCounter := client.SubscribeCounter(counterKey, orda.NewHandlers(
+		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			fmt.Printf("Can see how to change the state of datatype: %s => %s\n", old.String(), new.String())
 		},
-		func(dt orda2.Datatype, opList []interface{}) {
+		func(dt orda.Datatype, opList []interface{}) {
 			fmt.Printf("Received remote operations\n")
 			for op := range opList {
 				fmt.Printf("%v", op)
 			}
 		},
-		func(dt orda2.Datatype, errs ...errors.OrdaError) {
+		func(dt orda.Datatype, errs ...errors.OrdaError) {
 			fmt.Printf("Can handle error: %v", errs)
 		}))
 	if err1 := client.Sync(); err1 != nil {

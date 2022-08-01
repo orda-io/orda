@@ -2,10 +2,10 @@ package datatypes
 
 import (
 	"encoding/json"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/model"
-	operations2 "github.com/orda-io/orda/client/pkg/operations"
+	"github.com/orda-io/orda/client/pkg/operations"
 	"sync"
 )
 
@@ -47,14 +47,14 @@ func NewTransactionDatatype(b *BaseDatatype) *TransactionDatatype {
 	}
 }
 
-func (its *TransactionDatatype) ResetTransaction() errors2.OrdaError {
+func (its *TransactionDatatype) ResetTransaction() errors.OrdaError {
 	snap, err := json.Marshal(its.GetSnapshot())
 	if err != nil {
-		return errors2.DatatypeMarshal.New(its.L(), err.Error())
+		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
 	meta, err := its.GetMeta()
 	if err != nil {
-		return errors2.DatatypeMarshal.New(its.L(), err.Error())
+		return errors.DatatypeMarshal.New(its.L(), err.Error())
 	}
 	its.rollbackSnapshot = snap
 	its.rollbackMeta = meta
@@ -68,7 +68,7 @@ func (its *TransactionDatatype) SentenceInTx(
 	ctx *TransactionContext,
 	op iface.Operation,
 	isLocal bool,
-) (interface{}, errors2.OrdaError) {
+) (interface{}, errors.OrdaError) {
 	transactionCtx := its.BeginTransaction(NotUserTransactionTag, ctx, false)
 	defer func() {
 		if err := its.EndTransaction(transactionCtx, false, isLocal); err != nil {
@@ -116,7 +116,7 @@ func (its *TransactionDatatype) BeginTransaction(
 	}
 	its.txCtx = its.setTransactionContextAndLock(tag)
 	if newTxnOp {
-		op := operations2.NewTransactionOperation(tag)
+		op := operations.NewTransactionOperation(tag)
 		its.SetNextOpID(op)
 		its.txCtx.appendOperation(op)
 	}
@@ -124,19 +124,19 @@ func (its *TransactionDatatype) BeginTransaction(
 }
 
 // Rollback is called to rollback a transaction
-func (its *TransactionDatatype) Rollback() errors2.OrdaError {
+func (its *TransactionDatatype) Rollback() errors.OrdaError {
 	its.L().Infof("Begin the rollback: '%s'", its.txCtx.tag)
 	if err := its.SetMetaAndSnapshot(its.rollbackMeta, its.rollbackSnapshot); err != nil {
-		return errors2.DatatypeTransaction.New(its.L(), "rollback failed")
+		return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 	}
 	for _, op := range its.rollbackOps {
 		if err := its.Replay(op); err != nil {
-			return errors2.DatatypeTransaction.New(its.L(), "rollback failed")
+			return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 		}
 	}
-	var err errors2.OrdaError
+	var err errors.OrdaError
 	if its.rollbackMeta, its.rollbackSnapshot, err = its.GetMetaAndSnapshot(); err != nil {
-		return errors2.DatatypeTransaction.New(its.L(), "rollback failed")
+		return errors.DatatypeTransaction.New(its.L(), "rollback failed")
 	}
 	its.rollbackOps = nil
 	its.L().Infof("End the rollback: '%s'", its.txCtx.tag)
@@ -149,14 +149,14 @@ func (its *TransactionDatatype) SetTransactionFail() {
 }
 
 // EndTransaction is called when a transaction ends
-func (its *TransactionDatatype) EndTransaction(txCtx *TransactionContext, withOp, isLocal bool) errors2.OrdaError {
+func (its *TransactionDatatype) EndTransaction(txCtx *TransactionContext, withOp, isLocal bool) errors.OrdaError {
 	if txCtx == its.txCtx {
 		defer its.unlock()
 		if its.success {
 			if withOp {
-				beginOp, ok := its.txCtx.opBuffer[0].(*operations2.TransactionOperation)
+				beginOp, ok := its.txCtx.opBuffer[0].(*operations.TransactionOperation)
 				if !ok {
-					return errors2.DatatypeTransaction.New(its.L(), "no transaction operation")
+					return errors.DatatypeTransaction.New(its.L(), "no transaction operation")
 				}
 				beginOp.SetNumOfOps(len(its.txCtx.opBuffer))
 			}
@@ -188,7 +188,7 @@ func (its *TransactionDatatype) DoTransaction(
 	tag string,
 	currentTxCtx *TransactionContext,
 	funcWithCloneDatatype func(txCtx *TransactionContext) error,
-) errors2.OrdaError {
+) errors.OrdaError {
 	txCtx := its.BeginTransaction(tag, currentTxCtx, true)
 	defer func() {
 		if err := its.EndTransaction(txCtx, true, true); err != nil {
@@ -197,7 +197,7 @@ func (its *TransactionDatatype) DoTransaction(
 	}()
 	if err := funcWithCloneDatatype(txCtx); err != nil {
 		its.SetTransactionFail()
-		return errors2.DatatypeTransaction.New(its.L(), err.Error())
+		return errors.DatatypeTransaction.New(its.L(), err.Error())
 	}
 	return nil
 }
@@ -207,15 +207,15 @@ func (its *TransactionDatatype) ExecuteRemoteTransactionWithCtx(
 	transaction []*model.Operation,
 	currentTxCtx *TransactionContext,
 	obtainList bool,
-) ([]interface{}, errors2.OrdaError) {
+) ([]interface{}, errors.OrdaError) {
 	var txCtx *TransactionContext
 	if len(transaction) > 1 {
-		txOp, ok := operations2.ModelToOperation(transaction[0]).(*operations2.TransactionOperation)
+		txOp, ok := operations.ModelToOperation(transaction[0]).(*operations.TransactionOperation)
 		if !ok {
-			return nil, errors2.DatatypeTransaction.New(its.L(), "no transaction operation")
+			return nil, errors.DatatypeTransaction.New(its.L(), "no transaction operation")
 		}
 		if int(txOp.GetNumOfOps()) != len(transaction) {
-			return nil, errors2.DatatypeTransaction.New(its.L(), "not matched number of operations")
+			return nil, errors.DatatypeTransaction.New(its.L(), "not matched number of operations")
 		}
 		txCtx = its.BeginTransaction(txOp.GetBody().Tag, currentTxCtx, false)
 		defer func() {
@@ -227,12 +227,12 @@ func (its *TransactionDatatype) ExecuteRemoteTransactionWithCtx(
 	}
 	var opList []interface{}
 	for _, modelOp := range transaction {
-		op := operations2.ModelToOperation(modelOp)
+		op := operations.ModelToOperation(modelOp)
 		if obtainList {
 			opList = append(opList, op.ToJSON())
 		}
 		if _, err := its.SentenceInTx(txCtx, op, false); err != nil {
-			return nil, errors2.DatatypeTransaction.New(its.L(), err.Error())
+			return nil, errors.DatatypeTransaction.New(its.L(), err.Error())
 		}
 	}
 	return opList, nil

@@ -3,9 +3,9 @@ package managers
 import (
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/context"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 	"strings"
 
 	"golang.org/x/sync/semaphore"
@@ -35,7 +35,7 @@ func NewDatatypeManager(ctx *context.ClientContext, sm *SyncManager) *DatatypeMa
 
 // DeliverTransaction delivers a transaction
 func (its *DatatypeManager) DeliverTransaction(wired iface.WiredDatatype) {
-	if its.ctx.Client.SyncType == model2.SyncType_REALTIME {
+	if its.ctx.Client.SyncType == model.SyncType_REALTIME {
 		go func() {
 			if !its.sema.TryAcquire(1) {
 
@@ -55,13 +55,13 @@ func (its *DatatypeManager) DeliverTransaction(wired iface.WiredDatatype) {
 	}
 }
 
-func (its *DatatypeManager) ExistDatatype(key string, typeOf model2.TypeOfDatatype) (iface.Datatype, errors2.OrdaError) {
+func (its *DatatypeManager) ExistDatatype(key string, typeOf model.TypeOfDatatype) (iface.Datatype, errors.OrdaError) {
 	if data, ok := its.dataMap[key]; ok {
 		if data.GetType() == typeOf {
 			its.ctx.L().Warnf("already subscribed datatype '%s'", key)
 			return data, nil
 		}
-		err := errors2.DatatypeSubscribe.New(nil,
+		err := errors.DatatypeSubscribe.New(nil,
 			fmt.Sprintf("not matched type: %s vs %s", typeOf.String(), data.GetType().String()))
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (its *DatatypeManager) ExistDatatype(key string, typeOf model2.TypeOfDataty
 }
 
 // ReceiveNotification enables datatype to sync when it receive notification
-func (its *DatatypeManager) ReceiveNotification(topic string, notification model2.Notification) {
+func (its *DatatypeManager) ReceiveNotification(topic string, notification model.Notification) {
 	if its.ctx.Client.CUID == notification.CUID {
 		its.ctx.L().Infof("drain own notification")
 		return
@@ -92,15 +92,15 @@ func (its *DatatypeManager) ReceiveNotification(topic string, notification model
 }
 
 // SyncAll enables all the subscribed datatypes to be synchronized.
-func (its *DatatypeManager) SyncAll() errors2.OrdaError {
+func (its *DatatypeManager) SyncAll() errors.OrdaError {
 	if err := its.sema.Acquire(its.ctx.Ctx(), 1); err != nil {
-		return errors2.ClientSync.New(its.ctx.L())
+		return errors.ClientSync.New(its.ctx.L())
 	}
 	defer func() {
 		its.sema.Release(1)
 	}()
 
-	var pushPullPacks []*model2.PushPullPack
+	var pushPullPacks []*model.PushPullPack
 	for _, data := range its.dataMap {
 		ppp := data.CreatePushPullPack()
 		pushPullPacks = append(pushPullPacks, ppp)
@@ -109,7 +109,7 @@ func (its *DatatypeManager) SyncAll() errors2.OrdaError {
 }
 
 // syncIfNeedPull enables the datatype of the specified key and sseq to be synchronized if needed.
-func (its *DatatypeManager) syncIfNeedPull(data iface.WiredDatatype, sseq uint64) errors2.OrdaError {
+func (its *DatatypeManager) syncIfNeedPull(data iface.WiredDatatype, sseq uint64) errors.OrdaError {
 	if data.NeedPull(sseq) {
 		its.ctx.L().Infof("need to sync after notification: %s (sseq:%d)", data.GetKey(), sseq)
 		return its.sync(data)
@@ -118,12 +118,12 @@ func (its *DatatypeManager) syncIfNeedPull(data iface.WiredDatatype, sseq uint64
 }
 
 // OnChangeDatatypeState deals with what datatypeManager has to do when the state of datatype changes.
-func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model2.StateOfDatatype) errors2.OrdaError {
-	if state == model2.StateOfDatatype_SUBSCRIBED {
+func (its *DatatypeManager) OnChangeDatatypeState(dt iface.Datatype, state model.StateOfDatatype) errors.OrdaError {
+	if state == model.StateOfDatatype_SUBSCRIBED {
 		topic := fmt.Sprintf("%s/%s", its.ctx.Client.Collection, dt.GetKey())
 		if its.syncManager != nil {
 			if err := its.syncManager.subscribeNotification(topic); err != nil {
-				return errors2.DatatypeSubscribe.New(nil, err.Error())
+				return errors.DatatypeSubscribe.New(nil, err.Error())
 			}
 			its.ctx.L().Infof("subscribe datatype topic(%s)", topic)
 		}
@@ -141,7 +141,7 @@ func (its *DatatypeManager) Get(key string) iface.Datatype {
 }
 
 // SubscribeOrCreate links a datatype with the datatype
-func (its *DatatypeManager) SubscribeOrCreate(dt iface.Datatype, state model2.StateOfDatatype) errors2.OrdaError {
+func (its *DatatypeManager) SubscribeOrCreate(dt iface.Datatype, state model.StateOfDatatype) errors.OrdaError {
 	if _, ok := its.dataMap[dt.GetKey()]; !ok {
 		its.dataMap[dt.GetKey()] = dt
 		if err := dt.SubscribeOrCreate(state); err != nil {
@@ -152,7 +152,7 @@ func (its *DatatypeManager) SubscribeOrCreate(dt iface.Datatype, state model2.St
 }
 
 // sync enables a datatype of the specified key to be synchronized.
-func (its *DatatypeManager) sync(data iface.WiredDatatype) errors2.OrdaError {
+func (its *DatatypeManager) sync(data iface.WiredDatatype) errors.OrdaError {
 	ppp := data.CreatePushPullPack()
 	return its.syncPushPullPacks(ppp)
 }
@@ -166,7 +166,7 @@ func (its *DatatypeManager) needPush() bool {
 	return false
 }
 
-func (its *DatatypeManager) syncPushPullPacks(pppList ...*model2.PushPullPack) errors2.OrdaError {
+func (its *DatatypeManager) syncPushPullPacks(pppList ...*model.PushPullPack) errors.OrdaError {
 	pushPullResponse, err := its.syncManager.Sync(pppList...)
 	if err != nil {
 		return err

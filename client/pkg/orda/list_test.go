@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/log"
-	model2 "github.com/orda-io/orda/client/pkg/model"
-	testonly2 "github.com/orda-io/orda/client/pkg/testonly"
+	"github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/testonly"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func initList(t *testing.T, list *listSnapshot, opID *model2.OperationID) {
+func initList(t *testing.T, list *listSnapshot, opID *model.OperationID) {
 	ts := opID.Next().GetTimestamp()
 	target, _ := list.insertLocal(0, ts.Clone(), "x", "y")
 	require.Equal(t, list.head.getOrderTime(), target)
@@ -23,7 +23,7 @@ func initList(t *testing.T, list *listSnapshot, opID *model2.OperationID) {
 	require.Equal(t, ts.GetAndNextDelimiter(), o2.getOrderTime())
 	err := list.insertRemote(o2.getOrderTime(), ts.GetAndNextDelimiter(), "a", "b")
 	require.NoError(t, err)
-	log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+	log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 }
 
 func listIntegrityTest(t *testing.T, l *listSnapshot) {
@@ -72,17 +72,17 @@ func listMarshalTest(t *testing.T, original *listSnapshot) {
 func TestList(t *testing.T) {
 
 	t.Run("Can insert remotely in list", func(t *testing.T) {
-		opID := model2.NewOperationID()
-		base := testonly2.NewBase(t.Name(), model2.TypeOfDatatype_LIST)
+		opID := model.NewOperationID()
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_LIST)
 		list := newListSnapshot(base)
 
 		oldTS1 := opID.Next().GetTimestamp()
 		oldTS2 := opID.Next().GetTimestamp()
-		err := list.insertRemote(model2.OldestTimestamp(), oldTS2.Clone(), "x", "y")
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		err := list.insertRemote(model.OldestTimestamp(), oldTS2.Clone(), "x", "y")
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 		require.NoError(t, err)
-		err = list.insertRemote(model2.OldestTimestamp(), oldTS1.Clone(), "a", "b")
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		err = list.insertRemote(model.OldestTimestamp(), oldTS1.Clone(), "a", "b")
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 		require.NoError(t, err)
 		n1 := list.findTimedType(0)
 
@@ -107,8 +107,8 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("Can delete something in list", func(t *testing.T) {
-		opID := model2.NewOperationID()
-		base := testonly2.NewBase(t.Name(), model2.TypeOfDatatype_LIST)
+		opID := model.NewOperationID()
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_LIST)
 		list := newListSnapshot(base)
 
 		// ["x","y","a","b"]
@@ -121,16 +121,16 @@ func TestList(t *testing.T) {
 		require.Equal(t, ts[0], e1.getOrderTime())
 		require.Equal(t, opID.GetTimestamp(), e1.getTime())
 		require.True(t, e1.isTomb())
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 
 		// deleteRemote the first "x" again with an older timestamp
-		deleted, errs := list.deleteRemote([]*model2.Timestamp{e1.getOrderTime()}, model2.OldestTimestamp())
+		deleted, errs := list.deleteRemote([]*model.Timestamp{e1.getOrderTime()}, model.OldestTimestamp())
 		require.NoError(t, errs)
-		require.Equal(t, 0, len(deleted))                           // nothing deleted effectively
-		require.NotEqual(t, model2.OldestTimestamp(), e1.getTime()) // this deletion is not effective.
+		require.Equal(t, 0, len(deleted))                          // nothing deleted effectively
+		require.NotEqual(t, model.OldestTimestamp(), e1.getTime()) // this deletion is not effective.
 
 		// deleteRemote the first "x" again with a newer timestamp
-		deleted, errs = list.deleteRemote([]*model2.Timestamp{e1.getOrderTime()}, opID.Next().GetTimestamp())
+		deleted, errs = list.deleteRemote([]*model.Timestamp{e1.getOrderTime()}, opID.Next().GetTimestamp())
 		require.NoError(t, errs)
 		require.Equal(t, 0, len(deleted))                   // nothing deleted effectively
 		require.Equal(t, opID.GetTimestamp(), e1.getTime()) // this deletion is effective.
@@ -139,15 +139,15 @@ func TestList(t *testing.T) {
 		err := list.insertRemote(e1.getOrderTime(), opID.Next().GetTimestamp(), "X")
 		require.NoError(t, err)
 		require.Equal(t, 4, list.Size())
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 		listIntegrityTest(t, list)
 		// marshal and unmarshal snapshot
 		listMarshalTest(t, list)
 	})
 
 	t.Run("Can update something in list", func(t *testing.T) {
-		opID := model2.NewOperationID()
-		base := testonly2.NewBase(t.Name(), model2.TypeOfDatatype_LIST)
+		opID := model.NewOperationID()
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_LIST)
 		list := newListSnapshot(base)
 
 		// ["x","y","a","b"]
@@ -157,18 +157,18 @@ func TestList(t *testing.T) {
 		updTS, updV, err := list.updateLocal(0, opID.Next().GetTimestamp(), []interface{}{"u1", "u2", "u3"})
 		require.NoError(t, err)
 		require.Equal(t, []interface{}{"x", "y", "a"}, updV)
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 
 		e1 := list.findOrderedType(0)
 		ts1 := e1.getTime()
 		require.NotEqual(t, e1.getOrderTime(), e1.getTime())
 
 		// update remotely with older timestamps
-		upd, errs := list.updateRemote(updTS, []interface{}{"v1", "v2", "v3"}, model2.OldestTimestamp())
+		upd, errs := list.updateRemote(updTS, []interface{}{"v1", "v2", "v3"}, model.OldestTimestamp())
 		require.NoError(t, errs)
 		require.Equal(t, 0, len(upd))
 		require.Equal(t, ts1, e1.getTime())
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 
 		// update remotely with newer timestamps
 		upd, errs = list.updateRemote(updTS, []interface{}{"w1", "w2", "w3"}, opID.Next().GetTimestamp())
@@ -176,13 +176,13 @@ func TestList(t *testing.T) {
 		require.Equal(t, 3, len(upd))
 		require.NotEqual(t, ts1, e1.getTime())
 
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 
 		// delete with older timestamp; this should work
-		dels, errs := list.deleteRemote([]*model2.Timestamp{e1.getOrderTime()}, e1.getOrderTime().Clone())
+		dels, errs := list.deleteRemote([]*model.Timestamp{e1.getOrderTime()}, e1.getOrderTime().Clone())
 		require.NoError(t, errs)
 		require.True(t, dels[0].isTomb())
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 
 		// update remotely with newer timestamps
 		upd, errs = list.updateRemote(updTS, []interface{}{"x1", "x2", "x3"}, opID.Next().GetTimestamp())
@@ -190,7 +190,7 @@ func TestList(t *testing.T) {
 		require.Equal(t, 2, len(upd))
 		require.Equal(t, e1.getOrderTime(), e1.getTime())
 		require.True(t, e1.isTomb())
-		log.Logger.Infof("%v", testonly2.Marshal(t, list.ToJSON()))
+		log.Logger.Infof("%v", testonly.Marshal(t, list.ToJSON()))
 
 		listIntegrityTest(t, list)
 		// marshal and unmarshal snapshot
@@ -198,36 +198,36 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("Can perform list operations", func(t *testing.T) {
-		tw := testonly2.NewTestWire(false)
-		list1, _ := newList(testonly2.NewBase("key1", model2.TypeOfDatatype_LIST), tw, nil)
-		list2, _ := newList(testonly2.NewBase("key2", model2.TypeOfDatatype_LIST), tw, nil) // list2 always wins
+		tw := testonly.NewTestWire(false)
+		list1, _ := newList(testonly.NewBase("key1", model.TypeOfDatatype_LIST), tw, nil)
+		list2, _ := newList(testonly.NewBase("key2", model.TypeOfDatatype_LIST), tw, nil) // list2 always wins
 		tw.SetDatatypes(list1.(*list).WiredDatatype, list2.(*list).WiredDatatype)
 
 		// list1: x -> y
 		inserted1, _ := list1.InsertMany(0, "x", "y")
 		require.Equal(t, []interface{}{"x", "y"}, inserted1)
-		json1 := testonly2.Marshal(t, list1.ToJSON())
+		json1 := testonly.Marshal(t, list1.ToJSON())
 		require.Equal(t, `{"List":["x","y"]}`, json1)
 		log.Logger.Infof("%s", json1)
 
 		// list2: a -> b
 		inserted2, _ := list2.InsertMany(0, "a", "b")
 		require.Equal(t, []interface{}{"a", "b"}, inserted2)
-		json2 := testonly2.Marshal(t, list2.ToJSON())
+		json2 := testonly.Marshal(t, list2.ToJSON())
 		log.Logger.Infof("%s", json2)
 		require.Equal(t, `{"List":["a","b"]}`, json2)
 
 		tw.Sync()
-		json3 := testonly2.Marshal(t, list1.ToJSON())
-		json4 := testonly2.Marshal(t, list2.ToJSON())
+		json3 := testonly.Marshal(t, list1.ToJSON())
+		json4 := testonly.Marshal(t, list2.ToJSON())
 		log.Logger.Infof("%s vs. %s", json3, json4)
 		require.Equal(t, json3, json4)
 
 		_, _ = list1.InsertMany(2, 7479)
 		_, _ = list2.InsertMany(2, 3.141592)
 		tw.Sync()
-		json5 := testonly2.Marshal(t, list1.ToJSON())
-		json6 := testonly2.Marshal(t, list2.ToJSON())
+		json5 := testonly.Marshal(t, list1.ToJSON())
+		json6 := testonly.Marshal(t, list2.ToJSON())
 		log.Logger.Infof("List1: %v", json5)
 		log.Logger.Infof("List2: %v", json6)
 		require.Equal(t, json5, json6)
@@ -235,8 +235,8 @@ func TestList(t *testing.T) {
 		_, _ = list1.Update(4, "X", "Y")
 		_, _ = list2.Update(0, "A", "B")
 		tw.Sync()
-		json7 := testonly2.Marshal(t, list1.ToJSON())
-		json8 := testonly2.Marshal(t, list2.ToJSON())
+		json7 := testonly.Marshal(t, list1.ToJSON())
+		json8 := testonly.Marshal(t, list2.ToJSON())
 		log.Logger.Infof("List1: %v", json7)
 		log.Logger.Infof("List2: %v", json8)
 		require.Equal(t, json7, json8)
@@ -247,8 +247,8 @@ func TestList(t *testing.T) {
 		time1 := "time.Now()" // TODO: should deal with time type
 		_, _ = list1.Update(2, time1, m)
 		_, _ = list2.Update(2, m, time1)
-		log.Logger.Infof("List1: %v", testonly2.Marshal(t, list1.ToJSON()))
-		log.Logger.Infof("List2: %v", testonly2.Marshal(t, list2.ToJSON()))
+		log.Logger.Infof("List1: %v", testonly.Marshal(t, list1.ToJSON()))
+		log.Logger.Infof("List2: %v", testonly.Marshal(t, list2.ToJSON()))
 
 		// TODO: should deal with time type
 		// time2, err := list1.Get(3)
@@ -256,8 +256,8 @@ func TestList(t *testing.T) {
 		// require.Equal(t, time1, time2)
 
 		tw.Sync()
-		json9 := testonly2.Marshal(t, list1.ToJSON())
-		json10 := testonly2.Marshal(t, list2.ToJSON())
+		json9 := testonly.Marshal(t, list1.ToJSON())
+		json10 := testonly.Marshal(t, list2.ToJSON())
 		log.Logger.Infof("List1: %v", json9)
 		log.Logger.Infof("List2: %v", json10)
 		require.Equal(t, json9, json10)
@@ -271,8 +271,8 @@ func TestList(t *testing.T) {
 		tw.Sync()
 		require.Equal(t, 4, list1.Size(), list2.Size())
 
-		json11 := testonly2.Marshal(t, list1.ToJSON())
-		json12 := testonly2.Marshal(t, list2.ToJSON())
+		json11 := testonly.Marshal(t, list1.ToJSON())
+		json12 := testonly.Marshal(t, list2.ToJSON())
 		require.Equal(t, json11, json12)
 		log.Logger.Infof("List1: %v", json11)
 		log.Logger.Infof("List2: %v", json12)
@@ -294,7 +294,7 @@ func TestList(t *testing.T) {
 
 		meta1, snap1, err := list1.(iface.Datatype).GetMetaAndSnapshot()
 		require.NoError(t, err)
-		clone2, _ := newList(testonly2.NewBase("key2", model2.TypeOfDatatype_LIST), nil, nil)
+		clone2, _ := newList(testonly.NewBase("key2", model.TypeOfDatatype_LIST), nil, nil)
 		err = clone2.(iface.Datatype).SetMetaAndSnapshot(meta1, snap1)
 		require.NoError(t, err)
 		meta2, snap2, err := clone2.(iface.Datatype).GetMetaAndSnapshot()
@@ -307,8 +307,8 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("Can run transactions", func(t *testing.T) {
-		tw := testonly2.NewTestWire(true)
-		list1, _ := newList(testonly2.NewBase("key1", model2.TypeOfDatatype_LIST), tw, nil)
+		tw := testonly.NewTestWire(true)
+		list1, _ := newList(testonly.NewBase("key1", model.TypeOfDatatype_LIST), tw, nil)
 
 		require.NoError(t, list1.Transaction("succeeded transaction", func(listTxn ListInTx) error {
 			_, _ = listTxn.InsertMany(0, "a", "b")
