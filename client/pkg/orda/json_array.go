@@ -2,9 +2,9 @@ package orda
 
 import (
 	"fmt"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/types"
 )
 
@@ -17,7 +17,7 @@ type jsonArray struct {
 	*listSnapshot
 }
 
-func newJSONArray(base iface.BaseDatatype, parent jsonType, ts *model2.Timestamp) *jsonArray {
+func newJSONArray(base iface.BaseDatatype, parent jsonType, ts *model.Timestamp) *jsonArray {
 	return &jsonArray{
 		jsonType: &jsonPrimitive{
 			parent: parent,
@@ -44,10 +44,10 @@ func (its *jsonArray) getJSONType(pos int) jsonType {
 
 func (its *jsonArray) insertCommon(
 	pos int, // in the case of the local insert
-	target *model2.Timestamp, // in the case of the remote insert
-	ts *model2.Timestamp,
+	target *model.Timestamp, // in the case of the remote insert
+	ts *model.Timestamp,
 	values ...interface{},
-) (*model2.Timestamp, []interface{}, errors2.OrdaError) {
+) (*model.Timestamp, []interface{}, errors.OrdaError) {
 	var inserted []timedType
 	for _, v := range values {
 		ins := its.createJSONType(its, v, ts)
@@ -64,8 +64,8 @@ func (its *jsonArray) insertCommon(
 func (its *jsonArray) deleteLocal(
 	pos int,
 	numOfNodes int,
-	ts *model2.Timestamp,
-) ([]*model2.Timestamp, []jsonType) {
+	ts *model.Timestamp,
+) ([]*model.Timestamp, []jsonType) {
 	targets, timedTypes, _ := its.listSnapshot.deleteLocal(pos, numOfNodes, ts)
 	for _, v := range targets {
 		if jt, ok := its.findJSONType(v); ok {
@@ -80,9 +80,9 @@ func (its *jsonArray) deleteLocal(
 }
 
 func (its *jsonArray) deleteRemote(
-	targets []*model2.Timestamp,
-	ts *model2.Timestamp,
-) (deleted []jsonType, err errors2.OrdaError) {
+	targets []*model.Timestamp,
+	ts *model.Timestamp,
+) (deleted []jsonType, err errors.OrdaError) {
 	deletedTimedTypes, err := its.listSnapshot.deleteRemote(targets, ts)
 	for _, t := range deletedTimedTypes {
 		jt := t.(jsonType)
@@ -94,10 +94,10 @@ func (its *jsonArray) deleteRemote(
 
 func (its *jsonArray) updateLocal(
 	pos int,
-	ts *model2.Timestamp,
+	ts *model.Timestamp,
 	values ...interface{},
-) ([]*model2.Timestamp, []jsonType, errors2.OrdaError) {
-	var updatedTargets []*model2.Timestamp
+) ([]*model.Timestamp, []jsonType, errors.OrdaError) {
+	var updatedTargets []*model.Timestamp
 	var oldJSONTypes []jsonType
 	target := its.retrieve(pos + 1)
 	for _, v := range values {
@@ -120,11 +120,11 @@ func (its *jsonArray) updateLocal(
 }
 
 func (its *jsonArray) updateRemote(
-	ts *model2.Timestamp,
-	targets []*model2.Timestamp,
+	ts *model.Timestamp,
+	targets []*model.Timestamp,
 	values []interface{},
-) ([]jsonType, errors2.OrdaError) {
-	errs := &errors2.MultipleOrdaErrors{}
+) ([]jsonType, errors.OrdaError) {
+	errs := &errors.MultipleOrdaErrors{}
 	var delTypes []jsonType = nil
 	for i, t := range targets {
 		newOne := its.createJSONType(its, values[i], ts)
@@ -149,7 +149,7 @@ func (its *jsonArray) updateRemote(
 			its.funeral(deleted, updated.getCreateTime())
 			delTypes = append(delTypes, deleted)
 		} else {
-			_ = errs.Append(errors2.DatatypeNoTarget.New(its.L(), t.ToString()))
+			_ = errs.Append(errors.DatatypeNoTarget.New(its.L(), t.ToString()))
 		}
 	}
 	return delTypes, errs.Return()
@@ -200,7 +200,7 @@ func (its *jsonArray) equal(o jsonType) bool {
 		if ov1.getOrderTime().Compare(ov2.getOrderTime()) != 0 {
 			return false
 		}
-		if ov1.getOrderTime().Compare(model2.OldestTimestamp()) == 0 &&
+		if ov1.getOrderTime().Compare(model.OldestTimestamp()) == 0 &&
 			ov1.getOrderTime().Compare(ov2.getOrderTime()) == 0 {
 			return true
 		}
@@ -273,9 +273,9 @@ func (its *jsonArray) marshal() *marshaledJSONType {
 		jt := n.getTimedType().(jsonType)
 		var mot marshaledOrderedType
 		if n.getOrderTime() == jt.getCreateTime() {
-			mot = [2]*model2.Timestamp{n.getOrderTime()}
+			mot = [2]*model.Timestamp{n.getOrderTime()}
 		} else {
-			mot = [2]*model2.Timestamp{n.getOrderTime(), jt.getCreateTime()}
+			mot = [2]*model.Timestamp{n.getOrderTime(), jt.getCreateTime()}
 		}
 
 		marshaledJA.N = append(marshaledJA.N, mot)

@@ -1,15 +1,15 @@
 package iface
 
 import (
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 )
 
 // Operation defines the interfaces of any operation
 type Operation interface {
-	GetType() model2.TypeOfOperation
+	GetType() model.TypeOfOperation
 	String() string
-	GetID() *model2.OperationID
-	SetID(opID *model2.OperationID)
+	GetID() *model.OperationID
+	SetID(opID *model.OperationID)
 	ToJSON() interface{}
-	ToModelOperation() *model2.Operation
+	ToModelOperation() *model.Operation
 }

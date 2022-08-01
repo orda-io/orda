@@ -3,10 +3,10 @@ package orda
 import (
 	"encoding/json"
 	"fmt"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
-	iface2 "github.com/orda-io/orda/client/pkg/iface"
-	datatypes2 "github.com/orda-io/orda/client/pkg/internal/datatypes"
-	operations2 "github.com/orda-io/orda/client/pkg/operations"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/internal/datatypes"
+	"github.com/orda-io/orda/client/pkg/operations"
 )
 
 // Counter is an Orda datatype which provides int counter interfaces.
@@ -19,26 +19,26 @@ type Counter interface {
 // CounterInTx is an Orda datatype which provides int counter interfaces in a transaction.
 type CounterInTx interface {
 	Get() int32
-	Increase() (int32, errors2.OrdaError)
-	IncreaseBy(delta int32) (int32, errors2.OrdaError)
+	Increase() (int32, errors.OrdaError)
+	IncreaseBy(delta int32) (int32, errors.OrdaError)
 }
 
 type counter struct {
 	*datatype
-	*datatypes2.SnapshotDatatype
+	*datatypes.SnapshotDatatype
 }
 
 // newCounter creates a new counter
-func newCounter(base *datatypes2.BaseDatatype, wire iface2.Wire, handlers *Handlers) (Counter, errors2.OrdaError) {
+func newCounter(base *datatypes.BaseDatatype, wire iface.Wire, handlers *Handlers) (Counter, errors.OrdaError) {
 	counter := &counter{
 		datatype:         newDatatype(base, wire, handlers),
-		SnapshotDatatype: datatypes2.NewSnapshotDatatype(base, nil),
+		SnapshotDatatype: datatypes.NewSnapshotDatatype(base, nil),
 	}
 	return counter, counter.init(counter)
 }
 
 func (its *counter) Transaction(tag string, txFunc func(counter CounterInTx) error) error {
-	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes2.TransactionContext) error {
+	return its.DoTransaction(tag, its.TxCtx, func(txCtx *datatypes.TransactionContext) error {
 		clone := &counter{
 			datatype:         its.cloneDatatype(txCtx),
 			SnapshotDatatype: its.SnapshotDatatype,
@@ -48,24 +48,24 @@ func (its *counter) Transaction(tag string, txFunc func(counter CounterInTx) err
 }
 
 // ExecuteLocal enables the operation to perform something at the local client.
-func (its *counter) ExecuteLocal(op interface{}) (interface{}, errors2.OrdaError) {
+func (its *counter) ExecuteLocal(op interface{}) (interface{}, errors.OrdaError) {
 	switch cast := op.(type) {
-	case *operations2.IncreaseOperation:
+	case *operations.IncreaseOperation:
 		return its.snapshot().increaseCommon(cast.GetBody().Delta), nil
 	}
-	return nil, errors2.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 // ExecuteRemote is called by operation.ExecuteRemote()
-func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors2.OrdaError) {
+func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrdaError) {
 	switch cast := op.(type) {
-	case *operations2.SnapshotOperation:
+	case *operations.SnapshotOperation:
 		return nil, its.ApplySnapshot(cast.GetBody())
-	case *operations2.IncreaseOperation:
+	case *operations.IncreaseOperation:
 		return its.snapshot().increaseCommon(cast.GetBody().Delta), nil
 	}
 
-	return nil, errors2.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
+	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
 
 func (its *counter) ResetSnapshot() {
@@ -76,7 +76,7 @@ func (its *counter) Get() int32 {
 	return its.snapshot().Value
 }
 
-func (its *counter) Increase() (int32, errors2.OrdaError) {
+func (its *counter) Increase() (int32, errors.OrdaError) {
 	return its.IncreaseBy(1)
 }
 
@@ -84,8 +84,8 @@ func (its *counter) snapshot() *counterSnapshot {
 	return its.GetSnapshot().(*counterSnapshot)
 }
 
-func (its *counter) IncreaseBy(delta int32) (int32, errors2.OrdaError) {
-	op := operations2.NewIncreaseOperation(delta)
+func (its *counter) IncreaseBy(delta int32) (int32, errors.OrdaError) {
+	op := operations.NewIncreaseOperation(delta)
 	ret, err := its.SentenceInTx(its.TxCtx, op, true)
 	if err != nil {
 		return its.snapshot().Value, err
@@ -106,11 +106,11 @@ func (its *counter) ToJSON() interface{} {
 // ////////////////////////////////////////////////////////////////
 
 type counterSnapshot struct {
-	iface2.BaseDatatype
+	iface.BaseDatatype
 	Value int32
 }
 
-func newCounterSnapshot(base iface2.BaseDatatype) *counterSnapshot {
+func newCounterSnapshot(base iface.BaseDatatype) *counterSnapshot {
 	return &counterSnapshot{
 		BaseDatatype: base,
 		Value:        0,

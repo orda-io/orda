@@ -3,9 +3,9 @@ package orda
 import (
 	"encoding/json"
 	"fmt"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/types"
 )
 
@@ -18,7 +18,7 @@ type jsonObject struct {
 	*mapSnapshot
 }
 
-func newJSONObject(base iface.BaseDatatype, parent jsonType, ts *model2.Timestamp) *jsonObject {
+func newJSONObject(base iface.BaseDatatype, parent jsonType, ts *model.Timestamp) *jsonObject {
 	var root *jsonCommon
 	if parent == nil {
 		root = &jsonCommon{
@@ -44,7 +44,7 @@ func newJSONObject(base iface.BaseDatatype, parent jsonType, ts *model2.Timestam
 	return obj
 }
 
-func (its *jsonObject) putCommon(key string, value interface{}, ts *model2.Timestamp) jsonType {
+func (its *jsonObject) putCommon(key string, value interface{}, ts *model.Timestamp) jsonType {
 	newChild := its.createJSONType(its, value, ts)
 	its.addToNodeMap(newChild)
 	// removed can be either the existing one or newChild.
@@ -73,14 +73,14 @@ func (its *jsonObject) putCommon(key string, value interface{}, ts *model2.Times
 
 func (its *jsonObject) deleteCommonInObject(
 	key string,
-	ts *model2.Timestamp,
+	ts *model.Timestamp,
 	isLocal bool,
-) (jsonType, errors2.OrdaError) {
+) (jsonType, errors.OrdaError) {
 	/*
 		If jsonType is deleted in jsonObject, it should remain in NodeMap, and be added to Cemetery.
 	*/
 	var deleted timedType
-	var err errors2.OrdaError
+	var err errors.OrdaError
 	if isLocal {
 		deleted, _, err = its.removeLocalWithTimedType(key, ts)
 	} else {
@@ -184,11 +184,11 @@ func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
 	var forUnmarshal marshaledDocument
 
 	if err := json.Unmarshal(bytes, &forUnmarshal); err != nil {
-		return errors2.DatatypeMarshal.New(its.getLogger(), err.Error())
+		return errors.DatatypeMarshal.New(its.getLogger(), err.Error())
 	}
 
 	assistant := &unmarshalAssistant{
-		tsMap: make(map[string]*model2.Timestamp),
+		tsMap: make(map[string]*model.Timestamp),
 		common: &jsonCommon{
 			BaseDatatype: its.BaseDatatype,
 			root:         its,
@@ -197,7 +197,7 @@ func (its *jsonObject) UnmarshalJSON(bytes []byte) error {
 		},
 	}
 	// make all skeleton jsonTypes "in advance"
-	oldestTs := model2.OldestTimestamp()
+	oldestTs := model.OldestTimestamp()
 	for _, v := range forUnmarshal.NodeMap {
 		jt := v.unmarshalAsJSONType(assistant)
 		if jt.getCreateTime().Compare(oldestTs) == 0 {
@@ -233,7 +233,7 @@ func (its *jsonObject) marshal() *marshaledJSONType {
 	marshal.T = marshalKeyJSONObject
 	value := &marshaledJSONObject{
 		S: its.Size,
-		M: make(map[string]*model2.Timestamp),
+		M: make(map[string]*model.Timestamp),
 	}
 	for k, v := range its.mapSnapshot.Map {
 		jt := v.(jsonType)

@@ -3,9 +3,9 @@ package snapshot
 import (
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/context"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
-	orda2 "github.com/orda-io/orda/client/pkg/orda"
+	"github.com/orda-io/orda/client/pkg/orda"
 
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/managers"
@@ -35,9 +35,9 @@ func NewManager(
 	}
 }
 
-func (its *Manager) GetLatestDatatype() (iface.Datatype, uint64, errors2.OrdaError) {
+func (its *Manager) GetLatestDatatype() (iface.Datatype, uint64, errors.OrdaError) {
 	var lastSseq uint64 = 0
-	client := orda2.NewClient(orda2.NewLocalClientConfig(its.collectionDoc.Name), "orda-server")
+	client := orda.NewClient(orda.NewLocalClientConfig(its.collectionDoc.Name), "orda-server")
 	datatype := client.CreateDatatype(its.datatypeDoc.Key, its.datatypeDoc.GetType(), nil).(iface.Datatype)
 	datatype.SetLogger(its.ctx.L())
 	if its.datatypeDoc.DUID == "" {
@@ -80,10 +80,10 @@ func (its *Manager) getLockKey() string {
 }
 
 // UpdateSnapshot updates snapshot for specified datatype
-func (its *Manager) UpdateSnapshot() errors2.OrdaError {
+func (its *Manager) UpdateSnapshot() errors.OrdaError {
 	lock := its.managers.GetLock(its.ctx, its.getLockKey())
 	if !lock.TryLock() {
-		return errors2.ServerUpdateSnapshot.New(its.ctx.L(), "try lock failure")
+		return errors.ServerUpdateSnapshot.New(its.ctx.L(), "try lock failure")
 	}
 	defer lock.Unlock()
 	its.ctx.L().Infof("BEGIN UPD_SNAP: '%v'", its.datatypeDoc.Key)

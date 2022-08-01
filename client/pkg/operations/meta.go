@@ -1,8 +1,8 @@
 package operations
 
 import (
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/model"
 )
 
 // ////////////////// TransactionOperation ////////////////////
@@ -11,7 +11,7 @@ import (
 func NewTransactionOperation(tag string) *TransactionOperation {
 	return &TransactionOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_TRANSACTION,
+			model.TypeOfOperation_TRANSACTION,
 			nil,
 			&transactionBody{
 				Tag: tag,
@@ -47,11 +47,11 @@ func (its *TransactionOperation) GetNumOfOps() int32 {
 // ////////////////// ErrorOperation ////////////////////
 
 // NewErrorOperation creates an ErrorOperation.
-func NewErrorOperation(err errors2.OrdaError) *ErrorOperation {
+func NewErrorOperation(err errors.OrdaError) *ErrorOperation {
 	return &ErrorOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_ERROR,
-			model2.NewOperationID(),
+			model.TypeOfOperation_ERROR,
+			model.NewOperationID(),
 			&errorBody{
 				Code: err.GetCode(),
 				Msg:  err.Error(),
@@ -60,11 +60,11 @@ func NewErrorOperation(err errors2.OrdaError) *ErrorOperation {
 	}
 }
 
-func NewErrorOperationWithCodeAndMsg(code errors2.ErrorCode, msg string) *ErrorOperation {
+func NewErrorOperationWithCodeAndMsg(code errors.ErrorCode, msg string) *ErrorOperation {
 	return &ErrorOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_ERROR,
-			model2.NewOperationID(),
+			model.TypeOfOperation_ERROR,
+			model.NewOperationID(),
 			&errorBody{
 				Code: code,
 				Msg:  msg,
@@ -74,7 +74,7 @@ func NewErrorOperationWithCodeAndMsg(code errors2.ErrorCode, msg string) *ErrorO
 }
 
 type errorBody struct {
-	Code errors2.ErrorCode
+	Code errors.ErrorCode
 	Msg  string
 }
 
@@ -88,14 +88,14 @@ func (its *ErrorOperation) getBody() *errorBody {
 }
 
 // GetPushPullError returns PushPullError from ErrorOperation
-func (its *ErrorOperation) GetPushPullError() *errors2.PushPullError {
-	return &errors2.PushPullError{
+func (its *ErrorOperation) GetPushPullError() *errors.PushPullError {
+	return &errors.PushPullError{
 		Code: its.getBody().Code,
 		Msg:  its.getBody().Msg,
 	}
 }
 
-func (its *ErrorOperation) GetCode() errors2.ErrorCode {
+func (its *ErrorOperation) GetCode() errors.ErrorCode {
 	return its.Body.(*errorBody).Code
 }
 
@@ -106,11 +106,11 @@ func (its *ErrorOperation) GetMessage() string {
 // ////////////////// SnapshotOperation ////////////////////
 
 // NewSnapshotOperation creates a SnapshotOperation
-func NewSnapshotOperation(typeOf model2.TypeOfDatatype, snapshot []byte) *SnapshotOperation {
-	var typeOfOp = model2.TypeOfOperation(typeOf*10 + 10)
+func NewSnapshotOperation(typeOf model.TypeOfDatatype, snapshot []byte) *SnapshotOperation {
+	var typeOfOp = model.TypeOfOperation(typeOf*10 + 10)
 
 	return &SnapshotOperation{
-		baseOperation: newBaseOperation(typeOfOp, model2.NewOperationID(), snapshot),
+		baseOperation: newBaseOperation(typeOfOp, model.NewOperationID(), snapshot),
 	}
 }
 

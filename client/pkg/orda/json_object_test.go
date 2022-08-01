@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/log"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/testonly"
 	"github.com/orda-io/orda/client/pkg/utils"
 	"testing"
@@ -15,8 +15,8 @@ import (
 func initJSONObjectAndTestPut(
 	t *testing.T,
 	root *jsonObject,
-	opID *model2.OperationID,
-) []*model2.Timestamp {
+	opID *model.OperationID,
+) []*model.Timestamp {
 	// { "K1": "hello" }
 	TS1 := opID.Next().GetTimestamp()
 	removed1 := root.putCommon("K1", "hello", TS1.Clone())
@@ -42,11 +42,11 @@ func initJSONObjectAndTestPut(
 	require.Equal(t, TS3, put3.getCreateTime())
 
 	log.Logger.Infof("%v", testonly.Marshal(t, root.ToJSON()))
-	return []*model2.Timestamp{TS1, TS2, TS3}
+	return []*model.Timestamp{TS1, TS2, TS3}
 }
 
 func jsonObjectMarshalTest(t *testing.T, original *jsonObject) {
-	clone := newJSONObject(original.BaseDatatype, nil, model2.OldestTimestamp())
+	clone := newJSONObject(original.BaseDatatype, nil, model.OldestTimestamp())
 	m, err := json.Marshal(original) // ==> jsonObject.MarshalJSON
 	require.NoError(t, err)
 	utils.PrintMarshalDoc(log.Logger, original)
@@ -62,9 +62,9 @@ func jsonObjectMarshalTest(t *testing.T, original *jsonObject) {
 
 func TestJSONObject(t *testing.T) {
 	t.Run("Can put JSONElements to JSONObject and obtain the parent of children", func(t *testing.T) {
-		opID := model2.NewOperationID()
-		base := testonly.NewBase(t.Name(), model2.TypeOfDatatype_DOCUMENT)
-		root := newJSONObject(base, nil, model2.OldestTimestamp())
+		opID := model.NewOperationID()
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// {"K1":1234,"K2":{"K1":"hello","K2":1234},"K3":["world",1234,3.14]}
 		root.putCommon("K1", 1234, opID.Next().GetTimestamp())
@@ -96,9 +96,9 @@ func TestJSONObject(t *testing.T) {
 	})
 
 	t.Run("Can put JSONArray to JSONObject", func(t *testing.T) {
-		opID := model2.NewOperationID()
-		base := testonly.NewBase(t.Name(), model2.TypeOfDatatype_DOCUMENT)
-		root := newJSONObject(base, nil, model2.OldestTimestamp())
+		opID := model.NewOperationID()
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		// put array for K1
 		array := []interface{}{1234, 3.14, "hello"}
@@ -122,9 +122,9 @@ func TestJSONObject(t *testing.T) {
 	})
 
 	t.Run("Can update values in JSONObject", func(t *testing.T) {
-		opID := model2.NewOperationID()
-		base := testonly.NewBase(t.Name(), model2.TypeOfDatatype_DOCUMENT)
-		root := newJSONObject(base, nil, model2.OldestTimestamp())
+		opID := model.NewOperationID()
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		initJSONObjectAndTestPut(t, root, opID)
 
@@ -164,9 +164,9 @@ func TestJSONObject(t *testing.T) {
 	})
 
 	t.Run("Can delete something locally in JSONObject", func(t *testing.T) {
-		opID := model2.NewOperationID()
-		base := testonly.NewBase(t.Name(), model2.TypeOfDatatype_DOCUMENT)
-		root := newJSONObject(base, nil, model2.OldestTimestamp())
+		opID := model.NewOperationID()
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		initJSONObjectAndTestPut(t, root, opID)
 
@@ -209,9 +209,9 @@ func TestJSONObject(t *testing.T) {
 	})
 
 	t.Run("Can delete something remotely in JSONObject", func(t *testing.T) {
-		opID := model2.NewOperationID()
-		base := testonly.NewBase(t.Name(), model2.TypeOfDatatype_DOCUMENT)
-		root := newJSONObject(base, nil, model2.OldestTimestamp())
+		opID := model.NewOperationID()
+		base := testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT)
+		root := newJSONObject(base, nil, model.OldestTimestamp())
 
 		ts := initJSONObjectAndTestPut(t, root, opID)
 

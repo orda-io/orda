@@ -3,7 +3,7 @@ package mongodb
 import (
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/context"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/server/schema"
 	"time"
 
@@ -17,7 +17,7 @@ func (its *MongoCollections) GetLatestSnapshot(
 	ctx context.OrdaContext,
 	collectionNum uint32,
 	duid string,
-) (*schema.SnapshotDoc, errors2.OrdaError) {
+) (*schema.SnapshotDoc, errors.OrdaError) {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.SnapshotDocFields.DUID, duid)
@@ -31,11 +31,11 @@ func (its *MongoCollections) GetLatestSnapshot(
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, errors2.ServerDBQuery.New(ctx.L(), err.Error())
+		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	var snapshot schema.SnapshotDoc
 	if err := result.Decode(&snapshot); err != nil {
-		return nil, errors2.ServerDBDecode.New(ctx.L(), err.Error())
+		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
 	}
 	return &snapshot, nil
 }
@@ -48,7 +48,7 @@ func (its *MongoCollections) InsertSnapshot(
 	sseq uint64,
 	meta []byte,
 	snapshot []byte,
-) errors2.OrdaError {
+) errors.OrdaError {
 	snap := schema.SnapshotDoc{
 		ID:            fmt.Sprintf("%s:%d", duid, sseq),
 		CollectionNum: collectionNum,
@@ -60,7 +60,7 @@ func (its *MongoCollections) InsertSnapshot(
 	}
 	result, err := its.snapshots.InsertOne(ctx, snap.ToInsertBSON())
 	if err != nil {
-		return errors2.ServerDBQuery.New(ctx.L(), err.Error())
+		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	if result.InsertedID == snap.ID {
 		ctx.L().Infof("insert snapshot: %s", result.InsertedID)

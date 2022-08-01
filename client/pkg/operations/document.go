@@ -1,16 +1,16 @@
 package operations
 
 import (
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 )
 
 // ////////////////// DocPutInObjOperation ////////////////////
 
 // NewDocPutInObjOperation creates a new DocPutInObjOperation.
-func NewDocPutInObjOperation(parent *model2.Timestamp, key string, value interface{}) *DocPutInObjOperation {
+func NewDocPutInObjOperation(parent *model.Timestamp, key string, value interface{}) *DocPutInObjOperation {
 	return &DocPutInObjOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_DOC_OBJ_PUT,
+			model.TypeOfOperation_DOC_OBJ_PUT,
 			nil,
 			&docPutInObjBody{
 				P: parent,
@@ -22,7 +22,7 @@ func NewDocPutInObjOperation(parent *model2.Timestamp, key string, value interfa
 }
 
 type docPutInObjBody struct {
-	P *model2.Timestamp
+	P *model.Timestamp
 	K string
 	V interface{}
 }
@@ -39,9 +39,9 @@ func (its *DocPutInObjOperation) GetBody() *docPutInObjBody {
 // ////////////////// DocRemoveInObjOperation ////////////////////
 
 // NewDocRemoveInObjOperation creates a new DocRemoveInObjOperation.
-func NewDocRemoveInObjOperation(parent *model2.Timestamp, key string) *DocRemoveInObjOperation {
+func NewDocRemoveInObjOperation(parent *model.Timestamp, key string) *DocRemoveInObjOperation {
 	return &DocRemoveInObjOperation{
-		baseOperation: newBaseOperation(model2.TypeOfOperation_DOC_OBJ_RMV, nil, &DocRemoveInObjectBody{
+		baseOperation: newBaseOperation(model.TypeOfOperation_DOC_OBJ_RMV, nil, &DocRemoveInObjectBody{
 			P: parent,
 			K: key,
 		}),
@@ -49,7 +49,7 @@ func NewDocRemoveInObjOperation(parent *model2.Timestamp, key string) *DocRemove
 }
 
 type DocRemoveInObjectBody struct {
-	P *model2.Timestamp
+	P *model.Timestamp
 	K string
 }
 
@@ -65,10 +65,10 @@ func (its *DocRemoveInObjOperation) GetBody() *DocRemoveInObjectBody {
 // ////////////////// DocInsertToArrayOperation ////////////////////
 
 // NewDocInsertToArrayOperation creates a new DocInsertToArrayOperation.
-func NewDocInsertToArrayOperation(parent *model2.Timestamp, pos int, values []interface{}) *DocInsertToArrayOperation {
+func NewDocInsertToArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocInsertToArrayOperation {
 	return &DocInsertToArrayOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_DOC_ARR_INS,
+			model.TypeOfOperation_DOC_ARR_INS,
 			nil,
 			&DocInsertToArrayBody{
 				P: parent,
@@ -80,8 +80,8 @@ func NewDocInsertToArrayOperation(parent *model2.Timestamp, pos int, values []in
 }
 
 type DocInsertToArrayBody struct {
-	P *model2.Timestamp
-	T *model2.Timestamp
+	P *model.Timestamp
+	T *model.Timestamp
 	V []interface{}
 }
 
@@ -98,10 +98,10 @@ func (its *DocInsertToArrayOperation) GetBody() *DocInsertToArrayBody {
 // ////////////////// UpdInObjectOperation ////////////////////
 
 // NewDocUpdateInArrayOperation creates a new DocUpdateInArrayOperation.
-func NewDocUpdateInArrayOperation(parent *model2.Timestamp, pos int, values []interface{}) *DocUpdateInArrayOperation {
+func NewDocUpdateInArrayOperation(parent *model.Timestamp, pos int, values []interface{}) *DocUpdateInArrayOperation {
 	return &DocUpdateInArrayOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_DOC_ARR_UPD,
+			model.TypeOfOperation_DOC_ARR_UPD,
 			nil,
 			&DocUpdateInArrayBody{
 				P: parent,
@@ -113,8 +113,8 @@ func NewDocUpdateInArrayOperation(parent *model2.Timestamp, pos int, values []in
 }
 
 type DocUpdateInArrayBody struct {
-	P *model2.Timestamp
-	T []*model2.Timestamp
+	P *model.Timestamp
+	T []*model.Timestamp
 	V []interface{}
 }
 
@@ -131,10 +131,10 @@ func (its *DocUpdateInArrayOperation) GetBody() *DocUpdateInArrayBody {
 // ////////////////// DocDeleteInArrayOperation ////////////////////
 
 // NewDocDeleteInArrayOperation creates a new DocDeleteInArrayOperation.
-func NewDocDeleteInArrayOperation(parent *model2.Timestamp, pos, numOfNodes int) *DocDeleteInArrayOperation {
+func NewDocDeleteInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) *DocDeleteInArrayOperation {
 	return &DocDeleteInArrayOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_DOC_ARR_DEL,
+			model.TypeOfOperation_DOC_ARR_DEL,
 			nil,
 			&DocDeleteInArrayBody{
 				P: parent,
@@ -146,8 +146,8 @@ func NewDocDeleteInArrayOperation(parent *model2.Timestamp, pos, numOfNodes int)
 }
 
 type DocDeleteInArrayBody struct {
-	P *model2.Timestamp
-	T []*model2.Timestamp
+	P *model.Timestamp
+	T []*model.Timestamp
 }
 
 // DocDeleteInArrayOperation is used to delete a value into JSONArray.

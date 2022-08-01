@@ -1,14 +1,14 @@
 package operations
 
 import (
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 )
 
 // NewInsertOperation creates a new InsertOperation
 func NewInsertOperation(pos int, values []interface{}) *InsertOperation {
 	return &InsertOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_LIST_INSERT,
+			model.TypeOfOperation_LIST_INSERT,
 			nil,
 			&insertBody{
 				V: values,
@@ -19,7 +19,7 @@ func NewInsertOperation(pos int, values []interface{}) *InsertOperation {
 }
 
 type insertBody struct {
-	T *model2.Timestamp
+	T *model.Timestamp
 	V []interface{}
 }
 
@@ -39,7 +39,7 @@ func (its *InsertOperation) GetBody() *insertBody {
 func NewDeleteOperation(pos int, numOfNodes int) *DeleteOperation {
 	return &DeleteOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_LIST_DELETE,
+			model.TypeOfOperation_LIST_DELETE,
 			nil,
 			&deleteBody{},
 		),
@@ -49,7 +49,7 @@ func NewDeleteOperation(pos int, numOfNodes int) *DeleteOperation {
 }
 
 type deleteBody struct {
-	T []*model2.Timestamp
+	T []*model.Timestamp
 }
 
 // DeleteOperation is used to delete a value from a list.
@@ -69,7 +69,7 @@ func (its *DeleteOperation) GetBody() *deleteBody {
 func NewUpdateOperation(pos int, values []interface{}) *UpdateOperation {
 	return &UpdateOperation{
 		baseOperation: newBaseOperation(
-			model2.TypeOfOperation_LIST_UPDATE,
+			model.TypeOfOperation_LIST_UPDATE,
 			nil,
 			&updateBody{
 				V: values,
@@ -80,7 +80,7 @@ func NewUpdateOperation(pos int, values []interface{}) *UpdateOperation {
 }
 
 type updateBody struct {
-	T []*model2.Timestamp
+	T []*model.Timestamp
 	V []interface{}
 }
 

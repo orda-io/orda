@@ -3,7 +3,7 @@ package managers
 import (
 	"encoding/json"
 	"fmt"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/server/redis"
 	"io/ioutil"
@@ -23,7 +23,7 @@ type OrdaServerConfig struct {
 }
 
 // LoadOrdaServerConfig loads config from file.
-func LoadOrdaServerConfig(filePath string) (*OrdaServerConfig, errors2.OrdaError) {
+func LoadOrdaServerConfig(filePath string) (*OrdaServerConfig, errors.OrdaError) {
 	conf := &OrdaServerConfig{}
 	if err := conf.loadConfig(filePath); err != nil {
 		return nil, err
@@ -31,13 +31,13 @@ func LoadOrdaServerConfig(filePath string) (*OrdaServerConfig, errors2.OrdaError
 	return conf, nil
 }
 
-func (its *OrdaServerConfig) loadConfig(filepath string) errors2.OrdaError {
+func (its *OrdaServerConfig) loadConfig(filepath string) errors.OrdaError {
 	data, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return errors2.ServerInit.New(log.Logger, fmt.Sprintf("cannot read config file: %v", err.Error()))
+		return errors.ServerInit.New(log.Logger, fmt.Sprintf("cannot read config file: %v", err.Error()))
 	}
 	if err := json.Unmarshal(data, its); err != nil {
-		return errors2.ServerInit.New(log.Logger, "cannot unmarshal server config file:"+err.Error())
+		return errors.ServerInit.New(log.Logger, "cannot unmarshal server config file:"+err.Error())
 	}
 	return nil
 }

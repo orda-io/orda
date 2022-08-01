@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/context"
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
-	iface2 "github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/log"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/types"
 	"github.com/orda-io/orda/client/pkg/utils"
 )
@@ -16,26 +16,26 @@ import (
 type BaseDatatype struct {
 	Key    string
 	id     string
-	opID   *model2.OperationID
-	TypeOf model2.TypeOfDatatype
-	state  model2.StateOfDatatype
+	opID   *model.OperationID
+	TypeOf model.TypeOfDatatype
+	state  model.StateOfDatatype
 	ctx    *context.DatatypeContext
-	iface2.Datatype
+	iface.Datatype
 }
 
 // NewBaseDatatype creates a new base datatype
 func NewBaseDatatype(
 	key string,
-	t model2.TypeOfDatatype,
+	t model.TypeOfDatatype,
 	clientCtx *context.ClientContext,
-	state model2.StateOfDatatype,
+	state model.StateOfDatatype,
 ) *BaseDatatype {
 	duid := types.NewUID()
 	base := &BaseDatatype{
 		Key:    key,
 		id:     duid,
 		TypeOf: t,
-		opID:   model2.NewOperationIDWithCUID(clientCtx.Client.CUID),
+		opID:   model.NewOperationIDWithCUID(clientCtx.Client.CUID),
 		state:  state,
 	}
 	base.ctx = context.NewDatatypeContext(clientCtx, base)
@@ -60,10 +60,10 @@ func (its *BaseDatatype) String() string {
 	return fmt.Sprintf("%s", its.id)
 }
 
-func (its *BaseDatatype) executeLocalBase(op iface2.Operation) (interface{}, errors2.OrdaError) {
+func (its *BaseDatatype) executeLocalBase(op iface.Operation) (interface{}, errors.OrdaError) {
 	its.SetNextOpID(op)
-	if op.GetType() == model2.TypeOfOperation_TRANSACTION ||
-		op.GetType() == model2.TypeOfOperation_ERROR ||
+	if op.GetType() == model.TypeOfOperation_TRANSACTION ||
+		op.GetType() == model.TypeOfOperation_ERROR ||
 		op.GetType()%10 == 0 {
 		return nil, nil
 	}
@@ -74,13 +74,13 @@ func (its *BaseDatatype) executeLocalBase(op iface2.Operation) (interface{}, err
 	return ret, err // should deliver err
 }
 
-func (its *BaseDatatype) executeRemoteBase(op iface2.Operation) {
+func (its *BaseDatatype) executeRemoteBase(op iface.Operation) {
 	its.opID.SyncLamport(op.GetID().Lamport)
 	_, _ = its.ExecuteRemote(op)
 }
 
 // Replay replays an already executed operation.
-func (its *BaseDatatype) Replay(op iface2.Operation) errors2.OrdaError {
+func (its *BaseDatatype) Replay(op iface.Operation) errors.OrdaError {
 	if its.opID.CUID == op.GetID().CUID {
 		_, err := its.executeLocalBase(op)
 		if err != nil { // TODO: if an operation fails to be executed, opID should be rollbacked.
@@ -93,22 +93,22 @@ func (its *BaseDatatype) Replay(op iface2.Operation) errors2.OrdaError {
 }
 
 // SetNextOpID proceeds the operation ID next.
-func (its *BaseDatatype) SetNextOpID(op iface2.Operation) {
+func (its *BaseDatatype) SetNextOpID(op iface.Operation) {
 	op.SetID(its.opID.Next())
 }
 
 // GetType returns the type of this datatype.
-func (its *BaseDatatype) GetType() model2.TypeOfDatatype {
+func (its *BaseDatatype) GetType() model.TypeOfDatatype {
 	return its.TypeOf
 }
 
 // GetState returns the state of this datatype.
-func (its *BaseDatatype) GetState() model2.StateOfDatatype {
+func (its *BaseDatatype) GetState() model.StateOfDatatype {
 	return its.state
 }
 
 // SetOpID sets the operation ID.
-func (its *BaseDatatype) SetOpID(opID *model2.OperationID) {
+func (its *BaseDatatype) SetOpID(opID *model.OperationID) {
 	its.opID = opID
 }
 
@@ -128,17 +128,17 @@ func (its *BaseDatatype) SetDUID(duid string) {
 }
 
 // SetState sets the state of this datatype.
-func (its *BaseDatatype) SetState(state model2.StateOfDatatype) {
+func (its *BaseDatatype) SetState(state model.StateOfDatatype) {
 	its.state = state
 }
 
-func (its *BaseDatatype) GetOpID() *model2.OperationID {
+func (its *BaseDatatype) GetOpID() *model.OperationID {
 	return its.opID
 }
 
 // GetMeta returns the binary of metadata of the datatype.
-func (its *BaseDatatype) GetMeta() ([]byte, errors2.OrdaError) {
-	meta := model2.DatatypeMeta{
+func (its *BaseDatatype) GetMeta() ([]byte, errors.OrdaError) {
+	meta := model.DatatypeMeta{
 		Key:    its.Key,
 		TypeOf: its.TypeOf,
 		DUID:   its.id,
@@ -146,16 +146,16 @@ func (its *BaseDatatype) GetMeta() ([]byte, errors2.OrdaError) {
 	}
 	metab, err := json.Marshal(meta)
 	if err != nil {
-		return nil, errors2.DatatypeMarshal.New(its.ctx.L(), meta)
+		return nil, errors.DatatypeMarshal.New(its.ctx.L(), meta)
 	}
 	return metab, nil
 }
 
 // SetMeta sets the metadata with binary metadata.
-func (its *BaseDatatype) SetMeta(meta []byte) errors2.OrdaError {
-	m := model2.DatatypeMeta{}
+func (its *BaseDatatype) SetMeta(meta []byte) errors.OrdaError {
+	m := model.DatatypeMeta{}
 	if err := json.Unmarshal(meta, &m); err != nil {
-		return errors2.DatatypeMarshal.New(its.ctx.L(), string(meta))
+		return errors.DatatypeMarshal.New(its.ctx.L(), string(meta))
 	}
 	its.Key = m.Key
 	its.id = m.DUID

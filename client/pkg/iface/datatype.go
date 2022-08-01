@@ -3,19 +3,19 @@ package iface
 import (
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/log"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 )
 
 // BaseDatatype defines a base operations for datatype
 type BaseDatatype interface {
-	GetType() model2.TypeOfDatatype
-	GetState() model2.StateOfDatatype
-	GetKey() string                        // @baseDatatype
-	GetDUID() string                       // @baseDatatype
-	SetDUID(duid string)                   // @baseDatatype
-	GetCUID() string                       // @baseDatatype
-	SetState(state model2.StateOfDatatype) // @baseDatatype
-	SetLogger(l *log.OrdaLog)              // @baseDatatype
+	GetType() model.TypeOfDatatype
+	GetState() model.StateOfDatatype
+	GetKey() string                       // @baseDatatype
+	GetDUID() string                      // @baseDatatype
+	SetDUID(duid string)                  // @baseDatatype
+	GetCUID() string                      // @baseDatatype
+	SetState(state model.StateOfDatatype) // @baseDatatype
+	SetLogger(l *log.OrdaLog)             // @baseDatatype
 	GetMeta() ([]byte, errors.OrdaError)
 	SetMeta(meta []byte) errors.OrdaError
 	GetSummary() string
@@ -36,13 +36,13 @@ type SnapshotDatatype interface {
 type WiredDatatype interface {
 	BaseDatatype
 	SetCheckPoint(sseq uint64, cseq uint64)
-	ReceiveRemoteModelOperations(ops []*model2.Operation, obtainList bool) ([]interface{}, errors.OrdaError)
-	ApplyPushPullPack(*model2.PushPullPack)
-	CreatePushPullPack() *model2.PushPullPack
+	ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrdaError)
+	ApplyPushPullPack(*model.PushPullPack)
+	CreatePushPullPack() *model.PushPullPack
 	DeliverTransaction(transaction []Operation)
 	NeedPull(sseq uint64) bool
 	NeedPush() bool
-	SubscribeOrCreate(state model2.StateOfDatatype) errors.OrdaError
+	SubscribeOrCreate(state model.StateOfDatatype) errors.OrdaError
 	ResetWired()
 }
 
@@ -50,12 +50,12 @@ type WiredDatatype interface {
 type OperationalDatatype interface {
 	ExecuteLocal(op interface{}) (interface{}, errors.OrdaError)  // @Real datatype
 	ExecuteRemote(op interface{}) (interface{}, errors.OrdaError) // @Real datatype
-	ExecuteRemoteTransaction(transaction []*model2.Operation, obtainList bool) ([]interface{}, errors.OrdaError)
+	ExecuteRemoteTransaction(transaction []*model.Operation, obtainList bool) ([]interface{}, errors.OrdaError)
 }
 
 // HandleableDatatype defines handlers for Orda datatype
 type HandleableDatatype interface {
-	HandleStateChange(oldState, newState model2.StateOfDatatype)
+	HandleStateChange(oldState, newState model.StateOfDatatype)
 	HandleErrors(err ...errors.OrdaError)
 	HandleRemoteOperations(operations []interface{})
 }

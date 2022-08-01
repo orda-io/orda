@@ -2,12 +2,12 @@ package operations
 
 import (
 	"fmt"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/model"
 )
 
 // ////////////////// baseOperation ////////////////////
 
-func newBaseOperation(typeOf model2.TypeOfOperation, opID *model2.OperationID, content interface{}) baseOperation {
+func newBaseOperation(typeOf model.TypeOfOperation, opID *model.OperationID, content interface{}) baseOperation {
 	return baseOperation{
 		Type: typeOf,
 		ID:   opID,
@@ -16,24 +16,24 @@ func newBaseOperation(typeOf model2.TypeOfOperation, opID *model2.OperationID, c
 }
 
 type baseOperation struct {
-	Type model2.TypeOfOperation
-	ID   *model2.OperationID
+	Type model.TypeOfOperation
+	ID   *model.OperationID
 	Body interface{}
 }
 
-func (its *baseOperation) SetID(opID *model2.OperationID) {
+func (its *baseOperation) SetID(opID *model.OperationID) {
 	its.ID = opID
 }
 
-func (its *baseOperation) GetID() *model2.OperationID {
+func (its *baseOperation) GetID() *model.OperationID {
 	return its.ID
 }
 
-func (its *baseOperation) GetTimestamp() *model2.Timestamp {
+func (its *baseOperation) GetTimestamp() *model.Timestamp {
 	return its.ID.GetTimestamp()
 }
 
-func (its *baseOperation) GetType() model2.TypeOfOperation {
+func (its *baseOperation) GetType() model.TypeOfOperation {
 	return its.Type
 }
 
@@ -59,8 +59,8 @@ func (its *baseOperation) String() string {
 	return fmt.Sprintf("%s(%s|%+v)", its.Type, its.ID.ToString(), body)
 }
 
-func (its *baseOperation) ToModelOperation() *model2.Operation {
-	return &model2.Operation{
+func (its *baseOperation) ToModelOperation() *model.Operation {
+	return &model.Operation{
 		ID:     its.ID,
 		OpType: its.Type,
 		Body:   marshalBody(its.Body),

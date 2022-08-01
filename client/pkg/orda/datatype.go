@@ -1,33 +1,33 @@
 package orda
 
 import (
-	errors2 "github.com/orda-io/orda/client/pkg/errors"
-	iface2 "github.com/orda-io/orda/client/pkg/iface"
-	datatypes2 "github.com/orda-io/orda/client/pkg/internal/datatypes"
-	model2 "github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/internal/datatypes"
+	"github.com/orda-io/orda/client/pkg/model"
 )
 
 // Datatype is an Orda Datatype which provides common interfaces.
 type Datatype interface {
-	GetType() model2.TypeOfDatatype
-	GetState() model2.StateOfDatatype
+	GetType() model.TypeOfDatatype
+	GetState() model.StateOfDatatype
 	GetKey() string // @baseDatatype
 	ToJSON() interface{}
 }
 
 type datatype struct {
-	*datatypes2.WiredDatatype
-	TxCtx    *datatypes2.TransactionContext
+	*datatypes.WiredDatatype
+	TxCtx    *datatypes.TransactionContext
 	handlers *Handlers
 }
 
 func newDatatype(
-	base *datatypes2.BaseDatatype,
-	wire iface2.Wire,
+	base *datatypes.BaseDatatype,
+	wire iface.Wire,
 	handlers *Handlers,
 ) *datatype {
-	t := datatypes2.NewTransactionDatatype(base)
-	w := datatypes2.NewWiredDatatype(wire, t)
+	t := datatypes.NewTransactionDatatype(base)
+	w := datatypes.NewWiredDatatype(wire, t)
 	return &datatype{
 		WiredDatatype: w,
 		TxCtx:         nil,
@@ -35,14 +35,14 @@ func newDatatype(
 	}
 }
 
-func (its *datatype) init(data iface2.Datatype) errors2.OrdaError {
+func (its *datatype) init(data iface.Datatype) errors.OrdaError {
 	its.Datatype = data
 	its.ResetWired()
 	its.ResetSnapshot()
 	return its.ResetTransaction()
 }
 
-func (its *datatype) cloneDatatype(txCtx *datatypes2.TransactionContext) *datatype {
+func (its *datatype) cloneDatatype(txCtx *datatypes.TransactionContext) *datatype {
 	return &datatype{
 		WiredDatatype: its.WiredDatatype,
 		TxCtx:         txCtx,
@@ -50,13 +50,13 @@ func (its *datatype) cloneDatatype(txCtx *datatypes2.TransactionContext) *dataty
 	}
 }
 
-func (its *datatype) HandleStateChange(old, new model2.StateOfDatatype) {
+func (its *datatype) HandleStateChange(old, new model.StateOfDatatype) {
 	if its.handlers != nil && its.handlers.stateChangeHandler != nil {
 		its.handlers.stateChangeHandler(its.Datatype, old, new)
 	}
 }
 
-func (its *datatype) HandleErrors(errs ...errors2.OrdaError) {
+func (its *datatype) HandleErrors(errs ...errors.OrdaError) {
 	if its.handlers != nil && its.handlers.errorHandler != nil {
 		its.handlers.errorHandler(its.Datatype, errs...)
 	}
@@ -69,25 +69,25 @@ func (its *datatype) HandleRemoteOperations(operations []interface{}) {
 }
 
 // SubscribeOrCreate enables a datatype to subscribe and create itself.
-func (its *datatype) SubscribeOrCreate(state model2.StateOfDatatype) errors2.OrdaError {
-	if state == model2.StateOfDatatype_DUE_TO_SUBSCRIBE {
+func (its *datatype) SubscribeOrCreate(state model.StateOfDatatype) errors.OrdaError {
+	if state == model.StateOfDatatype_DUE_TO_SUBSCRIBE {
 		its.DeliverTransaction(nil)
 		return nil
 	}
 	snapOp, err := its.CreateSnapshotOperation()
 	if err != nil {
-		return errors2.DatatypeSubscribe.New(its.L(), err.Error())
+		return errors.DatatypeSubscribe.New(its.L(), err.Error())
 	}
 	_, err = its.SentenceInTx(its.TxCtx, snapOp, true)
 	if err != nil {
-		return errors2.DatatypeSubscribe.New(its.L(), err.Error())
+		return errors.DatatypeSubscribe.New(its.L(), err.Error())
 	}
 	return nil
 }
 
 func (its *datatype) ExecuteRemoteTransaction(
-	transaction []*model2.Operation,
+	transaction []*model.Operation,
 	obtainList bool,
-) ([]interface{}, errors2.OrdaError) {
+) ([]interface{}, errors.OrdaError) {
 	return its.ExecuteRemoteTransactionWithCtx(transaction, its.TxCtx, obtainList)
 }
