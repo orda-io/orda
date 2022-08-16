@@ -37,7 +37,7 @@ const (
 	MultipleErrors = baseBasicCode + iota
 )
 
-// ErrClientXXXX defines the error related to client
+// ClientXXXX defines the error related to client
 const (
 	ClientConnect = baseClientCode + iota
 	ClientClose
@@ -79,7 +79,7 @@ var datatypeErrFormats = map[ErrorCode]string{
 	DatatypeInvalidPatch:      "fail to patch: %v",
 }
 
-// ServerXXX denotes the error when Server is running.
+// ServerXXX denotes the errors when Server is running.
 const (
 	ServerDBQuery = baseServerCode + iota
 	ServerDBInit
@@ -107,6 +107,7 @@ var serverErrFormats = map[ErrorCode]string{
 	ServerInternal:       "internal server error: %v",
 }
 
+// PushPullXXX denotes the errors during PushPull
 const (
 	PushPullAbortionOfServer = basePushPullCode + iota
 	PushPullAbortionOfClient

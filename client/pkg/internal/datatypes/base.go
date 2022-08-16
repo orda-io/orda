@@ -52,6 +52,7 @@ func (its *BaseDatatype) GetEra() uint32 {
 	return its.opID.GetEra()
 }
 
+// SetLogger sets a logger
 func (its *BaseDatatype) SetLogger(l *log.OrdaLog) {
 	its.ctx.SetLogger(l)
 }
@@ -132,6 +133,7 @@ func (its *BaseDatatype) SetState(state model.StateOfDatatype) {
 	its.state = state
 }
 
+// GetOpID returns the Operation ID
 func (its *BaseDatatype) GetOpID() *model.OperationID {
 	return its.opID
 }
@@ -164,10 +166,12 @@ func (its *BaseDatatype) SetMeta(meta []byte) errors.OrdaError {
 	return nil
 }
 
+// L returns the logger
 func (its *BaseDatatype) L() *log.OrdaLog {
 	return its.ctx.L()
 }
 
+// GetSummary returns the summary of the operation
 func (its *BaseDatatype) GetSummary() string {
 	return fmt.Sprintf("%s(%s)", utils.MakeDefaultShort(its.Key), its.id)
 }

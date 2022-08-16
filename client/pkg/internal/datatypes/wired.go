@@ -27,21 +27,19 @@ func NewWiredDatatype(w iface.Wire, t *TransactionDatatype) *WiredDatatype {
 	}
 }
 
+// ResetWired resets the data related to WiredDatatype
 func (its *WiredDatatype) ResetWired() {
 	its.localBuffer = make([]*model.Operation, 0, constants.OperationBufferSize)
 	its.opID.Seq = 0
 }
 
-func (its *WiredDatatype) String() string {
-	return its.BaseDatatype.String()
-}
-
+// SetCheckPoint sets the CheckPoint
 func (its *WiredDatatype) SetCheckPoint(sseq uint64, cseq uint64) {
 	its.checkPoint.Sseq = sseq
 	its.checkPoint.Cseq = cseq
 }
 
-// ReceiveRemoteModelOperations ...
+// ReceiveRemoteModelOperations executes remote model operations.
 func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation, obtainList bool) ([]interface{}, errors.OrdaError) {
 	// datatype := its.datatype
 	var opList []interface{}
@@ -67,7 +65,7 @@ func (its *WiredDatatype) ReceiveRemoteModelOperations(ops []*model.Operation, o
 	return opList, nil
 }
 
-// CreatePushPullPack ...
+// CreatePushPullPack creates a PushPullPack
 func (its *WiredDatatype) CreatePushPullPack() *model.PushPullPack {
 	seq := its.checkPoint.Cseq
 	modelOps := its.getModelOperations(seq + 1)
@@ -208,7 +206,7 @@ func (its *WiredDatatype) updateStateOfDatatype(
 	return oldState, its.state, err
 }
 
-// ApplyPushPullPack ...
+// ApplyPushPullPack applies for PushPullPack
 func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
 	its.L().Infof("begin ApplyPushPull:%v", ppp.ToString())
 	defer its.L().Infof("end ApplyPushPull")
@@ -250,6 +248,7 @@ func (its *WiredDatatype) callHandlers(
 	}
 }
 
+// DeliverTransaction delivers the transaction if needed
 func (its *WiredDatatype) DeliverTransaction(transaction []iface.Operation) {
 
 	for _, op := range transaction {

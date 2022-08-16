@@ -51,7 +51,7 @@ func (its *counter) Transaction(tag string, txFunc func(counter CounterInTx) err
 func (its *counter) ExecuteLocal(op interface{}) (interface{}, errors.OrdaError) {
 	switch cast := op.(type) {
 	case *operations.IncreaseOperation:
-		return its.snapshot().increaseCommon(cast.GetBody().Delta), nil
+		return its.snapshot().increaseCommon(cast.GetBody()), nil
 	}
 	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)
 }
@@ -62,7 +62,7 @@ func (its *counter) ExecuteRemote(op interface{}) (interface{}, errors.OrdaError
 	case *operations.SnapshotOperation:
 		return nil, its.ApplySnapshot(cast.GetBody())
 	case *operations.IncreaseOperation:
-		return its.snapshot().increaseCommon(cast.GetBody().Delta), nil
+		return its.snapshot().increaseCommon(cast.GetBody()), nil
 	}
 
 	return nil, errors.DatatypeIllegalOperation.New(its.L(), its.TypeOf.String(), op)

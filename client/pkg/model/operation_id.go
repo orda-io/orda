@@ -57,6 +57,7 @@ func (its *OperationID) Next() *OperationID {
 	}
 }
 
+// RollBack rollbacks the OperationID
 func (its *OperationID) RollBack() {
 	its.Lamport--
 	its.Seq--
@@ -93,6 +94,7 @@ func (its *OperationID) ToString() string {
 	return b.String()
 }
 
+// ToJSON returns an OperationID as JSON
 func (its *OperationID) ToJSON() interface{} {
 	return struct {
 		Era     uint32

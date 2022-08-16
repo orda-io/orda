@@ -55,6 +55,7 @@ func (its *DatatypeManager) DeliverTransaction(wired iface.WiredDatatype) {
 	}
 }
 
+// ExistDatatype returns the datatype if the specified key and type
 func (its *DatatypeManager) ExistDatatype(key string, typeOf model.TypeOfDatatype) (iface.Datatype, errors.OrdaError) {
 	if data, ok := its.dataMap[key]; ok {
 		if data.GetType() == typeOf {
@@ -68,7 +69,7 @@ func (its *DatatypeManager) ExistDatatype(key string, typeOf model.TypeOfDatatyp
 	return nil, nil
 }
 
-// ReceiveNotification enables datatype to sync when it receive notification
+// ReceiveNotification enables datatype to sync when it receives notification
 func (its *DatatypeManager) ReceiveNotification(topic string, notification model.Notification) {
 	if its.ctx.Client.CUID == notification.CUID {
 		its.ctx.L().Infof("drain own notification")

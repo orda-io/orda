@@ -25,7 +25,7 @@ func New(ctx context.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaEr
 
 	option := options.Client().ApplyURI(conf.getConnectionString())
 	if conf.CertFile != "" {
-		tlsConfig, err := getCustomTlsConfig(ctx, conf.CertFile)
+		tlsConfig, err := getCustomTLSConfig(ctx, conf.CertFile)
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +55,7 @@ func New(ctx context.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaEr
 	return repo, nil
 }
 
-func getCustomTlsConfig(ctx context.OrdaContext, caFile string) (*tls.Config, errors.OrdaError) {
+func getCustomTLSConfig(ctx context.OrdaContext, caFile string) (*tls.Config, errors.OrdaError) {
 	tlsConfig := new(tls.Config)
 	certs, err := ioutil.ReadFile(caFile)
 
@@ -140,6 +140,7 @@ func (its *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrdaContext, n
 	return nil
 }
 
+// Close closes the repository of MongoDB
 func (its *RepositoryMongo) Close(ctx context.OrdaContext) errors.OrdaError {
 	if err := its.mongoClient.Disconnect(ctx); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())

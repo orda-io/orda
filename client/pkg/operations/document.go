@@ -12,7 +12,7 @@ func NewDocPutInObjOperation(parent *model.Timestamp, key string, value interfac
 		baseOperation: newBaseOperation(
 			model.TypeOfOperation_DOC_OBJ_PUT,
 			nil,
-			&docPutInObjBody{
+			&DocPutInObjBody{
 				P: parent,
 				K: key,
 				V: value,
@@ -21,7 +21,8 @@ func NewDocPutInObjOperation(parent *model.Timestamp, key string, value interfac
 	}
 }
 
-type docPutInObjBody struct {
+// DocPutInObjBody is the body of DocPutInObjOperation
+type DocPutInObjBody struct {
 	P *model.Timestamp
 	K string
 	V interface{}
@@ -32,8 +33,9 @@ type DocPutInObjOperation struct {
 	baseOperation
 }
 
-func (its *DocPutInObjOperation) GetBody() *docPutInObjBody {
-	return its.Body.(*docPutInObjBody)
+// GetBody returns the body
+func (its *DocPutInObjOperation) GetBody() *DocPutInObjBody {
+	return its.Body.(*DocPutInObjBody)
 }
 
 // ////////////////// DocRemoveInObjOperation ////////////////////
@@ -48,6 +50,7 @@ func NewDocRemoveInObjOperation(parent *model.Timestamp, key string) *DocRemoveI
 	}
 }
 
+// DocRemoveInObjectBody is the body of DocRemoveInObjOperation
 type DocRemoveInObjectBody struct {
 	P *model.Timestamp
 	K string
@@ -58,6 +61,7 @@ type DocRemoveInObjOperation struct {
 	baseOperation
 }
 
+// GetBody returns the body
 func (its *DocRemoveInObjOperation) GetBody() *DocRemoveInObjectBody {
 	return its.Body.(*DocRemoveInObjectBody)
 }
@@ -79,6 +83,7 @@ func NewDocInsertToArrayOperation(parent *model.Timestamp, pos int, values []int
 	}
 }
 
+// DocInsertToArrayBody is the body of DocInsertToArrayOperation
 type DocInsertToArrayBody struct {
 	P *model.Timestamp
 	T *model.Timestamp
@@ -91,6 +96,7 @@ type DocInsertToArrayOperation struct {
 	Pos int
 }
 
+// GetBody returns the body
 func (its *DocInsertToArrayOperation) GetBody() *DocInsertToArrayBody {
 	return its.Body.(*DocInsertToArrayBody)
 }
@@ -112,6 +118,7 @@ func NewDocUpdateInArrayOperation(parent *model.Timestamp, pos int, values []int
 	}
 }
 
+// DocUpdateInArrayBody is the body of DocUpdateInArrayOperation
 type DocUpdateInArrayBody struct {
 	P *model.Timestamp
 	T []*model.Timestamp
@@ -124,6 +131,7 @@ type DocUpdateInArrayOperation struct {
 	Pos int // for local
 }
 
+// GetBody returns the body
 func (its *DocUpdateInArrayOperation) GetBody() *DocUpdateInArrayBody {
 	return its.Body.(*DocUpdateInArrayBody)
 }
@@ -145,6 +153,7 @@ func NewDocDeleteInArrayOperation(parent *model.Timestamp, pos, numOfNodes int) 
 	}
 }
 
+// DocDeleteInArrayBody is the body of DocDeleteInArrayOperation
 type DocDeleteInArrayBody struct {
 	P *model.Timestamp
 	T []*model.Timestamp
@@ -157,6 +166,7 @@ type DocDeleteInArrayOperation struct {
 	NumOfNodes int // for local
 }
 
+// GetBody returns the body
 func (its *DocDeleteInArrayOperation) GetBody() *DocDeleteInArrayBody {
 	return its.Body.(*DocDeleteInArrayBody)
 }

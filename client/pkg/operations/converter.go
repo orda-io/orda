@@ -23,7 +23,7 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 		}
 	case model.TypeOfOperation_TRANSACTION:
 		return &TransactionOperation{
-			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &transactionBody{})),
+			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &TransactionBody{})),
 		}
 	case model.TypeOfOperation_COUNTER_INCREASE:
 		return &IncreaseOperation{
@@ -31,27 +31,27 @@ func ModelToOperation(op *model.Operation) iface.Operation {
 		}
 	case model.TypeOfOperation_MAP_PUT:
 		return &PutOperation{
-			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &putBody{})),
+			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &PutBody{})),
 		}
 	case model.TypeOfOperation_MAP_REMOVE:
 		return &RemoveOperation{
-			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &removeBody{})),
+			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &RemoveBody{})),
 		}
 	case model.TypeOfOperation_LIST_INSERT:
 		return &InsertOperation{
-			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &insertBody{})),
+			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &InsertBody{})),
 		}
 	case model.TypeOfOperation_LIST_DELETE:
 		return &DeleteOperation{
-			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &deleteBody{})),
+			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &DeleteBody{})),
 		}
 	case model.TypeOfOperation_LIST_UPDATE:
 		return &UpdateOperation{
-			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &updateBody{})),
+			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &UpdateBody{})),
 		}
 	case model.TypeOfOperation_DOC_OBJ_PUT:
 		return &DocPutInObjOperation{
-			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &docPutInObjBody{})),
+			baseOperation: newBaseOperation(op.OpType, op.ID, unmarshalBody(op.Body, &DocPutInObjBody{})),
 		}
 	case model.TypeOfOperation_DOC_OBJ_RMV:
 		return &DocRemoveInObjOperation{

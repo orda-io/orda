@@ -14,6 +14,7 @@ import (
 	"github.com/orda-io/orda/server/utils"
 )
 
+// PatchDocument patches document datatype
 func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchMessage) (*model.PatchMessage, error) {
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagPatch).UpdateCollection(req.Collection)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, req.Collection)

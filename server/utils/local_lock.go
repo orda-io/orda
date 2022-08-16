@@ -9,12 +9,14 @@ import (
 
 var localLockMap sync.Map
 
+// LocalLock is used for local locking in a single server
 type LocalLock struct {
 	ctx      context.OrdaContext
 	mutex    *golock.CASMutex
 	lockName string
 }
 
+// GetLocalLock returns a LocalLock with the specified name
 func GetLocalLock(ctx context.OrdaContext, lockName string) *LocalLock {
 
 	value, loaded := localLockMap.LoadOrStore(lockName, &LocalLock{
@@ -30,6 +32,7 @@ func GetLocalLock(ctx context.OrdaContext, lockName string) *LocalLock {
 	return value.(*LocalLock)
 }
 
+// TryLock tries to a local lock, and returns true if it succeeds; otherwise false
 func (its *LocalLock) TryLock() bool {
 	timeCtx, cancel := ctx.WithTimeout(its.ctx, defaultLeaseTime)
 	defer cancel()
@@ -47,6 +50,7 @@ func (its *LocalLock) TryLock() bool {
 	return true
 }
 
+// Unlock unlocks the local lock, and returns true if it succeeds; otherwise false
 func (its *LocalLock) Unlock() bool {
 	its.mutex.Unlock()
 	its.ctx.L().Infof("[🔒] unlock '%v'", its.lockName)

@@ -19,6 +19,7 @@ func ConvertValueList(values []interface{}) ([]interface{}, error) {
 	return jsonValues, nil
 }
 
+// ToInterfaceArray transforms an array of JSNValues to the array of interfaces
 func ToInterfaceArray(ja []JSONValue) []interface{} {
 	var ret []interface{}
 	for _, v := range ja {

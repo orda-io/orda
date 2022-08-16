@@ -31,6 +31,7 @@ func (its *PushPullMessage) ToString() string {
 	return b.String()
 }
 
+// GetClient returns the model of the client
 func (its *PushPullMessage) GetClient() *Client {
 	return &Client{
 		CUID:       its.Cuid,
@@ -60,6 +61,7 @@ func (its *ClientMessage) ToString() string {
 	return b.String()
 }
 
+// GetClient returns the model of client
 func (its *ClientMessage) GetClient() *Client {
 	return &Client{
 		CUID:       its.Cuid,
@@ -70,6 +72,7 @@ func (its *ClientMessage) GetClient() *Client {
 	}
 }
 
+// GetClientSummary returns the summary of client
 func (its *ClientMessage) GetClientSummary() string {
 	return fmt.Sprintf("%s(%s)", its.ClientAlias, its.Cuid)
 }

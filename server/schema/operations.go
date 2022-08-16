@@ -30,6 +30,7 @@ func NewOperationDoc(op *model.Operation, duid string, sseq uint64, colNum uint3
 
 }
 
+// OpID is used to denote the operation ID in MongoDB
 type OpID struct {
 	Era     uint32 `bson:"era"`
 	Lamport uint64 `bson:"lamport"`

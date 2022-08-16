@@ -39,6 +39,7 @@ func (its *Config) String() string {
 	return string(b)
 }
 
+// MarshalJSON returns marshaled JSON
 func (its *Config) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Host     string

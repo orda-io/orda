@@ -42,14 +42,17 @@ func (its *OrdaServerConfig) loadConfig(filepath string) errors.OrdaError {
 	return nil
 }
 
+// GetRPCServerAddr returns RPC Server Address
 func (its *OrdaServerConfig) GetRPCServerAddr() string {
 	return fmt.Sprintf(":%d", its.RPCServerPort)
 }
 
+// GetRestfulAddr returns Restful Server Address
 func (its *OrdaServerConfig) GetRestfulAddr() string {
 	return fmt.Sprintf(":%d", its.RestfulPort)
 }
 
+// String returns a marshaled string
 func (its *OrdaServerConfig) String() string {
 	b, _ := json.Marshal(its)
 	return string(b)

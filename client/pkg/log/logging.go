@@ -43,14 +43,17 @@ func New() *OrdaLog {
 	return &OrdaLog{logrus.NewEntry(logger)}
 }
 
+// GetTag1 returns tag1
 func (its *OrdaLog) GetTag1() string {
 	return its.Data[tag1Field].(string)
 }
 
+// GetTag2 returns tag2
 func (its *OrdaLog) GetTag2() string {
 	return its.Data[tag2Field].(string)
 }
 
+// SetTags sets tags
 func (its *OrdaLog) SetTags(tag1, tag2 string) {
 	its.Data[tag1Field] = tag1
 	its.Data[tag2Field] = tag2

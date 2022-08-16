@@ -64,8 +64,7 @@ func (its *RestServer) allowCors(h http.Handler) http.Handler {
 		if origin := r.Header.Get("Origin"); origin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
-				headers := []string{"Content-Type", "Accept"}
-				w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
+				w.Header().Set("Access-Control-Allow-Headers", r.Header.Get("Access-Control-Request-Headers"))
 				methods := []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodDelete}
 				w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
 				return
@@ -110,9 +109,9 @@ func (its *RestServer) initGrpcGatewayServer(mux *http.ServeMux) errors.OrdaErro
 		its.conf.GetRestfulAddr(), apiGrpcGw)
 
 	// register swagger for grpc
-	swaggerJson := &swaggerDoc{}
-	swaggerJson.init(its.conf)
-	swag.Register(swag.Name, swaggerJson)
+	swaggerJSON := &swaggerDoc{}
+	swaggerJSON.init(its.conf)
+	swag.Register(swag.Name, swaggerJSON)
 	swaggerHandler := httpSwagger.Handler(httpSwagger.URL("./doc.json"))
 	mux.Handle(apiGrpcGwSwagger, swaggerHandler)
 	its.ctx.L().Infof("open port: http://localhost%s%s", its.conf.GetRestfulAddr(), apiGrpcGwSwagger)

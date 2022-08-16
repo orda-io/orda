@@ -8,7 +8,7 @@ import (
 	"github.com/orda-io/orda/client/pkg/model"
 )
 
-// OrdaContext is a context used in Orda
+// OrdaContext is used to pass over the context of clients or datatypes
 type OrdaContext interface {
 	context.Context
 	L() *log.OrdaLog
@@ -22,20 +22,24 @@ type ordaContext struct {
 	logger *log.OrdaLog
 }
 
+// UpdateTags updates tags
 func (its *ordaContext) UpdateTags(tag1, tag2 string) {
 	its.logger.SetTags(tag1, tag2)
 }
 
+// ClientContext is used to pass over the context of clients
 type ClientContext struct {
 	OrdaContext
 	Client *model.Client
 }
 
+// DatatypeContext is used to pass over the context of datatypes
 type DatatypeContext struct {
 	*ClientContext
 	Data iface.BaseDatatype
 }
 
+// NewOrdaContext creates a new OrdaContext
 func NewOrdaContext(ctx context.Context, tag1 string, tag2 string) OrdaContext {
 	logger := log.NewWithTags(tag1, tag2)
 	return &ordaContext{
@@ -44,6 +48,7 @@ func NewOrdaContext(ctx context.Context, tag1 string, tag2 string) OrdaContext {
 	}
 }
 
+// NewClientContext creates a new ClientContext
 func NewClientContext(ctx context.Context, client *model.Client) *ClientContext {
 	return &ClientContext{
 		OrdaContext: NewOrdaContext(ctx, constants.TagSdkClient, client.GetSummary()),
@@ -51,6 +56,7 @@ func NewClientContext(ctx context.Context, client *model.Client) *ClientContext 
 	}
 }
 
+// NewDatatypeContext creates a new DatatypeContext
 func NewDatatypeContext(clientContext *ClientContext, baseDatatype iface.BaseDatatype) *DatatypeContext {
 	logger := log.NewWithTags(constants.TagSdkDatatype, clientContext.Client.GetSummary()+"|"+baseDatatype.GetSummary())
 	return &DatatypeContext{
@@ -73,10 +79,12 @@ func (its *ordaContext) L() *log.OrdaLog {
 	return its.logger
 }
 
+// Ctx returns the context.Context
 func (its *ordaContext) Ctx() context.Context {
 	return its.Context
 }
 
+// SetLogger sets the logger
 func (its *ordaContext) SetLogger(l *log.OrdaLog) {
 	its.logger = l
 }

@@ -6,6 +6,8 @@ const (
 )
 
 const (
-	TagSdkClient   = "🎪"
+	// TagSdkClient is the emoji tag for clients in orda sdk
+	TagSdkClient = "🎪"
+	// TagSdkDatatype is the emoji tag for datatypes of orda sdk
 	TagSdkDatatype = "🐎"
 )

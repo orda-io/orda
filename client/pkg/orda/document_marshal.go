@@ -50,10 +50,9 @@ func (its *unmarshalAssistant) unifyTimestamp(ts *model.Timestamp) *model.Timest
 	}
 	if existing, ok := its.tsMap[ts.Hash()]; ok {
 		return existing
-	} else {
-		its.tsMap[ts.Hash()] = ts
-		return ts
 	}
+	its.tsMap[ts.Hash()] = ts
+	return ts
 }
 
 func newMarshaledDocument() *marshaledDocument {

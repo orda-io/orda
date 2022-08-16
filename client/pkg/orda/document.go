@@ -86,23 +86,22 @@ func (its *document) ToJSONBytes() []byte {
 func (its *document) Patch(patches ...jsondiff.Operation) errors.OrdaError {
 	if len(patches) == 1 {
 		return its.patchEach(patches[0])
-	} else {
-
-		tag := fmt.Sprintf("%d patches-%s", len(patches), utils.HashSum(patches))
-		if err := its.Transaction(tag, func(doc DocumentInTx) error {
-			for _, patch := range patches {
-				if err := doc.(*document).patchEach(patch); err != nil {
-					return err
-				}
-			}
-			return nil
-		}); err != nil {
-			if ordaErr, ok := err.(errors.OrdaError); ok {
-				return ordaErr
-			}
-			return errors.DatatypeInvalidPatch.New(its.L(), err.Error())
-		}
 	}
+	tag := fmt.Sprintf("%d patches-%s", len(patches), utils.HashSum(patches))
+	if err := its.Transaction(tag, func(doc DocumentInTx) error {
+		for _, patch := range patches {
+			if err := doc.(*document).patchEach(patch); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		if ordaErr, ok := err.(errors.OrdaError); ok {
+			return ordaErr
+		}
+		return errors.DatatypeInvalidPatch.New(its.L(), err.Error())
+	}
+
 	return nil
 }
 

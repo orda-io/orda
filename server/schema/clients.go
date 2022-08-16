@@ -48,10 +48,6 @@ func (its *ClientDoc) String() string {
 	return fmt.Sprintf("(%d)%s:%s:%d", its.CollectionNum, its.Alias, its.CUID, len(its.CheckPoints))
 }
 
-func (its *ClientDoc) GetShortCUID() string {
-	return its.CUID
-}
-
 // ToUpdateBSON returns a bson from a ClientDoc
 func (its *ClientDoc) ToUpdateBSON() bson.D {
 	checkPointBson := make(map[string]bson.M)
@@ -110,6 +106,7 @@ func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
 	}
 }
 
+// GetModel returns model.Client
 func (its *ClientDoc) GetModel() *model.Client {
 	return &model.Client{
 		CUID:       its.CUID,
@@ -120,6 +117,7 @@ func (its *ClientDoc) GetModel() *model.Client {
 	}
 }
 
+// ToString returns ClientDoc string
 func (its *ClientDoc) ToString() string {
 	return fmt.Sprintf("%s(%s)", its.Alias, its.CUID)
 }

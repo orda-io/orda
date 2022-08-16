@@ -4,7 +4,8 @@ import (
 	"github.com/orda-io/orda/client/pkg/model"
 )
 
-type putBody struct {
+// PutBody is the body of PutOperation
+type PutBody struct {
 	Key   string
 	Value interface{}
 }
@@ -15,7 +16,7 @@ func NewPutOperation(key string, value interface{}) *PutOperation {
 		baseOperation: newBaseOperation(
 			model.TypeOfOperation_MAP_PUT,
 			nil,
-			&putBody{
+			&PutBody{
 				Key:   key,
 				Value: value,
 			},
@@ -28,13 +29,15 @@ type PutOperation struct {
 	baseOperation
 }
 
-func (its *PutOperation) GetBody() *putBody {
-	return its.Body.(*putBody)
+// GetBody returns the body
+func (its *PutOperation) GetBody() *PutBody {
+	return its.Body.(*PutBody)
 }
 
 // ////////////////// RemoveOperation ////////////////////
 
-type removeBody struct {
+// RemoveBody is the body of RemoveOperation
+type RemoveBody struct {
 	Key string
 }
 
@@ -44,7 +47,7 @@ func NewRemoveOperation(key string) *RemoveOperation {
 		baseOperation: newBaseOperation(
 			model.TypeOfOperation_MAP_REMOVE,
 			nil,
-			&removeBody{
+			&RemoveBody{
 				Key: key,
 			},
 		),
@@ -56,6 +59,7 @@ type RemoveOperation struct {
 	baseOperation
 }
 
-func (its *RemoveOperation) GetBody() *removeBody {
-	return its.Body.(*removeBody)
+// GetBody returns the body
+func (its *RemoveOperation) GetBody() *RemoveBody {
+	return its.Body.(*RemoveBody)
 }

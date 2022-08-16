@@ -97,3 +97,6 @@ docker-up:
 .PHONY: docker-down
 docker-down:
 	@cd $(DEPLOY_DIR); VERSION=$(VERSION) docker-compose down
+
+.PHONY: check-before-pr
+check-before-pr: lint

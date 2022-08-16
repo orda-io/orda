@@ -12,8 +12,10 @@ func (its *Operation) ToString() string {
 	return sb.String()
 }
 
+// OpList is a list of *Operation
 type OpList []*Operation
 
+// ToString returns string
 func (its OpList) ToString() string {
 	sb := strings.Builder{}
 

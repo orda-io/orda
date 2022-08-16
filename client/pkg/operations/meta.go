@@ -13,14 +13,15 @@ func NewTransactionOperation(tag string) *TransactionOperation {
 		baseOperation: newBaseOperation(
 			model.TypeOfOperation_TRANSACTION,
 			nil,
-			&transactionBody{
+			&TransactionBody{
 				Tag: tag,
 			},
 		),
 	}
 }
 
-type transactionBody struct {
+// TransactionBody is the body of TransactionOperation
+type TransactionBody struct {
 	Tag      string
 	NumOfOps int32
 }
@@ -30,8 +31,9 @@ type TransactionOperation struct {
 	baseOperation
 }
 
-func (its *TransactionOperation) GetBody() *transactionBody {
-	return its.Body.(*transactionBody)
+// GetBody returns the body
+func (its *TransactionOperation) GetBody() *TransactionBody {
+	return its.Body.(*TransactionBody)
 }
 
 // SetNumOfOps sets the number operations in the transaction.
@@ -60,6 +62,7 @@ func NewErrorOperation(err errors.OrdaError) *ErrorOperation {
 	}
 }
 
+// NewErrorOperationWithCodeAndMsg creates a new ErrorOperation with code and message
 func NewErrorOperationWithCodeAndMsg(code errors.ErrorCode, msg string) *ErrorOperation {
 	return &ErrorOperation{
 		baseOperation: newBaseOperation(
@@ -95,10 +98,12 @@ func (its *ErrorOperation) GetPushPullError() *errors.PushPullError {
 	}
 }
 
+// GetCode returns an error code
 func (its *ErrorOperation) GetCode() errors.ErrorCode {
 	return its.Body.(*errorBody).Code
 }
 
+// GetMessage returns an error message
 func (its *ErrorOperation) GetMessage() string {
 	return its.Body.(*errorBody).Msg
 }
@@ -119,6 +124,7 @@ type SnapshotOperation struct {
 	baseOperation
 }
 
+// GetBody returns the body
 func (its *SnapshotOperation) GetBody() []byte {
 	return its.Body.([]byte)
 }
