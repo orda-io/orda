@@ -25,10 +25,42 @@ var (
 	}
 )
 
+type EncodingTestStruct struct {
+	Field1 string `json:"f1"`
+	Field2 string `json:"-"`
+	Field3 string `json:"f3,omitempty"`
+	Field4 string
+}
+
 func TestDocument(t *testing.T) {
+
+	t.Run("Can test putting JSON struct", func(t *testing.T) {
+		tw := testonly.NewTestWire(true)
+		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+		e1 := EncodingTestStruct{
+			Field1: "v1",
+			Field2: "v2",
+			Field4: "v4",
+		}
+		o1, oErr := root.PutToObject("k1", e1)
+		require.NoError(t, oErr)
+		require.Nil(t, o1)
+		o1, _ = root.GetFromObject("k1")
+		m1 := o1.ToJSON().(map[string]interface{})
+		log.Logger.Infof("%v", m1)
+		require.Equal(t, "v1", m1["f1"])
+		require.Equal(t, "v4", m1["Field4"])
+		require.Nil(t, m1["f3"])
+		require.Nil(t, m1["Field2"])
+	})
+
 	t.Run("Can test operations of JSONObject Document", func(t *testing.T) {
 		tw := testonly.NewTestWire(true)
 		root, _ := newDocument(testonly.NewBase(t.Name(), model.TypeOfDatatype_DOCUMENT), tw, nil)
+
+		shouldNil, oErr := root.GetFromObject("NOT_EXIST_KEY")
+		require.NoError(t, oErr)
+		require.Nil(t, shouldNil)
 
 		old1, oErr := root.PutToObject("K1", "V1")
 		require.NoError(t, oErr)

@@ -12,7 +12,7 @@ require (
 	github.com/go-redsync/redsync/v4 v4.5.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.0
 	github.com/orda-io/orda v0.0.0-00010101000000-000000000000
-	github.com/orda-io/orda/client v0.0.0-20220801082945-cf9794afb5e4
+	github.com/orda-io/orda/client v0.0.0-20220801223127-e370949f27c9
 	github.com/stretchr/testify v1.8.0
 	github.com/swaggo/http-swagger v1.3.0
 	github.com/swaggo/swag v1.8.4
@@ -48,6 +48,7 @@ require (
 	github.com/matoous/go-nanoid/v2 v2.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

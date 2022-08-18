@@ -299,11 +299,11 @@ func (its *document) GetFromObject(key string) (Document, errors.OrdaError) {
 		return nil, err
 	}
 	obj := its.snapshot().(*jsonObject)
-	child := obj.getFromMap(key).(jsonType)
-	if child == nil || child.isGarbage() {
+	child := obj.getFromMap(key)
+	if child == nil || child.(jsonType).isGarbage() {
 		return nil, nil
 	}
-	return its.toDocument(child), nil
+	return its.toDocument(child.(jsonType)), nil
 }
 
 // GetFromArray returns the element of the JSONArray Document at the given position.
