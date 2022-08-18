@@ -78,12 +78,12 @@ func (its *SyncManager) Close() errors.OrdaError {
 // Sync exchanges PUSHPULL_REQUEST and PUSHPULL_RESPONSE
 func (its *SyncManager) Sync(pppList ...*model.PushPullPack) (*model.PushPullMessage, errors.OrdaError) {
 	request := model.NewPushPullMessage(its.nextSeq(), its.client, pppList...)
-	its.ctx.L().Infof("REQ[PUPU] %s", request.ToString())
+	its.ctx.L().Infof("REQ[PUPU] %s", request.ToString(false))
 	response, err := its.serviceClient.ProcessPushPull(its.ctx, request)
 	if err != nil {
 		return nil, errors.ClientSync.New(its.ctx.L(), err.Error())
 	}
-	its.ctx.L().Infof("RES[PUPU] %v", response.ToString())
+	its.ctx.L().Infof("RES[PUPU] %v", response.ToString(false))
 	return response, nil
 }
 

@@ -67,7 +67,7 @@ func (its *Manager) GetLatestDatatype() (iface.Datatype, uint64, errors.OrdaErro
 		return datatype, lastSseq, nil
 	}
 
-	its.ctx.L().Infof("apply %d operations: %+v", len(opList), opList.ToString())
+	its.ctx.L().Infof("apply %d operations: %+v", len(opList), opList.ToString(false))
 	if _, err = datatype.ReceiveRemoteModelOperations(opList, false); err != nil {
 		// TODO: should fix corruption
 		return nil, 0, err

@@ -27,7 +27,7 @@ const (
 
 var (
 	_, b, _, _ = runtime.Caller(0)
-	basePath   = strings.Replace(b, "/pkg/log/logging.go", "/", 1)
+	basePath   = strings.Replace(b, "/client/pkg/log/logging.go", "/", 1)
 )
 
 const (

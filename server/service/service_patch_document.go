@@ -68,7 +68,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 
 	if len(patches) > 0 {
 		ppp := doc.(iface.Datatype).CreatePushPullPack()
-		ctx.L().Infof("%v", ppp.ToString())
+		ctx.L().Infof("%v", ppp.ToString(true))
 
 		pushPullHandler := newPushPullHandler(ctx, ppp, clientDoc, collectionDoc, its.managers)
 		pppCh := pushPullHandler.Start()

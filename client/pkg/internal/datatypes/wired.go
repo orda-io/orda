@@ -208,7 +208,6 @@ func (its *WiredDatatype) updateStateOfDatatype(
 
 // ApplyPushPullPack applies for PushPullPack
 func (its *WiredDatatype) ApplyPushPullPack(ppp *model.PushPullPack) {
-	its.L().Infof("begin ApplyPushPull:%v", ppp.ToString())
 	defer its.L().Infof("end ApplyPushPull")
 	var oldState, newState model.StateOfDatatype
 	var errs errors.OrdaError = &errors.MultipleOrdaErrors{}
@@ -257,7 +256,7 @@ func (its *WiredDatatype) DeliverTransaction(transaction []iface.Operation) {
 	if its.wire == nil && its.ctx.Client.SyncType != model.SyncType_REALTIME {
 		return
 	}
-	its.ctx.L().Infof("call deliverTransaction: %v", transaction)
+	its.ctx.L().Debugf("call deliverTransaction: %v", transaction)
 	its.wire.DeliverTransaction(its)
 }
 

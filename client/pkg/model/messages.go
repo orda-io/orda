@@ -20,12 +20,12 @@ func NewPushPullMessage(seq uint32, client *Client, pushPullPackList ...*PushPul
 }
 
 // ToString returns customized string
-func (its *PushPullMessage) ToString() string {
+func (its *PushPullMessage) ToString(isFull bool) string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "Head[%s] PushPullPack[%d]{", its.Header.ToString(), len(its.PushPullPacks))
 	for _, ppp := range its.PushPullPacks {
 		b.WriteString(" ")
-		b.WriteString(ppp.ToString())
+		b.WriteString(ppp.ToString(isFull))
 	}
 	b.WriteString("}")
 	return b.String()

@@ -71,7 +71,7 @@ lint:
 
 .PHONY: test
 test:
-	$(ORDA_BUILDER) "go test -v --race ./..."
+	$(ORDA_BUILDER) "cd client && go test ./... && cd ../server && go test ./... && cd .. && go test ./..."
 
 .PHONY: build-server
 build-server:
