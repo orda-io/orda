@@ -70,6 +70,7 @@ func NewTestOrdaServerConfig(dbName string) *managers.OrdaServerConfig {
 	}
 }
 
+// WaitTimeout waits for timeout of the WaitGroup during the specified duration
 func WaitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 	c := make(chan struct{})
 	go func() {

@@ -27,12 +27,14 @@ func OperationsToString(ops []*model.Operation) string {
 	return sb.String()
 }
 
+// Marshal marshals an interface with checking error
 func Marshal(t *testing.T, j interface{}) string {
 	data, err := json.Marshal(j)
 	require.NoError(t, err)
 	return string(data)
 }
 
+// NewBase returns a new BaseDatatype
 func NewBase(key string, t model.TypeOfDatatype) *datatypes.BaseDatatype {
 	cm := &model.Client{
 		CUID:       types.NewUID(),

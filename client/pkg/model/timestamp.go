@@ -16,6 +16,7 @@ func OldestTimestamp() *Timestamp {
 	}
 }
 
+// NewTimestamp creates a new timestamp
 func NewTimestamp(era uint32, lamport uint64, cuid string, delimiter uint32) *Timestamp {
 	return &Timestamp{
 		Era:       era,

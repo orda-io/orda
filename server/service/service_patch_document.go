@@ -14,6 +14,7 @@ import (
 	"github.com/orda-io/orda/server/utils"
 )
 
+// PatchDocument patches document datatype
 func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchMessage) (*model.PatchMessage, error) {
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagPatch).UpdateCollection(req.Collection)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, req.Collection)
@@ -67,7 +68,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 
 	if len(patches) > 0 {
 		ppp := doc.(iface.Datatype).CreatePushPullPack()
-		ctx.L().Infof("%v", ppp.ToString())
+		ctx.L().Infof("%v", ppp.ToString(true))
 
 		pushPullHandler := newPushPullHandler(ctx, ppp, clientDoc, collectionDoc, its.managers)
 		pppCh := pushPullHandler.Start()

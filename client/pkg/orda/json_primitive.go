@@ -7,6 +7,7 @@ import (
 	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/types"
+	"github.com/orda-io/orda/client/pkg/utils"
 	"reflect"
 	"strconv"
 	"strings"
@@ -363,8 +364,16 @@ func (its *jsonPrimitive) String() string {
 }
 
 func (its *jsonPrimitive) createJSONTypeFromReflectValue(parent jsonType, rv reflect.Value, ts *model.Timestamp) jsonType {
-	switch rv.Kind() {
-	case reflect.Struct, reflect.Map:
+	kind := rv.Kind()
+	switch kind {
+	case reflect.Struct:
+		toMap, err := utils.StructToMap(rv.Interface())
+		if err != nil {
+			its.common.L().Errorf("illegal struct: %v", err)
+			return nil
+		}
+		return its.createJSONObject(parent, toMap, ts)
+	case reflect.Map:
 		return its.createJSONObject(parent, rv.Interface(), ts)
 	case reflect.Slice, reflect.Array:
 		return its.createJSONArray(parent, rv.Interface(), ts)
@@ -387,8 +396,9 @@ func (its *jsonPrimitive) createJSONArray(parent jsonType, value interface{}, ts
 	elements := reflect.ValueOf(value)
 	for i := 0; i < elements.Len(); i++ {
 		rv := elements.Index(i)
-		jt := its.createJSONTypeFromReflectValue(ja, rv, ts)
-		appendValues = append(appendValues, jt)
+		if jt := its.createJSONTypeFromReflectValue(ja, rv, ts); jt != nil {
+			appendValues = append(appendValues, jt)
+		}
 	}
 	if appendValues != nil {
 		_, _ = ja.insertLocalWithTimedTypes(0, appendValues...)
@@ -422,9 +432,10 @@ func (its *jsonPrimitive) createJSONObject(parent jsonType, value interface{}, t
 }
 
 func (its *jsonPrimitive) addValueToJSONObject(jo *jsonObject, key string, value reflect.Value, ts *model.Timestamp) {
-	jt := its.createJSONTypeFromReflectValue(jo, value, ts)
-	jo.putCommonWithTimedType(key, jt)
-	its.addToNodeMap(jt)
+	if jt := its.createJSONTypeFromReflectValue(jo, value, ts); jt != nil {
+		jo.putCommonWithTimedType(key, jt)
+		its.addToNodeMap(jt)
+	}
 }
 
 func (its *jsonPrimitive) equal(o jsonType) bool {

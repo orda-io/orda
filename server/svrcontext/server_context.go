@@ -6,6 +6,7 @@ import (
 	"github.com/orda-io/orda/client/pkg/context"
 )
 
+// ServerContext is used to pass over contexts for server
 type ServerContext struct {
 	context.OrdaContext
 	collection string
@@ -25,6 +26,7 @@ func NewServerContext(ctx gocontext.Context, tag1 string) *ServerContext {
 	return newCtx
 }
 
+// CloneWithNewContext clones a new server context which with different tag1
 func (its *ServerContext) CloneWithNewContext(tag1 string) *ServerContext {
 	return (&ServerContext{
 		OrdaContext: context.NewOrdaContext(gocontext.TODO(), tag1, ""),
@@ -34,16 +36,19 @@ func (its *ServerContext) CloneWithNewContext(tag1 string) *ServerContext {
 	}).updateLogger()
 }
 
+// UpdateCollection updates the collection tag
 func (its *ServerContext) UpdateCollection(collection string) *ServerContext {
 	its.collection = collection
 	return its.updateLogger()
 }
 
+// UpdateClient updates the client tag
 func (its *ServerContext) UpdateClient(client string) *ServerContext {
 	its.client = client
 	return its.updateLogger()
 }
 
+// UpdateDatatype updates the datatype tag
 func (its *ServerContext) UpdateDatatype(datatype string) *ServerContext {
 	its.datatype = datatype
 	return its.updateLogger()

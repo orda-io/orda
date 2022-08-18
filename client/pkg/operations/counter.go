@@ -26,6 +26,7 @@ type IncreaseOperation struct {
 	baseOperation
 }
 
-func (its *IncreaseOperation) GetBody() *increaseBody {
-	return its.Body.(*increaseBody)
+// GetBody returns the body
+func (its *IncreaseOperation) GetBody() int32 {
+	return its.Body.(*increaseBody).Delta
 }

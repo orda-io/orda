@@ -128,29 +128,16 @@ func (its *PushPullPack) GetResponsePushPullPack() *PushPullPack {
 }
 
 // ToString returns customized string.
-func (its *PushPullPack) ToString() string {
-	var b strings.Builder
+func (its *PushPullPack) ToString(isFull bool) string {
 	var option = PushPullPackOption(its.Option)
-
-	_, _ = fmt.Fprintf(
-		&b,
-		"%s %s(%s) %s CP(%v) OP(%d){",
+	var opList = OpList(its.Operations)
+	return fmt.Sprintf(
+		"%s %s(%s) %s CP(%v) OP(%d){%v}",
 		its.Type,
 		its.Key,
 		its.DUID,
 		option.String(),
-		its.CheckPoint.String(),
+		its.CheckPoint,
 		len(its.Operations),
-	)
-	init := true
-	for _, op := range its.Operations {
-		if !init {
-			b.WriteString(" => ")
-			init = false
-		}
-		b.WriteString(op.ToString())
-		init = false
-	}
-	b.WriteString("}")
-	return b.String()
+		opList.ToString(isFull))
 }

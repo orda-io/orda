@@ -11,11 +11,13 @@ const (
 	defaultExpireTime = 10 * time.Second
 )
 
+// Lock defines the lock interfaces
 type Lock interface {
 	TryLock() bool
 	Unlock() bool
 }
 
+// GetLockName returns a lock name with the prefix
 func GetLockName(prefix string, collectionNum uint32, key string) string {
 	return fmt.Sprintf("%s:%d:%s", prefix, collectionNum, key)
 }

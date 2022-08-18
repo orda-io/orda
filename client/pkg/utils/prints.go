@@ -7,6 +7,7 @@ import (
 	"github.com/TylerBrock/colorjson"
 )
 
+// PrintMarshalDoc logs out doc without error
 func PrintMarshalDoc(l *log.OrdaLog, doc interface{}) {
 	f := colorjson.NewFormatter()
 	f.Indent = 2
@@ -18,6 +19,7 @@ func PrintMarshalDoc(l *log.OrdaLog, doc interface{}) {
 	l.Infof("%v", string(s))
 }
 
+// ToStringMarshalDoc returns marshaled string without error
 func ToStringMarshalDoc(doc interface{}) string {
 	m, _ := json.Marshal(doc)
 	return string(m)

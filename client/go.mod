@@ -7,6 +7,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.0
 	github.com/matoous/go-nanoid/v2 v2.0.0
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.0
 	github.com/wI2L/jsondiff v0.2.0

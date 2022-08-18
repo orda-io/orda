@@ -48,6 +48,7 @@ func (its *RepositoryMongo) InsertRealSnapshot(
 	return nil
 }
 
+// GetRealSnapshot returns a real snapshot
 func (its *RepositoryMongo) GetRealSnapshot(
 	ctx context.OrdaContext,
 	collectionName string,

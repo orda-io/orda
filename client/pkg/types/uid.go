@@ -8,12 +8,12 @@ import (
 )
 
 const (
-	DefaultUIDLength    = 16
+	defaultUIDLength    = 16
 	defaultIDCharacters = "_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 func newUniqueID() string {
-	return gonanoid.Must(DefaultUIDLength)
+	return gonanoid.Must(defaultUIDLength)
 }
 
 // NewUID creates a new DUID.
@@ -23,7 +23,7 @@ func NewUID() string {
 
 // ValidateUID validate UID from string.
 func ValidateUID(uidStr string) bool {
-	if len(uidStr) != DefaultUIDLength {
+	if len(uidStr) != defaultUIDLength {
 		return false
 	}
 	for _, c := range uidStr {
@@ -37,7 +37,7 @@ func ValidateUID(uidStr string) bool {
 // NewNilUID creates an instance of Nil UID.
 func NewNilUID() string {
 	var b bytes.Buffer
-	for i := 0; i < DefaultUIDLength; i++ {
+	for i := 0; i < defaultUIDLength; i++ {
 		b.WriteString("0")
 	}
 	return b.String()

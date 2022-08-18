@@ -47,6 +47,7 @@ func NewTransactionDatatype(b *BaseDatatype) *TransactionDatatype {
 	}
 }
 
+// ResetTransaction resets necessary data for transaction
 func (its *TransactionDatatype) ResetTransaction() errors.OrdaError {
 	snap, err := json.Marshal(its.GetSnapshot())
 	if err != nil {

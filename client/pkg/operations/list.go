@@ -10,7 +10,7 @@ func NewInsertOperation(pos int, values []interface{}) *InsertOperation {
 		baseOperation: newBaseOperation(
 			model.TypeOfOperation_LIST_INSERT,
 			nil,
-			&insertBody{
+			&InsertBody{
 				V: values,
 			},
 		),
@@ -18,7 +18,8 @@ func NewInsertOperation(pos int, values []interface{}) *InsertOperation {
 	}
 }
 
-type insertBody struct {
+// InsertBody is the body of InsertOperation
+type InsertBody struct {
 	T *model.Timestamp
 	V []interface{}
 }
@@ -29,8 +30,9 @@ type InsertOperation struct {
 	Pos int // for local
 }
 
-func (its *InsertOperation) GetBody() *insertBody {
-	return its.Body.(*insertBody)
+// GetBody returns the body
+func (its *InsertOperation) GetBody() *InsertBody {
+	return its.Body.(*InsertBody)
 }
 
 // ////////////////// DeleteOperation ////////////////////
@@ -41,14 +43,15 @@ func NewDeleteOperation(pos int, numOfNodes int) *DeleteOperation {
 		baseOperation: newBaseOperation(
 			model.TypeOfOperation_LIST_DELETE,
 			nil,
-			&deleteBody{},
+			&DeleteBody{},
 		),
 		Pos:        pos,
 		NumOfNodes: numOfNodes,
 	}
 }
 
-type deleteBody struct {
+// DeleteBody is the body of DeleteOperation
+type DeleteBody struct {
 	T []*model.Timestamp
 }
 
@@ -59,8 +62,9 @@ type DeleteOperation struct {
 	NumOfNodes int
 }
 
-func (its *DeleteOperation) GetBody() *deleteBody {
-	return its.Body.(*deleteBody)
+// GetBody returns the body
+func (its *DeleteOperation) GetBody() *DeleteBody {
+	return its.Body.(*DeleteBody)
 }
 
 // ////////////////// UpdateOperation ////////////////////
@@ -71,7 +75,7 @@ func NewUpdateOperation(pos int, values []interface{}) *UpdateOperation {
 		baseOperation: newBaseOperation(
 			model.TypeOfOperation_LIST_UPDATE,
 			nil,
-			&updateBody{
+			&UpdateBody{
 				V: values,
 			},
 		),
@@ -79,7 +83,8 @@ func NewUpdateOperation(pos int, values []interface{}) *UpdateOperation {
 	}
 }
 
-type updateBody struct {
+// UpdateBody is the body of UpdateOperation
+type UpdateBody struct {
 	T []*model.Timestamp
 	V []interface{}
 }
@@ -90,6 +95,7 @@ type UpdateOperation struct {
 	Pos int
 }
 
-func (its *UpdateOperation) GetBody() *updateBody {
-	return its.Body.(*updateBody)
+// GetBody returns the body
+func (its *UpdateOperation) GetBody() *UpdateBody {
+	return its.Body.(*UpdateBody)
 }

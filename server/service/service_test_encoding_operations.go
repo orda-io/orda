@@ -19,6 +19,7 @@ func (its *OrdaService) decodeModelOp(in *model.Operation) iface.Operation {
 	return op
 }
 
+// TestEncodingOperation is used for testing encoded operations; this is necessary to develop SDKs
 func (its *OrdaService) TestEncodingOperation(
 	goCtx gocontext.Context,
 	in *model.EncodingMessage,
@@ -44,7 +45,7 @@ func (its *OrdaService) TestEncodingOperation(
 		}
 	case *operations.IncreaseOperation:
 		{
-			op := operations.NewIncreaseOperation(cast.GetBody().Delta)
+			op := operations.NewIncreaseOperation(cast.GetBody())
 			in.Op = op.ToModelOperation()
 		}
 	case *operations.PutOperation:

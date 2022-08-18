@@ -9,6 +9,7 @@ import (
 	"github.com/orda-io/orda/server/utils"
 )
 
+// Client is used to manage redis client
 type Client struct {
 	rs       *redsync.Redsync
 	ctx      context.OrdaContext
@@ -16,6 +17,7 @@ type Client struct {
 	mutexMap map[string]*redsync.Mutex
 }
 
+// New creates a redis client
 func New(ctx context.OrdaContext, conf *Config) (*Client, errors.OrdaError) {
 	if conf == nil || conf.Addrs == nil {
 		ctx.L().Infof("redis is NOT initialized")
@@ -41,6 +43,7 @@ func New(ctx context.OrdaContext, conf *Config) (*Client, errors.OrdaError) {
 	}, nil
 }
 
+// GetLock gets a lock of redis lock. If redis is not available, a local lock is gotten
 func (its *Client) GetLock(ctx context.OrdaContext, lockName string) utils.Lock {
 	if its.rs == nil {
 		return utils.GetLocalLock(ctx, lockName)
@@ -48,6 +51,7 @@ func (its *Client) GetLock(ctx context.OrdaContext, lockName string) utils.Lock 
 	return utils.GetRedisLock(ctx, lockName, its.rs)
 }
 
+// Close closes redis Client
 func (its *Client) Close() errors.OrdaError {
 	if its.client == nil {
 		return nil

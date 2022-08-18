@@ -35,6 +35,7 @@ func NewManager(
 	}
 }
 
+// GetLatestDatatype returns the datatype from database
 func (its *Manager) GetLatestDatatype() (iface.Datatype, uint64, errors.OrdaError) {
 	var lastSseq uint64 = 0
 	client := orda.NewClient(orda.NewLocalClientConfig(its.collectionDoc.Name), "orda-server")
@@ -42,9 +43,9 @@ func (its *Manager) GetLatestDatatype() (iface.Datatype, uint64, errors.OrdaErro
 	datatype.SetLogger(its.ctx.L())
 	if its.datatypeDoc.DUID == "" {
 		return datatype, lastSseq, nil
-	} else {
-		datatype.SetDUID(its.datatypeDoc.DUID)
 	}
+
+	datatype.SetDUID(its.datatypeDoc.DUID)
 
 	snapshotDoc, err := its.managers.Mongo.GetLatestSnapshot(its.ctx, its.datatypeDoc.CollectionNum, its.datatypeDoc.DUID)
 	if err != nil {
@@ -66,7 +67,7 @@ func (its *Manager) GetLatestDatatype() (iface.Datatype, uint64, errors.OrdaErro
 		return datatype, lastSseq, nil
 	}
 
-	its.ctx.L().Infof("apply %d operations: %+v", len(opList), opList.ToString())
+	its.ctx.L().Infof("apply %d operations: %+v", len(opList), opList.ToString(false))
 	if _, err = datatype.ReceiveRemoteModelOperations(opList, false); err != nil {
 		// TODO: should fix corruption
 		return nil, 0, err

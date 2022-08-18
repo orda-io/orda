@@ -5,21 +5,30 @@ import (
 	"strings"
 )
 
-// ToString returns a summary of the operation.
+// ToString returns a string of the operation with its body.
 func (its *Operation) ToString() string {
-	sb := strings.Builder{}
-	_, _ = fmt.Fprintf(&sb, "%s|%s|%s", its.OpType.String(), its.ID.ToString(), string(its.Body))
-	return sb.String()
+	return fmt.Sprintf("%s|%s|%v", its.OpType.String(), its.ID.ToString(), string(its.Body))
 }
 
+// ToShortString returns a string of the operation without its body
+func (its *Operation) ToShortString() string {
+	return fmt.Sprintf("%s|%s", its.OpType.String(), its.ID.ToString())
+}
+
+// OpList is a list of *Operation
 type OpList []*Operation
 
-func (its OpList) ToString() string {
+// ToString returns string
+func (its OpList) ToString(isFull bool) string {
 	sb := strings.Builder{}
 
 	sb.WriteString("[ ")
 	for _, op := range its {
-		sb.WriteString(op.ToString())
+		if isFull {
+			sb.WriteString(op.ToString())
+		} else {
+			sb.WriteString(op.ToShortString())
+		}
 		sb.WriteString(" ")
 	}
 	sb.WriteString("]")

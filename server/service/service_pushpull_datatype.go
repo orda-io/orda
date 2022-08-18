@@ -123,7 +123,7 @@ func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.Or
 
 	its.initialCheckPoint = checkPoint.Clone()
 	its.currentCP = checkPoint.Clone()
-	its.ctx.L().Infof("REQ[PUPU] %v", its.gotPushPullPack.ToString())
+	its.ctx.L().Infof("REQ[PUPU] %v", its.gotPushPullPack.ToString(true))
 	return nil
 }
 
@@ -156,7 +156,7 @@ func (its *PushPullHandler) finalize() {
 		errOp := operations.NewErrorOperation(its.err)
 		its.resPushPullPack.Operations = append(its.resPushPullPack.Operations, errOp.ToModelOperation())
 	}
-	its.ctx.L().Infof("RES[PUPU] %s", its.resPushPullPack.ToString())
+	its.ctx.L().Infof("RES[PUPU] %s", its.resPushPullPack.ToString(true))
 	its.retCh <- its.resPushPullPack
 }
 

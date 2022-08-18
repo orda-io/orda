@@ -43,6 +43,7 @@ services:
     container_name: orda-redis
     image: redis:alpine
     hostname: orda-redis
+    restart: always
     command: redis-server --port 6379
     ports:
       - 0.0.0.0:16379:6379

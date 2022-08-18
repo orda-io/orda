@@ -9,12 +9,14 @@ import (
 	"github.com/orda-io/orda/server/utils"
 )
 
+// Managers are a bundle of infra
 type Managers struct {
 	Mongo    *mongodb.RepositoryMongo
 	Notifier *notification.Notifier
 	Redis    *redis.Client
 }
 
+// New creates Managers with context and config
 func New(ctx context.OrdaContext, conf *OrdaServerConfig) (*Managers, errors.OrdaError) {
 	var oErr errors.OrdaError
 	clients := &Managers{}
@@ -32,10 +34,12 @@ func New(ctx context.OrdaContext, conf *OrdaServerConfig) (*Managers, errors.Ord
 	return clients, nil
 }
 
+// GetLock returns either a local or redis lock
 func (its *Managers) GetLock(ctx context.OrdaContext, lockName string) utils.Lock {
 	return its.Redis.GetLock(ctx, lockName)
 }
 
+// Close closes this Managers
 func (its *Managers) Close(ctx context.OrdaContext) {
 	if err := its.Redis.Close(); err != nil {
 		ctx.L().Errorf("fail to close redis: %v", err)

@@ -18,9 +18,10 @@ func (its *OrdaService) CreateCollection(goCtx goctx.Context, in *model.Collecti
 	var msg string
 	if err != nil {
 		return nil, errors.NewRPCError(err)
-	} else {
-		msg = fmt.Sprintf("create collection '%s(%d)'", in.Collection, num)
 	}
+
+	msg = fmt.Sprintf("create collection '%s(%d)'", in.Collection, num)
+
 	ctx.L().Infof("%s", msg)
 	return in, nil
 }

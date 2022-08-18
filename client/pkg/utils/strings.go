@@ -8,6 +8,7 @@ import (
 
 const maxLength = 20
 
+// MakeShort returns a short tag
 func MakeShort(tag string, maxLength int) string {
 	l := len(tag)
 	if l > maxLength {
@@ -16,10 +17,12 @@ func MakeShort(tag string, maxLength int) string {
 	return fmt.Sprintf("%.*s", maxLength, tag)
 }
 
+// MakeDefaultShort makes short
 func MakeDefaultShort(tag string) string {
 	return MakeShort(tag, maxLength)
 }
 
+// HashSum returns the hash sum of arguments
 func HashSum(args ...interface{}) string {
 	hash := md5.New()
 	for _, arg := range args {

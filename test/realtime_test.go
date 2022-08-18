@@ -49,7 +49,7 @@ func (its *IntegrationTestSuite) TestNotification() {
 			func(dt orda.Datatype, opList []interface{}) {
 				log.Logger.Infof("opList.size: %v", len(opList))
 				for _, op := range opList {
-					opCount += 1
+					opCount++
 					log.Logger.Infof("%d) OPERATION %+v", opCount, op)
 
 				}
