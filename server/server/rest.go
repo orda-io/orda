@@ -62,11 +62,13 @@ func (its *RestServer) Start() errors.OrdaError {
 func (its *RestServer) allowCors(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
 				w.Header().Set("Access-Control-Allow-Headers", r.Header.Get("Access-Control-Request-Headers"))
 				methods := []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodDelete}
 				w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
+				its.ctx.L().Infof("send CORS option : %#v", w)
+				w.WriteHeader(200)
 				return
 			}
 		}
