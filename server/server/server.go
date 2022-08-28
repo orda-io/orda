@@ -101,7 +101,7 @@ func (its *OrdaServer) Start() errors.OrdaError {
 			panic("fail to serve control server")
 		}
 	}()
-	server := fmt.Sprintf("Orda-Server-%s(%s)", constants.Version, constants.GitCommit)
+	server := fmt.Sprintf("Orda-Server-%s (%s)", constants.Version, constants.BuildInfo)
 	its.ctx.L().Infof("%s Started at %s %s", server, time.Now().String(), banner)
 	its.ctx.L().Info("start Orda server successfully")
 	return nil

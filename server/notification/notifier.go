@@ -19,7 +19,7 @@ type Notifier struct {
 
 // NewNotifier creates an instance of Notifier
 func NewNotifier(ctx context.OrdaContext, pubSubAddr string) (*Notifier, errors.OrdaError) {
-	serverName := fmt.Sprintf("Orda-Server-%s(%s)", constants.Version, constants.GitCommit)
+	serverName := fmt.Sprintf("Orda-Server-%s(%s)", constants.Version, constants.BuildInfo)
 	opts := mqtt.NewClientOptions().AddBroker(pubSubAddr).SetUsername(serverName)
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
