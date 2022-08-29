@@ -2,15 +2,14 @@ package model
 
 import (
 	"fmt"
-
-	"google.golang.org/grpc"
+	"github.com/orda-io/orda/client/pkg/constants"
 )
 
 // NewMessageHeader generates a message header.
 func NewMessageHeader(typeOf RequestType) *Header {
 	return &Header{
 		Version: ProtocolVersion,
-		Agent:   fmt.Sprintf("%s-%v", Agent, grpc.Version),
+		Agent:   fmt.Sprintf("%s-%v", constants.SDKType, constants.Version),
 		Type:    typeOf,
 	}
 }

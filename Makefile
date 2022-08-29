@@ -7,11 +7,16 @@ CONFIG_DIR = config
 
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
 
+ifeq (${ORDA_SDK_TYPE},go)
+	SDK_TYPE := "go"
+else
+	SDK_TYPE := ${ORDA_SDK_TYPE}
+endif
+
 GO_SRCS := $(shell find . -path ./vendor -prune -o -type f -name "*.go" -print)
 GO_PROJECT = github.com/orda-io/orda
 GO_LDFLAGS ?=
-GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.GitCommit=${GIT_COMMIT}'
-GO_LDFLAGS += -X '${GO_PROJECT}/pkg/constants.Version=${VERSION}'
+GO_LDFLAGS += -X '${GO_PROJECT}/client/pkg/constants.SDKType=${SDK_TYPE}'
 
 PROJECT_ROOT = $(shell pwd)
 DOCKER_PROJECT_ROOT = /app
@@ -98,5 +103,18 @@ docker-up:
 docker-down:
 	@cd $(DEPLOY_DIR); VERSION=$(VERSION) docker-compose down
 
+.PHONY: reflect-version
+reflect-version:
+	sed '/const Version/d' client/pkg/constants/version.go > _version_temp.go
+	echo 'const Version = "$(VERSION)"' >> _version_temp.go
+	mv _version_temp.go client/pkg/constants/version.go
+
+.PHONY: tidy
+tidy:
+	go mod tidy
+	cd client ; go mod tidy ; cd ..
+	cd server ; go mod tidy ; cd ..
+	cd test ; go mod tidy ; cd ..
+
 .PHONY: check-before-pr
-check-before-pr: lint
+check-before-pr: reflect-version lint tidy test

@@ -34,7 +34,8 @@ func main() {
 		}
 	}()
 	wg := &sync.WaitGroup{}
-	client1.CreateDocument("sampleDoc", orda.NewHandlers(
+	wg.Add(1)
+	client1.SubscribeOrCreateDocument("sampleDoc", orda.NewHandlers(
 		func(dt orda.Datatype, old model.StateOfDatatype, new model.StateOfDatatype) {
 			if new == model.StateOfDatatype_SUBSCRIBED {
 				wg.Done()
@@ -47,5 +48,5 @@ func main() {
 
 		},
 	))
-
+	wg.Done()
 }
