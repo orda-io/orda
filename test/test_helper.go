@@ -1,16 +1,22 @@
 package integration
 
 import (
-	"github.com/orda-io/orda/client/pkg/context"
+	gocontext "context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
+	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/orda"
+	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/managers"
 	redis "github.com/orda-io/orda/server/redis"
+	"github.com/orda-io/orda/server/svrcontext"
+	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/orda-io/orda/server/mongodb"
@@ -33,7 +39,7 @@ func GetFileName() string {
 }
 
 // GetMongo returns an instance of RepositoryMongo for testing.
-func GetMongo(ctx context.OrdaContext, dbName string) (*mongodb.RepositoryMongo, errors.OrdaError) {
+func GetMongo(ctx iface.OrdaContext, dbName string) (*mongodb.RepositoryMongo, errors.OrdaError) {
 	if m, ok := mongoDB[dbName]; ok {
 		return m, nil
 	}
@@ -93,4 +99,25 @@ func NewTestMongoDBConfig(dbName string) *mongodb.Config {
 		User:     "root",
 		Password: "orda-test",
 	}
+}
+
+// NewTestManagers creates a new Managers for Test
+func NewTestManagers(ctx *svrcontext.ServerContext, dbName string) (*managers.Managers, errors.OrdaError) {
+	conf := NewTestOrdaServerConfig(dbName)
+	return managers.New(ctx, conf)
+}
+
+// InitTestDBCollection initializes db collection for testing
+func InitTestDBCollection(t *testing.T, dbName string) (*mongodb.RepositoryMongo, *svrcontext.ServerContext, int32) {
+	ctx := svrcontext.NewServerContext(gocontext.TODO(), constants.TagTest).UpdateCollection(t.Name())
+	mongo, err := GetMongo(ctx, dbName)
+	if err != nil {
+		t.Fatal("fail to initialize mongoDB")
+	}
+	err = mongo.PurgeCollection(ctx, t.Name())
+	require.NoError(t, err)
+	collectionNum, err := mongodb.MakeCollection(ctx, mongo, t.Name())
+	require.NoError(t, err)
+	log.Logger.Infof("Init Test DB Collection %v(%d) in %v", t.Name(), collectionNum, dbName)
+	return mongo, ctx, collectionNum
 }

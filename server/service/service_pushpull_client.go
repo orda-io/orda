@@ -29,7 +29,7 @@ func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushP
 		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), msg))
 	}
 	ctx.UpdateClient(clientDoc.ToString())
-	ctx.L().Infof("REQ[PUPU] %v", in.ToString(true))
+	ctx.L().Infof("↪[PUPU] %v", in.ToString(false))
 	if clientDoc.CollectionNum != collectionDoc.Num {
 		msg := fmt.Sprintf("client '%s' accesses collection(%d)", clientDoc.ToString(), collectionDoc.Num)
 		return nil, errors.NewRPCError(errors.ServerNoPermission.New(ctx.L(), msg))
@@ -63,6 +63,6 @@ func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushP
 			response.PushPullPacks = append(response.PushPullPacks, ppp)
 		}
 	}
-	ctx.L().Infof("RES[PUPU] %v", response.ToString(true))
+	ctx.L().Infof("↩[PUPU] %v", response.ToString(false))
 	return response, nil
 }

@@ -2,19 +2,17 @@ package service
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/operations"
+	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/managers"
 	"github.com/orda-io/orda/server/schema"
-	"github.com/orda-io/orda/server/utils"
-	"runtime/debug"
-	"time"
-
-	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/snapshot"
 	"github.com/orda-io/orda/server/svrcontext"
+	"github.com/orda-io/orda/server/utils"
+	"runtime/debug"
 )
 
 type pushPullCase uint32
@@ -27,6 +25,7 @@ const (
 	caseAllMatchedSubscribed
 	caseAllMatchedNotSubscribed
 	caseAllMatchedNotVisible
+	caseInvalidPushPullOption
 )
 
 var (
@@ -38,6 +37,7 @@ var (
 		caseAllMatchedSubscribed:    "caseAllMatchedSubscribed",
 		caseAllMatchedNotSubscribed: "caseAllMatchedNotSubscribed",
 		caseAllMatchedNotVisible:    "caseAllMatchedNotVisible",
+		caseInvalidPushPullOption:   "caseInvalidPushPullOption",
 	}
 )
 
@@ -52,16 +52,18 @@ type PushPullHandler struct {
 	managers *managers.Managers
 	lock     utils.Lock
 
-	casePushPull      pushPullCase
-	initialCheckPoint *model.CheckPoint
-	currentCP         *model.CheckPoint
+	casePushPull pushPullCase
+	initialCP    *model.CheckPoint
+	currentCP    *model.CheckPoint
 
-	clientDoc     *schema.ClientDoc
 	datatypeDoc   *schema.DatatypeDoc
+	clientDoc     *schema.ClientDoc
+	subClientDoc  *schema.SubscribedClientDoc
 	collectionDoc *schema.CollectionDoc
 
 	gotPushPullPack *model.PushPullPack
 	gotOption       *model.PushPullPackOption
+	isReadOnly      bool
 
 	resPushPullPack *model.PushPullPack
 	retCh           chan *model.PushPullPack
@@ -81,7 +83,7 @@ func newPushPullHandler(
 	newCtx := svrcontext.NewServerContext(ctx.Ctx(), constants.TagPushPull).
 		UpdateCollection(collectionDoc.GetSummary()).
 		UpdateClient(clientDoc.ToString()).UpdateDatatype(ppp.GetDatatypeTag())
-
+	option := ppp.GetPushPullPackOption()
 	return &PushPullHandler{
 		Key:             ppp.Key,
 		DUID:            ppp.DUID,
@@ -89,10 +91,11 @@ func newPushPullHandler(
 		ctx:             newCtx,
 		err:             &errors.MultipleOrdaErrors{},
 		managers:        clients,
-		clientDoc:       clientDoc,
 		collectionDoc:   collectionDoc,
+		clientDoc:       clientDoc,
 		gotPushPullPack: ppp,
-		gotOption:       ppp.GetPushPullPackOption(),
+		gotOption:       option,
+		isReadOnly:      option.HasReadOnly(),
 	}
 }
 
@@ -108,34 +111,35 @@ func (its *PushPullHandler) Start() <-chan *model.PushPullPack {
 	return retCh
 }
 
+func (its *PushPullHandler) validatePushPullPack() errors.OrdaError {
+	if its.isReadOnly && its.gotOption.HasCreateBit() {
+		return errors.PushPullAbortionOfClient.New(its.ctx.L(), "invalid push-pull option:"+its.gotOption.String())
+	}
+	if its.isReadOnly && len(its.gotPushPullPack.Operations) > 0 {
+		return errors.PushPullAbortionOfClient.New(its.ctx.L(), "the readonly client cannot push operations")
+	}
+	return nil
+}
+
 func (its *PushPullHandler) initialize(retCh chan *model.PushPullPack) errors.OrdaError {
 	its.retCh = retCh
 	its.resPushPullPack = its.gotPushPullPack.GetResponsePushPullPack()
 	its.resPushPullPack.Option = uint32(model.PushPullBitNormal)
 
-	checkPoint, err := its.managers.Mongo.GetCheckPointFromClient(its.ctx, its.CUID, its.DUID)
-	if err != nil {
-		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
-	}
-	if checkPoint == nil {
-		checkPoint = model.NewCheckPoint()
-	}
-
-	its.initialCheckPoint = checkPoint.Clone()
-	its.currentCP = checkPoint.Clone()
 	its.ctx.L().Infof("REQ[PUPU] %v", its.gotPushPullPack.ToString(true))
 	return nil
 }
 
 func (its *PushPullHandler) finalize() {
 	if r := recover(); r != nil {
-		its.ctx.L().Errorf("panic")
+		its.ctx.L().Errorf("recover panic [%v]: %v", r, string(debug.Stack()))
+
 		return
 	}
 	defer its.lock.Unlock()
 	if its.err == nil {
-		its.ctx.L().Infof("finish with CP (%v) -> (%v) and pulled ops: %d",
-			its.initialCheckPoint, its.currentCP, len(its.resPushPullPack.Operations))
+		its.ctx.L().Infof("finish with CP %v -> %v and pulled ops: %d",
+			its.initialCP.ToString(), its.currentCP.ToString(), len(its.resPushPullPack.Operations))
 		if len(its.pushingOperations) > 0 {
 
 			newCtx := its.ctx.CloneWithNewContext(constants.TagPostPushPull)
@@ -169,12 +173,12 @@ func (its *PushPullHandler) recoveryFromPanic() {
 }
 
 func (its *PushPullHandler) logInitialConditions() {
-	its.ctx.L().Infof("initial condition | case: %s, opt: %s, cp(%v), ops:%d, sseqEnd:%d",
+	its.ctx.L().Infof("initial condition | case: %s, opt: %s, cp%v, ops:%d, sseqEnd:%d",
 		pushPullCaseMap[its.casePushPull],
 		its.gotOption.String(),
-		its.initialCheckPoint,
+		its.initialCP.ToString(),
 		len(its.gotPushPullPack.Operations),
-		its.datatypeDoc.SseqEnd,
+		its.datatypeDoc.Sseq.End,
 	)
 }
 
@@ -183,6 +187,10 @@ func (its *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	its.lock.TryLock()
 
 	defer its.finalize()
+
+	if its.err = its.validatePushPullPack(); its.err != nil {
+		return
+	}
 
 	if its.err = its.initialize(retCh); its.err != nil {
 		return
@@ -209,16 +217,16 @@ func (its *PushPullHandler) process(retCh chan *model.PushPullPack) {
 	}
 }
 
-func (its *PushPullHandler) sendNotification(ctx context.OrdaContext) errors.OrdaError {
+func (its *PushPullHandler) sendNotification(ctx iface.OrdaContext) errors.OrdaError {
 	return its.managers.Notifier.NotifyAfterPushPull(
 		ctx,
 		its.collectionDoc.Name,
-		its.clientDoc,
+		its.CUID,
 		its.datatypeDoc,
 		its.currentCP.Sseq)
 }
 
-func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrdaContext) error {
+func (its *PushPullHandler) reserveUpdateSnapshot(ctx iface.OrdaContext) error {
 	snapshotManager := snapshot.NewManager(ctx, its.managers, its.datatypeDoc, its.collectionDoc)
 	if err := snapshotManager.UpdateSnapshot(); err != nil { // TODO: should be asynchronous
 		return err
@@ -227,36 +235,36 @@ func (its *PushPullHandler) reserveUpdateSnapshot(ctx context.OrdaContext) error
 }
 
 func (its *PushPullHandler) commitToMongoDB() errors.OrdaError {
-	its.datatypeDoc.SseqEnd = its.currentCP.Sseq
+	its.datatypeDoc.Sseq.End = its.currentCP.Sseq
 	its.resPushPullPack.CheckPoint = its.currentCP
-
+	its.subClientDoc.UpdateAt()
 	if len(its.pushingOperations) > 0 {
 		if err := its.managers.Mongo.InsertOperations(its.ctx, its.pushingOperations); err != nil {
 			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 		}
-		its.ctx.L().Infof("commit %d Operations finally", len(its.pushingOperations))
+		its.ctx.L().Infof("commit %d OperationDocs", len(its.pushingOperations))
 	}
 
 	if err := its.managers.Mongo.UpdateDatatype(its.ctx, its.datatypeDoc); err != nil {
 		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
 	}
-	its.ctx.L().Infof("commit Datatype %s", its.datatypeDoc)
+	its.ctx.L().Infof("commit DatatypeDoc [%s]", its.datatypeDoc)
 
-	if !its.clientDoc.IsAdmin() {
-		if err := its.managers.Mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCP); err != nil {
-			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
-		}
-		its.ctx.L().Infof("commit CheckPoint with %s", its.currentCP.String())
-	}
+	// if !admin.IsAdminCUID(its.CUID) {
+	// 	if err := its.managers.Mongo.UpdateCheckPointInClient(its.ctx, its.CUID, its.DUID, its.currentCP); err != nil {
+	// 		return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
+	// 	}
+	// 	its.ctx.L().Infof("commit CheckPoint with %s", its.currentCP.String())
+	// }
 	return nil
 }
 
 func (its *PushPullHandler) pullOperations() errors.OrdaError {
-	if its.clientDoc.IsAdmin() {
+	if its.clientDoc.GetType() == model.ClientType_VOLATILE {
 		return nil
 	}
 	sseqBegin := its.gotPushPullPack.CheckPoint.Sseq + 1
-	if its.datatypeDoc.SseqBegin <= sseqBegin && !its.gotOption.HasSnapshotBit() {
+	if its.datatypeDoc.Sseq.Begin <= sseqBegin && !its.gotOption.HasSnapshotBit() {
 		opList, sseqList, err := its.managers.Mongo.GetOperations(its.ctx, its.DUID, sseqBegin, constants.InfinitySseq)
 		if err != nil {
 			return errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
@@ -270,8 +278,10 @@ func (its *PushPullHandler) pullOperations() errors.OrdaError {
 }
 
 func (its *PushPullHandler) pushOperations() errors.OrdaError {
-
-	its.currentCP.Sseq = its.datatypeDoc.SseqEnd
+	if its.isReadOnly {
+		return nil
+	}
+	its.currentCP.Sseq = its.datatypeDoc.Sseq.End
 	for _, op := range its.gotPushPullPack.Operations {
 		switch {
 		case its.currentCP.Cseq+1 == op.ID.GetSeq():
@@ -283,7 +293,7 @@ func (its *PushPullHandler) pushOperations() errors.OrdaError {
 		case its.currentCP.Cseq >= op.ID.GetSeq():
 			its.ctx.L().Warnf("reject operation due to duplicate: %v", op.String())
 		default:
-			msg := fmt.Sprintf("cp.Cseq=%d < op.Seq=%d", its.initialCheckPoint.Cseq, op.ID.GetSeq())
+			msg := fmt.Sprintf("cp.Cseq=%d < op.Seq=%d", its.initialCP.Cseq, op.ID.GetSeq())
 			return errors.PushPullMissingOps.New(its.ctx.L(), msg)
 		}
 	}
@@ -294,8 +304,7 @@ func (its *PushPullHandler) processSubscribeOrCreate(code pushPullCase) errors.O
 	if its.gotOption.HasSubscribeBit() && its.gotOption.HasCreateBit() {
 		switch code {
 		case caseMatchNothing:
-			its.createDatatype()
-			return nil
+			return its.createDatatype()
 		case caseAllMatchedNotSubscribed:
 			return its.subscribeDatatype()
 		}
@@ -313,8 +322,7 @@ func (its *PushPullHandler) processSubscribeOrCreate(code pushPullCase) errors.O
 	} else if its.gotOption.HasCreateBit() {
 		switch code {
 		case caseMatchNothing: // can create with key and duid
-			its.createDatatype()
-			return nil
+			return its.createDatatype()
 		case caseUsedDUID: // duplicate DUID; can create with key but with another DUID
 		case caseMatchKeyNotType: // key is already used;
 		case caseAllMatchedSubscribed: // already created and subscribed; might duplicate creation; do nothing
@@ -324,46 +332,66 @@ func (its *PushPullHandler) processSubscribeOrCreate(code pushPullCase) errors.O
 		default:
 		}
 	}
-	return nil
+	return its.initClientInfoWithDatatypeDoc()
 }
 
 func (its *PushPullHandler) subscribeDatatype() errors.OrdaError {
 	its.DUID = its.datatypeDoc.DUID
-	its.clientDoc.CheckPoints[its.CUID] = its.currentCP
+	if err := its.initClientInfoWithDatatypeDoc(); err != nil {
+		return err
+	}
 	its.gotPushPullPack.Operations = nil
 	its.resPushPullPack.DUID = its.datatypeDoc.DUID
 	option := model.PushPullBitNormal
 	its.resPushPullPack.Option = uint32(*option.SetSubscribeBit())
-	its.ctx.L().Infof("subscribe %s by %s", its.datatypeDoc, its.clientDoc)
+	its.ctx.L().Infof("subscribe %v", its.datatypeDoc)
 	return nil
 }
 
-func (its *PushPullHandler) createDatatype() {
-	its.datatypeDoc = &schema.DatatypeDoc{
-		DUID:          its.DUID,
-		Key:           its.Key,
-		CollectionNum: its.collectionDoc.Num,
-		Type:          its.gotPushPullPack.Type.String(), // model.TypeOfDatatype_name[its.gotPushPullPack.Type],
-		SseqBegin:     1,
-		SseqEnd:       0,
-		Visible:       true,
-		CreatedAt:     time.Now(),
-	}
+func (its *PushPullHandler) createDatatype() errors.OrdaError {
+	its.datatypeDoc = schema.NewDatatypeDoc(its.DUID, its.Key, its.collectionDoc.Num, its.gotPushPullPack.Type.String())
 	option := model.PushPullBitNormal
 	its.resPushPullPack.Option = uint32(*option.SetCreateBit())
-	its.ctx.L().Infof("create new %s", its.datatypeDoc)
+	its.ctx.L().Infof("create new %v", its.datatypeDoc)
+	if err := its.initClientInfoWithDatatypeDoc(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (its *PushPullHandler) initClientInfoWithDatatypeDoc() errors.OrdaError {
+	// if its.cli
+	its.subClientDoc = its.datatypeDoc.GetClientInDatatypeDoc(its.CUID, its.isReadOnly)
+	if its.subClientDoc != nil {
+		its.currentCP = its.subClientDoc.GetCheckPoint()
+		its.initialCP = its.currentCP.Clone()
+		return nil
+	}
+	if its.clientDoc.GetType() != model.ClientType_VOLATILE {
+		its.subClientDoc = its.datatypeDoc.AddNewClient(its.CUID, its.clientDoc.Type, its.isReadOnly)
+		its.currentCP = its.subClientDoc.GetCheckPoint()
+	} else {
+		its.currentCP = model.NewCheckPoint()
+	}
+	its.initialCP = its.currentCP.Clone()
+	return nil
 }
 
 func (its *PushPullHandler) evaluatePushPullCase() (pushPullCase, errors.OrdaError) {
 	var err errors.OrdaError
-	its.datatypeDoc, err = its.managers.Mongo.GetDatatypeByKey(its.ctx, its.collectionDoc.Num, its.gotPushPullPack.Key)
-	if err != nil {
-		return caseError, err
+	// (1) first, when having createBit or subscribeBit, check if there exists a datatypeDoc for the key
+	if its.gotOption.HasCreateBit() || its.gotOption.HasSubscribeBit() {
+		its.datatypeDoc, err = its.managers.Mongo.GetDatatypeByKey(its.ctx, its.collectionDoc.Num, its.gotPushPullPack.Key)
+		if err != nil {
+			return caseError, errors.PushPullAbortionOfServer.New(its.ctx.L(), "fail to get datatype by key from DB")
+		}
 	}
+
+	// (2) except with createBit or subscribeBit, search datatypeDoc by DUID
 	if its.datatypeDoc == nil {
 		its.datatypeDoc, err = its.managers.Mongo.GetDatatype(its.ctx, its.DUID)
 		if err != nil {
-			return caseError, errors.PushPullAbortionOfServer.New(its.ctx.L(), err.Error())
+			return caseError, errors.PushPullAbortionOfServer.New(its.ctx.L(), "fail to get datatype by duid from DB")
 		}
 		if its.datatypeDoc == nil {
 			return caseMatchNothing, nil
@@ -372,10 +400,8 @@ func (its *PushPullHandler) evaluatePushPullCase() (pushPullCase, errors.OrdaErr
 	}
 	if its.datatypeDoc.Type == its.gotPushPullPack.Type.String() {
 		if its.datatypeDoc.Visible {
-			checkPoint := its.clientDoc.GetCheckPoint(its.DUID)
-			if checkPoint != nil {
-				its.initialCheckPoint = checkPoint
-				its.currentCP = checkPoint.Clone()
+			subscribedClient := its.datatypeDoc.GetClientInDatatypeDoc(its.CUID, its.isReadOnly)
+			if subscribedClient != nil {
 				return caseAllMatchedSubscribed, nil
 			}
 			return caseAllMatchedNotSubscribed, nil

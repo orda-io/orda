@@ -1,8 +1,8 @@
 package managers
 
 import (
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/mongodb"
 	"github.com/orda-io/orda/server/notification"
 	"github.com/orda-io/orda/server/redis"
@@ -17,7 +17,7 @@ type Managers struct {
 }
 
 // New creates Managers with context and config
-func New(ctx context.OrdaContext, conf *OrdaServerConfig) (*Managers, errors.OrdaError) {
+func New(ctx iface.OrdaContext, conf *OrdaServerConfig) (*Managers, errors.OrdaError) {
 	var oErr errors.OrdaError
 	clients := &Managers{}
 	if clients.Mongo, oErr = mongodb.New(ctx, conf.Mongo); oErr != nil {
@@ -35,12 +35,12 @@ func New(ctx context.OrdaContext, conf *OrdaServerConfig) (*Managers, errors.Ord
 }
 
 // GetLock returns either a local or redis lock
-func (its *Managers) GetLock(ctx context.OrdaContext, lockName string) utils.Lock {
+func (its *Managers) GetLock(ctx iface.OrdaContext, lockName string) utils.Lock {
 	return its.Redis.GetLock(ctx, lockName)
 }
 
 // Close closes this Managers
-func (its *Managers) Close(ctx context.OrdaContext) {
+func (its *Managers) Close(ctx iface.OrdaContext) {
 	if err := its.Redis.Close(); err != nil {
 		ctx.L().Errorf("fail to close redis: %v", err)
 	}

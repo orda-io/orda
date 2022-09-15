@@ -20,7 +20,6 @@ require (
 	github.com/viney-shih/go-lock v1.1.2
 	go.mongodb.org/mongo-driver v1.10.1
 	google.golang.org/grpc v1.49.0
-	gotest.tools v2.2.0+incompatible
 )
 
 require (
@@ -37,7 +36,6 @@ require (
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect

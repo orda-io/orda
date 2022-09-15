@@ -42,6 +42,11 @@ func NewBaseDatatype(
 	return base
 }
 
+// GetCtx returns *context.DatatypeContext for internal use
+func (its *BaseDatatype) GetCtx() iface.OrdaContext {
+	return its.ctx
+}
+
 // GetCUID returns CUID of the client which this datatype subscribes to.
 func (its *BaseDatatype) GetCUID() string {
 	return its.opID.CUID

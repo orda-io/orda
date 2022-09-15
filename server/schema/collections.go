@@ -11,7 +11,7 @@ import (
 // CollectionDoc defines the document of Collections collection, stored in MongoDB. More specifically, it stores a number associated to the collection.
 type CollectionDoc struct {
 	Name      string    `bson:"_id"`
-	Num       uint32    `bson:"num"`
+	Num       int32     `bson:"num"`
 	CreatedAt time.Time `bson:"createdAt"`
 }
 

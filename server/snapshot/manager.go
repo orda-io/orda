@@ -2,7 +2,6 @@ package snapshot
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/orda"
@@ -14,7 +13,7 @@ import (
 
 // Manager is a struct that updates snapshot of a datatype in Orda server
 type Manager struct {
-	ctx           context.OrdaContext
+	ctx           iface.OrdaContext
 	managers      *managers.Managers
 	datatypeDoc   *schema.DatatypeDoc
 	collectionDoc *schema.CollectionDoc
@@ -22,7 +21,7 @@ type Manager struct {
 
 // NewManager returns an instance of Snapshot Manager
 func NewManager(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	managers *managers.Managers,
 	datatypeDoc *schema.DatatypeDoc,
 	collectionDoc *schema.CollectionDoc,

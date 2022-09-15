@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/managers"
 	"github.com/orda-io/orda/server/schema"
 )
@@ -20,7 +20,7 @@ func NewOrdaService(managers *managers.Managers) *OrdaService {
 }
 
 func (its *OrdaService) getCollectionDocWithRPCError(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	collection string,
 ) (*schema.CollectionDoc, error) {
 	collectionDoc, err := its.managers.Mongo.GetCollection(ctx, collection)

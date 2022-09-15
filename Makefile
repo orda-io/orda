@@ -22,6 +22,7 @@ PROJECT_ROOT = $(shell pwd)
 DOCKER_PROJECT_ROOT = /app
 
 PROTOC_INCLUDE := -I=./proto/thirdparty -I=./proto
+PROTOC_MODEL_PATH := ./client/pkg/model
 PROTOC_PROTO_FILES := orda.enum.proto orda.proto orda.grpc.proto
 
 ORDA_BUILDER := docker run --platform linux/amd64 --network host --rm -v $(PROJECT_ROOT):${DOCKER_PROJECT_ROOT} -w ${DOCKER_PROJECT_ROOT} orda-builder sh -c
@@ -32,15 +33,15 @@ init:
 
 .PHONY: protoc-gen
 protoc-gen:
-	- $(ORDA_BUILDER) "rm -rf ./proto/thirdparty ./pkg/model/*.pb.go ./pkg/model/*.gw.go"
+	- $(ORDA_BUILDER) "rm -rf ./proto/thirdparty $(PROTOC_MODEL_PATH)/*.pb.go $(PROTOC_MODEL_PATH)/*.gw.go"
 	$(ORDA_BUILDER) "mkdir -p ./proto/thirdparty/google"
 	$(ORDA_BUILDER) "cp -rf /root/googleapis/google/api ./proto/thirdparty/google/"
 	$(ORDA_BUILDER) "mkdir -p ./proto/thirdparty/protoc-gen-openapiv2"
 	$(ORDA_BUILDER) "cp -rf /root/grpc-gateway/protoc-gen-openapiv2/options ./proto/thirdparty/protoc-gen-openapiv2/"
 	$(ORDA_BUILDER) "protoc $(PROTOC_INCLUDE) --go_out=,plugins=grpc,:. $(PROTOC_PROTO_FILES)"
-	$(ORDA_BUILDER) "protoc-go-inject-tag -input=./pkg/model/orda.pb.go"
+	$(ORDA_BUILDER) "protoc-go-inject-tag -input=$(PROTOC_MODEL_PATH)/orda.pb.go"
 	$(ORDA_BUILDER) "protoc $(PROTOC_INCLUDE) \
-		--grpc-gateway_out ./pkg/model \
+		--grpc-gateway_out $(PROTOC_MODEL_PATH) \
 		--grpc-gateway_opt paths=source_relative \
 		--grpc-gateway_opt logtostderr=true \
 		--grpc-gateway_opt generate_unbound_methods=true \

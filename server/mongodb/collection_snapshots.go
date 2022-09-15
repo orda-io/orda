@@ -2,8 +2,8 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/schema"
 	"time"
 
@@ -14,8 +14,8 @@ import (
 
 // GetLatestSnapshot gets the latest snapshot for the specified datatype.
 func (its *MongoCollections) GetLatestSnapshot(
-	ctx context.OrdaContext,
-	collectionNum uint32,
+	ctx iface.OrdaContext,
+	collectionNum int32,
 	duid string,
 ) (*schema.SnapshotDoc, errors.OrdaError) {
 	f := schema.GetFilter().
@@ -42,8 +42,8 @@ func (its *MongoCollections) GetLatestSnapshot(
 
 // InsertSnapshot inserts a snapshot for the specified datatype.
 func (its *MongoCollections) InsertSnapshot(
-	ctx context.OrdaContext,
-	collectionNum uint32,
+	ctx iface.OrdaContext,
+	collectionNum int32,
 	duid string,
 	sseq uint64,
 	meta []byte,

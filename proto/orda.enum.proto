@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "pkg/model";
+option go_package = "client/pkg/model";
 package orda;
 
 enum SyncType {
@@ -10,8 +10,9 @@ enum SyncType {
 }
 
 enum ClientType {
-  PERSISTENT = 0;
-  EPHEMERAL = 1;
+  PERSISTENT = 0;  // persistent clients can generate operations; even if they do not sync, their checkpoints remains for offline support
+  EPHEMERAL = 1; // ephemeral clients can generate operations; if they do not sync for predetermined time, their information is removed
+  VOLATILE = 2; // volatile clients can generate operations on the latest datatype, but no operations are pulled
 }
 
 enum TypeOfOperation {

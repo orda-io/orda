@@ -16,6 +16,7 @@ type BaseDatatype interface {
 	GetCUID() string                      // @baseDatatype
 	SetState(state model.StateOfDatatype) // @baseDatatype
 	SetLogger(l *log.OrdaLog)             // @baseDatatype
+	GetCtx() OrdaContext                  // @baseDatatype
 	GetMeta() ([]byte, errors.OrdaError)
 	SetMeta(meta []byte) errors.OrdaError
 	GetSummary() string

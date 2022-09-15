@@ -13,14 +13,13 @@ import (
 
 // ClientDoc defines the document for client, stored in MongoDB.
 type ClientDoc struct {
-	CUID          string                       `bson:"_id"`
-	Alias         string                       `bson:"alias"`
-	CollectionNum uint32                       `bson:"colNum"`
-	Type          int8                         `bson:"type"`
-	SyncType      int8                         `bson:"syncType"`
-	CheckPoints   map[string]*model.CheckPoint `bson:"checkpoints,omitempty"`
-	CreatedAt     time.Time                    `bson:"createdAt"`
-	UpdatedAt     time.Time                    `bson:"updatedAt"`
+	CUID          string    `bson:"_id"`
+	Alias         string    `bson:"alias"`
+	CollectionNum int32     `bson:"colNum"`
+	Type          int8      `bson:"type"`
+	SyncType      int8      `bson:"syncType"`
+	CreatedAt     time.Time `bson:"createdAt"`
+	UpdatedAt     time.Time `bson:"updatedAt"`
 }
 
 // ClientDocFields defines the fields of ClientDoc
@@ -30,7 +29,6 @@ var ClientDocFields = struct {
 	CollectionNum string
 	Type          string
 	SyncType      string
-	CheckPoints   string
 	CreatedAt     string
 	UpdatedAt     string
 }{
@@ -39,30 +37,22 @@ var ClientDocFields = struct {
 	CollectionNum: "colNum",
 	Type:          "type",
 	SyncType:      "syncType",
-	CheckPoints:   "checkpoints",
 	CreatedAt:     "createdAt",
 	UpdatedAt:     "updatedAt",
 }
 
 func (its *ClientDoc) String() string {
-	return fmt.Sprintf("(%d)%s:%s:%d", its.CollectionNum, its.Alias, its.CUID, len(its.CheckPoints))
+	return fmt.Sprintf("(%d)%s:%s", its.CollectionNum, its.Alias, its.CUID)
 }
 
 // ToUpdateBSON returns a bson from a ClientDoc
 func (its *ClientDoc) ToUpdateBSON() bson.D {
-	checkPointBson := make(map[string]bson.M)
-	if its.CheckPoints != nil {
-		for k, v := range its.CheckPoints {
-			checkPointBson[k] = ToCheckPointBSON(v)
-		}
-	}
 	return bson.D{
 		{"$set", bson.D{
 			{ClientDocFields.Alias, its.Alias},
 			{ClientDocFields.CollectionNum, its.CollectionNum},
 			{ClientDocFields.Type, its.Type},
 			{ClientDocFields.SyncType, its.SyncType},
-			{ClientDocFields.CheckPoints, checkPointBson},
 			{ClientDocFields.CreatedAt, its.CreatedAt},
 		}},
 		{"$currentDate", bson.D{
@@ -81,22 +71,14 @@ func (its *ClientDoc) GetIndexModel() []mongo.IndexModel {
 		},
 		{
 			Keys: bsonx.Doc{
-				{Key: ClientDocFields.CheckPoints, Value: bsonx.String("hashed")},
+				{Key: ClientDocFields.Type, Value: bsonx.Int32(1)},
 			},
 		},
 	}
 }
 
-// GetCheckPoint returns a CheckPoint of a datatype
-func (its *ClientDoc) GetCheckPoint(duid string) *model.CheckPoint {
-	if checkPoint, ok := its.CheckPoints[duid]; ok {
-		return checkPoint
-	}
-	return nil
-}
-
 // ClientModelToBson returns a ClientDoc from a model.Client
-func ClientModelToBson(model *model.Client, collectionNum uint32) *ClientDoc {
+func ClientModelToBson(model *model.Client, collectionNum int32) *ClientDoc {
 	return &ClientDoc{
 		CUID:          model.CUID,
 		Alias:         model.Alias,
@@ -120,4 +102,9 @@ func (its *ClientDoc) GetModel() *model.Client {
 // ToString returns ClientDoc string
 func (its *ClientDoc) ToString() string {
 	return fmt.Sprintf("%s(%s)", its.Alias, its.CUID)
+}
+
+// GetType returns model.ClientType
+func (its *ClientDoc) GetType() model.ClientType {
+	return model.ClientType(its.Type)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/orda"
+	"github.com/orda-io/orda/server/admin"
 
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/schema"
@@ -24,7 +25,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 	ctx.L().Infof("BEGIN PatchDocument: '%v' %#v", req.Key, req.GetJson())
 	defer ctx.L().Infof("END PatchDocument: '%v'", req.Key)
 
-	clientDoc := schema.NewPatchClient(collectionDoc)
+	clientDoc := admin.NewPatchClient(collectionDoc)
 	ctx.UpdateCollection(collectionDoc.GetSummary()).UpdateClient(clientDoc.ToString())
 
 	lock := its.managers.GetLock(ctx, utils.GetLockName("PD", collectionDoc.Num, req.Key))
@@ -39,11 +40,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 	}
 
 	if datatypeDoc == nil {
-		datatypeDoc = &schema.DatatypeDoc{
-			Key:           req.Key,
-			CollectionNum: collectionDoc.Num,
-			Type:          model.TypeOfDatatype_DOCUMENT.String(),
-		}
+		datatypeDoc = schema.NewDatatypeDoc("", req.Key, collectionDoc.Num, model.TypeOfDatatype_DOCUMENT.String())
 	}
 	if datatypeDoc.Type != model.TypeOfDatatype_DOCUMENT.String() {
 		return nil, errors.NewRPCError(errors.ServerBadRequest.New(ctx.L(), "not document type: "+datatypeDoc.Type))

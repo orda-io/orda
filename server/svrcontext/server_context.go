@@ -4,11 +4,12 @@ import (
 	gocontext "context"
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/context"
+	"github.com/orda-io/orda/client/pkg/iface"
 )
 
 // ServerContext is used to pass over contexts for server
 type ServerContext struct {
-	context.OrdaContext
+	iface.OrdaContext
 	collection string
 	client     string
 	datatype   string

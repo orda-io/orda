@@ -1,8 +1,8 @@
 package mongodb
 
 import (
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/schema"
 	"reflect"
 
@@ -23,7 +23,7 @@ type MongoCollections struct {
 
 // Create creates an empty collection by inserting a document and immediately deleting it.
 func (its *MongoCollections) createCollection(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	collection *mongo.Collection,
 	docModel schema.MongoDBDoc,
 ) errors.OrdaError {
@@ -42,7 +42,7 @@ func (its *MongoCollections) createCollection(
 }
 
 func (its *MongoCollections) createIndex(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	collection *mongo.Collection,
 	docModel schema.MongoDBDoc,
 ) errors.OrdaError {
@@ -60,7 +60,7 @@ func (its *MongoCollections) createIndex(
 }
 
 func (its *MongoCollections) doTransaction(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	transactions func() errors.OrdaError,
 ) errors.OrdaError {
 	session, err := its.mongoClient.StartSession()

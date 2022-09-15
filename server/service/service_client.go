@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/model"
+	"github.com/orda-io/orda/server/admin"
 	"time"
 
 	"github.com/orda-io/orda/server/schema"
@@ -21,6 +22,12 @@ func (its *OrdaService) ProcessClient(
 	ctx := svrcontext.NewServerContext(goCtx, constants.TagClient).
 		UpdateCollection(req.Collection).
 		UpdateClient(req.GetClientSummary())
+	if admin.IsAdminCUID(req.GetCuid()) {
+		return nil, errors.NewRPCError(
+			errors.ServerNoPermission.New(ctx.L(),
+				fmt.Sprintf("not allowed CUID '%s'", req.GetCuid())))
+	}
+
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, req.Collection)
 	if rpcErr != nil {
 		return nil, rpcErr

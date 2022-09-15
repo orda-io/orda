@@ -8,15 +8,6 @@ import (
 	"github.com/orda-io/orda/client/pkg/model"
 )
 
-// OrdaContext is used to pass over the context of clients or datatypes
-type OrdaContext interface {
-	context.Context
-	L() *log.OrdaLog
-	Ctx() context.Context
-	SetLogger(l *log.OrdaLog)
-	UpdateTags(tag1, tag2 string)
-}
-
 type ordaContext struct {
 	context.Context
 	logger *log.OrdaLog
@@ -29,7 +20,7 @@ func (its *ordaContext) UpdateTags(tag1, tag2 string) {
 
 // ClientContext is used to pass over the context of clients
 type ClientContext struct {
-	OrdaContext
+	iface.OrdaContext
 	Client *model.Client
 }
 
@@ -40,7 +31,7 @@ type DatatypeContext struct {
 }
 
 // NewOrdaContext creates a new OrdaContext
-func NewOrdaContext(ctx context.Context, tag1 string, tag2 string) OrdaContext {
+func NewOrdaContext(ctx context.Context, tag1 string, tag2 string) iface.OrdaContext {
 	logger := log.NewWithTags(tag1, tag2)
 	return &ordaContext{
 		Context: ctx,

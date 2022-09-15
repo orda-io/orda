@@ -6,6 +6,7 @@ import (
 	"github.com/orda-io/orda/client/pkg/constants"
 	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/managers"
@@ -44,7 +45,7 @@ type OrdaServer struct {
 	closedCh   chan struct{}
 	rpcServer  *grpc.Server
 	restServer *RestServer
-	ctx        context.OrdaContext
+	ctx        iface.OrdaContext
 	conf       *managers.OrdaServerConfig
 	service    *service.OrdaService
 	managers   *managers.Managers
