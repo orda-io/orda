@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/utils"
+	"github.com/orda-io/orda/client/pkg/log"
 )
 
 // ToString returns customized string
@@ -12,5 +12,5 @@ func (its *Client) ToString() string {
 
 // GetSummary returns the summary of client
 func (its *Client) GetSummary() string {
-	return fmt.Sprintf("%s|%s(%s)", its.Collection, utils.MakeDefaultShort(its.Alias), its.CUID)
+	return fmt.Sprintf("%s|%s(%s)", its.Collection, log.MakeDefaultShort(its.Alias), its.CUID)
 }

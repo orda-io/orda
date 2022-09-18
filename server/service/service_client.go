@@ -3,6 +3,7 @@ package service
 import (
 	gocontext "context"
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/admin"
@@ -11,7 +12,6 @@ import (
 	"github.com/orda-io/orda/server/schema"
 
 	"github.com/orda-io/orda/server/constants"
-	"github.com/orda-io/orda/server/svrcontext"
 )
 
 // ProcessClient processes ClientRequest and returns ClientResponse
@@ -19,9 +19,9 @@ func (its *OrdaService) ProcessClient(
 	goCtx gocontext.Context,
 	req *model.ClientMessage,
 ) (*model.ClientMessage, error) {
-	ctx := svrcontext.NewServerContext(goCtx, constants.TagClient).
-		UpdateCollection(req.Collection).
-		UpdateClient(req.GetClientSummary())
+	ctx := context.NewOrdaContext(goCtx, constants.TagClient).
+		UpdateCollectionTags(req.Collection, 0).
+		UpdateClientTags(req.GetClientAlias(), req.GetCuid())
 	if admin.IsAdminCUID(req.GetCuid()) {
 		return nil, errors.NewRPCError(
 			errors.ServerNoPermission.New(ctx.L(),
@@ -32,7 +32,8 @@ func (its *OrdaService) ProcessClient(
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
-	ctx.UpdateCollection(collectionDoc.GetSummary())
+	ctx.UpdateCollectionTags(collectionDoc.Name, collectionDoc.Num)
+
 	clientDocFromReq := schema.ClientModelToBson(req.GetClient(), collectionDoc.Num)
 
 	ctx.L().Infof("REQ[CLIE] %s %v %v", req.ToString(), len(req.Cuid), req.Cuid)

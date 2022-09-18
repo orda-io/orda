@@ -37,7 +37,8 @@ type IntegrationTestSuite struct {
 
 // SetupTest builds some prerequisite for testing.
 func (its *IntegrationTestSuite) SetupSuite() {
-	its.ctx = context.NewOrdaContext(gocontext.TODO(), TagTest, context.MakeTagInTest(its.T().Name()))
+	its.ctx = context.NewOrdaContext(gocontext.TODO(), TagTest).
+		UpdateCollectionTags(its.T().Name(), 0)
 	var err errors.OrdaError
 	its.conf = NewTestOrdaServerConfig(dbName)
 

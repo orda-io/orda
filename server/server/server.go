@@ -7,8 +7,8 @@ import (
 	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
-	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
+	svrConstant "github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/managers"
 	"google.golang.org/grpc/reflection"
 	"net"
@@ -20,9 +20,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	svrConstant "github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/service"
-	"github.com/orda-io/orda/server/svrcontext"
 )
 
 const banner = `       
@@ -53,12 +51,7 @@ type OrdaServer struct {
 
 // NewOrdaServer creates a new Orda server
 func NewOrdaServer(goCtx gocontext.Context, conf *managers.OrdaServerConfig) (*OrdaServer, errors.OrdaError) {
-	host, err := os.Hostname()
-	if err != nil {
-		return nil, errors.ServerInit.New(log.Logger, err.Error())
-	}
-	ctx := svrcontext.NewServerContext(goCtx, svrConstant.TagServer).
-		UpdateCollection(context.MakeTagInServer(host, conf.RPCServerPort))
+	ctx := context.NewOrdaContext(goCtx, svrConstant.TagServer)
 	ctx.L().Infof("Config: %v", conf)
 	return &OrdaServer{
 		ctx:      ctx,

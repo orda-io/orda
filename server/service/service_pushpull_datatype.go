@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/model"
@@ -10,7 +11,6 @@ import (
 	"github.com/orda-io/orda/server/managers"
 	"github.com/orda-io/orda/server/schema"
 	"github.com/orda-io/orda/server/snapshot"
-	"github.com/orda-io/orda/server/svrcontext"
 	"github.com/orda-io/orda/server/utils"
 	"runtime/debug"
 )
@@ -48,7 +48,7 @@ type PushPullHandler struct {
 	CUID string
 
 	err      errors.OrdaError
-	ctx      *svrcontext.ServerContext
+	ctx      iface.OrdaContext
 	managers *managers.Managers
 	lock     utils.Lock
 
@@ -73,16 +73,17 @@ type PushPullHandler struct {
 }
 
 func newPushPullHandler(
-	ctx *svrcontext.ServerContext,
+	ctx iface.OrdaContext,
 	ppp *model.PushPullPack,
 	clientDoc *schema.ClientDoc,
 	collectionDoc *schema.CollectionDoc,
 	clients *managers.Managers,
 ) *PushPullHandler {
 
-	newCtx := svrcontext.NewServerContext(ctx.Ctx(), constants.TagPushPull).
-		UpdateCollection(collectionDoc.GetSummary()).
-		UpdateClient(clientDoc.ToString()).UpdateDatatype(ppp.GetDatatypeTag())
+	newCtx := context.NewOrdaContext(ctx.Ctx(), constants.TagPushPull).
+		UpdateCollectionTags(collectionDoc.Name, collectionDoc.Num).
+		UpdateClientTags(clientDoc.Alias, clientDoc.CUID).
+		UpdateDatatypeTags(ppp.Key, ppp.DUID)
 	option := ppp.GetPushPullPackOption()
 	return &PushPullHandler{
 		Key:             ppp.Key,
@@ -142,7 +143,7 @@ func (its *PushPullHandler) finalize() {
 			its.initialCP.ToString(), its.currentCP.ToString(), len(its.resPushPullPack.Operations))
 		if len(its.pushingOperations) > 0 {
 
-			newCtx := its.ctx.CloneWithNewContext(constants.TagPostPushPull)
+			newCtx := its.ctx.CloneWithNewEmoji(constants.TagPostPushPull)
 
 			go func() {
 				defer its.recoveryFromPanic()

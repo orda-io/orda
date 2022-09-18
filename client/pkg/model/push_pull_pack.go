@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/utils"
+	"github.com/orda-io/orda/client/pkg/log"
 	"strings"
 )
 
@@ -124,7 +124,7 @@ func (its *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
 
 // GetDatatypeTag returns datatype tag
 func (its *PushPullPack) GetDatatypeTag() string {
-	return fmt.Sprintf("%s(%s)", utils.MakeDefaultShort(its.Key), its.DUID)
+	return fmt.Sprintf("%s(%s)", log.MakeDefaultShort(its.Key), its.DUID)
 }
 
 // GetResponsePushPullPack returns the PushPullPack that can be used for response.

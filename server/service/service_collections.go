@@ -3,17 +3,18 @@ package service
 import (
 	goctx "context"
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/model"
 
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/mongodb"
-	"github.com/orda-io/orda/server/svrcontext"
 )
 
 // CreateCollection creates a collection
 func (its *OrdaService) CreateCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
-	ctx := svrcontext.NewServerContext(goCtx, constants.TagCreate).UpdateCollection(in.Collection)
+	ctx := context.NewOrdaContext(goCtx, constants.TagCreate).
+		UpdateCollectionTags(in.Collection, 0)
 	num, err := mongodb.MakeCollection(ctx, its.managers.Mongo, in.Collection)
 	var msg string
 	if err != nil {
@@ -28,7 +29,8 @@ func (its *OrdaService) CreateCollection(goCtx goctx.Context, in *model.Collecti
 
 // ResetCollection resets a collection
 func (its *OrdaService) ResetCollection(goCtx goctx.Context, in *model.CollectionMessage) (*model.CollectionMessage, error) {
-	ctx := svrcontext.NewServerContext(goCtx, constants.TagReset).UpdateCollection(in.Collection)
+	ctx := context.NewOrdaContext(goCtx, constants.TagReset).
+		UpdateCollectionTags(in.Collection, 0)
 	if err := its.managers.Mongo.PurgeCollection(ctx, in.Collection); err != nil {
 		return nil, errors.NewRPCError(err)
 	}

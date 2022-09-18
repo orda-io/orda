@@ -11,5 +11,9 @@ type OrdaContext interface {
 	L() *log.OrdaLog
 	Ctx() context.Context
 	SetLogger(l *log.OrdaLog)
-	UpdateTags(tag1, tag2 string)
+	UpdateAllTags(emoji, collection, colnum, client, cuid, datatype, duid string)
+	UpdateCollectionTags(collection string, colNum int32) OrdaContext
+	UpdateClientTags(client, cuid string) OrdaContext
+	UpdateDatatypeTags(datatype, duid string) OrdaContext
+	CloneWithNewEmoji(emoji string) OrdaContext
 }
