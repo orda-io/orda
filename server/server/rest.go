@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/managers"
 	"google.golang.org/grpc/credentials/insecure"
@@ -27,13 +27,13 @@ const (
 
 // RestServer is a control server to set up Orda system.
 type RestServer struct {
-	ctx      context.OrdaContext
+	ctx      iface.OrdaContext
 	conf     *managers.OrdaServerConfig
 	managers *managers.Managers
 }
 
 // NewRestServer creates a control server.
-func NewRestServer(ctx context.OrdaContext, conf *managers.OrdaServerConfig, clients *managers.Managers) *RestServer {
+func NewRestServer(ctx iface.OrdaContext, conf *managers.OrdaServerConfig, clients *managers.Managers) *RestServer {
 
 	return &RestServer{
 		ctx:      ctx,

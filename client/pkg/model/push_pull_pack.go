@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/utils"
+	"github.com/orda-io/orda/client/pkg/log"
 	"strings"
 )
 
@@ -15,9 +15,10 @@ const (
 	PushPullBitDelete      PushPullPackOption = 0x08
 	PushPullBitSnapshot    PushPullPackOption = 0x10
 	PushPullBitError       PushPullPackOption = 0x20
+	PushPullBitReadOnly    PushPullPackOption = 0x40
 )
 
-var pushPullBitString = []string{"cr", "sb", "un", "de", "sn", "er"}
+var pushPullBitString = []string{"cr", "sb", "un", "de", "sn", "er", "ro"}
 
 // PushPullPackOption denotes an option implied in a PushPullPack.
 type PushPullPackOption uint32
@@ -74,6 +75,12 @@ func (its *PushPullPackOption) SetErrorBit() *PushPullPackOption {
 	return its
 }
 
+// SetReadOnlyBit sets ReadOnlyBit
+func (its *PushPullPackOption) SetReadOnlyBit() *PushPullPackOption {
+	*its |= PushPullBitReadOnly
+	return its
+}
+
 // HasCreateBit examines CreateBit.
 func (its *PushPullPackOption) HasCreateBit() bool {
 	return (*its & PushPullBitCreate) == PushPullBitCreate
@@ -104,6 +111,11 @@ func (its *PushPullPackOption) HasErrorBit() bool {
 	return (*its & PushPullBitError) == PushPullBitError
 }
 
+// HasReadOnly examines ReadOnlyBit.
+func (its *PushPullPackOption) HasReadOnly() bool {
+	return (*its & PushPullBitReadOnly) == PushPullBitReadOnly
+}
+
 // GetPushPullPackOption returns PushPullOption.
 func (its *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
 	var option = (*PushPullPackOption)(&its.Option)
@@ -112,7 +124,7 @@ func (its *PushPullPack) GetPushPullPackOption() *PushPullPackOption {
 
 // GetDatatypeTag returns datatype tag
 func (its *PushPullPack) GetDatatypeTag() string {
-	return fmt.Sprintf("%s(%s)", utils.MakeDefaultShort(its.Key), its.DUID)
+	return fmt.Sprintf("%s(%s)", log.MakeDefaultShort(its.Key), its.DUID)
 }
 
 // GetResponsePushPullPack returns the PushPullPack that can be used for response.
@@ -132,12 +144,12 @@ func (its *PushPullPack) ToString(isFull bool) string {
 	var option = PushPullPackOption(its.Option)
 	var opList = OpList(its.Operations)
 	return fmt.Sprintf(
-		"%s %s(%s) %s CP(%v) OP(%d){%v}",
+		"%s %s(%s) %s CP%s OP(%d){%v}",
 		its.Type,
 		its.Key,
 		its.DUID,
 		option.String(),
-		its.CheckPoint,
+		its.CheckPoint.ToString(),
 		len(its.Operations),
 		opList.ToString(isFull))
 }

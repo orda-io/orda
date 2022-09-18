@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"fmt"
 	"github.com/orda-io/orda/client/pkg/model"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -64,20 +63,6 @@ func FilterByName(name string) Filter {
 // AddSnapshot adds a snapshot value
 func (b Filter) AddSnapshot(data bson.M) Filter {
 	return append(b, bson.E{Key: "$set", Value: data})
-}
-
-// AddSetCheckPoint adds the Filter that updates checkpoint
-func (b Filter) AddSetCheckPoint(key string, checkPoint *model.CheckPoint) Filter {
-	return append(b, bson.E{Key: "$set", Value: bson.D{
-		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: ToCheckPointBSON(checkPoint)},
-	}})
-}
-
-// AddUnsetCheckPoint adds the Filter that unsets the checkpoint
-func (b Filter) AddUnsetCheckPoint(key string) Filter {
-	return append(b, bson.E{Key: "$unset", Value: bson.D{
-		{Key: fmt.Sprintf("%s.%s", ClientDocFields.CheckPoints, key), Value: 1},
-	}})
 }
 
 // AddExists adds the Filter which examines the existence of the key

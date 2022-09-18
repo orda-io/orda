@@ -4,6 +4,7 @@ import (
 	gocontext "context"
 	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/managers"
 	"github.com/orda-io/orda/server/redis"
 	"strings"
@@ -26,17 +27,18 @@ const (
 type IntegrationTestSuite struct {
 	suite.Suite
 	collectionName string
-	collectionNum  uint32
+	collectionNum  int32
 	conf           *managers.OrdaServerConfig
 	server         *server.OrdaServer
 	mongo          *mongodb.RepositoryMongo
 	redis          *redis.Client
-	ctx            context.OrdaContext
+	ctx            iface.OrdaContext
 }
 
 // SetupTest builds some prerequisite for testing.
 func (its *IntegrationTestSuite) SetupSuite() {
-	its.ctx = context.NewOrdaContext(gocontext.TODO(), TagTest, context.MakeTagInTest(its.T().Name()))
+	its.ctx = context.NewOrdaContext(gocontext.TODO(), TagTest).
+		UpdateCollectionTags(its.T().Name(), 0)
 	var err errors.OrdaError
 	its.conf = NewTestOrdaServerConfig(dbName)
 

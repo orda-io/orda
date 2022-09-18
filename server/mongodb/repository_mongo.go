@@ -3,8 +3,8 @@ package mongodb
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,7 +21,7 @@ type RepositoryMongo struct {
 }
 
 // New creates a new RepositoryMongo
-func New(ctx context.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaError) {
+func New(ctx iface.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaError) {
 
 	option := options.Client().ApplyURI(conf.getConnectionString())
 	if conf.CertFile != "" {
@@ -55,7 +55,7 @@ func New(ctx context.OrdaContext, conf *Config) (*RepositoryMongo, errors.OrdaEr
 	return repo, nil
 }
 
-func getCustomTLSConfig(ctx context.OrdaContext, caFile string) (*tls.Config, errors.OrdaError) {
+func getCustomTLSConfig(ctx iface.OrdaContext, caFile string) (*tls.Config, errors.OrdaError) {
 	tlsConfig := new(tls.Config)
 	certs, err := ioutil.ReadFile(caFile)
 
@@ -70,10 +70,11 @@ func getCustomTLSConfig(ctx context.OrdaContext, caFile string) (*tls.Config, er
 }
 
 // InitializeCollections initializes collections
-func (its *RepositoryMongo) InitializeCollections(ctx context.OrdaContext) errors.OrdaError {
+func (its *RepositoryMongo) InitializeCollections(ctx iface.OrdaContext) errors.OrdaError {
 	its.clients = its.db.Collection(schema.CollectionNameClients)
 	its.counters = its.db.Collection(schema.CollectionNameColNumGenerator)
 	its.snapshots = its.db.Collection(schema.CollectionNameSnapshot)
+
 	its.datatypes = its.db.Collection(schema.CollectionNameDatatypes)
 	its.operations = its.db.Collection(schema.CollectionNameOperations)
 	its.collections = its.db.Collection(schema.CollectionNameCollections)
@@ -116,10 +117,11 @@ func (its *RepositoryMongo) InitializeCollections(ctx context.OrdaContext) error
 }
 
 // PurgeCollection purges all collections related to collectionName
-func (its *RepositoryMongo) PurgeCollection(ctx context.OrdaContext, collectionName string) errors.OrdaError {
+func (its *RepositoryMongo) PurgeCollection(ctx iface.OrdaContext, collectionName string) errors.OrdaError {
 	if err := its.PurgeAllDocumentsOfCollection(ctx, collectionName); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
+
 	collection := its.db.Collection(collectionName)
 	if err := collection.Drop(ctx); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
@@ -128,7 +130,7 @@ func (its *RepositoryMongo) PurgeCollection(ctx context.OrdaContext, collectionN
 }
 
 // GetOrCreateRealCollection is a method that gets or creates a collection of snapshot
-func (its *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrdaContext, name string) errors.OrdaError {
+func (its *RepositoryMongo) GetOrCreateRealCollection(ctx iface.OrdaContext, name string) errors.OrdaError {
 	names, err := its.db.ListCollectionNames(ctx, schema.FilterByName(name))
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
@@ -141,7 +143,7 @@ func (its *RepositoryMongo) GetOrCreateRealCollection(ctx context.OrdaContext, n
 }
 
 // Close closes the repository of MongoDB
-func (its *RepositoryMongo) Close(ctx context.OrdaContext) errors.OrdaError {
+func (its *RepositoryMongo) Close(ctx iface.OrdaContext) errors.OrdaError {
 	if err := its.mongoClient.Disconnect(ctx); err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
@@ -149,7 +151,7 @@ func (its *RepositoryMongo) Close(ctx context.OrdaContext) errors.OrdaError {
 }
 
 // MakeCollection makes a real collection.
-func MakeCollection(ctx context.OrdaContext, mongo *RepositoryMongo, collectionName string) (uint32, errors.OrdaError) {
+func MakeCollection(ctx iface.OrdaContext, mongo *RepositoryMongo, collectionName string) (int32, errors.OrdaError) {
 	collectionDoc, err := mongo.GetCollection(ctx, collectionName)
 	if err != nil {
 		return 0, err

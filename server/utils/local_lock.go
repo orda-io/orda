@@ -2,7 +2,7 @@ package utils
 
 import (
 	ctx "context"
-	"github.com/orda-io/orda/client/pkg/context"
+	"github.com/orda-io/orda/client/pkg/iface"
 	golock "github.com/viney-shih/go-lock"
 	"sync"
 )
@@ -11,13 +11,13 @@ var localLockMap sync.Map
 
 // LocalLock is used for local locking in a single server
 type LocalLock struct {
-	ctx      context.OrdaContext
+	ctx      iface.OrdaContext
 	mutex    *golock.CASMutex
 	lockName string
 }
 
 // GetLocalLock returns a LocalLock with the specified name
-func GetLocalLock(ctx context.OrdaContext, lockName string) *LocalLock {
+func GetLocalLock(ctx iface.OrdaContext, lockName string) *LocalLock {
 
 	value, loaded := localLockMap.LoadOrStore(lockName, &LocalLock{
 		ctx:      ctx,

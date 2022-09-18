@@ -1,16 +1,21 @@
 package integration
 
 import (
+	gocontext "context"
 	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/orda"
+	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/managers"
 	redis "github.com/orda-io/orda/server/redis"
+	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/orda-io/orda/server/mongodb"
@@ -33,7 +38,7 @@ func GetFileName() string {
 }
 
 // GetMongo returns an instance of RepositoryMongo for testing.
-func GetMongo(ctx context.OrdaContext, dbName string) (*mongodb.RepositoryMongo, errors.OrdaError) {
+func GetMongo(ctx iface.OrdaContext, dbName string) (*mongodb.RepositoryMongo, errors.OrdaError) {
 	if m, ok := mongoDB[dbName]; ok {
 		return m, nil
 	}
@@ -93,4 +98,26 @@ func NewTestMongoDBConfig(dbName string) *mongodb.Config {
 		User:     "root",
 		Password: "orda-test",
 	}
+}
+
+// NewTestManagers creates a new Managers for Test
+func NewTestManagers(ctx iface.OrdaContext, dbName string) (*managers.Managers, errors.OrdaError) {
+	conf := NewTestOrdaServerConfig(dbName)
+	return managers.New(ctx, conf)
+}
+
+// InitTestDBCollection initializes db collection for testing
+func InitTestDBCollection(t *testing.T, dbName string) (*mongodb.RepositoryMongo, iface.OrdaContext, int32) {
+	ctx := context.NewOrdaContext(gocontext.TODO(), constants.TagTest).
+		UpdateCollectionTags(t.Name(), 0)
+	mongo, err := GetMongo(ctx, dbName)
+	require.NoError(t, err)
+
+	err = mongo.PurgeCollection(ctx, t.Name())
+	require.NoError(t, err)
+	collectionNum, err := mongodb.MakeCollection(ctx, mongo, t.Name())
+	require.NoError(t, err)
+	ctx.UpdateCollectionTags(t.Name(), collectionNum)
+	ctx.L().Infof("Init Test DB Collection %v(%d) in %v", t.Name(), collectionNum, dbName)
+	return mongo, ctx, collectionNum
 }

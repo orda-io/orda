@@ -2,10 +2,7 @@ package integration
 
 import (
 	"bytes"
-	ctx "context"
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/context"
-	"github.com/orda-io/orda/client/pkg/log"
 	"io/ioutil"
 	"net/http"
 	"sync"
@@ -100,17 +97,16 @@ func (its *IntegrationTestSuite) patch(t *testing.T, json string) {
 }
 
 func (its *IntegrationTestSuite) tryLocalLock(t *testing.T, cliName string, unlock bool) {
-	ordaCtx := context.NewOrdaContext(ctx.TODO(), "test", cliName)
 
 	defer func() {
 		wg.Done()
 	}()
-	lock := utils.GetLocalLock(ordaCtx, its.getTestName())
+	lock := utils.GetLocalLock(its.ctx, its.getTestName())
 	if lock.TryLock() {
-		log.Logger.Infof("locked by %v", cliName)
+		its.ctx.L().Infof("locked by %v", cliName)
 		if unlock {
 			defer func() {
-				log.Logger.Infof("released by %v", cliName)
+				its.ctx.L().Infof("released by %v", cliName)
 				lock.Unlock()
 			}()
 		}
@@ -120,30 +116,25 @@ func (its *IntegrationTestSuite) tryLocalLock(t *testing.T, cliName string, unlo
 }
 
 func (its *IntegrationTestSuite) tryRedisLock(t *testing.T, cliName string, unlock bool) {
-
-	ordaCtx := context.NewOrdaContext(ctx.TODO(), "test", cliName)
-
-	cli1, err1 := redis.New(ordaCtx, its.conf.Redis)
+	cli1, err1 := redis.New(its.ctx, its.conf.Redis)
 	require.NoError(t, err1)
 	defer func() {
-		if err := cli1.Close(); err != nil {
-			its.T().Fail()
-		}
+		require.NoError(its.T(), cli1.Close())
 		wg.Done()
 	}()
 
 	lock := cli1.GetLock(its.ctx, its.getTestName())
 
-	log.Logger.Infof("try to lock at %v", cliName)
+	its.ctx.L().Infof("try to lock at %v", cliName)
 	if lock.TryLock() {
 		if unlock {
 			defer func() {
 				lock.Unlock()
-				log.Logger.Infof("released by %v", cliName)
+				its.ctx.L().Infof("released by %v", cliName)
 			}()
 		}
 
-		log.Logger.Infof("locked by %v", cliName)
+		its.ctx.L().Infof("locked by %v", cliName)
 		time.Sleep(3 * time.Second)
 	}
 

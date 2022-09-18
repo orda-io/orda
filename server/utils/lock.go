@@ -18,6 +18,6 @@ type Lock interface {
 }
 
 // GetLockName returns a lock name with the prefix
-func GetLockName(prefix string, collectionNum uint32, key string) string {
+func GetLockName(prefix string, collectionNum int32, key string) string {
 	return fmt.Sprintf("%s:%d:%s", prefix, collectionNum, key)
 }

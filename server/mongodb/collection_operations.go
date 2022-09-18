@@ -2,8 +2,8 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/server/schema"
 
@@ -15,7 +15,7 @@ import (
 
 // InsertOperations inserts operations into MongoDB
 func (its *MongoCollections) InsertOperations(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	operations []interface{},
 ) errors.OrdaError {
 	if operations == nil {
@@ -35,7 +35,7 @@ func (its *MongoCollections) InsertOperations(
 
 // DeleteOperation deletes operations for the specified sseq
 func (its *MongoCollections) DeleteOperation(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	duid string,
 	sseq uint32,
 ) (int64, errors.OrdaError) {
@@ -51,7 +51,7 @@ func (its *MongoCollections) DeleteOperation(
 
 // GetOperations gets operations of the specified range. For each operation, a given handler is called.
 func (its *MongoCollections) GetOperations(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	duid string,
 	from, to uint64,
 ) (model.OpList, []uint64, errors.OrdaError) {
@@ -85,7 +85,7 @@ func (its *MongoCollections) GetOperations(
 }
 
 // PurgeOperations purges operations for the specified datatype.
-func (its *MongoCollections) PurgeOperations(ctx context.OrdaContext, collectionNum uint32, duid string) errors.OrdaError {
+func (its *MongoCollections) PurgeOperations(ctx iface.OrdaContext, collectionNum int32, duid string) errors.OrdaError {
 	f := schema.GetFilter().
 		AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum).
 		AddFilterEQ(schema.OperationDocFields.DUID, duid)

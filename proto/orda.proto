@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "pkg/model";
+option go_package = "client/pkg/model";
 package orda;
 
 import "orda.enum.proto";

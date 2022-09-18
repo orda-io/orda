@@ -3,18 +3,18 @@ package utils
 import (
 	ctx "context"
 	"github.com/go-redsync/redsync/v4"
-	"github.com/orda-io/orda/client/pkg/context"
+	"github.com/orda-io/orda/client/pkg/iface"
 )
 
 // RedisLock is used for distributed locking among multiple servers
 type RedisLock struct {
-	ctx      context.OrdaContext
+	ctx      iface.OrdaContext
 	lockName string
 	mutex    *redsync.Mutex
 }
 
 // GetRedisLock returns a RedisLock with the specified name
-func GetRedisLock(ctx context.OrdaContext, lockName string, rs *redsync.Redsync) *RedisLock {
+func GetRedisLock(ctx iface.OrdaContext, lockName string, rs *redsync.Redsync) *RedisLock {
 	mutex := rs.NewMutex(prefix+lockName, redsync.WithTries(100), redsync.WithExpiry(defaultExpireTime))
 	return &RedisLock{
 		ctx:      ctx,

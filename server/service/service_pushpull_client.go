@@ -3,22 +3,23 @@ package service
 import (
 	gocontext "context"
 	"fmt"
+	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/model"
 	"reflect"
 
 	"github.com/orda-io/orda/server/constants"
-	"github.com/orda-io/orda/server/svrcontext"
 )
 
 // ProcessPushPull processes a GRPC for Push-Pull
 func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushPullMessage) (*model.PushPullMessage, error) {
-	ctx := svrcontext.NewServerContext(goCtx, constants.TagPushPull).UpdateClient(in.Cuid)
+	ctx := context.NewOrdaContext(goCtx, constants.TagPushPull).
+		UpdateClientTags("", in.Cuid)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, in.Collection)
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
-	ctx.UpdateCollection(collectionDoc.GetSummary())
+	ctx.UpdateCollectionTags(collectionDoc.Name, collectionDoc.Num)
 
 	clientDoc, err := its.managers.Mongo.GetClient(ctx, in.Cuid)
 	if err != nil {
@@ -28,8 +29,8 @@ func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushP
 		msg := fmt.Sprintf("no client '%s:%s'", in.Collection, in.Cuid)
 		return nil, errors.NewRPCError(errors.ServerNoResource.New(ctx.L(), msg))
 	}
-	ctx.UpdateClient(clientDoc.ToString())
-	ctx.L().Infof("REQ[PUPU] %v", in.ToString(true))
+	ctx.UpdateClientTags(clientDoc.Alias, clientDoc.CUID)
+	ctx.L().Infof("↪[PUPU] %v", in.ToString(false))
 	if clientDoc.CollectionNum != collectionDoc.Num {
 		msg := fmt.Sprintf("client '%s' accesses collection(%d)", clientDoc.ToString(), collectionDoc.Num)
 		return nil, errors.NewRPCError(errors.ServerNoPermission.New(ctx.L(), msg))
@@ -63,6 +64,6 @@ func (its *OrdaService) ProcessPushPull(goCtx gocontext.Context, in *model.PushP
 			response.PushPullPacks = append(response.PushPullPacks, ppp)
 		}
 	}
-	ctx.L().Infof("RES[PUPU] %v", response.ToString(true))
+	ctx.L().Infof("↩[PUPU] %v", response.ToString(false))
 	return response, nil
 }

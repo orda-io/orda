@@ -1,8 +1,8 @@
 package mongodb
 
 import (
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,7 +16,7 @@ const (
 
 // InsertRealSnapshot inserts a snapshot for real collection.
 func (its *RepositoryMongo) InsertRealSnapshot(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	collectionName string,
 	id string,
 	data interface{},
@@ -50,7 +50,7 @@ func (its *RepositoryMongo) InsertRealSnapshot(
 
 // GetRealSnapshot returns a real snapshot
 func (its *RepositoryMongo) GetRealSnapshot(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	collectionName string,
 	id string,
 ) (map[string]interface{}, errors.OrdaError) {

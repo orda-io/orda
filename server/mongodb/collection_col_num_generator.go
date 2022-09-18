@@ -1,8 +1,8 @@
 package mongodb
 
 import (
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/schema"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,7 +14,7 @@ const (
 )
 
 // GetNextCollectionNum gets a collection number that is assigned to a collection.
-func (its *MongoCollections) GetNextCollectionNum(ctx context.OrdaContext) (uint32, errors.OrdaError) {
+func (its *MongoCollections) GetNextCollectionNum(ctx iface.OrdaContext) (int32, errors.OrdaError) {
 	opts := options.FindOneAndUpdate()
 	opts.SetUpsert(true)
 	var update = bson.M{

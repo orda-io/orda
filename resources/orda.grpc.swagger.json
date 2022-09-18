@@ -314,7 +314,8 @@
       "type": "string",
       "enum": [
         "PERSISTENT",
-        "EPHEMERAL"
+        "EPHEMERAL",
+        "VOLATILE"
       ],
       "default": "PERSISTENT"
     },

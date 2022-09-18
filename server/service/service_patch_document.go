@@ -2,30 +2,33 @@ package service
 
 import (
 	gocontext "context"
+	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
 	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/orda"
-
+	"github.com/orda-io/orda/server/admin"
 	"github.com/orda-io/orda/server/constants"
 	"github.com/orda-io/orda/server/schema"
 	"github.com/orda-io/orda/server/snapshot"
-	"github.com/orda-io/orda/server/svrcontext"
 	"github.com/orda-io/orda/server/utils"
 )
 
 // PatchDocument patches document datatype
 func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchMessage) (*model.PatchMessage, error) {
-	ctx := svrcontext.NewServerContext(goCtx, constants.TagPatch).UpdateCollection(req.Collection)
+	ctx := context.NewOrdaContext(goCtx, constants.TagPatch).
+		UpdateCollectionTags(req.Collection, 0)
 	collectionDoc, rpcErr := its.getCollectionDocWithRPCError(ctx, req.Collection)
 	if rpcErr != nil {
 		return nil, rpcErr
 	}
+	clientDoc := admin.NewPatchClient(collectionDoc)
+	ctx.UpdateCollectionTags(collectionDoc.Name, collectionDoc.Num).
+		UpdateClientTags(clientDoc.Alias, clientDoc.CUID).
+		UpdateDatatypeTags(req.Key, "")
+
 	ctx.L().Infof("BEGIN PatchDocument: '%v' %#v", req.Key, req.GetJson())
 	defer ctx.L().Infof("END PatchDocument: '%v'", req.Key)
-
-	clientDoc := schema.NewPatchClient(collectionDoc)
-	ctx.UpdateCollection(collectionDoc.GetSummary()).UpdateClient(clientDoc.ToString())
 
 	lock := its.managers.GetLock(ctx, utils.GetLockName("PD", collectionDoc.Num, req.Key))
 	if !lock.TryLock() {
@@ -39,11 +42,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 	}
 
 	if datatypeDoc == nil {
-		datatypeDoc = &schema.DatatypeDoc{
-			Key:           req.Key,
-			CollectionNum: collectionDoc.Num,
-			Type:          model.TypeOfDatatype_DOCUMENT.String(),
-		}
+		datatypeDoc = schema.NewDatatypeDoc("", req.Key, collectionDoc.Num, model.TypeOfDatatype_DOCUMENT.String())
 	}
 	if datatypeDoc.Type != model.TypeOfDatatype_DOCUMENT.String() {
 		return nil, errors.NewRPCError(errors.ServerBadRequest.New(ctx.L(), "not document type: "+datatypeDoc.Type))
@@ -54,7 +53,7 @@ func (its *OrdaService) PatchDocument(goCtx gocontext.Context, req *model.PatchM
 	if err != nil {
 		return nil, errors.NewRPCError(err)
 	}
-	ctx.UpdateDatatype(data.GetSummary())
+	ctx.UpdateDatatypeTags(data.GetKey(), data.GetDUID())
 
 	if lastSseq > 0 {
 		data.SetState(model.StateOfDatatype_SUBSCRIBED)

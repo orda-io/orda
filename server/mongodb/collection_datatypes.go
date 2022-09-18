@@ -1,15 +1,15 @@
 package mongodb
 
 import (
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/schema"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // GetDatatype retrieves a datatypeDoc from MongoDB
 func (its *MongoCollections) GetDatatype(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	duid string,
 ) (*schema.DatatypeDoc, errors.OrdaError) {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, duid)
@@ -21,6 +21,7 @@ func (its *MongoCollections) GetDatatype(
 		return nil, errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
 	var datatype schema.DatatypeDoc
+
 	if err := result.Decode(&datatype); err != nil {
 		return nil, errors.ServerDBDecode.New(ctx.L(), err.Error())
 	}
@@ -29,8 +30,8 @@ func (its *MongoCollections) GetDatatype(
 
 // GetDatatypeByKey gets a datatype with the specified key.
 func (its *MongoCollections) GetDatatypeByKey(
-	ctx context.OrdaContext,
-	collectionNum uint32,
+	ctx iface.OrdaContext,
+	collectionNum int32,
 	key string,
 ) (*schema.DatatypeDoc, errors.OrdaError) {
 	f := schema.GetFilter().
@@ -52,7 +53,7 @@ func (its *MongoCollections) GetDatatypeByKey(
 
 // UpdateDatatype updates the datatypeDoc.
 func (its *MongoCollections) UpdateDatatype(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	datatype *schema.DatatypeDoc,
 ) errors.OrdaError {
 	f := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.DUID, datatype.DUID)
@@ -60,7 +61,6 @@ func (its *MongoCollections) UpdateDatatype(
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-
 	if result.ModifiedCount == 1 || result.UpsertedCount == 1 {
 		return nil
 	}
@@ -68,42 +68,36 @@ func (its *MongoCollections) UpdateDatatype(
 }
 
 func (its *MongoCollections) purgeAllCollectionDatatypes(
-	ctx context.OrdaContext,
-	collectionNum uint32,
+	ctx iface.OrdaContext,
+	collectionNum int32,
 ) errors.OrdaError {
 	opFilter := schema.GetFilter().AddFilterEQ(schema.OperationDocFields.CollectionNum, collectionNum)
 	r1, err := its.operations.DeleteMany(ctx, opFilter)
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-	if r1.DeletedCount > 0 {
-		ctx.L().Infof("delete %d operations in collection %d", r1.DeletedCount, collectionNum)
-	}
+	ctx.L().Infof("delete %d operations in collection#%d", r1.DeletedCount, collectionNum)
 
 	snapFilter := schema.GetFilter().AddFilterEQ(schema.SnapshotDocFields.CollectionNum, collectionNum)
 	r2, err := its.snapshots.DeleteMany(ctx, snapFilter)
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-	if r2.DeletedCount > 0 {
-		ctx.L().Infof("delete %d snapshots in collection %d", r2.DeletedCount, collectionNum)
-	}
+	ctx.L().Infof("delete %d snapshots in collection#%d", r2.DeletedCount, collectionNum)
 
 	datatypeFilter := schema.GetFilter().AddFilterEQ(schema.DatatypeDocFields.CollectionNum, collectionNum)
 	r3, err := its.datatypes.DeleteMany(ctx, datatypeFilter)
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-	if r3.DeletedCount > 0 {
-		ctx.L().Infof("delete %d datatypes in collection %d", r3.DeletedCount, collectionNum)
-	}
+	ctx.L().Infof("delete %d datatypes in collection#%d", r3.DeletedCount, collectionNum)
 	return nil
 }
 
 // PurgeDatatype purges a datatype from MongoDB.
 func (its *MongoCollections) PurgeDatatype(
-	ctx context.OrdaContext,
-	collectionNum uint32,
+	ctx iface.OrdaContext,
+	collectionNum int32,
 	key string,
 ) errors.OrdaError {
 	doc, err := its.GetDatatypeByKey(ctx, collectionNum, key)

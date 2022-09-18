@@ -1,8 +1,8 @@
 package mongodb
 
 import (
-	"github.com/orda-io/orda/client/pkg/context"
 	"github.com/orda-io/orda/client/pkg/errors"
+	"github.com/orda-io/orda/client/pkg/iface"
 	"github.com/orda-io/orda/server/schema"
 	"time"
 
@@ -10,7 +10,7 @@ import (
 )
 
 // GetCollection gets a collectionDoc with the specified name.
-func (its *MongoCollections) GetCollection(ctx context.OrdaContext, name string) (*schema.CollectionDoc, errors.OrdaError) {
+func (its *MongoCollections) GetCollection(ctx iface.OrdaContext, name string) (*schema.CollectionDoc, errors.OrdaError) {
 	sr := its.collections.FindOne(ctx, schema.FilterByID(name))
 	if err := sr.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -26,20 +26,18 @@ func (its *MongoCollections) GetCollection(ctx context.OrdaContext, name string)
 }
 
 // DeleteCollection deletes collections with the specified name.
-func (its *MongoCollections) DeleteCollection(ctx context.OrdaContext, name string) errors.OrdaError {
+func (its *MongoCollections) DeleteCollection(ctx iface.OrdaContext, name string) errors.OrdaError {
 	result, err := its.collections.DeleteOne(ctx, schema.FilterByID(name))
 	if err != nil {
 		return errors.ServerDBQuery.New(ctx.L(), err.Error())
 	}
-	if result.DeletedCount == 1 {
-		ctx.L().Infof("Collection is successfully removed:%s", name)
-	}
+	ctx.L().Infof("Collection '%s' is successfully removed:%d", name, result.DeletedCount)
 	return nil
 }
 
 // InsertCollection inserts a document for the specified collection.
 func (its *MongoCollections) InsertCollection(
-	ctx context.OrdaContext,
+	ctx iface.OrdaContext,
 	name string,
 ) (collection *schema.CollectionDoc, err errors.OrdaError) {
 	if err := its.doTransaction(ctx, func() errors.OrdaError {
@@ -65,7 +63,7 @@ func (its *MongoCollections) InsertCollection(
 }
 
 // PurgeAllDocumentsOfCollection purges all data for the specified collection.
-func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrdaContext, name string) errors.OrdaError {
+func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx iface.OrdaContext, name string) errors.OrdaError {
 	if err := its.doTransaction(ctx, func() errors.OrdaError {
 		collectionDoc, err := its.GetCollection(ctx, name)
 		if err != nil {
@@ -74,27 +72,29 @@ func (its *MongoCollections) PurgeAllDocumentsOfCollection(ctx context.OrdaConte
 		if collectionDoc == nil {
 			return nil
 		}
-		ctx.L().Infof("purge collection '%s' (%d)", name, collectionDoc.Num)
-		if err := its.purgeAllCollectionDatatypes(ctx, collectionDoc.Num); err != nil {
-			return err
-		}
-		if err := its.purgeAllCollectionClients(ctx, collectionDoc.Num); err != nil {
-			return err
-		}
-		filter := schema.GetFilter().AddFilterEQ(schema.CollectionDocFields.Name, name)
-
-		result, err2 := its.collections.DeleteOne(ctx, filter)
-		if err2 != nil {
-			return errors.ServerDBQuery.New(ctx.L(), err2.Error())
-		}
-		if result.DeletedCount > 0 {
-			ctx.L().Infof("delete collection '%s'", name)
-			return nil
-		}
-		ctx.L().Warnf("delete no collection")
-		return nil
+		ctx.L().Infof("purge collection#%d '%s'", collectionDoc.Num, name)
+		return its.purgeAllDocumentsOfCollectionNum(ctx, collectionDoc.Num)
 	}); err != nil {
 		return err
 	}
 	return nil
+}
+
+// PurgeAllDocumentsOfCollection purges all data for the specified collection.
+func (its *MongoCollections) purgeAllDocumentsOfCollectionNum(ctx iface.OrdaContext, collectionNum int32) errors.OrdaError {
+	if err := its.purgeAllCollectionDatatypes(ctx, collectionNum); err != nil {
+		return err
+	}
+	if err := its.purgeAllCollectionClients(ctx, collectionNum); err != nil {
+		return err
+	}
+	filter := schema.GetFilter().AddFilterEQ(schema.CollectionDocFields.Name, collectionNum)
+
+	result, err2 := its.collections.DeleteOne(ctx, filter)
+	if err2 != nil {
+		return errors.ServerDBQuery.New(ctx.L(), err2.Error())
+	}
+	ctx.L().Infof("delete %d collection#%d", result.DeletedCount, collectionNum)
+	return nil
+
 }

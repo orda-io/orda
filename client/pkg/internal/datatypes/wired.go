@@ -146,7 +146,7 @@ func (its *WiredDatatype) checkOptionAndError(ppp *model.PushPullPack) errors.Or
 		its.ResetTransaction()
 		its.checkPoint.Cseq = ppp.CheckPoint.Cseq
 		its.checkPoint.Sseq = ppp.CheckPoint.Sseq - uint64(len(ppp.Operations))
-		its.L().Infof("ready to subscribe: (%v)", its.checkPoint)
+		its.L().Infof("ready to subscribe: %s", its.checkPoint.ToString())
 	}
 	return nil
 }
@@ -171,7 +171,7 @@ func (its *WiredDatatype) syncCheckPoint(newCheckPoint *model.CheckPoint) {
 	if its.checkPoint.Sseq < newCheckPoint.Sseq {
 		its.checkPoint.Sseq = newCheckPoint.Sseq
 	}
-	its.L().Infof("sync CheckPoint: (%+v) -> (%+v)", oldCheckPoint, its.checkPoint)
+	its.L().Infof("sync CheckPoint: %s -> %s", oldCheckPoint.ToString(), its.checkPoint.ToString())
 }
 
 func (its *WiredDatatype) updateStateOfDatatype(

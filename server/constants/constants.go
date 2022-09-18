@@ -14,5 +14,5 @@ const (
 	TagPushPull     = "🐙"
 	TagPostPushPull = "🧽"
 	TagTest         = "🦠"
-	TagPatch        = "🪡"
+	TagPatch        = "🧵"
 )

@@ -3,6 +3,7 @@ package log
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -16,7 +17,7 @@ type OrdaLog struct {
 }
 
 // Logger is a global instance of OrdaLog
-var Logger = NewWithTags("Orda", "DEFAULT")
+var Logger = NewWithTags("🎪", "", "", "", "", "", "")
 
 const (
 	colorRed    = 31
@@ -31,42 +32,108 @@ var (
 )
 
 const (
-	tag1Field = "1stTag"
-	tag2Field = "2ndTag"
+	tagEmoji       = "context"
+	tagCollection  = "collection"
+	tagColNum      = "collectionNum"
+	tagClient      = "client"
+	tagCuid        = "cuid"
+	tagDatatype    = "datatype"
+	tagDuid        = "duid"
+	tagOrdaContext = "ordaContext"
 )
 
 // New creates a new OrdaLog.
 func New() *OrdaLog {
 	logger := logrus.New()
-	logger.SetFormatter(&ordaFormatter{})
+	jsonFormatter := logrus.JSONFormatter{
+		TimestampFormat: time.RFC3339,
+	}
+	logFormat := os.Getenv("ORDA_LOG_FORMAT")
+	if logFormat == "json" {
+		logger.SetFormatter(&jsonFormatter)
+	} else {
+		logger.SetFormatter(&ordaFormatter{})
+	}
 	logger.SetReportCaller(true)
 	return &OrdaLog{logrus.NewEntry(logger)}
 }
 
-// GetTag1 returns tag1
-func (its *OrdaLog) GetTag1() string {
-	return its.Data[tag1Field].(string)
+func (its *OrdaLog) Clone() *OrdaLog {
+	newOne := New()
+	for s := range its.Data {
+		newOne.Data[s] = its.Data[s]
+	}
+	return newOne
 }
 
-// GetTag2 returns tag2
-func (its *OrdaLog) GetTag2() string {
-	return its.Data[tag2Field].(string)
+// GetTagEmoji returns context tag
+func (its *OrdaLog) GetTagEmoji() string {
+	return its.Data[tagEmoji].(string)
+}
+
+func (its *OrdaLog) setTag(tag, val string) {
+	if val == "" {
+		return
+	}
+	its.Data[tag] = val
+}
+
+func (its *OrdaLog) updateTagOrdaContext() {
+	maxLen := 12
+	var collection, colNum, client, cuid, datatype, duid = "", "", "", "", "", ""
+	if s, ok := its.Data[tagCollection]; ok {
+		collection = s.(string)
+	}
+	if s, ok := its.Data[tagColNum]; ok {
+		colNum = s.(string)
+	}
+	if s, ok := its.Data[tagClient]; ok {
+		client = s.(string)
+	}
+	if s, ok := its.Data[tagCuid]; ok {
+		cuid = s.(string)
+	}
+	if s, ok := its.Data[tagDatatype]; ok {
+		datatype = s.(string)
+	}
+	if s, ok := its.Data[tagDuid]; ok {
+		duid = s.(string)
+	}
+	col, cli, dty := "🙈", "🙉", "🙊"
+	if collection != "" {
+		col = MakeShort(collection, maxLen)
+		if colNum != "" {
+			col = col + "(" + colNum + ")"
+		}
+	}
+	if client != "" && cuid != "" {
+		cli = fmt.Sprintf("%s(%s)", MakeShort(client, maxLen), cuid)
+	}
+	if datatype != "" && duid != "" {
+		dty = fmt.Sprintf("%s(%s)", MakeShort(datatype, maxLen), duid)
+	}
+	its.Data[tagOrdaContext] = fmt.Sprintf("%s|%s|%s", col, cli, dty)
 }
 
 // SetTags sets tags
-func (its *OrdaLog) SetTags(tag1, tag2 string) {
-	its.Data[tag1Field] = tag1
-	its.Data[tag2Field] = tag2
+func (its *OrdaLog) SetTags(emoji, collection, colNum, client, cuid, datatype, duid string) {
+	its.setTag(tagEmoji, emoji)
+	its.setTag(tagCollection, collection)
+	its.setTag(tagColNum, colNum)
+	its.setTag(tagClient, client)
+	its.setTag(tagCuid, cuid)
+	its.setTag(tagDatatype, datatype)
+	its.setTag(tagDuid, duid)
+	its.updateTagOrdaContext()
 }
 
 // NewWithTags creates a new OrdaLog with a tag.
-func NewWithTags(tag1, tag2 string) *OrdaLog {
-	return &OrdaLog{
-		New().WithFields(logrus.Fields{
-			tag1Field: tag1,
-			tag2Field: tag2,
-		}),
+func NewWithTags(context, collection, colNum, client, cuid, datatype, duid string) *OrdaLog {
+	l := &OrdaLog{
+		New().WithFields(logrus.Fields{}),
 	}
+	l.SetTags(context, collection, colNum, client, cuid, datatype, duid)
+	return l
 }
 
 func getColorByLevel(level logrus.Level) int {
@@ -96,18 +163,13 @@ func (o *ordaFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	b.WriteString("[")
 	// main level
 
-	if v, ok := entry.Data[tag2Field]; ok && v != "" {
+	if v, ok := entry.Data[tagEmoji]; ok && v != "" {
 		b.WriteString(v.(string))
 		b.WriteString("|")
 	}
-	if v, ok := entry.Data[tag1Field]; ok {
+
+	if v, ok := entry.Data[tagOrdaContext]; ok {
 		b.WriteString(v.(string))
-	} else if strings.Contains(entry.Caller.File, "server/") {
-		b.WriteString("👽")
-	} else if strings.Contains(entry.Caller.File, "pkg/") {
-		b.WriteString("🛠")
-	} else {
-		b.WriteString("❌")
 	}
 	b.WriteString("] ")
 

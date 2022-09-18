@@ -10,7 +10,7 @@ import (
 )
 
 // NewOperationDoc creates a new OperationDoc with the given parameters
-func NewOperationDoc(op *model.Operation, duid string, sseq uint64, colNum uint32) *OperationDoc {
+func NewOperationDoc(op *model.Operation, duid string, sseq uint64, colNum int32) *OperationDoc {
 
 	return &OperationDoc{
 		ID:            fmt.Sprintf("%s:%d", duid, sseq),
@@ -42,7 +42,7 @@ type OpID struct {
 type OperationDoc struct {
 	ID            string    `bson:"_id"`
 	DUID          string    `bson:"duid"`
-	CollectionNum uint32    `bson:"colNum"`
+	CollectionNum int32     `bson:"colNum"`
 	OpType        string    `bson:"type"`
 	OpID          OpID      `bson:"id"`
 	Sseq          uint64    `bson:"sseq"`

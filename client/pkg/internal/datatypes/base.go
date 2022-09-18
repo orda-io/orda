@@ -9,7 +9,6 @@ import (
 	"github.com/orda-io/orda/client/pkg/log"
 	"github.com/orda-io/orda/client/pkg/model"
 	"github.com/orda-io/orda/client/pkg/types"
-	"github.com/orda-io/orda/client/pkg/utils"
 )
 
 // BaseDatatype is the base datatype which contains
@@ -40,6 +39,11 @@ func NewBaseDatatype(
 	}
 	base.ctx = context.NewDatatypeContext(clientCtx, base)
 	return base
+}
+
+// GetCtx returns *context.DatatypeContext for internal use
+func (its *BaseDatatype) GetCtx() iface.OrdaContext {
+	return its.ctx
 }
 
 // GetCUID returns CUID of the client which this datatype subscribes to.
@@ -173,5 +177,5 @@ func (its *BaseDatatype) L() *log.OrdaLog {
 
 // GetSummary returns the summary of the operation
 func (its *BaseDatatype) GetSummary() string {
-	return fmt.Sprintf("%s(%s)", utils.MakeDefaultShort(its.Key), its.id)
+	return fmt.Sprintf("%s(%s)", log.MakeDefaultShort(its.Key), its.id)
 }
