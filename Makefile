@@ -83,7 +83,7 @@ test:
 build-server:
 	echo $(PROJECT_ROOT)
 	$(ORDA_BUILDER) "mkdir -p $(BUILD_DIR)"
-	$(ORDA_BUILDER) "cd server && go build -gcflags='all=-N -l' -ldflags '${GO_LDFLAGS}' -o ../$(BUILD_DIR)"
+	$(ORDA_BUILDER) "cd server && go build -buildvcs=false -gcflags='all=-N -l' -ldflags '${GO_LDFLAGS}' -o ../$(BUILD_DIR)"
 
 .PHONY: build-docker-server
 build-docker-server: build-server
